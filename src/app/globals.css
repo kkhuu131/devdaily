@@ -110,6 +110,20 @@ body {
   color: var(--text-secondary);
 }
 
+/* ─── Archive list rows ──────────────────────────────────────────────────── */
+.archive-row {
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: background-color 100ms, border-color 100ms;
+}
+.archive-row:hover {
+  background-color: var(--bg-elevated);
+  border-left-color: var(--accent-brand);
+}
+.archive-row:hover .archive-row-title {
+  color: var(--accent-brand);
+}
+
 /* ─── About page hover states ────────────────────────────────────────────── */
 .about-ext-link {
   display: block;
