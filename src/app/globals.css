@@ -99,3 +99,42 @@ body {
 .animate-fade-up {
   animation: fadeUp 200ms ease-out forwards;
 }
+
+/* ─── Footer nav ─────────────────────────────────────────────────────────── */
+.footer-nav-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 100ms;
+}
+.footer-nav-link:hover {
+  color: var(--text-secondary);
+}
+
+/* ─── About page hover states ────────────────────────────────────────────── */
+.about-ext-link {
+  display: block;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  background-color: transparent;
+  transition: color 150ms, border-color 150ms;
+}
+.about-ext-link:hover {
+  color: var(--accent-brand);
+  border-color: var(--accent-brand);
+}
+
+.about-book-link .about-book-title {
+  color: var(--text-primary);
+  transition: color 100ms;
+}
+.about-book-link:hover .about-book-title {
+  color: var(--accent-brand);
+}
+
+.about-back-link {
+  color: var(--text-muted);
+  transition: color 100ms;
+}
+.about-back-link:hover {
+  color: var(--text-secondary);
+}

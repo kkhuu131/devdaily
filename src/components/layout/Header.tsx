@@ -6,12 +6,13 @@ interface Props {
 export default function Header({ dayNumber, streak = 0 }: Props) {
   return (
     <header className="flex items-center justify-between px-4 py-4 max-w-[640px] mx-auto w-full">
-      <span
+      <a
+        href="/"
         className="text-sm font-mono tracking-widest uppercase"
-        style={{ color: 'var(--text-primary)' }}
+        style={{ color: 'var(--text-primary)', textDecoration: 'none' }}
       >
         DevDaily
-      </span>
+      </a>
 
       <div className="flex items-center gap-4">
         {streak > 0 && (
