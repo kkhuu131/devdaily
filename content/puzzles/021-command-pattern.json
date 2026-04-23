@@ -1,0 +1,105 @@
+{
+  "id": 21,
+  "conceptName": "Command Pattern",
+  "category": "design-pattern",
+  "definition": "Encapsulate a request as an object so actions can be queued, logged, retried, or undone independently of the invoker.",
+  "ruleOfThumb": "When actions need history, retries, or scheduling, model them as command objects instead of inline method calls.",
+  "citation": {
+    "author": "Gamma, Helm, Johnson & Vlissides (GoF)",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Chapter 5: Behavioral Patterns — Command",
+    "externalUrl": "https://refactoring.guru/design-patterns/command"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What limitation appears when product asks for undo and retry for these actions?",
+      "codeSnippet": "class Toolbar {\n  onSaveClick(): void { this.editor.save(); }\n  onFormatClick(): void { this.editor.format(); }\n  onPublishClick(): void { this.editor.publish(); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Actions are hard-coded direct calls, so there is no first-class action object to record, queue, retry, or undo consistently",
+          "isCorrect": true,
+          "explanation": "Without command objects, behavior is tied to click handlers. Features like history, delayed execution, and generic retry become ad-hoc."
+        },
+        {
+          "id": "b",
+          "text": "Toolbar should be a singleton so command history is globally accessible",
+          "isCorrect": false,
+          "explanation": "Singleton scope does not solve action encapsulation or provide reusable execution metadata."
+        },
+        {
+          "id": "c",
+          "text": "The issue is that editor methods should return booleans indicating success",
+          "isCorrect": false,
+          "explanation": "Result values may help, but the structural gap is missing command abstraction."
+        },
+        {
+          "id": "d",
+          "text": "These handlers should be static methods for performance",
+          "isCorrect": false,
+          "explanation": "Static dispatch does not provide action history or decoupled invocation."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A job runner must execute user actions later and retry failures. What design best fits?",
+      "codeSnippet": "class UserActionService {\n  execute(type: 'archive' | 'restore', id: string): void {\n    if (type === 'archive') this.repo.archive(id);\n    if (type === 'restore') this.repo.restore(id);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Represent each action as a command object with execute() so the runner can queue and retry actions uniformly",
+          "isCorrect": true,
+          "explanation": "Command objects decouple the invoker from concrete action logic and make persistence/replay straightforward."
+        },
+        {
+          "id": "b",
+          "text": "Keep the if statements and add more action types; retries can be done with recursion",
+          "isCorrect": false,
+          "explanation": "Inline branching scales poorly and mixes invocation, dispatch, and retry concerns in one place."
+        },
+        {
+          "id": "c",
+          "text": "Use Template Method because archive and restore share one line each",
+          "isCorrect": false,
+          "explanation": "Template Method addresses algorithm skeletons, not request encapsulation for deferred execution."
+        },
+        {
+          "id": "d",
+          "text": "Use Observer so actions broadcast themselves to repositories",
+          "isCorrect": false,
+          "explanation": "Observer addresses subscription fan-out, not representing executable requests with replay semantics."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is harder to extend when the product adds action history and undo?",
+      "codeSnippet": "// Version A\nclass ActionRunner {\n  run(action: string, payload: Payload): void {\n    if (action === 'rename') this.docs.rename(payload.id, payload.name);\n    if (action === 'delete') this.docs.delete(payload.id);\n  }\n}\n// Version B\ninterface Command { execute(): void; undo(): void; }\nclass ActionRunner {\n  run(cmd: Command): void { cmd.execute(); this.history.push(cmd); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A — requests are strings plus branching logic, so undo/history requires custom handling for every action path",
+          "isCorrect": true,
+          "explanation": "A central conditional invoker becomes complex as actions grow. B treats each request as an object with consistent execute/undo behavior."
+        },
+        {
+          "id": "b",
+          "text": "Version B — command objects over-abstract simple actions and make history impossible to persist",
+          "isCorrect": false,
+          "explanation": "Command objects are exactly what make history persistence and replay practical."
+        }
+      ]
+    }
+  ]
+}

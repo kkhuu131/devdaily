@@ -1,0 +1,105 @@
+{
+  "id": 18,
+  "conceptName": "Observer Pattern",
+  "category": "design-pattern",
+  "definition": "Define a one-to-many dependency so when one object changes state, all its dependents are notified automatically.",
+  "ruleOfThumb": "When many consumers react to one event source, publish updates instead of hard-coding each consumer call.",
+  "citation": {
+    "author": "Gamma, Helm, Johnson & Vlissides (GoF)",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Chapter 5: Behavioral Patterns — Observer",
+    "externalUrl": "https://refactoring.guru/design-patterns/observer"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What scalability problem is this notifier heading toward?",
+      "codeSnippet": "class OrderService {\n  complete(order: Order): void {\n    this.repo.save(order);\n    this.email.send(order.userId);\n    this.analytics.track('order_complete', order.id);\n    this.loyalty.addPoints(order.userId, order.total);\n    this.webhook.push(order.id);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Every new reaction to order completion requires editing this method, coupling one event to many direct calls",
+          "isCorrect": true,
+          "explanation": "Order completion has multiple downstream reactions. As more consumers appear, this method becomes a central switchboard instead of publishing one event."
+        },
+        {
+          "id": "b",
+          "text": "The method should run analytics before email so event order remains deterministic",
+          "isCorrect": false,
+          "explanation": "Call order may matter for some systems, but it is not the fundamental design scalability issue shown."
+        },
+        {
+          "id": "c",
+          "text": "Using dot-chained service calls in one method is always a message-chain smell",
+          "isCorrect": false,
+          "explanation": "These are separate collaborator calls, not chained traversal through internals. The issue is fan-out coupling."
+        },
+        {
+          "id": "d",
+          "text": "The logic should be moved to a static helper for easier reuse",
+          "isCorrect": false,
+          "explanation": "Static helpers do not decouple publisher and subscribers. They only move the same coupling elsewhere."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A team wants to add Slack alerts and fraud scoring on successful payment. Which architecture insight matters most here?",
+      "codeSnippet": "class PaymentService {\n  onSuccess(payment: Payment): void {\n    this.receipts.send(payment.userId);\n    this.metrics.count('payment_success');\n    this.audit.log(payment.id);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Payment success should be published as an event so new listeners can be added without modifying PaymentService each time",
+          "isCorrect": true,
+          "explanation": "Observer-style event publishing keeps the source stable while allowing independent subscribers for receipts, metrics, fraud, and alerts."
+        },
+        {
+          "id": "b",
+          "text": "The service should call subscribers through a giant switch statement for better readability",
+          "isCorrect": false,
+          "explanation": "A switch centralizes and grows modification points; it does not provide loose coupling."
+        },
+        {
+          "id": "c",
+          "text": "The best fix is to combine receipts, metrics, and audit into one unified monitor class",
+          "isCorrect": false,
+          "explanation": "Bundling concerns together increases coupling. These reactions typically evolve independently."
+        },
+        {
+          "id": "d",
+          "text": "This code is already ideal; adding two more direct calls is the simplest and most maintainable option",
+          "isCorrect": false,
+          "explanation": "Direct fan-out may be fine initially, but repeated growth creates brittle central logic and frequent edits."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better supports adding/removing side effects when user profiles are updated?",
+      "codeSnippet": "// Version A\nclass ProfileService {\n  update(p: Profile): void {\n    this.repo.save(p);\n    this.search.reindex(p.id);\n    this.analytics.track('profile_updated', p.id);\n    this.mail.sendProfileUpdated(p.userId);\n  }\n}\n// Version B\nclass ProfileService {\n  constructor(private bus: EventBus) {}\n  update(p: Profile): void {\n    this.repo.save(p);\n    this.bus.publish('profile_updated', { profileId: p.id, userId: p.userId });\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A — it hard-codes every reaction inside update(), so each new subscriber means reopening this service",
+          "isCorrect": true,
+          "explanation": "Version A forces profile updates and all side effects to evolve together. Version B allows subscribers to change independently."
+        },
+        {
+          "id": "b",
+          "text": "Version B — publishing events hides control flow and therefore is less maintainable than direct calls",
+          "isCorrect": false,
+          "explanation": "Event-driven flow adds indirection, but here the tradeoff enables extension without constant source modification."
+        }
+      ]
+    }
+  ]
+}

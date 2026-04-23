@@ -1,0 +1,105 @@
+{
+  "id": 6,
+  "conceptName": "Strategy Pattern",
+  "category": "design-pattern",
+  "definition": "Define a family of interchangeable algorithms, encapsulate each one in its own class, and make them swappable at runtime.",
+  "ruleOfThumb": "When you find yourself writing a switch statement to pick between algorithms, those branches want to be classes.",
+  "citation": {
+    "author": "Gamma, Helm, Johnson & Vlissides (GoF)",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Chapter 5: Behavioral Patterns — Strategy",
+    "externalUrl": "https://refactoring.guru/design-patterns/strategy"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "The team needs to add a new discount type next sprint. What's the most painful part of the current design?",
+      "codeSnippet": "class PriceCalculator {\n  calculate(price: number, discountType: string): number {\n    if (discountType === 'none') {\n      return price;\n    } else if (discountType === 'percentage') {\n      return price * 0.9;\n    } else if (discountType === 'flat') {\n      return price - 10;\n    } else if (discountType === 'bogo') {\n      return price / 2;\n    }\n    throw new Error('Unknown discount type');\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Each new discount type means opening and editing this method — the calculation logic for all discount types is tangled together instead of being separate, swappable units",
+          "isCorrect": true,
+          "explanation": "Every new discount type requires modifying existing, working code. There's no way to add a 'loyalty' discount without touching a method that already correctly handles percentage, flat, and bogo discounts — risking regressions in all of them."
+        },
+        {
+          "id": "b",
+          "text": "The magic numbers (0.9, 10) should be extracted to named constants",
+          "isCorrect": false,
+          "explanation": "Extracting constants is a good cleanup, but it doesn't change the structural problem. With named constants, you'd still have to open this method and add another branch for every new discount type."
+        },
+        {
+          "id": "c",
+          "text": "discountType should be a TypeScript union type or enum instead of a plain string",
+          "isCorrect": false,
+          "explanation": "Stronger typing would catch invalid values at compile time, which is an improvement. But it still leaves the core issue: all discount logic lives in one method, and adding a new type means editing existing code."
+        },
+        {
+          "id": "d",
+          "text": "The method should be split into calculatePercentage(), calculateFlat(), and calculateBogo() on the same class",
+          "isCorrect": false,
+          "explanation": "Private helpers reduce the length of calculate(), but the conditional dispatch still lives there. The class still grows with every new discount type — the structure hasn't fundamentally changed."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "This sorting service works fine today. What assumption built into its design will hurt the team when a new algorithm is needed?",
+      "codeSnippet": "class DataSorter {\n  sort(data: number[], algorithm: 'bubble' | 'quick' | 'merge'): number[] {\n    switch (algorithm) {\n      case 'bubble': return this.bubbleSort(data);\n      case 'quick':  return this.quickSort(data);\n      case 'merge':  return this.mergeSort(data);\n    }\n  }\n\n  private bubbleSort(data: number[]): number[] { return []; }\n  private quickSort(data: number[]): number[] { return []; }\n  private mergeSort(data: number[]): number[] { return []; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class assumes the full set of sorting algorithms is known upfront — adding a new one requires modifying this class even though the sorting logic itself hasn't changed",
+          "isCorrect": true,
+          "explanation": "Adding heapsort requires: updating the union type, adding a case to the switch, and adding a private method — all inside a class that was already working. The three existing algorithms have to absorb the risk of a change that has nothing to do with them."
+        },
+        {
+          "id": "b",
+          "text": "The switch statement will throw a runtime error if a new value is passed that isn't in the union type",
+          "isCorrect": false,
+          "explanation": "TypeScript's exhaustiveness checking would actually catch this at compile time. But that's a safety net for the symptom — the problem is that adding any new algorithm requires modifying the existing class at all."
+        },
+        {
+          "id": "c",
+          "text": "All three sort implementations are private, making them impossible to unit test independently",
+          "isCorrect": false,
+          "explanation": "Testing private methods is a valid concern, but it's a consequence of the structure, not the root issue. If each algorithm were its own class, they'd be naturally testable — and the switch statement would disappear too."
+        },
+        {
+          "id": "d",
+          "text": "DataSorter should be a standalone function rather than a class",
+          "isCorrect": false,
+          "explanation": "Whether it's a class or function doesn't change the structural problem — a function with the same switch logic has the same issue. The problem is how new algorithms are added, not the wrapping syntax."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "The product manager wants to add three more shipping carriers next quarter without touching existing carrier logic. Which design makes that possible?",
+      "codeSnippet": "// Version A\nclass ShippingCalculator {\n  calculate(carrier: string, weight: number): number {\n    if (carrier === 'fedex') return weight * 2.5;\n    if (carrier === 'ups')   return weight * 2.8;\n    throw new Error('Unknown carrier');\n  }\n}\n// Version B\ninterface ShippingStrategy { calculate(weight: number): number; }\nclass ShippingCalculator {\n  constructor(private s: ShippingStrategy) {}\n  calculate(weight: number): number { return this.s.calculate(weight); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A — each new carrier requires editing the calculate() method, putting FedEx, UPS, and USPS logic at risk every time a new carrier is added",
+          "isCorrect": true,
+          "explanation": "Version A grows with every new carrier: open the method, add a branch, risk a regression in the existing three. Version B adds a carrier by creating a new class that implements ShippingStrategy — the existing calculator and existing strategies are never touched."
+        },
+        {
+          "id": "b",
+          "text": "Version B — the interface adds indirection that makes simple carrier rate logic unnecessarily complex",
+          "isCorrect": false,
+          "explanation": "The interface feels like overhead for three carriers. But the question specifies three more carriers next quarter — at six carriers, Version A's calculate() is a maintenance liability. Version B scales to any number of carriers without ever reopening the calculator."
+        }
+      ]
+    }
+  ]
+}

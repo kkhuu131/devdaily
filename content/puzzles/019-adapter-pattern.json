@@ -1,0 +1,105 @@
+{
+  "id": 19,
+  "conceptName": "Adapter Pattern",
+  "category": "design-pattern",
+  "definition": "Convert one interface into another interface that clients expect so incompatible components can work together.",
+  "ruleOfThumb": "When integration code keeps translating field names and method shapes, isolate that translation behind one adapter.",
+  "citation": {
+    "author": "Gamma, Helm, Johnson & Vlissides (GoF)",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Chapter 4: Structural Patterns — Adapter",
+    "externalUrl": "https://refactoring.guru/design-patterns/adapter"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What integration smell appears across these call sites?",
+      "codeSnippet": "class BillingController {\n  charge(amount: number): void {\n    const payload = { total_cents: amount * 100 };\n    legacyPay.make_payment(payload);\n  }\n}\nclass RefundController {\n  refund(amount: number): void {\n    const payload = { total_cents: amount * 100 };\n    legacyPay.make_refund(payload);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Legacy API translation logic is duplicated in multiple places instead of being centralized behind a compatible interface",
+          "isCorrect": true,
+          "explanation": "Both controllers know legacy naming and unit conversions. An adapter would expose app-native methods and hide the legacy shape."
+        },
+        {
+          "id": "b",
+          "text": "The issue is that amount multiplication should use bigint for precision",
+          "isCorrect": false,
+          "explanation": "Precision can matter, but the design problem here is interface mismatch leaking into many callers."
+        },
+        {
+          "id": "c",
+          "text": "Controllers should not call payment APIs directly and must always go through GraphQL",
+          "isCorrect": false,
+          "explanation": "Transport choice is separate. The key issue is repeated adaptation logic."
+        },
+        {
+          "id": "d",
+          "text": "Using snake_case payload keys is bad style in TypeScript codebases",
+          "isCorrect": false,
+          "explanation": "Snake_case might be required by the external service. The issue is where that incompatibility is handled."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A new vendor SDK uses cents and callback-style APIs. What keeps the core checkout code clean?",
+      "codeSnippet": "class CheckoutService {\n  pay(totalDollars: number): Promise<void> {\n    return new Promise((resolve, reject) => {\n      vendorSdk.pay({ amount_cents: totalDollars * 100 }, (err: Error | null) => {\n        if (err) reject(err);\n        else resolve();\n      });\n    });\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Wrap the SDK behind an adapter that presents a Promise-based, domain-friendly payment interface to CheckoutService",
+          "isCorrect": true,
+          "explanation": "CheckoutService should speak app-native types and async style. Adapter logic localizes vendor-specific naming, units, and callbacks."
+        },
+        {
+          "id": "b",
+          "text": "Keep vendor calls inline in each service so engineers can see the exact SDK behavior everywhere",
+          "isCorrect": false,
+          "explanation": "Visibility across many call sites increases duplication and coupling to vendor details."
+        },
+        {
+          "id": "c",
+          "text": "Use inheritance: make CheckoutService extend vendorSdk for tighter integration",
+          "isCorrect": false,
+          "explanation": "Inheritance does not solve interface mismatch and further couples business logic to external implementation."
+        },
+        {
+          "id": "d",
+          "text": "The best approach is to convert all internal money types to cents to match the SDK globally",
+          "isCorrect": false,
+          "explanation": "Global internal model changes for one integration can spread unnecessary constraints through the codebase."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version contains the more problematic integration design?",
+      "codeSnippet": "// Version A\nclass ImportService {\n  run(file: CsvFile): void {\n    legacyParser.set_delimiter(';');\n    const rows = legacyParser.parse_file(file.path);\n    this.repo.save(rows);\n  }\n}\n// Version B\ninterface Parser { parse(path: string): Row[]; }\nclass ImportService {\n  constructor(private parser: Parser) {}\n  run(file: CsvFile): void { this.repo.save(this.parser.parse(file.path)); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A — application service is tied directly to legacy parser calls and conventions instead of using a compatible parser abstraction",
+          "isCorrect": true,
+          "explanation": "A leaks legacy API choices into core service code. B lets an adapter implement Parser and contain that translation."
+        },
+        {
+          "id": "b",
+          "text": "Version B — introducing Parser hides too much and makes debugging parser behavior impossible",
+          "isCorrect": false,
+          "explanation": "Abstraction doesn't remove debuggability; it isolates integration concerns and simplifies service logic."
+        }
+      ]
+    }
+  ]
+}

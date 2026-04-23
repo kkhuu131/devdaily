@@ -1,0 +1,105 @@
+{
+  "id": 16,
+  "conceptName": "Composition Over Inheritance",
+  "category": "principle",
+  "definition": "Prefer assembling behavior from smaller components instead of relying on rigid inheritance hierarchies.",
+  "ruleOfThumb": "When behavior combinations multiply, compose capabilities instead of adding subclasses.",
+  "citation": {
+    "author": "Gamma, Helm, Johnson & Vlissides (GoF)",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Chapter 1: Introduction — Favor Object Composition Over Class Inheritance",
+    "externalUrl": "https://refactoring.guru/design-patterns"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What scaling problem appears in this design as features are combined?",
+      "codeSnippet": "class Bird { fly(): void { } }\nclass Duck extends Bird { quack(): void { } }\nclass RubberDuck extends Duck {\n  fly(): void { throw new Error('Cannot fly'); }\n}\nclass RocketDuck extends Duck {\n  fly(): void { /* custom rocket fly */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Behavior is locked into a class hierarchy, so new combinations create awkward overrides and subclass explosions",
+          "isCorrect": true,
+          "explanation": "RubberDuck and RocketDuck need different flight behavior, but inheritance forces them through the same base contract. Swappable behavior components would scale better."
+        },
+        {
+          "id": "b",
+          "text": "The issue is that quack() should be abstract in Duck",
+          "isCorrect": false,
+          "explanation": "Abstractness does not address the rigid behavior coupling caused by inheritance."
+        },
+        {
+          "id": "c",
+          "text": "Bird should be an interface so inheritance remains clean",
+          "isCorrect": false,
+          "explanation": "Using an interface alone does not solve combinatorial subclass growth."
+        },
+        {
+          "id": "d",
+          "text": "The problem is that fly should return a boolean to indicate success",
+          "isCorrect": false,
+          "explanation": "Return type is not the main structural challenge shown."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A game character now needs mix-and-match movement and attack styles. Why does this hierarchy slow feature delivery?",
+      "codeSnippet": "class Character { move(): void { } attack(): void { } }\nclass SwordKnight extends Character { }\nclass BowKnight extends Character { }\nclass SwordMage extends Character { }\nclass BowMage extends Character { }\nclass SwordRogue extends Character { }\nclass BowRogue extends Character { }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Each new movement or attack style multiplies subclasses, while composed movement and attack behaviors could be reused directly",
+          "isCorrect": true,
+          "explanation": "Hierarchy encodes behavior combinations as classes, causing combinatorial growth. Composition models movement and attack as interchangeable parts."
+        },
+        {
+          "id": "b",
+          "text": "The issue is that these class names are too specific and should be shorter",
+          "isCorrect": false,
+          "explanation": "Naming may improve readability, but it does not fix combination explosion."
+        },
+        {
+          "id": "c",
+          "text": "This is fine because subclasses make behavior explicit and avoid runtime wiring complexity",
+          "isCorrect": false,
+          "explanation": "Explicit subclasses help at small scale, but become expensive as combinations and feature variants grow."
+        },
+        {
+          "id": "d",
+          "text": "Inheritance is required for performance; composition would always be slower in JavaScript",
+          "isCorrect": false,
+          "explanation": "Performance differences here are negligible compared to maintainability and adaptability concerns."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version gives the team more flexibility to add new abilities without creating new subclasses?",
+      "codeSnippet": "// Version A\nclass Vehicle {\n  move(): void { }\n}\nclass Car extends Vehicle { move(): void { } }\nclass AmphibiousCar extends Car {\n  moveOnWater(): void { }\n}\n// Version B\ninterface MoveBehavior { move(): void; }\nclass Vehicle {\n  constructor(private mover: MoveBehavior) {}\n  move(): void { this.mover.move(); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A — adding new movement capabilities keeps forcing special-purpose subclasses",
+          "isCorrect": true,
+          "explanation": "Version A grows by creating deeper types for each variation. Version B swaps behavior objects and keeps the core Vehicle stable."
+        },
+        {
+          "id": "b",
+          "text": "Version B — runtime composition hides true type capabilities, so inheritance is safer for extension",
+          "isCorrect": false,
+          "explanation": "Composition intentionally decouples capability selection from class identity, which is what enables safer extension."
+        }
+      ]
+    }
+  ]
+}

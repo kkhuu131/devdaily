@@ -1,0 +1,105 @@
+{
+  "id": 22,
+  "conceptName": "Factory Method Pattern",
+  "category": "design-pattern",
+  "definition": "Define an interface for creating objects, but let subclasses decide which concrete class to instantiate.",
+  "ruleOfThumb": "When object creation logic keeps branching by type, move creation behind a factory method.",
+  "citation": {
+    "author": "Gamma, Helm, Johnson & Vlissides (GoF)",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Chapter 3: Creational Patterns — Factory Method",
+    "externalUrl": "https://refactoring.guru/design-patterns/factory-method"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What maintenance risk shows up as this notification list grows?",
+      "codeSnippet": "class NotificationController {\n  create(type: string): Notifier {\n    if (type === 'email') return new EmailNotifier();\n    if (type === 'sms') return new SmsNotifier();\n    if (type === 'push') return new PushNotifier();\n    throw new Error('Unknown notifier type');\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Object creation is centralized as type conditionals, so each new notifier requires modifying existing branch logic",
+          "isCorrect": true,
+          "explanation": "As concrete notifier types increase, this method grows and must be reopened repeatedly. Factory Method structures creation extension more cleanly."
+        },
+        {
+          "id": "b",
+          "text": "The key issue is throwing an error for unknown types instead of returning null",
+          "isCorrect": false,
+          "explanation": "Error strategy is secondary; the main concern is creation logic coupled to type branching."
+        },
+        {
+          "id": "c",
+          "text": "These classes should all be singletons so creation code is unnecessary",
+          "isCorrect": false,
+          "explanation": "Singletons alter lifecycle semantics but do not solve extensible creation design."
+        },
+        {
+          "id": "d",
+          "text": "Using string type values is always wrong and should be replaced by numbers",
+          "isCorrect": false,
+          "explanation": "Identifier representation is not the core architectural issue."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A framework must support plugin-defined parsers without touching core code each release. What design direction helps most?",
+      "codeSnippet": "class ParserEngine {\n  parse(kind: string, input: string): Ast {\n    if (kind === 'json') return new JsonParser().parse(input);\n    if (kind === 'yaml') return new YamlParser().parse(input);\n    if (kind === 'toml') return new TomlParser().parse(input);\n    throw new Error('Unsupported parser');\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Use a factory method extension point so plugins provide parser creators without editing ParserEngine conditionals",
+          "isCorrect": true,
+          "explanation": "Core engine should rely on parser abstraction while extensions register concrete creators. This avoids constant core modifications."
+        },
+        {
+          "id": "b",
+          "text": "Keep adding parser if-branches because parse logic is simple and explicit",
+          "isCorrect": false,
+          "explanation": "Explicit now becomes brittle over time when external plugins and frequent additions are required."
+        },
+        {
+          "id": "c",
+          "text": "Switch to reflection that instantiates parser classes from string names directly in parse()",
+          "isCorrect": false,
+          "explanation": "Reflection can hide branch growth but still leaves creation policy in core logic and can reduce safety."
+        },
+        {
+          "id": "d",
+          "text": "Use Observer so parsers subscribe to parse requests dynamically",
+          "isCorrect": false,
+          "explanation": "Observer handles event reactions, not deterministic selection and creation of one parser instance."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version becomes harder to maintain as new exporter types are introduced monthly?",
+      "codeSnippet": "// Version A\nclass ExportService {\n  export(type: string, data: Data): string {\n    if (type === 'csv') return new CsvExporter().export(data);\n    if (type === 'json') return new JsonExporter().export(data);\n    return new XmlExporter().export(data);\n  }\n}\n// Version B\nabstract class ExportService {\n  export(data: Data): string { return this.createExporter().export(data); }\n  protected abstract createExporter(): Exporter;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A — adding types means reopening conditional creation logic every month, increasing modification risk in shipped code",
+          "isCorrect": true,
+          "explanation": "A grows by branch edits in one method. B delegates concrete creation to subclasses via factory method, reducing churn in core flow."
+        },
+        {
+          "id": "b",
+          "text": "Version B — factory methods hide concrete classes, which makes extension less safe than direct constructor calls",
+          "isCorrect": false,
+          "explanation": "Factory methods intentionally hide concrete construction details to make extension safer and more controlled."
+        }
+      ]
+    }
+  ]
+}

@@ -508,12 +508,30 @@ Tasks:
 - [x] Write `src/lib/puzzle.ts` with `getPuzzleForDate()` and `getAllPuzzles()`
 - [x] Write `src/lib/storage.ts` for localStorage read/write
 
-**Phase 2 — UI components** (not started)
+**Phase 2 — UI components** ✅ COMPLETE
 
-Before starting Phase 2, answer:
-- What exact animation should play when a user selects a wrong answer?
-- Should Q3 always be "which one" format or can it vary?
-- Does the auto-advance delay (1200ms) feel right or adjust it?
+Pre-phase decisions made:
+- **Wrong answer animation:** `shake` — 250ms, 4px amplitude, 3 oscillations (standard "no" gesture, dev-familiar from terminal auth prompts)
+- **Q3 format:** Can be `which-one` OR `true-false` — not locked. Format is per-question in JSON. `QuestionCard` renders both.
+- **Auto-advance delay:** 1200ms kept — right amount of time to register correct/wrong state before advancing
+
+Components built:
+- [x] `src/components/puzzle/CodeSnippet.tsx` — renders Shiki-highlighted HTML, amber left border
+- [x] `src/components/puzzle/AnswerOption.tsx` — 5 states (default/selected/correct/wrong/correct-alt), shake + glow animations
+- [x] `src/components/puzzle/QuestionCard.tsx` — handles multiple-choice and which-one formats
+- [x] `src/components/puzzle/PuzzleSession.tsx` — full state machine, localStorage sync, auto-advance
+- [x] `src/components/puzzle/RevealScreen.tsx` — typewriter concept name, rule of thumb block, citation
+- [x] `src/components/ui/ShareCard.tsx` — copy-to-clipboard share text
+- [x] `src/components/ui/ProgressDots.tsx` — 3-dot progress indicator with pulse animation
+- [x] `src/components/ui/StreakCounter.tsx` — flame + number (hidden when streak = 0)
+- [x] `src/components/layout/Header.tsx` — wordmark + day number + streak
+- [x] `src/components/layout/Footer.tsx` — minimal devdaily.dev
+- [x] `src/app/globals.css` — design tokens, animations, Shiki reset, @theme inline fonts
+- [x] `src/app/layout.tsx` — JetBrains Mono + Instrument Serif via next/font/google
+- [x] `src/app/page.tsx` — Server Component: loads puzzle, pre-renders Shiki HTML, mounts PuzzleSession
+- [x] `src/app/api/puzzle/route.ts` — GET returns today's puzzle + day number
+- [x] `src/lib/highlight.ts` — Shiki singleton (tokyo-night theme, server-only)
+- [x] `src/lib/share.ts` — generateShareText() for copy card
 
 ---
 

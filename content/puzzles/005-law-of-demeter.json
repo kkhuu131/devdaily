@@ -1,0 +1,105 @@
+{
+  "id": 5,
+  "conceptName": "Law of Demeter",
+  "category": "principle",
+  "definition": "A method should only call methods on objects it directly owns — not on objects returned by those methods.",
+  "ruleOfThumb": "Count the dots in a method chain. Each extra dot is another object you're depending on that you don't own.",
+  "citation": {
+    "author": "David Thomas & Andrew Hunt",
+    "bookTitle": "The Pragmatic Programmer: Your Journey to Mastery",
+    "chapter": "Chapter 5: Bend or Break — Decoupling",
+    "externalUrl": "https://refactoring.guru/smells/message-chains"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What makes this method fragile?",
+      "codeSnippet": "class InvoiceService {\n  calculateTax(order: Order): number {\n    const region = order.getCustomer().getAddress().getRegion();\n    const taxClass = order.getCustomer().getAccount().getTaxClass();\n    const exemptId = order.getCustomer().getTaxExemption().getId();\n\n    return TaxEngine.compute(region, taxClass, exemptId);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The method navigates a chain of objects to gather data — if any object in the chain changes its structure, this code breaks even though InvoiceService hasn't changed",
+          "isCorrect": true,
+          "explanation": "InvoiceService depends not just on Order, but on Customer, Address, Account, and TaxExemption — objects it never directly owns. Renaming getRegion() or restructuring Account causes this method to break, even though none of those changes have anything to do with invoicing."
+        },
+        {
+          "id": "b",
+          "text": "The method calls getCustomer() three separate times instead of caching the result in a variable",
+          "isCorrect": false,
+          "explanation": "Caching customer = order.getCustomer() would reduce redundant calls, but the deeper problem remains: the method still navigates through Customer's internals. Even with a cached reference, it's still depending on objects it doesn't own."
+        },
+        {
+          "id": "c",
+          "text": "TaxEngine is a static class, which makes the method impossible to test",
+          "isCorrect": false,
+          "explanation": "Static dependencies are a testability concern, but they're not why this method is fragile. The chained navigation is the problem — restructuring any intermediate object in that chain silently breaks tax calculation."
+        },
+        {
+          "id": "d",
+          "text": "Tax calculation logic doesn't belong in InvoiceService at all",
+          "isCorrect": false,
+          "explanation": "InvoiceService doing tax calculation is reasonable. The issue isn't what it's doing — it's how deeply it reaches into Order's object graph to do it."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A bug report says this code crashed when a user had no saved payment method. Which line is most likely responsible, and why?",
+      "codeSnippet": "class CheckoutService {\n  processPayment(cart: ShoppingCart): Receipt {\n    const cardNumber = cart\n      .getUser()\n      .getPaymentProfile()\n      .getDefaultCard()\n      .getLastFour();\n\n    const amount = cart.getTotalPrice();\n    return this.gateway.charge(cardNumber, amount);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The chained call — if getDefaultCard() returns null when no card exists, calling getLastFour() on it throws. The chain hides this possibility entirely.",
+          "isCorrect": true,
+          "explanation": "Each step in the chain can return null or undefined, but the code treats every intermediate result as safe. The chain obscures the failure mode — there's no signal that 'user might have no payment profile' or 'profile might have no default card'."
+        },
+        {
+          "id": "b",
+          "text": "getTotalPrice() might return 0 for an empty cart, which would cause a zero-amount charge",
+          "isCorrect": false,
+          "explanation": "A zero-amount edge case is worth handling, but the bug report points to a crash — not a wrong amount. The null-safety gap in the payment chain is the likely culprit."
+        },
+        {
+          "id": "c",
+          "text": "this.gateway.charge() should be awaited since payment processing is async",
+          "isCorrect": false,
+          "explanation": "Async handling is a real concern for production payment code, but it would cause a type error or unhandled promise, not the specific crash described when a user has no payment method."
+        },
+        {
+          "id": "d",
+          "text": "cardNumber should be validated to be exactly 4 characters before calling charge()",
+          "isCorrect": false,
+          "explanation": "Validating the last-four digits is sensible, but the code never reaches that point when getDefaultCard() returns null. The chain fails before cardNumber is ever assigned."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Both methods look up a shipping destination. Which version will break if the Customer model is refactored?",
+      "codeSnippet": "// Version A\nclass ShipmentService {\n  getDestination(order: Order): string {\n    return order.customer.address.city\n      + ', ' + order.customer.address.country;\n  }\n}\n\n// Version B\nclass ShipmentService {\n  getDestination(order: Order): string {\n    return order.getShippingDestination();\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A — it reaches directly into Order's customer, then into customer's address. If the Customer or Address structure changes, ShipmentService breaks even though shipping logic hasn't changed.",
+          "isCorrect": true,
+          "explanation": "Version A knows the internal structure of both Order and Customer. Version B asks Order to format its own destination — Order is the only class that needs to know how customer and address are structured. Refactoring Customer only requires updating Order, not every class that used to navigate through it."
+        },
+        {
+          "id": "b",
+          "text": "Version B — delegating to order.getShippingDestination() hides what data is actually used, making the method harder to debug",
+          "isCorrect": false,
+          "explanation": "Hiding implementation details is the goal of encapsulation, not a drawback. If ShipmentService needs to debug a wrong city, it looks at Order.getShippingDestination() — one place, clearly owned by the right class."
+        }
+      ]
+    }
+  ]
+}

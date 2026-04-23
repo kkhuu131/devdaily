@@ -1,0 +1,106 @@
+{
+  "id": 12,
+  "conceptName": "Shotgun Surgery",
+  "category": "code-smell",
+  "definition": "A single conceptual change requires small edits in many different classes or files.",
+  "ruleOfThumb": "If one feature request sends you on a repo-wide scavenger hunt, responsibilities are scattered.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Chapter 3: Bad Smells in Code",
+    "page": "89",
+    "externalUrl": "https://refactoring.guru/smells/shotgun-surgery"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "A new tax rule requires updating this system. What design problem does the team face?",
+      "codeSnippet": "// File A: OrderService\nconst taxA = subtotal * 0.08;\n// File B: InvoiceService\nconst taxB = amount * 0.08;\n// File C: RefundService\nconst taxC = refunded * 0.08;\n// File D: AnalyticsJob\nconst taxD = gross * 0.08;\n// File E: CsvExporter\nrow.tax = row.subtotal * 0.08;",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "One tax policy change requires editing many files, so the rule is scattered instead of centralized",
+          "isCorrect": true,
+          "explanation": "The same business rule is duplicated across services and exports. Every policy update becomes multi-file surgery with high miss risk."
+        },
+        {
+          "id": "b",
+          "text": "The problem is numeric precision; they should switch all tax calculations to bigint",
+          "isCorrect": false,
+          "explanation": "Precision may matter, but this question highlights change-coupling across many locations, not numeric type choice."
+        },
+        {
+          "id": "c",
+          "text": "The issue is that tax variables should use clearer names than taxA, taxB, taxC",
+          "isCorrect": false,
+          "explanation": "Naming can improve readability, but it does not solve the scattered-change problem."
+        },
+        {
+          "id": "d",
+          "text": "Each file should calculate tax independently so teams can work without coordination",
+          "isCorrect": false,
+          "explanation": "Independent copies reduce short-term coordination but create long-term inconsistency and expensive updates."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "The company adds a new membership tier discount. Why is this codebase likely to produce inconsistent behavior?",
+      "codeSnippet": "class CheckoutViewModel { discount(t: Tier): number { return t === 'gold' ? 0.15 : 0; } }\nclass OrderEngine { discount(t: Tier): number { return t === 'gold' ? 0.15 : 0; } }\nclass InvoicePrinter { discount(t: Tier): number { return t === 'gold' ? 0.15 : 0; } }\nclass ReceiptEmailer { discount(t: Tier): number { return t === 'gold' ? 0.15 : 0; } }\nclass RevenueReport { discount(t: Tier): number { return t === 'gold' ? 0.15 : 0; } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Discount logic is duplicated across multiple modules, so adding a tier means synchronized edits everywhere and easy drift if one copy is missed",
+          "isCorrect": true,
+          "explanation": "Scattered rules create inconsistent outcomes: checkout might show one discount while reports use another. Centralizing policy prevents divergence."
+        },
+        {
+          "id": "b",
+          "text": "The real problem is that a ternary expression is less readable than an if statement",
+          "isCorrect": false,
+          "explanation": "Syntax style is not the issue. The issue is identical policy logic duplicated in many places."
+        },
+        {
+          "id": "c",
+          "text": "This design is acceptable because each class can optimize discount logic for its own context",
+          "isCorrect": false,
+          "explanation": "These classes should not invent their own discount rules if they all represent the same business policy."
+        },
+        {
+          "id": "d",
+          "text": "The code should use inheritance so all classes extend a BaseDiscountClass",
+          "isCorrect": false,
+          "explanation": "Inheritance can still spread policy widely. The key fix is one source of truth, regardless of composition style."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "A legal rule update changes refund eligibility. Which version creates the bigger risk of missing one required edit?",
+      "codeSnippet": "// Version A\nclass RefundPolicy {\n  isEligible(order: Order): boolean { return order.daysSincePurchase <= 30 && !order.isFinalSale; }\n}\n// Version B\nclass CheckoutRules { isRefundEligible(o: Order): boolean { return o.daysSincePurchase <= 30 && !o.isFinalSale; } }\nclass InvoiceRules { isRefundEligible(o: Order): boolean { return o.daysSincePurchase <= 30 && !o.isFinalSale; } }\nclass SupportRules { isRefundEligible(o: Order): boolean { return o.daysSincePurchase <= 30 && !o.isFinalSale; } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version B — one policy lives in several classes, so a legal update requires coordinated edits and is easy to apply incompletely",
+          "isCorrect": true,
+          "explanation": "B turns one conceptual change into multi-location maintenance. A central policy class keeps changes atomic and auditable."
+        },
+        {
+          "id": "b",
+          "text": "Version A — centralizing policy creates a single point of failure, so duplication is safer for compliance-heavy logic",
+          "isCorrect": false,
+          "explanation": "For compliance, one authoritative policy is safer because it reduces mismatch risk and simplifies verification."
+        }
+      ]
+    }
+  ]
+}

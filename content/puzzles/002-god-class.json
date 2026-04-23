@@ -1,0 +1,105 @@
+{
+  "id": 2,
+  "conceptName": "God Class",
+  "category": "code-smell",
+  "definition": "A class that monopolizes most of the system's responsibilities, knowing too much and doing too much.",
+  "ruleOfThumb": "If you need 'and' to describe what a class does, it probably needs to be split.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Chapter 3: Bad Smells in Code — Large Class",
+    "externalUrl": "https://refactoring.guru/smells/large-class"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What's the most significant concern with this class?",
+      "codeSnippet": "class UserService {\n  register(data: UserInput): User { }\n  login(email: string, password: string): string { }\n  sendWelcomeEmail(user: User): void { }\n  sendPasswordReset(email: string): void { }\n  validatePassword(password: string): boolean { }\n  hashPassword(password: string): string { }\n  logActivity(userId: string, action: string): void { }\n  generateReport(userId: string): Report { }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class handles authentication, email delivery, security, activity logging, and reporting — completely unrelated responsibilities packed into one place",
+          "isCorrect": true,
+          "explanation": "UserService reaches across authentication, communication, cryptography, auditing, and reporting. Each of those could change for entirely different reasons, and any change risks all the others."
+        },
+        {
+          "id": "b",
+          "text": "The class exposes too many public methods in its interface",
+          "isCorrect": false,
+          "explanation": "The number of public methods is a symptom, not the cause. A well-designed service can have many methods if they're all related. The issue here is that the methods belong to fundamentally different concerns."
+        },
+        {
+          "id": "c",
+          "text": "The methods don't share any state, so they shouldn't be in the same class",
+          "isCorrect": false,
+          "explanation": "Sharing state isn't the test for whether methods belong together. Cohesion — whether the methods relate to the same concern — is what matters."
+        },
+        {
+          "id": "d",
+          "text": "The class is missing constructor-injected dependencies",
+          "isCorrect": false,
+          "explanation": "Dependency injection is a valid concern, but it's separate from the structural problem here. Even with injected dependencies, a class that spans authentication, email, logging, and reporting is still doing too much."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A new developer is asked to add payment processing to this app. Where should the code reviewer tell them NOT to add it — and why?",
+      "codeSnippet": "class AppController {\n  private users: User[] = [];\n  private products: Product[] = [];\n  private orders: Order[] = [];\n\n  createUser(data: UserInput): User { }\n  deleteUser(id: string): void { }\n  addProduct(data: ProductInput): Product { }\n  updateInventory(id: string, qty: number): void { }\n  placeOrder(userId: string, items: CartItem[]): Order { }\n  cancelOrder(orderId: string): void { }\n  sendNotification(userId: string, msg: string): void { }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Avoid AppController — it already owns users, products, orders, and notifications. Payments would make one class responsible for nearly the entire application.",
+          "isCorrect": true,
+          "explanation": "AppController is already a bottleneck for four separate domains. Payments added here would make it the single file every developer touches for every feature, making parallel work and testing nearly impossible."
+        },
+        {
+          "id": "b",
+          "text": "Avoid AppController because it stores data in arrays instead of a database",
+          "isCorrect": false,
+          "explanation": "The storage mechanism is a separate concern from the structural problem. Even if AppController used a proper database, centralizing all application behavior in one class would still be the issue."
+        },
+        {
+          "id": "c",
+          "text": "Avoid AppController because the methods don't return Promises for async operations",
+          "isCorrect": false,
+          "explanation": "Async handling is a valid concern in production code, but it's unrelated to why this class is problematic. The issue is the sheer breadth of responsibilities, not the method signatures."
+        },
+        {
+          "id": "d",
+          "text": "AppController is fine for now — add payments there and refactor later when the class gets larger",
+          "isCorrect": false,
+          "explanation": "The class is already large. Deferring the split makes it harder, not easier — more code to untangle, more callers to update. The right time to avoid the problem was before it got this big."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "A team is debating how to structure their reporting service. Which version will become a maintenance problem as reporting requirements grow?",
+      "codeSnippet": "// Version A\nclass ReportService {\n  generateSales(): SalesReport { }\n  generateUsers(): UserReport { }\n  renderPDF(r: Report): Buffer { }\n  emailTo(r: Report, addr: string): void { }\n  scheduleDaily(r: Report): void { }\n}\n// Version B\nclass SalesReporter { generate(): SalesReport { } }\nclass UserReporter { generate(): UserReport { } }\nclass ReportExporter {\n  toPDF(r: Report): Buffer { }\n  emailTo(r: Report, addr: string): void { }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A — one class handles two kinds of report generation, PDF rendering, email delivery, and scheduling. Every new reporting feature lands here.",
+          "isCorrect": true,
+          "explanation": "Version A is already a miniature God Class for the reporting domain. Adding a new report type, a new export format, or a new delivery channel all modify the same file. Version B distributes these concerns so each class has room to grow independently."
+        },
+        {
+          "id": "b",
+          "text": "Version B — splitting SalesReporter and UserReporter when each only has one method creates unnecessary fragmentation for a small service",
+          "isCorrect": false,
+          "explanation": "Starting small doesn't mean the structure is wrong — it means there's room to grow into it. Version B's separation means adding a ThirdPartyReporter or a new export format touches a contained class, not the central hub."
+        }
+      ]
+    }
+  ]
+}

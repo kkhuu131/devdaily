@@ -1,26 +1,101 @@
 @import "tailwindcss";
 
+/* ─── Design tokens ─────────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-base: #0e0d0b;
+  --bg-surface: #181714;
+  --bg-elevated: #222018;
+  --bg-code: #131210;
+
+  --text-primary: #e4e0d4;
+  --text-secondary: #7a7568;
+  --text-muted: #3e3b34;
+
+  --accent-brand: #d4a843;
+  --accent-brand-subtle: #2e2510;
+  --accent-correct: #52c97a;
+  --accent-correct-subtle: #0e2a18;
+  --accent-wrong: #e0574f;
+  --accent-wrong-subtle: #2a0e0e;
+  --accent-neutral: #3a3730;
+
+  --border-subtle: #252320;
+  --border-focus: #d4a843;
 }
 
+/* ─── Tailwind theme overrides ───────────────────────────────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-jetbrains-mono);
+  --font-mono: var(--font-jetbrains-mono);
+  --font-display: var(--font-instrument-serif);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ─── Base ───────────────────────────────────────────────────────────────── */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-jetbrains-mono), monospace;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Shiki code block reset ─────────────────────────────────────────────── */
+.shiki {
+  background-color: var(--bg-code) !important;
+  overflow-x: auto;
+  tab-size: 2;
+}
+
+.shiki code {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1.6;
+}
+
+/* ─── Animations ─────────────────────────────────────────────────────────── */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15%       { transform: translateX(-4px); }
+  30%       { transform: translateX(4px); }
+  45%       { transform: translateX(-4px); }
+  60%       { transform: translateX(4px); }
+  75%       { transform: translateX(-3px); }
+  90%       { transform: translateX(3px); }
+}
+
+@keyframes correctGlow {
+  0%, 100% { box-shadow: none; }
+  50%       { box-shadow: 0 0 14px 2px color-mix(in srgb, var(--accent-correct) 35%, transparent); }
+}
+
+@keyframes dotPulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.25); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes revealChar {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ─── Animation utility classes ──────────────────────────────────────────── */
+.animate-shake {
+  animation: shake 250ms ease-in-out;
+}
+
+.animate-correct-glow {
+  animation: correctGlow 500ms ease-in-out;
+}
+
+.animate-dot-pulse {
+  animation: dotPulse 1.5s ease-in-out infinite;
+}
+
+.animate-fade-up {
+  animation: fadeUp 200ms ease-out forwards;
 }

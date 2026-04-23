@@ -1,0 +1,106 @@
+{
+  "id": 14,
+  "conceptName": "Data Clumps",
+  "category": "code-smell",
+  "definition": "The same group of related fields repeatedly appears together, signaling they likely belong in a single object.",
+  "ruleOfThumb": "If the same parameters travel as a pack, give the pack a name.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Chapter 3: Bad Smells in Code",
+    "page": "83",
+    "externalUrl": "https://refactoring.guru/smells/data-clumps"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What design signal stands out in these APIs?",
+      "codeSnippet": "function createShipment(name: string, street: string, city: string, state: string, zip: string): void { }\nfunction estimateShipping(name: string, street: string, city: string, state: string, zip: string): number { return 0; }\nfunction validateDestination(name: string, street: string, city: string, state: string, zip: string): boolean { return true; }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The same address fields appear together across multiple functions, suggesting they should be modeled as one address type",
+          "isCorrect": true,
+          "explanation": "Repeated parameter groups indicate missing domain structure. A dedicated Address object improves readability, validation reuse, and call-site safety."
+        },
+        {
+          "id": "b",
+          "text": "The problem is that name should be optional for shipping flows",
+          "isCorrect": false,
+          "explanation": "Optionality could be discussed, but it does not explain the repeated field cluster."
+        },
+        {
+          "id": "c",
+          "text": "Function names should start with verbs to satisfy style guides",
+          "isCorrect": false,
+          "explanation": "Naming style is not the key structural issue shown."
+        },
+        {
+          "id": "d",
+          "text": "All three functions should be methods on a single utility class",
+          "isCorrect": false,
+          "explanation": "Class vs function placement does not solve the repeated field bundle."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Why do bugs often appear when developers add country support to this code?",
+      "codeSnippet": "class CustomerRepo {\n  save(first: string, last: string, email: string, phone: string): void { }\n}\nclass CustomerMailer {\n  sendWelcome(first: string, last: string, email: string, phone: string): void { }\n}\nclass CustomerSearch {\n  index(first: string, last: string, email: string, phone: string): void { }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Customer identity fields are scattered as repeated argument lists, so adding one new field requires synchronized signature changes everywhere",
+          "isCorrect": true,
+          "explanation": "With repeated parameter packs, one schema change ripples through many methods and call sites. A CustomerContact value object localizes that change."
+        },
+        {
+          "id": "b",
+          "text": "The issue is that save and index should be async functions returning Promises",
+          "isCorrect": false,
+          "explanation": "Async behavior may matter at runtime, but it is separate from repeated data-shape coupling."
+        },
+        {
+          "id": "c",
+          "text": "Phone should be removed because contact flows should only use email",
+          "isCorrect": false,
+          "explanation": "Domain choice about channels is independent of the repeated argument clump."
+        },
+        {
+          "id": "d",
+          "text": "A base class with these four parameters as protected fields would remove the problem",
+          "isCorrect": false,
+          "explanation": "Inheritance can still leave repeated constructor and method signatures. The issue is missing cohesive data type."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is more likely to remain stable as address requirements evolve?",
+      "codeSnippet": "// Version A\ninterface Address { street: string; city: string; state: string; zip: string; country: string; }\nfunction createOrder(addr: Address): void { }\nfunction quoteOrder(addr: Address): number { return 0; }\n// Version B\nfunction createOrder(street: string, city: string, state: string, zip: string, country: string): void { }\nfunction quoteOrder(street: string, city: string, state: string, zip: string, country: string): number { return 0; }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version B — repeated field packs force broad signature churn whenever address shape changes",
+          "isCorrect": true,
+          "explanation": "Any new field like apartmentNumber requires editing each signature and call site. Version A evolves the address model in one place."
+        },
+        {
+          "id": "b",
+          "text": "Version A — passing objects hides required fields and should be avoided for critical business flows",
+          "isCorrect": false,
+          "explanation": "A typed object makes required fields explicit and cohesive, especially for shared domain bundles like addresses."
+        }
+      ]
+    }
+  ]
+}

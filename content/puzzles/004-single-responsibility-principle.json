@@ -1,0 +1,106 @@
+{
+  "id": 4,
+  "conceptName": "Single Responsibility Principle",
+  "category": "solid",
+  "definition": "A class or module should have one, and only one, reason to change.",
+  "ruleOfThumb": "Ask 'who are the different people who might ask me to change this class?' If there's more than one answer, split it.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code: A Handbook of Agile Software Craftsmanship",
+    "chapter": "Chapter 10: Classes",
+    "page": "138",
+    "externalUrl": "https://refactoring.guru/smells/large-class"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "This class will need to change for multiple unrelated reasons. What's the clearest sign?",
+      "codeSnippet": "class UserRegistration {\n  register(data: unknown): void {\n    const input = JSON.parse(data as string);\n\n    if (!input.email?.includes('@')) throw new Error('Invalid email');\n    if (input.password.length < 8) throw new Error('Too short');\n\n    db.query('INSERT INTO users VALUES (?)', [input]);\n\n    sendEmail(input.email, 'Welcome!');\n    logger.info(`Registered: ${input.email}`);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parsing, validation, database writes, email delivery, and logging all live in one method — a change to any of them forces this class to change",
+          "isCorrect": true,
+          "explanation": "Each of those five concerns has a different owner: the data team changes validation rules, the DBA changes the schema, the marketing team changes email copy, the platform team changes logging. Every stakeholder causes this one class to change."
+        },
+        {
+          "id": "b",
+          "text": "JSON.parse on untrusted input is unsafe without error handling",
+          "isCorrect": false,
+          "explanation": "That's a valid security concern, but it's separate from the structural issue. Even with safe parsing, a class that combines validation, persistence, and notification still has multiple reasons to change."
+        },
+        {
+          "id": "c",
+          "text": "The method is too long and should be broken into smaller private methods",
+          "isCorrect": false,
+          "explanation": "Extract Method would help readability, but private helpers inside the same class don't remove the coupling — the class still changes whenever validation rules, the DB schema, or email templates change."
+        },
+        {
+          "id": "d",
+          "text": "db and sendEmail should be injected as dependencies rather than called directly",
+          "isCorrect": false,
+          "explanation": "Dependency injection is a good practice for testability, but it doesn't solve the structural problem. Even with injected deps, this class is still responsible for five separate concerns."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "The team needs to replace the database ORM and switch email providers at the same time. What does this design mean for the code change?",
+      "codeSnippet": "class OrderProcessor {\n  process(order: Order): void {\n    if (order.items.length === 0) throw new Error('Empty order');\n\n    db.run('INSERT INTO orders ...', [order]);\n    db.run('UPDATE inventory ...', [order.items]);\n\n    sendgrid.send({\n      to: order.customer.email,\n      subject: 'Order confirmed',\n    });\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Both unrelated changes land in this one class — database concerns and notification concerns are coupled here, so changing one risks introducing bugs in the other",
+          "isCorrect": true,
+          "explanation": "The ORM swap and the email provider switch have nothing to do with each other — they come from different teams for different reasons. But because OrderProcessor owns both, the same file has to absorb both changes simultaneously."
+        },
+        {
+          "id": "b",
+          "text": "Both changes are safe because they're in a single, well-contained method",
+          "isCorrect": false,
+          "explanation": "Being in one method doesn't make changes safe — it means unrelated changes are coupled. A mistake in the email block can break the database logic, even though they have nothing to do with each other."
+        },
+        {
+          "id": "c",
+          "text": "The class is fine; the real fix is injecting db and sendgrid as constructor dependencies",
+          "isCorrect": false,
+          "explanation": "DI improves testability but doesn't separate responsibilities. With injected deps, this class still changes for both database reasons and notification reasons — different stakeholders, one class."
+        },
+        {
+          "id": "d",
+          "text": "The method needs a try/catch block to ensure the email always sends even if the DB fails",
+          "isCorrect": false,
+          "explanation": "Error handling is a separate concern. The structural problem — database and notification logic living together — exists whether or not there's a try/catch."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "The team needs to upgrade the PDF library and switch email providers — two separate changes. Which version requires touching the fewest separate classes?",
+      "codeSnippet": "// Version A\nclass ReportService {\n  generate(data: ReportData): Report { }\n  renderPDF(r: Report): Buffer { }\n  sendByEmail(r: Report, to: string): void { }\n}\n// Version B\nclass ReportGenerator { generate(data: ReportData): Report { } }\nclass PDFRenderer { render(report: Report): Buffer { } }\nclass EmailDelivery { send(report: Report, to: string): void { } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A — both unrelated changes modify the same class. A PDF library upgrade and an email provider switch land in ReportService even though they have nothing to do with each other.",
+          "isCorrect": true,
+          "explanation": "In Version A, one class absorbs both changes — that's two separate reasons to change. In Version B, the PDF upgrade touches only PDFRenderer and the email switch touches only EmailDelivery. Each change is contained, with no risk of cross-contamination."
+        },
+        {
+          "id": "b",
+          "text": "Version B — three separate classes means the changes are spread across more files, which is harder to coordinate",
+          "isCorrect": false,
+          "explanation": "Touching more files is not inherently harder — it's safer. Each file has a clear scope, so the developer changing PDFRenderer doesn't need to understand email delivery. Coordination complexity comes from coupled responsibilities, not separated ones."
+        }
+      ]
+    }
+  ]
+}

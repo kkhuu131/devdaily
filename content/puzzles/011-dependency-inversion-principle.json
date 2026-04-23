@@ -1,0 +1,105 @@
+{
+  "id": 11,
+  "conceptName": "Dependency Inversion Principle",
+  "category": "solid",
+  "definition": "High-level policy should depend on abstractions, not on low-level implementation details.",
+  "ruleOfThumb": "Business rules should describe what they need, not who specifically provides it.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Agile Software Development: Principles, Patterns, and Practices",
+    "chapter": "Chapter 11: The Dependency Inversion Principle",
+    "externalUrl": "https://refactoring.guru/dependency-inversion-principle"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What coupling issue makes this service hard to evolve?",
+      "codeSnippet": "class SignupService {\n  private smtp = new SmtpMailer();\n\n  register(user: User): void {\n    this.saveUser(user);\n    this.smtp.send({\n      to: user.email,\n      subject: 'Welcome',\n      body: 'Thanks for joining!'\n    });\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The business flow directly constructs a specific mailer, so changing delivery provider or testing behavior requires editing this high-level service",
+          "isCorrect": true,
+          "explanation": "SignupService owns policy-level behavior, but it is tied to one concrete transport. It should depend on a notification abstraction and receive an implementation externally."
+        },
+        {
+          "id": "b",
+          "text": "The problem is sending email synchronously instead of through a queue",
+          "isCorrect": false,
+          "explanation": "Queues may be useful operationally, but they do not address the dependency direction problem shown."
+        },
+        {
+          "id": "c",
+          "text": "The private field should be readonly to prevent accidental reassignment",
+          "isCorrect": false,
+          "explanation": "Readonly can improve safety, but it does not decouple policy from implementation."
+        },
+        {
+          "id": "d",
+          "text": "The method should return a boolean indicating whether email delivery succeeded",
+          "isCorrect": false,
+          "explanation": "Return shape can be discussed, but the architectural issue is concrete dependency wiring inside high-level code."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Why does this reporting use case become brittle when storage technology changes?",
+      "codeSnippet": "class SalesReportUseCase {\n  run(range: DateRange): Report {\n    const dbUrl = process.env.DB_URL ?? '';\n    const db = new PostgresClient(dbUrl);\n    const rows = db.query('select * from sales where day between $1 and $2', [range.from, range.to]);\n    return this.toReport(rows);\n  }\n\n  private toReport(rows: unknown[]): Report { return { total: rows.length }; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The use case directly owns database construction and query details, so persistence changes force edits in business logic code",
+          "isCorrect": true,
+          "explanation": "High-level report policy should not know SQL client setup or vendor details. A repository abstraction keeps policy stable while storage implementations vary."
+        },
+        {
+          "id": "b",
+          "text": "Using SQL text inside run() is always wrong; all SQL should live in stored procedures",
+          "isCorrect": false,
+          "explanation": "Stored procedures are an option, not a requirement. The core problem is dependency direction, not SQL location."
+        },
+        {
+          "id": "c",
+          "text": "The private method toReport should be static for better performance",
+          "isCorrect": false,
+          "explanation": "Static conversion does not solve the tight coupling between business policy and concrete data source."
+        },
+        {
+          "id": "d",
+          "text": "The type unknown[] indicates missing generic constraints and is the main source of brittleness",
+          "isCorrect": false,
+          "explanation": "Typing can improve correctness, but the bigger maintainability risk is hard-coding low-level dependencies in high-level code."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "The team plans to support SMS and push alerts in addition to email. Which version keeps business rules most insulated from those changes?",
+      "codeSnippet": "// Version A\nclass AlertUseCase {\n  notify(user: User, msg: string): void {\n    const email = new SmtpMailer();\n    email.send({ to: user.email, subject: 'Alert', body: msg });\n  }\n}\n// Version B\ninterface AlertChannel { send(user: User, msg: string): void; }\nclass AlertUseCase {\n  constructor(private channel: AlertChannel) {}\n  notify(user: User, msg: string): void { this.channel.send(user, msg); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A — policy code is tied to one concrete channel, so each new transport requires reopening this use case",
+          "isCorrect": true,
+          "explanation": "A must be modified for SMS, push, retries, and tests. In B, the use case stays stable while channel implementations vary behind an abstraction."
+        },
+        {
+          "id": "b",
+          "text": "Version B — introducing an interface adds indirection that makes the design less maintainable over time",
+          "isCorrect": false,
+          "explanation": "The added abstraction is purposeful: it isolates high-level policy from implementation churn, which improves maintainability."
+        }
+      ]
+    }
+  ]
+}

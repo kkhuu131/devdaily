@@ -85,7 +85,7 @@
       "format": "which-one",
       "difficulty": "hard",
       "prompt": "Both snippets calculate a discount. Which version has the more problematic design?",
-      "codeSnippet": "// Version A\nclass DiscountEngine {\n  calculate(cart: ShoppingCart): number {\n    const items = cart.getItems();\n    const total = cart.getSubtotal();\n    const joined = cart.getOwner().getMemberSince();\n    const points = cart.getOwner().getLoyaltyPoints();\n    return this.applyRules(items, total, joined, points);\n  }\n}\n\n// Version B\nclass ShoppingCart {\n  calculateDiscount(): number {\n    const yearsAsMember = this.owner.getMemberSince();\n    return this.subtotal * this.discountRate(yearsAsMember);\n  }\n}",
+      "codeSnippet": "// Version A\nclass DiscountEngine {\n  calculate(cart: ShoppingCart): number {\n    const joined = cart.getOwner().getMemberSince();\n    const points = cart.getOwner().getLoyaltyPoints();\n    return this.applyRules(cart.getSubtotal(), joined, points);\n  }\n}\n// Version B\nclass ShoppingCart {\n  calculateDiscount(): number {\n    const yearsAsMember = this.owner.getMemberSince();\n    return this.subtotal * this.discountRate(yearsAsMember);\n  }\n}",
       "language": "typescript",
       "options": [
         {

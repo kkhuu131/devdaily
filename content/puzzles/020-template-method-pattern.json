@@ -1,0 +1,105 @@
+{
+  "id": 20,
+  "conceptName": "Template Method Pattern",
+  "category": "design-pattern",
+  "definition": "Define the skeleton of an algorithm in a base method, letting subclasses override specific steps without changing the overall flow.",
+  "ruleOfThumb": "When multiple workflows share the same sequence but differ in a few steps, keep the sequence fixed and vary the hooks.",
+  "citation": {
+    "author": "Gamma, Helm, Johnson & Vlissides (GoF)",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Chapter 5: Behavioral Patterns — Template Method",
+    "externalUrl": "https://refactoring.guru/design-patterns/template-method"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What repeated structure suggests this design could be improved?",
+      "codeSnippet": "class CsvReport {\n  generate(data: Row[]): string {\n    const validated = this.validate(data);\n    const transformed = this.transform(validated);\n    const output = this.renderCsv(transformed);\n    this.audit(output.length);\n    return output;\n  }\n}\nclass JsonReport {\n  generate(data: Row[]): string {\n    const validated = this.validate(data);\n    const transformed = this.transform(validated);\n    const output = this.renderJson(transformed);\n    this.audit(output.length);\n    return output;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Both classes repeat the same algorithm sequence with only one rendering step different, so the sequence should be centralized with customizable steps",
+          "isCorrect": true,
+          "explanation": "Validation, transform, render, and audit order is duplicated. A template method captures that flow once and delegates variation points."
+        },
+        {
+          "id": "b",
+          "text": "The issue is that render methods should return buffers instead of strings",
+          "isCorrect": false,
+          "explanation": "Return format is a separate API choice, not the structural duplication highlighted."
+        },
+        {
+          "id": "c",
+          "text": "Both classes should merge into one with if/else on output format for simplicity",
+          "isCorrect": false,
+          "explanation": "A large conditional can reduce duplication short-term but often becomes harder to extend and maintain."
+        },
+        {
+          "id": "d",
+          "text": "Audit should run before transform to catch raw input size",
+          "isCorrect": false,
+          "explanation": "Order tweaks may be valid, but they do not address repeated workflow skeleton."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "The team has PDF, CSV, and XML export jobs. What pattern best avoids duplicating the shared pipeline?",
+      "codeSnippet": "class PdfJob {\n  run(data: Row[]): void { this.load(data); this.clean(); this.renderPdf(); this.notify(); }\n}\nclass CsvJob {\n  run(data: Row[]): void { this.load(data); this.clean(); this.renderCsv(); this.notify(); }\n}\nclass XmlJob {\n  run(data: Row[]): void { this.load(data); this.clean(); this.renderXml(); this.notify(); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Use a base job with a fixed run() sequence and subclass hooks for render step differences",
+          "isCorrect": true,
+          "explanation": "All jobs share workflow order and vary primarily in output rendering. Template Method captures common sequence once."
+        },
+        {
+          "id": "b",
+          "text": "Use copy-paste inheritance where each job keeps a full run() method for local clarity",
+          "isCorrect": false,
+          "explanation": "Local clarity now becomes maintenance burden later when shared flow changes."
+        },
+        {
+          "id": "c",
+          "text": "Use Strategy for every line of run() so no class needs a fixed sequence at all",
+          "isCorrect": false,
+          "explanation": "Strategy can help with interchangeable algorithms, but this case benefits from a stable sequence with limited variation points."
+        },
+        {
+          "id": "d",
+          "text": "Use one static helper function and pass the format name as a string",
+          "isCorrect": false,
+          "explanation": "A string-based helper can still become a conditional hub and lose clear extension structure."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which design is more likely to break sequence consistency as more export types are added?",
+      "codeSnippet": "// Version A\nabstract class ExportJob {\n  run(data: Row[]): void {\n    this.load(data);\n    this.clean();\n    this.render();\n    this.notify();\n  }\n  protected abstract render(): void;\n}\n// Version B\nclass PdfJob { run(d: Row[]): void { this.load(d); this.clean(); this.renderPdf(); this.notify(); } }\nclass XmlJob { run(d: Row[]): void { this.load(d); this.renderXml(); this.clean(); this.notify(); } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version B — each class controls its own full sequence, so step order can drift and become inconsistent",
+          "isCorrect": true,
+          "explanation": "B allows accidental reordering like render-before-clean in one subclass. A enforces one canonical algorithm structure."
+        },
+        {
+          "id": "b",
+          "text": "Version A — abstract classes are rigid, so every export type should define complete workflows independently",
+          "isCorrect": false,
+          "explanation": "Controlled rigidity is the benefit here: shared invariant sequence with explicit variation points."
+        }
+      ]
+    }
+  ]
+}

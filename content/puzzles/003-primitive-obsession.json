@@ -1,0 +1,106 @@
+{
+  "id": 3,
+  "conceptName": "Primitive Obsession",
+  "category": "code-smell",
+  "definition": "Using primitive types to represent domain concepts that deserve their own dedicated classes or value objects.",
+  "ruleOfThumb": "When you find yourself validating, formatting, or doing logic on a raw primitive in multiple places, that primitive wants to be a type.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Chapter 3: Bad Smells in Code",
+    "page": "86",
+    "externalUrl": "https://refactoring.guru/smells/primitive-obsession"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What's the core problem with this function signature?",
+      "codeSnippet": "function scheduleAppointment(\n  patientFirstName: string,\n  patientLastName: string,\n  patientDateOfBirth: string,\n  appointmentDate: string,\n  appointmentTime: string,\n  durationMinutes: number,\n  doctorId: string,\n  roomNumber: string\n): Appointment { }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Conceptually grouped data — patient identity, time slot, and location — is scattered as disconnected raw strings instead of dedicated types",
+          "isCorrect": true,
+          "explanation": "Patient name + DOB, date + time + duration, and room all form natural clusters. Expressing them as individual strings hides this structure, spreads validation everywhere they're used, and makes the function easy to call incorrectly."
+        },
+        {
+          "id": "b",
+          "text": "The function has too many parameters and should take a single options object",
+          "isCorrect": false,
+          "explanation": "Wrapping everything in one options object reduces parameter count but doesn't create meaningful types — patientDateOfBirth is still just a string inside the object. That treats the symptom, not the cause."
+        },
+        {
+          "id": "c",
+          "text": "The function is synchronous when scheduling likely involves async I/O",
+          "isCorrect": false,
+          "explanation": "Whether the function is async is a runtime concern. The structural problem is how the domain concepts are represented, not how the function executes."
+        },
+        {
+          "id": "d",
+          "text": "Strings can't prevent passing appointmentDate and appointmentTime in the wrong order",
+          "isCorrect": false,
+          "explanation": "Parameter ordering is a real concern with stringly-typed APIs, but it's a consequence of the problem, not the problem itself. The root issue is that these strings represent rich domain concepts that have no validation, formatting, or behavior of their own."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "This cart has worked fine for months. Now the team needs locale-aware currency formatting and exchange rate conversion. What does this reveal about the original design?",
+      "codeSnippet": "class ShoppingCart {\n  private subtotal: number = 0;\n  private currency: string = 'USD';\n\n  addItem(price: number, currency: string): void {\n    if (currency !== this.currency) {\n      throw new Error(`Expected ${this.currency}, got ${currency}`);\n    }\n    this.subtotal += price;\n  }\n\n  getTotal(): number {\n    return this.subtotal;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Money is two separate primitives — adding formatting, conversion, or arithmetic rules means finding and updating every place that handles price and currency instead of changing one type",
+          "isCorrect": true,
+          "explanation": "A Money type would own its currency, formatting logic, and arithmetic rules. As a primitive pair, that knowledge is spread across every caller. Each new money-related requirement means a search-and-update across the codebase."
+        },
+        {
+          "id": "b",
+          "text": "The currency check should use an enum instead of a string comparison",
+          "isCorrect": false,
+          "explanation": "An enum would tighten the type, but currency is still a separate piece of data from the amount. The underlying structure — two primitives trying to represent one concept — remains unchanged."
+        },
+        {
+          "id": "c",
+          "text": "getTotal() should return a formatted string like '$42.00' instead of a raw number",
+          "isCorrect": false,
+          "explanation": "Formatting in getTotal() would conflate display logic with domain logic. The design needs a Money value object, not a different return type from a method."
+        },
+        {
+          "id": "d",
+          "text": "The class is fine — the team should add a separate CurrencyConverter utility for the new requirements",
+          "isCorrect": false,
+          "explanation": "A separate utility still works with raw number + string pairs. Every place that uses ShoppingCart would need to know how to pass those primitives to the converter correctly. The problem multiplies instead of being solved."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "true-false",
+      "difficulty": "hard",
+      "prompt": "True or false: the refactored version below has eliminated the smell.",
+      "codeSnippet": "// Before\nfunction createEvent(\n  name: string,\n  startDate: string,\n  latitude: number,\n  longitude: number\n): Event { }\n// After\nfunction createEvent(options: {\n  name: string;\n  startDate: string;\n  latitude: number;\n  longitude: number;\n}): Event { }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "False — wrapping primitives in an object reduces parameter count but doesn't create meaningful types. startDate is still an unvalidated string; latitude and longitude are still raw numbers with no coordinate behavior.",
+          "isCorrect": true,
+          "explanation": "This is 'Introduce Parameter Object' — a useful refactoring, but not the one that addresses primitive obsession. The fix is value objects: a DateRange that validates start < end, a Coordinate that validates bounds. The parameters still want to be types, not just fields in an object."
+        },
+        {
+          "id": "b",
+          "text": "True — the refactoring groups related data together and makes the function's intent much clearer",
+          "isCorrect": false,
+          "explanation": "Grouping is an improvement in readability, but the underlying primitives are unchanged. You can still pass an invalid date string, a latitude of 9999, or swap start and end with no type-level error. The smell is the representation, not the parameter count."
+        }
+      ]
+    }
+  ]
+}

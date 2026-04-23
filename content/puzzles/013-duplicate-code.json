@@ -1,0 +1,106 @@
+{
+  "id": 13,
+  "conceptName": "Duplicate Code",
+  "category": "code-smell",
+  "definition": "The same logic appears in multiple places, so one change requires repeated edits and can easily drift out of sync.",
+  "ruleOfThumb": "If you copy logic once, plan the extraction before the third copy.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Chapter 3: Bad Smells in Code",
+    "page": "78",
+    "externalUrl": "https://refactoring.guru/smells/duplicate-code"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the biggest risk in this billing logic?",
+      "codeSnippet": "function calcInvoiceTotal(items: Item[]): number {\n  const subtotal = items.reduce((s, i) => s + i.price, 0);\n  const tax = subtotal * 0.08;\n  const fee = subtotal > 100 ? 0 : 5;\n  return subtotal + tax + fee;\n}\n\nfunction calcQuoteTotal(items: Item[]): number {\n  const subtotal = items.reduce((s, i) => s + i.price, 0);\n  const tax = subtotal * 0.08;\n  const fee = subtotal > 100 ? 0 : 5;\n  return subtotal + tax + fee;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The same pricing formula is repeated in two places, so future pricing updates can accidentally change one path but not the other",
+          "isCorrect": true,
+          "explanation": "When tax or fee rules change, both functions must be edited in lockstep. Missing one creates inconsistent totals for invoices versus quotes."
+        },
+        {
+          "id": "b",
+          "text": "Using reduce for subtotal is less readable than a traditional loop",
+          "isCorrect": false,
+          "explanation": "Loop style is subjective and minor here. The bigger maintainability problem is repeated business logic."
+        },
+        {
+          "id": "c",
+          "text": "The magic number 100 should be moved to a constant, and that alone solves the design issue",
+          "isCorrect": false,
+          "explanation": "A constant helps readability, but duplicated structure still remains and can still drift."
+        },
+        {
+          "id": "d",
+          "text": "Invoice and quote totals should always use different formulas for business flexibility",
+          "isCorrect": false,
+          "explanation": "Different formulas might be valid in some products, but this snippet shows identical logic repeated without clear intent."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A VAT change to 9% was applied in checkout but forgotten in reports. What design weakness allowed this bug?",
+      "codeSnippet": "class CheckoutSummary {\n  total(subtotal: number): number {\n    return subtotal + subtotal * 0.08;\n  }\n}\nclass InvoiceExporter {\n  total(subtotal: number): number {\n    return subtotal + subtotal * 0.08;\n  }\n}\nclass RevenueDashboard {\n  total(subtotal: number): number {\n    return subtotal + subtotal * 0.08;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Tax logic is duplicated across multiple modules, so a single policy change requires coordinated edits that are easy to miss",
+          "isCorrect": true,
+          "explanation": "One business rule appears in three classes. A policy update should be one code change, not a hunt across UI, export, and analytics code."
+        },
+        {
+          "id": "b",
+          "text": "The issue is missing integration tests; with enough tests, repeated logic is not a problem",
+          "isCorrect": false,
+          "explanation": "Tests help detect drift, but they do not remove the structural cause that makes drift likely."
+        },
+        {
+          "id": "c",
+          "text": "Each class should own its own tax percentage to stay independent from shared policy decisions",
+          "isCorrect": false,
+          "explanation": "If all classes reflect one tax policy, independent values are a liability, not a benefit."
+        },
+        {
+          "id": "d",
+          "text": "The methods should be static so callers can reuse them without creating objects",
+          "isCorrect": false,
+          "explanation": "Static methods might reduce ceremony, but duplication remains unchanged."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which design is more likely to produce inconsistent behavior after a pricing rule update?",
+      "codeSnippet": "// Version A\nclass PricePolicy {\n  total(subtotal: number): number { return subtotal + subtotal * 0.08; }\n}\nclass Checkout {\n  constructor(private policy: PricePolicy) {}\n  total(s: number): number { return this.policy.total(s); }\n}\n// Version B\nclass Checkout { total(s: number): number { return s + s * 0.08; } }\nclass Invoice { total(s: number): number { return s + s * 0.08; } }\nclass Report { total(s: number): number { return s + s * 0.08; } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version B — the same policy is copied into several classes, so rule updates can land unevenly",
+          "isCorrect": true,
+          "explanation": "Version B creates multiple maintenance points for one concept. Version A centralizes policy and keeps callers aligned."
+        },
+        {
+          "id": "b",
+          "text": "Version A — centralizing policy creates hidden coupling and should be avoided in favor of local formulas",
+          "isCorrect": false,
+          "explanation": "Centralizing one shared rule is intentional coupling to the domain policy and improves consistency."
+        }
+      ]
+    }
+  ]
+}

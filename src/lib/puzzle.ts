@@ -4,10 +4,18 @@ import type { Puzzle } from '@/types/puzzle';
 
 // Server-only — do not import from Client Components.
 
+// Update this when the game officially launches.
+const LAUNCH_DATE_UTC = Date.UTC(2025, 0, 1); // 2025-01-01
+
 function getDaysSinceEpoch(date: Date): number {
   const epochMs = Date.UTC(1970, 0, 1);
   const dateMs = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
   return Math.floor((dateMs - epochMs) / (1000 * 60 * 60 * 24));
+}
+
+export function getDayNumber(date: Date): number {
+  const dateMs = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  return Math.max(1, Math.floor((dateMs - LAUNCH_DATE_UTC) / (1000 * 60 * 60 * 24)) + 1);
 }
 
 export function getAllPuzzles(): Puzzle[] {

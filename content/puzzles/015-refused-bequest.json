@@ -1,0 +1,106 @@
+{
+  "id": 15,
+  "conceptName": "Refused Bequest",
+  "category": "code-smell",
+  "definition": "A subclass inherits behavior and data it does not need or cannot meaningfully support.",
+  "ruleOfThumb": "If a child keeps saying 'not supported' to parent behavior, use composition instead of inheritance.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Chapter 3: Bad Smells in Code",
+    "page": "87",
+    "externalUrl": "https://refactoring.guru/smells/refused-bequest"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What makes this inheritance relationship suspicious?",
+      "codeSnippet": "class Employee {\n  approveBudget(amount: number): void { }\n  assignTeam(teamId: string): void { }\n  submitTimesheet(hours: number): void { }\n}\nclass Contractor extends Employee {\n  approveBudget(amount: number): void { throw new Error('Not allowed'); }\n  assignTeam(teamId: string): void { throw new Error('Not allowed'); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The child inherits operations it cannot honor, so inheritance is modeling a relationship that does not actually fit",
+          "isCorrect": true,
+          "explanation": "Contractor is forced to override core parent behavior with failures. That signals the shared abstraction is wrong."
+        },
+        {
+          "id": "b",
+          "text": "The issue is missing access modifiers on methods, not the class hierarchy",
+          "isCorrect": false,
+          "explanation": "Visibility could be tuned, but it does not explain why inherited behavior is repeatedly rejected."
+        },
+        {
+          "id": "c",
+          "text": "Throwing errors in domain methods is always invalid in enterprise systems",
+          "isCorrect": false,
+          "explanation": "Errors can be valid; here they are a symptom of bad inheritance fit."
+        },
+        {
+          "id": "d",
+          "text": "Employee should be an interface so this class can implement only what it wants",
+          "isCorrect": false,
+          "explanation": "Implementing a broad interface can still force irrelevant methods. The core issue is abstraction mismatch."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A team added MobilePrinter by extending OfficePrinter. Why did maintenance get harder immediately?",
+      "codeSnippet": "class OfficePrinter {\n  connectEthernet(): void { }\n  connectWiFi(): void { }\n  printDuplex(doc: Doc): void { }\n  staple(doc: Doc): void { }\n}\nclass MobilePrinter extends OfficePrinter {\n  connectEthernet(): void { throw new Error('No ethernet port'); }\n  staple(doc: Doc): void { throw new Error('No stapler'); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The subclass drags in parent capabilities it cannot support, so callers cannot rely on base behavior consistently",
+          "isCorrect": true,
+          "explanation": "By inheriting a desktop-office feature set, MobilePrinter inherits expectations it cannot fulfill. Composition around shared print capability would be clearer."
+        },
+        {
+          "id": "b",
+          "text": "The real issue is that printer methods should return booleans instead of void",
+          "isCorrect": false,
+          "explanation": "Return types may improve diagnostics, but they do not fix the inheritance mismatch."
+        },
+        {
+          "id": "c",
+          "text": "OfficePrinter should be final so subclasses cannot introduce unsupported behavior",
+          "isCorrect": false,
+          "explanation": "Making it final avoids subclassing but does not create the right reusable abstraction for mobile printing."
+        },
+        {
+          "id": "d",
+          "text": "The problem is that methods should be async due to I/O",
+          "isCorrect": false,
+          "explanation": "Asynchrony is orthogonal to this design smell."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which approach is more likely to break base-type assumptions in production?",
+      "codeSnippet": "// Version A\nclass StorageDevice {\n  read(): Buffer { return Buffer.from(''); }\n  write(data: Buffer): void { }\n  eject(): void { }\n}\nclass ReadOnlyArchive extends StorageDevice {\n  write(data: Buffer): void { throw new Error('Read-only'); }\n}\n// Version B\ninterface ReadableDevice { read(): Buffer; }\ninterface WritableDevice extends ReadableDevice { write(data: Buffer): void; }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A — a subclass rejects inherited behavior, so code written for StorageDevice can fail when swapped with ReadOnlyArchive",
+          "isCorrect": true,
+          "explanation": "A caller expecting any StorageDevice to support write gets runtime failure with ReadOnlyArchive. Version B models capabilities explicitly."
+        },
+        {
+          "id": "b",
+          "text": "Version B — multiple interfaces create unnecessary complexity and should be replaced by one broad base class",
+          "isCorrect": false,
+          "explanation": "Capability interfaces reduce invalid assumptions and more accurately represent device differences."
+        }
+      ]
+    }
+  ]
+}

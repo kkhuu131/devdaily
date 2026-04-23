@@ -1,0 +1,106 @@
+{
+  "id": 8,
+  "conceptName": "Long Method",
+  "category": "code-smell",
+  "definition": "A method that has grown too large, mixing multiple steps and decisions so it becomes hard to read, test, and safely change.",
+  "ruleOfThumb": "If you need to scroll to understand one method, split it into named steps.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Chapter 3: Bad Smells in Code",
+    "page": "76",
+    "externalUrl": "https://refactoring.guru/smells/long-method"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the main maintainability problem in this function?",
+      "codeSnippet": "function processCheckout(cart: Cart, user: User): Receipt {\n  const subtotal = cart.items.reduce((s, i) => s + i.price, 0);\n  const discount = user.isPremium ? subtotal * 0.1 : 0;\n  const taxed = (subtotal - discount) * 1.08;\n  if (cart.items.length === 0) throw new Error('Empty cart');\n  reserveInventory(cart.items);\n  const payment = chargeCard(user.cardToken, taxed);\n  if (!payment.ok) releaseInventory(cart.items);\n  sendConfirmationEmail(user.email, taxed);\n  logCheckout(user.id, cart.items.length, taxed);\n  return { total: taxed, paymentId: payment.id };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function combines pricing, validation, inventory updates, payment, notifications, and logging in one place, so any small change requires understanding the whole flow",
+          "isCorrect": true,
+          "explanation": "This function packs several distinct steps into one block. A change to emails, payment, or inventory forces developers to re-parse unrelated logic, increasing bug risk."
+        },
+        {
+          "id": "b",
+          "text": "The tax rate should come from configuration instead of being hardcoded",
+          "isCorrect": false,
+          "explanation": "That is a valid improvement, but it is not the core structural issue. Even with configurable tax, the function is still overloaded with too many concerns."
+        },
+        {
+          "id": "c",
+          "text": "Calling reduce on cart items is slower than using a for loop",
+          "isCorrect": false,
+          "explanation": "Micro-performance is not the central concern here. Readability and change-safety are the main problems."
+        },
+        {
+          "id": "d",
+          "text": "Returning paymentId leaks implementation details to callers",
+          "isCorrect": false,
+          "explanation": "Return shape can be debated, but it does not explain why this function is difficult to maintain. The issue is too much behavior in one method."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A bug appears in tax calculation and another in email copy. Why is this method expensive to fix safely?",
+      "codeSnippet": "class BillingService {\n  finalize(order: Order): Invoice {\n    this.assertOrder(order);\n    const subtotal = this.sumItems(order.items);\n    const coupon = this.resolveCoupon(order.couponCode);\n    const total = this.applyTax(subtotal - coupon.amount, order.country);\n    this.audit(order.id, total);\n    this.repo.saveInvoice(order.id, total, coupon.code);\n    this.analytics.track('invoice_created', { orderId: order.id, total });\n    this.mailer.send(order.email, this.renderInvoiceEmail(order, total));\n    return { orderId: order.id, total };\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Both fixes land in one high-traffic method, so touching tax logic risks side effects in persistence, analytics, or email behavior",
+          "isCorrect": true,
+          "explanation": "When one method orchestrates many steps, even localized edits require broad regression confidence. Separate named steps or smaller collaborators reduce this blast radius."
+        },
+        {
+          "id": "b",
+          "text": "The class violates dependency injection because repo and mailer are accessed directly",
+          "isCorrect": false,
+          "explanation": "DI may or may not be used behind the scenes; this snippet does not prove that issue. The visible problem is method size and breadth of responsibilities."
+        },
+        {
+          "id": "c",
+          "text": "The method should return void because invoices should be fetched from the database",
+          "isCorrect": false,
+          "explanation": "Return style is an API design choice, not the core maintainability risk shown here."
+        },
+        {
+          "id": "d",
+          "text": "Tracking analytics inside business code is always an anti-pattern",
+          "isCorrect": false,
+          "explanation": "Analytics can be acceptable depending on architecture. The bigger issue is that this one method keeps accumulating unrelated steps."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Both versions generate and send invoices. Which version is more likely to become brittle as features are added?",
+      "codeSnippet": "// Version A\nclass InvoiceFlow {\n  run(o: Order): void {\n    const total = this.calc(o);\n    this.repo.save(o.id, total);\n    this.mailer.send(o.email, this.template(o, total));\n    this.metrics.record(o.id, total);\n    this.audit.log('invoice', o.id, total);\n  }\n}\n// Version B\nclass InvoiceFlow {\n  run(o: Order): void { const total = this.calculateTotal(o); this.persist(o, total); this.notify(o, total); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A — the flow keeps accumulating concrete steps inline, so each new requirement extends an already crowded method",
+          "isCorrect": true,
+          "explanation": "Version A is still readable now, but it grows linearly as responsibilities are added. Version B uses higher-level steps, creating places to extract detail without inflating run()."
+        },
+        {
+          "id": "b",
+          "text": "Version B — delegating to helper methods hides complexity and makes debugging impossible",
+          "isCorrect": false,
+          "explanation": "Naming and delegation are key readability tools. Debugging becomes easier when each step has a clear purpose and narrower scope."
+        }
+      ]
+    }
+  ]
+}

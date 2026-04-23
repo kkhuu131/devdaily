@@ -1,0 +1,105 @@
+{
+  "id": 10,
+  "conceptName": "Interface Segregation Principle",
+  "category": "solid",
+  "definition": "Clients should not be forced to depend on methods they do not use.",
+  "ruleOfThumb": "If implementers keep adding 'not supported' methods, split the interface.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Agile Software Development: Principles, Patterns, and Practices",
+    "chapter": "Chapter 12: Interface Segregation Principle",
+    "externalUrl": "https://refactoring.guru/interface-segregation-principle"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What's the clearest signal this interface is poorly sliced?",
+      "codeSnippet": "interface Worker {\n  code(): void;\n  attendMeetings(): void;\n  deploy(): void;\n  reviewPRs(): void;\n}\nclass BuildBot implements Worker {\n  code(): void { }\n  attendMeetings(): void { throw new Error('Not supported'); }\n  deploy(): void { }\n  reviewPRs(): void { throw new Error('Not supported'); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "BuildBot must implement operations it cannot meaningfully support, so it depends on interface members unrelated to its role",
+          "isCorrect": true,
+          "explanation": "The interface mixes human-team behaviors and automation behaviors. That forces some implementers to fake or reject methods, indicating the interface is too broad."
+        },
+        {
+          "id": "b",
+          "text": "Interfaces should never contain more than three methods",
+          "isCorrect": false,
+          "explanation": "Method count is not the principle. An interface can have many methods if every client needs them."
+        },
+        {
+          "id": "c",
+          "text": "Throwing errors in method bodies is always incorrect in object-oriented design",
+          "isCorrect": false,
+          "explanation": "Throws can be valid in many contexts. Here they are a symptom that the abstraction is forcing unrelated behavior."
+        },
+        {
+          "id": "d",
+          "text": "The interface should be a type alias instead, since classes overcomplicate this design",
+          "isCorrect": false,
+          "explanation": "Alias vs interface syntax is not the core issue. The problem is coupling unrelated capabilities into one contract."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A mobile app only needs read access, but it must import this whole API contract. What design risk does that create?",
+      "codeSnippet": "interface UserApi {\n  getUser(id: string): Promise<User>;\n  listUsers(): Promise<User[]>;\n  createUser(input: UserInput): Promise<User>;\n  deleteUser(id: string): Promise<void>;\n  resetPassword(id: string): Promise<void>;\n}\nclass MobileDirectory {\n  constructor(private api: UserApi) {}\n  async search(): Promise<User[]> { return this.api.listUsers(); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The read-only client is coupled to write/delete/reset operations it never uses, so changes to admin behavior can ripple into mobile code unnecessarily",
+          "isCorrect": true,
+          "explanation": "Even if MobileDirectory only calls listUsers, it still depends on a broad contract. Splitting read and admin interfaces reduces needless coupling and rebuild risk."
+        },
+        {
+          "id": "b",
+          "text": "The issue is that search() should cache listUsers() to avoid repeated network calls",
+          "isCorrect": false,
+          "explanation": "Caching can help performance, but it does not address the abstraction boundary problem described."
+        },
+        {
+          "id": "c",
+          "text": "Promises are the problem; synchronous interfaces avoid this kind of coupling",
+          "isCorrect": false,
+          "explanation": "Sync vs async does not change whether clients are forced to depend on methods they do not need."
+        },
+        {
+          "id": "d",
+          "text": "The contract is acceptable because TypeScript tree-shaking removes unused interface members",
+          "isCorrect": false,
+          "explanation": "Tree-shaking affects runtime bundles, not design-level coupling and dependency churn."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which design better protects small clients from unrelated API changes?",
+      "codeSnippet": "// Version A\ninterface DocumentService {\n  read(id: string): Doc;\n  write(doc: Doc): void;\n  publish(id: string): void;\n  archive(id: string): void;\n}\n// Version B\ninterface DocumentReader { read(id: string): Doc; }\ninterface DocumentWriter { write(doc: Doc): void; }\ninterface DocumentPublisher { publish(id: string): void; archive(id: string): void; }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A — every client must depend on read, write, publish, and archive together, even if it needs only one capability",
+          "isCorrect": true,
+          "explanation": "Broad interfaces create unnecessary compile-time and conceptual coupling. Version B lets each client depend only on the contract it actually uses."
+        },
+        {
+          "id": "b",
+          "text": "Version B — splitting interfaces increases the chance of inconsistent behavior and should be avoided",
+          "isCorrect": false,
+          "explanation": "Consistency should be enforced through tests and composition, not by forcing all capabilities into one interface."
+        }
+      ]
+    }
+  ]
+}

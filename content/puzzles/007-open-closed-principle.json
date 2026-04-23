@@ -1,0 +1,105 @@
+{
+  "id": 7,
+  "conceptName": "Open/Closed Principle",
+  "category": "solid",
+  "definition": "Software entities should be open for extension but closed for modification — add new behavior by adding new code, not by changing existing code.",
+  "ruleOfThumb": "If adding a new feature requires editing code that already works, something wants to be abstracted.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Agile Software Development: Principles, Patterns, and Practices",
+    "chapter": "Chapter 9: The Open-Closed Principle",
+    "externalUrl": "https://refactoring.guru/replace-conditional-with-polymorphism"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "This works today. But every time the company adds a new payment method, what has to happen?",
+      "codeSnippet": "class PaymentProcessor {\n  process(method: string, amount: number): Receipt {\n    if (method === 'credit_card') {\n      return this.stripe.charge(amount);\n    } else if (method === 'paypal') {\n      return this.paypal.send(amount);\n    } else if (method === 'bank_transfer') {\n      return this.bank.transfer(amount);\n    }\n    throw new Error('Unsupported method');\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A developer has to open and edit this class — even though adding a new payment method shouldn't require touching the logic for existing, working ones",
+          "isCorrect": true,
+          "explanation": "Every new payment method modifies a class that already correctly handles credit cards, PayPal, and bank transfers. A bug introduced while adding crypto payments could break credit card processing — two things that have nothing to do with each other."
+        },
+        {
+          "id": "b",
+          "text": "The method needs to be split so each payment type has its own dedicated class immediately",
+          "isCorrect": false,
+          "explanation": "That is the direction of the fix, but this option describes what to do, not what the problem is. The question asks what has to happen every time a method is added — the answer is that existing, working code gets modified."
+        },
+        {
+          "id": "c",
+          "text": "The payment method names should be stored in a config file, not hardcoded",
+          "isCorrect": false,
+          "explanation": "Moving the strings to config doesn't change the structure — process() still needs a new branch for each method. The problem is the conditional dispatch, not where the strings live."
+        },
+        {
+          "id": "d",
+          "text": "The method should return Promise<Receipt> since payment processing involves network calls",
+          "isCorrect": false,
+          "explanation": "Making it async is a valid production concern, but it doesn't address why this design becomes risky as payment methods accumulate. The issue is that growth requires modification, not the return type."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A new developer asks: 'What do I need to change to add JSON export?' What's the honest answer about this design?",
+      "codeSnippet": "class ReportFormatter {\n  format(report: Report, outputType: string): string {\n    if (outputType === 'html') {\n      return `<h1>${report.title}</h1><p>${report.body}</p>`;\n    } else if (outputType === 'markdown') {\n      return `# ${report.title}\\n\\n${report.body}`;\n    } else if (outputType === 'plain') {\n      return `${report.title}\\n${report.body}`;\n    }\n    return '';\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "'Edit this class and add a branch' — and that's the problem. Every new format requires modifying a class that already correctly handles HTML, markdown, and plain text.",
+          "isCorrect": true,
+          "explanation": "The honest answer is also the revealing one. A design where adding JSON export requires editing HTML and markdown logic means the class is not closed for modification. If the JSON branch introduces a bug, all three existing formats are in the same blast radius."
+        },
+        {
+          "id": "b",
+          "text": "'Add a new method alongside format()' — that's the intended extension mechanism",
+          "isCorrect": false,
+          "explanation": "Adding a formatJSON() method is just another form of modification. The class still grows, and the caller still needs to be updated to know when to call formatJSON() vs format(). The conditional logic just moves."
+        },
+        {
+          "id": "c",
+          "text": "'Add a new file that imports this class' — it was designed with that extension point in mind",
+          "isCorrect": false,
+          "explanation": "A new file that imports ReportFormatter wouldn't add a new format — it would just use the existing ones. To add JSON support, you still have to open and modify this class."
+        },
+        {
+          "id": "d",
+          "text": "'Nothing — the class already returns an empty string for unknown types, so JSON would silently return empty'",
+          "isCorrect": false,
+          "explanation": "Returning empty for unknown types is a silent failure, not an extension point. A new developer following that logic would get no output and no error — a confusing debugging experience."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "The team needs to add email notifications alongside existing Slack alerts. Which version requires editing already-shipped code to do it?",
+      "codeSnippet": "// Version A\nclass NotificationService {\n  send(type: string, message: string): void {\n    if (type === 'slack')   this.slack.post(message);\n    if (type === 'webhook') this.http.post(this.webhookUrl, message);\n  }\n}\n// Version B\ninterface Notifier { send(message: string): void; }\nclass NotificationService {\n  constructor(private notifiers: Notifier[]) {}\n  broadcast(message: string): void {\n    this.notifiers.forEach(n => n.send(message));\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A — adding email means opening send() and editing a method that already handles Slack and webhook correctly, putting both at risk",
+          "isCorrect": true,
+          "explanation": "Version A grows by modification: open the class, add a branch, risk the existing channels. Version B grows by extension: create an EmailNotifier class, pass it in at construction. The broadcast() method and existing Slack/webhook notifiers are never touched."
+        },
+        {
+          "id": "b",
+          "text": "Version B — you still have to update the code that constructs NotificationService to pass in EmailNotifier, which is also a modification",
+          "isCorrect": false,
+          "explanation": "This is a subtle but important distinction: updating the composition root (where objects are wired together) is not the same as modifying business logic. The notification service's behavior — its routing, its channels, its existing tests — is untouched. Only the wiring changes, which is expected and safe."
+        }
+      ]
+    }
+  ]
+}

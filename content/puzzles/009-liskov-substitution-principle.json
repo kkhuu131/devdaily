@@ -1,0 +1,105 @@
+{
+  "id": 9,
+  "conceptName": "Liskov Substitution Principle",
+  "category": "solid",
+  "definition": "Subtypes should be usable anywhere their base type is expected without breaking correctness or surprising callers.",
+  "ruleOfThumb": "If a subclass needs special exceptions to the parent contract, the inheritance model is wrong.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Agile Software Development: Principles, Patterns, and Practices",
+    "chapter": "Chapter 8: Liskov Substitution Principle",
+    "externalUrl": "https://refactoring.guru/liskov-substitution-principle"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Why does this inheritance setup create surprising behavior for callers?",
+      "codeSnippet": "class Rectangle {\n  setWidth(w: number): void { }\n  setHeight(h: number): void { }\n  area(): number { return 0; }\n}\nclass Square extends Rectangle {\n  setWidth(w: number): void { super.setWidth(w); super.setHeight(w); }\n  setHeight(h: number): void { super.setWidth(h); super.setHeight(h); }\n}\nfunction stretchWidth(r: Rectangle): void {\n  r.setWidth(10);\n  r.setHeight(2);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Code that works for Rectangle assumes width and height can change independently, but Square silently changes both, so callers get unexpected results",
+          "isCorrect": true,
+          "explanation": "stretchWidth expects separate setters to stay separate. Square changes that contract, so replacing Rectangle with Square breaks caller expectations."
+        },
+        {
+          "id": "b",
+          "text": "Square should be sealed so no class can extend it further",
+          "isCorrect": false,
+          "explanation": "Sealing might limit future inheritance, but it does not solve the immediate substitutability problem between Rectangle and Square."
+        },
+        {
+          "id": "c",
+          "text": "The issue is that area() should be abstract in Rectangle",
+          "isCorrect": false,
+          "explanation": "Abstract vs concrete area() is unrelated. The key issue is behavioral contract mismatch in setters."
+        },
+        {
+          "id": "d",
+          "text": "The problem is performance because Square calls two superclass methods for each setter",
+          "isCorrect": false,
+          "explanation": "Extra calls are negligible here. The real danger is incorrect behavior when callers rely on Rectangle semantics."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A service accepts any repository implementing BaseRepo. What contract break makes this subtype dangerous?",
+      "codeSnippet": "interface BaseRepo {\n  save(user: User): void;\n}\nclass SqlRepo implements BaseRepo {\n  save(user: User): void { /* persists valid user */ }\n}\nclass ReadOnlyRepo implements BaseRepo {\n  save(user: User): void {\n    throw new Error('Writes disabled in read-only mode');\n  }\n}\nfunction register(repo: BaseRepo, user: User): void { repo.save(user); }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The subtype strengthens preconditions by rejecting a call that base-type clients assume is valid, so replacement breaks normal usage",
+          "isCorrect": true,
+          "explanation": "register expects any BaseRepo to support save for valid users. ReadOnlyRepo violates that expectation by turning a normal operation into an exception."
+        },
+        {
+          "id": "b",
+          "text": "The subtype should return a boolean status from save instead of throwing",
+          "isCorrect": false,
+          "explanation": "Return style may be improved, but the issue is that the subtype cannot honor the parent contract at all."
+        },
+        {
+          "id": "c",
+          "text": "The function register should catch all errors to make substitution safe",
+          "isCorrect": false,
+          "explanation": "Defensive catch blocks hide symptoms. They do not fix a subtype that violates promised behavior."
+        },
+        {
+          "id": "d",
+          "text": "Interfaces are the issue; using abstract classes would prevent this design problem",
+          "isCorrect": false,
+          "explanation": "Contract violations can happen with interfaces or abstract classes. The mechanism is not the root cause."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Both approaches model online notifications. Which one is more likely to violate caller expectations when swapped in?",
+      "codeSnippet": "// Version A\ninterface Notifier { send(msg: string): void; }\nclass EmailNotifier implements Notifier {\n  send(msg: string): void { this.smtp.send(msg); }\n}\nclass DisabledNotifier implements Notifier {\n  send(msg: string): void { throw new Error('Notifications disabled'); }\n}\n// Version B\ninterface Notifier { send(msg: string): boolean; }\nclass DisabledNotifier implements Notifier {\n  send(msg: string): boolean { return false; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A — one implementation turns a normal send call into an exception path, so code expecting any Notifier to be callable can fail unexpectedly",
+          "isCorrect": true,
+          "explanation": "In A, callers of Notifier.send may not be prepared for disabled mode to throw. In B, the contract explicitly models failure in the return value for all implementations."
+        },
+        {
+          "id": "b",
+          "text": "Version B — returning false hides failure and therefore makes substitution less safe than throwing",
+          "isCorrect": false,
+          "explanation": "Returning false is safe if it is part of the explicit contract. What matters is consistency across implementations, not throw vs return style."
+        }
+      ]
+    }
+  ]
+}
