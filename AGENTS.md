@@ -205,48 +205,136 @@ export interface Puzzle {
 
 ## Design System
 
+### Aesthetic Direction
+
+**"Terminal Craft"** — The entire UI speaks the language of the developer's environment. JetBrains Mono is used for ALL text (UI labels, prompts, option text, metadata), not just code blocks. Code snippets feel native, not intrusive. The only typographic exception is the concept name on the reveal screen, which breaks into a large display serif (`Instrument Serif`, italic) — that single moment of contrast is the "aha" made physical.
+
+The palette is warm-dark: near-black with a faint warm undertone (not cold VS Code blue-gray), amber as the brand/interactive accent (achievement, CRT terminal energy), and keeps green/red for correct/wrong. This avoids generic "dark SaaS" aesthetics while remaining immediately comfortable for developers.
+
+**The one unforgettable detail:** Selecting a wrong answer plays a subtle `shake` animation. Correct answer glows briefly before auto-advancing. Concept name typewriter-animates in on the reveal.
+
 ### Colors (CSS Variables — Use These Names Everywhere)
 
 ```css
 :root {
-  /* Dark mode (default) */
-  --bg-base: #0f1117;           /* page background */
-  --bg-surface: #1a1f2e;        /* cards, modals */
-  --bg-elevated: #252d3d;       /* hover states, active elements */
-  --bg-code: #1e2433;           /* code snippet background */
-  
-  --text-primary: #e8eaf0;      /* main text */
-  --text-secondary: #8892a4;    /* labels, metadata */
-  --text-muted: #4a5568;        /* placeholders, disabled */
-  
-  --accent-brand: #5b8dee;      /* primary interactive — links, selected state */
-  --accent-correct: #4ade80;    /* correct answer */
-  --accent-wrong: #f97316;      /* wrong answer */
-  --accent-neutral: #6b7280;    /* unselected answer borders */
-  
-  --border-subtle: #2d3748;     /* card borders */
-  --border-focus: #5b8dee;      /* focus rings */
+  /* Backgrounds — warm dark, not cold blue-gray */
+  --bg-base: #0e0d0b;              /* page background */
+  --bg-surface: #181714;           /* cards */
+  --bg-elevated: #222018;          /* hover states, elevated elements */
+  --bg-code: #131210;              /* code block — slightly deeper */
+
+  /* Text — warm off-white, not stark */
+  --text-primary: #e4e0d4;
+  --text-secondary: #7a7568;       /* labels, metadata */
+  --text-muted: #3e3b34;           /* placeholders, disabled */
+
+  /* Accents */
+  --accent-brand: #d4a843;         /* amber — interactive, selected, focus rings */
+  --accent-brand-subtle: #2e2510;  /* amber tint for selected-option background */
+  --accent-correct: #52c97a;       /* green — correct answer */
+  --accent-correct-subtle: #0e2a18;/* green tint background */
+  --accent-wrong: #e0574f;         /* warm red — wrong answer */
+  --accent-wrong-subtle: #2a0e0e;  /* red tint background */
+  --accent-neutral: #3a3730;       /* unselected answer borders */
+
+  /* Borders */
+  --border-subtle: #252320;        /* card borders */
+  --border-focus: #d4a843;         /* focus ring — same as brand */
 }
 ```
 
 Never use arbitrary hex values in components — always reference CSS variables.
 
 ### Typography
-- **UI text:** `font-sans` (Inter via next/font)
-- **Code snippets:** `font-mono` (JetBrains Mono via next/font/local or Google Fonts)
-- **Concept name on reveal:** Large, bold, slightly tracked out — this is the "aha moment"
+
+**This is load-bearing — do not deviate.**
+
+- **ALL UI text:** JetBrains Mono — labels, prompts, option text, headers, metadata, everything
+- **Code snippets:** JetBrains Mono (same font — seamless integration)
+- **Concept name on reveal ONLY:** `Instrument Serif` (Google Fonts), large, italic — the single typographic contrast in the app
 - Never use font sizes below `text-sm` (14px) for readable content
+- Set JetBrains Mono as the Tailwind `fontFamily.mono` default AND as `fontFamily.sans` so `font-sans` classes pick it up automatically
+
+Load both fonts via `next/font/google` in `src/app/layout.tsx`.
+
+### Shiki Syntax Highlighting Theme
+
+Use Shiki's built-in `"tokyo-night"` theme — it has warm dark tones that complement the palette. Do not use a custom theme unless `"tokyo-night"` visually clashes after testing.
 
 ### Spacing
+
 Follow Tailwind's default scale. No custom spacing values.
 
+### Page Layout
+
+Single column, `max-w-[640px]`, horizontally centered, `px-4` on mobile. The puzzle IS the page — no sidebars, no distractions.
+
+**Game page structure (top → bottom):**
+```
+Header: [DevDaily]                     [🔥 12  #47]
+────────────────────────────────────────────────────
+Progress: ● ● ○   Q2 of 3
+────────────────────────────────────────────────────
+Question card:
+  Prompt text (mono, text-base)
+  Code snippet (full width within card, if applicable)
+
+Answer options (vertical stack):
+  [a]  Option text here...
+  [b]  Option text here...
+  [c]  Option text here...
+  [d]  Option text here...
+────────────────────────────────────────────────────
+Footer: minimal — "devdaily.dev" only
+```
+
+**Reveal screen structure (replaces question + options):**
+```
+  2 / 3   ✅ ✅ ❌
+
+  Today's concept
+
+  Feature Envy                  ← Instrument Serif, large, italic, amber
+  ────────────────────────────
+  Plain English definition here...
+
+  Rule of thumb
+  ┃ If a method uses more features of another class
+  ┃ than its own, move it there.        ← amber left-border block
+
+  Martin Fowler · Refactoring · Ch. 3
+
+  [Copy result]          [Learn more →]
+```
+
 ### Component States for AnswerOption
-The answer button has exactly these 4 states — handle all of them:
-1. **Default:** Dark border, text readable, hover brightens slightly
-2. **Selected (before submit):** Brand accent border, slightly lighter background
-3. **Correct (after submit):** Green border + green tint background, checkmark icon
-4. **Wrong (after submit):** Orange border + orange tint background, X icon, 
-   AND show which was correct in green
+
+The answer button has exactly these 5 states — handle all of them:
+
+1. **Default:** `border: 1px solid var(--accent-neutral)`, muted letter label (a/b/c/d), hover slides right `translateX(2px)` with border lightening
+2. **Selected (before reveal):** `border-left: 3px solid var(--accent-brand)`, `background: var(--accent-brand-subtle)`, amber letter label
+3. **Correct (after reveal):** `border: 1px solid var(--accent-correct)`, `background: var(--accent-correct-subtle)`, green letter label with ✓, brief glow pulse animation
+4. **Wrong (selected, after reveal):** `border: 1px solid var(--accent-wrong)`, `background: var(--accent-wrong-subtle)`, red label with ✗, `shake` animation on reveal
+5. **Correct (unselected, after reveal):** Show which was correct — green border, no tint background, no icon — subtly indicated so player learns
+
+Letter labels (a/b/c/d): fixed `w-6` column, vertically centered, `text-xs font-mono`. Option text: full remaining width.
+
+### Micro-interactions
+
+- **Wrong answer:** `shake` keyframe — 3 small horizontal oscillations over 250ms, amplitude 4px
+- **Correct answer glow:** brief `box-shadow` pulse in green, 400ms, fades out
+- **Concept name reveal:** typewriter animation — each character appears with 35ms stagger delay
+- **Progress dot transition:** active dot has slow scale pulse (1.0 → 1.2 → 1.0, 1.5s loop)
+- **Answer hover:** `transform: translateX(2px)` + border color lightens, `transition: all 100ms ease`
+- **Auto-advance between questions:** 1200ms pause after answer reveal, then question fades out and next fades in (opacity 0→1, 200ms)
+
+### Code Snippet Component
+
+- Background: `var(--bg-code)` — visually distinct from card surface
+- Left accent border: `border-l-2 border-[var(--accent-brand)]`
+- Language badge: top-right corner, `text-xs` mono, `color: var(--text-muted)`
+- Padding: `p-4`, `rounded-sm` (4px — sharp, not pill)
+- No line numbers by default (adds noise for 8-15 line snippets)
 
 ---
 
@@ -412,15 +500,20 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
 ## Current Build Phase
 
-**Phase 1 — Content schema and sample data**
+**Phase 1 — Content schema and sample data** ✅ COMPLETE
 
 Tasks:
-- [ ] Define TypeScript types in `src/types/puzzle.ts`
-- [ ] Write sample puzzle JSON for Feature Envy (`content/puzzles/001-feature-envy.json`)
-- [ ] Write `src/lib/puzzle.ts` with `getPuzzleForDate()` and `getAllPuzzles()`
-- [ ] Write `src/lib/storage.ts` for localStorage read/write
+- [x] Define TypeScript types in `src/types/puzzle.ts`
+- [x] Write sample puzzle JSON for Feature Envy (`content/puzzles/001-feature-envy.json`)
+- [x] Write `src/lib/puzzle.ts` with `getPuzzleForDate()` and `getAllPuzzles()`
+- [x] Write `src/lib/storage.ts` for localStorage read/write
 
-Update this section as phases complete. Before starting Phase 2, confirm Phase 1 is done.
+**Phase 2 — UI components** (not started)
+
+Before starting Phase 2, answer:
+- What exact animation should play when a user selects a wrong answer?
+- Should Q3 always be "which one" format or can it vary?
+- Does the auto-advance delay (1200ms) feel right or adjust it?
 
 ---
 
@@ -438,6 +531,27 @@ Before Phase 3 (game logic):
 Before Phase 6 (auth):
 - Decide: does streak count days you got 0/3, or only days you completed the puzzle?
 - Decide: is there a "streak freeze" mechanic or hard reset on missed days?
+
+---
+
+## Known Gotchas & Technical Decisions
+
+### Stack Versions (differ from what CLAUDE.md originally stated)
+- **Next.js 16** is installed (not 14). The AGENTS.md header already flags breaking changes — always read `node_modules/next/dist/docs/` before writing Next.js-specific code.
+- **Tailwind CSS v4** is installed. Configuration lives entirely in `src/app/globals.css` via `@theme inline { ... }` blocks — there is no `tailwind.config.ts`. Custom tokens (fonts, colors) are registered there, not in a config file.
+- In Next.js 16 dynamic routes, `params` is a `Promise` — always `await params` before destructuring.
+
+### `src/lib/puzzle.ts` — Server Only
+Uses Node.js `fs` and `process.cwd()`. Never import this file in a Client Component — it will fail at runtime. Only call from Server Components or Route Handlers.
+
+### Puzzle Ordering Is Append-Only
+`getAllPuzzles()` sorts JSON files alphabetically and assigns puzzles to dates by `daysSinceEpoch % puzzles.length`. Inserting a new puzzle in the middle of the sequence shifts all subsequent puzzle assignments. Always append new puzzles (e.g., `002-...`, `003-...`) — never insert.
+
+### Date Arithmetic Uses UTC
+`getPuzzleForDate` uses `Date.UTC` for epoch calculation so puzzle resets happen at midnight UTC regardless of the player's timezone. Consistent with the midnight UTC reset rule in game mechanics.
+
+### `getAllPuzzles()` Has No Cache
+Reads and parses all files on every call. Acceptable for Phase 1 with a handful of puzzles. Add `React.cache()` or module-level memoization in Phase 3 before scaling up puzzle count.
 
 ---
 
