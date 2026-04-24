@@ -1,4 +1,5 @@
 import type { Puzzle } from '@/types/puzzle';
+import { isAnswerCorrect } from '@/lib/puzzle-utils';
 
 export function generateShareText(params: {
   dayNumber: number;
@@ -11,14 +12,12 @@ export function generateShareText(params: {
   const marks = puzzle.questions.map((q, i) => {
     const chosen = answers[i];
     if (!chosen) return '⬜';
-    const correct = q.options.find((o) => o.isCorrect)?.id;
-    return chosen === correct ? '✅' : '❌';
+    return isAnswerCorrect(chosen, q, puzzle.id) ? '✅' : '❌';
   });
 
-  const score = puzzle.questions.filter((q, i) => {
-    const correct = q.options.find((o) => o.isCorrect)?.id;
-    return answers[i] === correct;
-  }).length;
+  const score = puzzle.questions.filter((q, i) =>
+    isAnswerCorrect(answers[i], q, puzzle.id),
+  ).length;
 
   const streakLine = streak > 0 ? ` • Streak: ${streak}` : '';
 

@@ -7,14 +7,13 @@ import type { Puzzle } from '@/types/puzzle';
 // Update this when the game officially launches.
 const LAUNCH_DATE_UTC = Date.UTC(2026, 3, 23); // 2026-04-23
 
-function getDaysSinceEpoch(date: Date): number {
-  const epochMs = Date.UTC(1970, 0, 1);
-  const dateMs = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
-  return Math.floor((dateMs - epochMs) / (1000 * 60 * 60 * 24));
-}
-
+/** Day index since launch; advances at 00:00 UTC (same boundary as `/api/puzzle` and client storage date keys). */
 export function getDayNumber(date: Date): number {
-  const dateMs = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  const dateMs = Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+  );
   return Math.max(1, Math.floor((dateMs - LAUNCH_DATE_UTC) / (1000 * 60 * 60 * 24)) + 1);
 }
 

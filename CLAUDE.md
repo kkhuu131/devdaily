@@ -1,3 +1,8 @@
+## Daily puzzle calendar (timezone)
+- The **puzzle day** is the **UTC calendar date**: `getDayNumber()` in `src/lib/puzzle.ts` uses `getUTCFullYear` / `getUTCMonth` / `getUTCDate()` anchored to `LAUNCH_DATE_UTC`. The home page, `/api/puzzle`, archive “today” checks, and the **next-puzzle countdown** all use this same **00:00 UTC** rollover.
+- **Persisted play state** (`src/lib/storage.ts`) and `PuzzleSession`’s saved `date` field use `getUtcPuzzleDateKey()` from `src/lib/daily-calendar.ts` so localStorage clears when the **UTC** puzzle date changes—not the player’s local midnight.
+- **Why UTC, not local midnight:** SSR and the API run with a server clock (often UTC on hosts like Vercel). Using one global calendar keeps the HTML payload, API, countdown, and storage in sync without per-user timezone headers. If we ever switch to “local daily,” we would need an explicit viewer timezone (or client-only day selection) everywhere above.
+
 ## Key pages
 - `/` now renders the daily puzzle flow server-side, pre-highlights snippets with Shiki, and hydrates into `PuzzleSession` with `puzzle`, `dayNumber`, and highlighted HTML.
 - `/about` renders a static explainer page (game framing, how-it-works flow, reading list, and external GitHub CTA) using the same day-aware header/footer shell as the home page.
@@ -10,7 +15,7 @@
 - `ArchiveSession` mirrors that flow (same Continue + fade + `QuestionCard` `key`) but stores progress under `devdaily_archive_${puzzleId}` without date-based resets, so archive attempts remain resumable indefinitely.
 - `QuestionCard` supports `multiple-choice` and `which-one`, shuffles options via `getShuffledOptions()` (seeded by `puzzleId` + question id), shows the selected option’s explanation after lock, and wires **Continue →** to the parent instead of auto-advancing on a timer.
 - `AnswerOption` handles lock states and correctness visuals.
-- `RevealScreen` and `ShareCard` generate and present daily result output, including per-question marks and overall score formatting.
+- `RevealScreen` and `ShareCard` generate and present daily result output, including per-question marks and overall score formatting; `RevealScreen` embeds `NextPuzzleCountdown`, a client ticker until the next UTC midnight using `daily-calendar.ts`.
 - `Header` now makes the `DevDaily` wordmark a home link (`/`) so non-home routes can return to the current daily puzzle in one click.
 - `Footer` includes low-contrast navigation links for `/about` and `/archive`; the archive route now resolves to the historical puzzle index.
 
@@ -23,6 +28,7 @@
 - Archive day routes intentionally block non-past days (`/archive/[day]` must be `< today`); today's puzzle only lives at `/`.
 - Archive localStorage state is intentionally date-agnostic (`devdaily_archive_${puzzleId}`), unlike daily session storage, so old attempts persist until manually cleared.
 - Authoring `which-one` puzzles: alternate which version (A vs B) is correct across puzzles so the answer is not always “Version A”; see `AGENTS.md` for the full bias rule and required option prefixes.
+- **Shuffled answers:** anything that scores or displays correctness from stored answer **ids** must use `isAnswerCorrect()` in `puzzle-utils.ts` (same `getShuffledOptions` seed as `QuestionCard`). Comparing to the raw JSON `isCorrect` option id breaks after shuffle/remap.
 
 ## Key Supabase tables
 - None in this project yet.

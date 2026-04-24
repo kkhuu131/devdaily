@@ -1,6 +1,8 @@
 'use client';
 
 import type { Puzzle } from '@/types/puzzle';
+import { isAnswerCorrect } from '@/lib/puzzle-utils';
+import NextPuzzleCountdown from '@/components/ui/NextPuzzleCountdown';
 import ShareCard from '@/components/ui/ShareCard';
 
 interface Props {
@@ -47,8 +49,7 @@ function ScoreRow({
 }) {
   const marks = puzzle.questions.map((q, i) => {
     const chosen = answers[i];
-    const correct = q.options.find((o) => o.isCorrect)?.id;
-    return chosen === correct ? '✅' : '❌';
+    return isAnswerCorrect(chosen, q, puzzle.id) ? '✅' : '❌';
   });
 
   const score = marks.filter((m) => m === '✅').length;
@@ -82,7 +83,9 @@ export default function RevealScreen({ puzzle, answers, dayNumber, streak }: Pro
       >
         <ScoreRow puzzle={puzzle} answers={answers} />
 
-        <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
+        <NextPuzzleCountdown />
+
+        <p className="text-xs mb-2 mt-5" style={{ color: 'var(--text-muted)' }}>
           Today&apos;s concept
         </p>
 

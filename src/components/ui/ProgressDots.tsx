@@ -1,4 +1,5 @@
 import type { GameState, Puzzle } from '@/types/puzzle';
+import { isAnswerCorrect } from '@/lib/puzzle-utils';
 
 interface Props {
   phase: GameState;
@@ -12,8 +13,9 @@ function getQuestionResult(
   questionIndex: number,
 ): 'unanswered' | 'correct' | 'wrong' {
   if (!answer) return 'unanswered';
-  const correct = puzzle.questions[questionIndex]?.options.find((o) => o.isCorrect)?.id;
-  return answer === correct ? 'correct' : 'wrong';
+  const question = puzzle.questions[questionIndex];
+  if (!question) return 'unanswered';
+  return isAnswerCorrect(answer, question, puzzle.id) ? 'correct' : 'wrong';
 }
 
 const QUESTION_PHASES: GameState[] = ['QUESTION_1', 'QUESTION_2', 'QUESTION_3'];

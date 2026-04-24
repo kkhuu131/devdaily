@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import type { GameState, Puzzle } from '@/types/puzzle';
+import { getUtcPuzzleDateKey } from '@/lib/daily-calendar';
 import { getStoredGameState, saveGameState } from '@/lib/storage';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -23,8 +24,7 @@ interface SessionState {
 }
 
 function todayString(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  return getUtcPuzzleDateKey();
 }
 
 const QUESTION_PHASES: GameState[] = ['QUESTION_1', 'QUESTION_2', 'QUESTION_3'];

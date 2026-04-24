@@ -8,8 +8,9 @@
   --bg-code: #131210;
 
   --text-primary: #e4e0d4;
-  --text-secondary: #7a7568;
-  --text-muted: #3e3b34;
+  /* Warm grays tuned for dark UI: muted must stay well above bg luminance for xs copy */
+  --text-secondary: #a39e90;
+  --text-muted: #8c877a;
 
   --accent-brand: #d4a843;
   --accent-brand-subtle: #2e2510;

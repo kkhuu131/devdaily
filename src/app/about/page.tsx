@@ -153,7 +153,7 @@ export default function AboutPage() {
 
         {/* GitHub */}
         <a
-          href="https://github.com/devdaily/devdaily"
+          href="https://github.com/kkhuu131/devdaily"
           target="_blank"
           rel="noopener noreferrer"
           className="about-ext-link w-full py-2.5 rounded-sm text-sm text-center mb-6"

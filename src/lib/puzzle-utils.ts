@@ -1,4 +1,4 @@
-import type { AnswerOption, QuestionFormat } from '@/types/puzzle';
+import type { AnswerOption, Question, QuestionFormat } from '@/types/puzzle';
 
 const OPTION_IDS = ['a', 'b', 'c', 'd'] as const;
 
@@ -30,4 +30,15 @@ export function getShuffledOptions(
   const seed = puzzleId * 10 + questionId;
   const shuffled = seededShuffle([...options], seed);
   return shuffled.map((opt, i) => ({ ...opt, id: OPTION_IDS[i] }));
+}
+
+/** Same correctness rule as QuestionCard (accounts for shuffle + remapped ids). */
+export function isAnswerCorrect(
+  answer: string | null,
+  question: Question,
+  puzzleId: number,
+): boolean {
+  if (!answer) return false;
+  const options = getShuffledOptions(question.options, puzzleId, question.id, question.format);
+  return options.find((o) => o.id === answer)?.isCorrect ?? false;
 }

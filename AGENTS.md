@@ -564,10 +564,10 @@ Before Phase 6 (auth):
 Uses Node.js `fs` and `process.cwd()`. Never import this file in a Client Component — it will fail at runtime. Only call from Server Components or Route Handlers.
 
 ### Puzzle Ordering Is Append-Only
-`getAllPuzzles()` sorts JSON files alphabetically and assigns puzzles to dates by `daysSinceEpoch % puzzles.length`. Inserting a new puzzle in the middle of the sequence shifts all subsequent puzzle assignments. Always append new puzzles (e.g., `002-...`, `003-...`) — never insert.
+`getAllPuzzles()` sorts JSON files alphabetically and assigns puzzles to dates by `(getDayNumber(date) - 1) % puzzles.length`. Inserting a new puzzle in the middle of the sequence shifts all subsequent puzzle assignments. Always append new puzzles (e.g., `002-...`, `003-...`) — never insert.
 
 ### Date Arithmetic Uses UTC
-`getPuzzleForDate` uses `Date.UTC` for epoch calculation so puzzle resets happen at midnight UTC regardless of the player's timezone. Consistent with the midnight UTC reset rule in game mechanics.
+`getDayNumber()` uses `Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())` relative to `LAUNCH_DATE_UTC`, so the daily index advances at **00:00 UTC**. Client storage and the next-puzzle countdown use the same boundary via `src/lib/daily-calendar.ts` (`getUtcPuzzleDateKey`, `getMsUntilNextUtcMidnight`).
 
 ### `getAllPuzzles()` Has No Cache
 Reads and parses all files on every call. Acceptable for Phase 1 with a handful of puzzles. Add `React.cache()` or module-level memoization in Phase 3 before scaling up puzzle count.
