@@ -1,6 +1,5 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { loadEnvConfig } from '@next/env';
 import type { Category, Puzzle } from '../src/types/puzzle';
 import { getDayNumber } from '../src/lib/puzzle';
 import { normalizeConceptKey, hasConceptConflict, findSemanticNearDuplicate } from './lib/dedupe';
@@ -22,11 +21,31 @@ type CliArgs = {
 };
 
 const ROOT = process.cwd();
-loadEnvConfig(ROOT);
-
 const PUZZLES_DIR = path.join(ROOT, 'content', 'puzzles');
 const MANIFEST_PATH = path.join(ROOT, 'content', 'puzzle-manifest.json');
 const CONFIG_PATH = path.join(ROOT, 'config', 'puzzle-pipeline.json');
+
+async function loadLocalEnvIfPresent(): Promise<void> {
+  const envFiles = ['.env.local', '.env'];
+  for (const file of envFiles) {
+    const target = path.join(ROOT, file);
+    try {
+      const raw = await fs.readFile(target, 'utf-8');
+      for (const line of raw.split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const idx = trimmed.indexOf('=');
+        if (idx <= 0) continue;
+        const key = trimmed.slice(0, idx).trim();
+        if (!key || process.env[key] !== undefined) continue;
+        const value = trimmed.slice(idx + 1).trim().replace(/^['"]|['"]$/g, '');
+        process.env[key] = value;
+      }
+    } catch {
+      // ignore missing local env files
+    }
+  }
+}
 
 const MODEL = process.env.OPENAI_PUZZLE_MODEL || 'gpt-5-mini';
 
@@ -422,6 +441,8 @@ function normalizeGeneratedPuzzle(puzzle: Puzzle): Puzzle {
 }
 
 async function main() {
+  await loadLocalEnvIfPresent();
+
   const args = parseArgs(process.argv.slice(2));
   const config = await readJson<PipelineConfig>(CONFIG_PATH);
   const manifest = await readJson<PuzzleManifest>(MANIFEST_PATH);
