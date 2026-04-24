@@ -52,3 +52,8 @@ export interface StoredGameState {
   state: GameState;
   puzzleId: number;
 }
+
+export interface StreakState {
+  current: number;
+  lastCompletedDate: string | null;
+}

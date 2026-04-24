@@ -1,0 +1,72 @@
+name: Generate Puzzles
+
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: Number of puzzles to generate
+        required: false
+        default: ""
+      dry_run:
+        description: Run generation without writing files
+        required: false
+        default: "false"
+  schedule:
+    - cron: "0 9 * * 1"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate puzzles
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_PUZZLE_MODEL: ${{ vars.OPENAI_PUZZLE_MODEL }}
+        run: |
+          COUNT="${{ github.event.inputs.count || '' }}"
+          DRY_RUN="${{ github.event.inputs.dry_run || 'false' }}"
+          COUNT_ARG=""
+          if [ -n "$COUNT" ]; then
+            COUNT_ARG="--count $COUNT"
+          fi
+          if [ "$DRY_RUN" = "true" ]; then
+            npm run puzzles:generate -- $COUNT_ARG --dry-run --seed "${{ github.run_id }}"
+          else
+            npm run puzzles:generate -- $COUNT_ARG --seed "${{ github.run_id }}"
+          fi
+
+      - name: Validate generated content with build
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: npm run build
+
+      - name: Create Pull Request
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore(content): generate next puzzle batch"
+          title: "chore(content): generate next puzzle batch"
+          body: |
+            ## Summary
+            - automated weekly puzzle generation run
+            - updates `content/puzzles` and `content/puzzle-manifest.json`
+            - generated via `scripts/generate-puzzles.ts`
+          branch: "automation/puzzle-generation-${{ github.run_id }}"
+          labels: |
+            automation
+            content

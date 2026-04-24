@@ -1,0 +1,106 @@
+{
+  "id": 24,
+  "conceptName": "Command-Query Separation",
+  "category": "principle",
+  "definition": "A method should either perform an action that changes system state (a command) or return data (a query), but not both in the same operation.",
+  "ruleOfThumb": "If a function mutates state, make it return void (or a confirmation). If it returns data, it should not have side effects.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Bliki (article)",
+    "chapter": "Command-Query Separation",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/CommandQuerySeparation.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the function below. Which statement most accurately describes its behavior relative to the rule that separates state changes from data-returning operations?",
+      "codeSnippet": "function getUserAndMarkSeen(userId: string): User | null {\n  const user = userRepo.findById(userId);\n  if (!user) return null;\n  user.lastSeen = new Date();\n  userRepo.save(user);\n  return user;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This is a pure query: it only fetches and returns data without changing state.",
+          "isCorrect": false,
+          "explanation": "Incorrect. The function updates lastSeen and persists the change before returning the user, so it performs a mutation in addition to returning data. That makes it stateful, not a pure query."
+        },
+        {
+          "id": "b",
+          "text": "This is a command that returns nothing of interest; returning the object is just convenience.",
+          "isCorrect": false,
+          "explanation": "Incorrect. A command should not return domain data to avoid mixing responsibilities. Returning the user here is meaningful data, not just a void confirmation, so the function mixes behaviors."
+        },
+        {
+          "id": "c",
+          "text": "It mixes mutation and data return, which violates the separation between side effects and queries.",
+          "isCorrect": true,
+          "explanation": "Correct. The function both mutates persistent state (marks lastSeen and saves) and returns domain data. That combination creates hidden coupling and surprises callers; better to split into two operations (mutate, then query) or return a simple success indicator."
+        },
+        {
+          "id": "d",
+          "text": "This is acceptable because callers often need the updated object immediately, so combining is pragmatic.",
+          "isCorrect": false,
+          "explanation": "Incorrect. While convenient, combining can hide transactional boundaries, complicate testing, and make caching or concurrency bugs more likely. Prefer explicit operations when side effects matter."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Consider this class. Which assessment best captures the trade-offs of its increment method?",
+      "codeSnippet": "class Counter {\n  private count = 0;\n\n  increment(): number {\n    this.count += 1;\n    return this.count;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This is fine: returning the new count is a harmless convenience and doesn't violate any rule.",
+          "isCorrect": false,
+          "explanation": "Not quite. Returning the new count mixes a state change with a data return. While convenient, it ties callers to immediate knowledge of mutated state and can encourage brittle code, especially in concurrent contexts."
+        },
+        {
+          "id": "b",
+          "text": "It mixes mutation with a returned value; a clearer design separates state change (void) and reading (a getter).",
+          "isCorrect": true,
+          "explanation": "Correct. Separating the command (increment) from the query (getCount) keeps intentions explicit: commands change state and return minimal confirmation, queries report state. That improves testability and reduces surprising dependencies on return values."
+        },
+        {
+          "id": "c",
+          "text": "It's preferable because returning the new value reduces race windows for callers needing the latest count.",
+          "isCorrect": false,
+          "explanation": "Partially plausible but misleading. Returning a computed value doesn't eliminate race conditions: the returned number reflects state at one instant and may be stale immediately. Proper synchronization or clearer API separation is a safer approach."
+        },
+        {
+          "id": "d",
+          "text": "This is acceptable only if the method is private and used internally for convenience.",
+          "isCorrect": false,
+          "explanation": "Not necessarily. Making it private hides the problem from external callers, but internal mixing can still make the class harder to reason about and test. The core concern is the mixed responsibility, not just visibility."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two alternate implementations are under consideration. Which version is the better design for predictable behavior, easier testing, and safer composition in a real system?",
+      "codeSnippet": "/* Version A */\nclass OrderServiceA {\n  applyDiscount(orderId: string, percent: number): Order {\n    const order = repo.find(orderId);\n    order.total = order.total * (1 - percent / 100);\n    repo.save(order);\n    return order;\n  }\n}\n\n/* Version B */\nclass OrderServiceB {\n  applyDiscount(orderId: string, percent: number): void {\n    const order = repo.find(orderId);\n    order.total = order.total * (1 - percent / 100);\n    repo.save(order);\n  }\n\n  getOrder(orderId: string): Order {\n    return repo.find(orderId);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is better because returning the updated object is a useful shortcut and reduces extra repository calls.",
+          "isCorrect": false,
+          "explanation": "Wrong choice. Although returning the updated order looks convenient, it couples callers to the side effect's timing and shape. It blurs transactional and caching boundaries, makes errors harder to handle (did save succeed?), and increases test coupling because tests must account for both mutation and returned state in one call."
+        },
+        {
+          "id": "b",
+          "text": "Version B is better because it separates the side effect from data retrieval, making behavior explicit and easier to test and compose.",
+          "isCorrect": true,
+          "explanation": "Correct. Splitting the mutating operation (applyDiscount -> void) from the query (getOrder) makes intentions explicit: commands change state (and can return only status if needed), queries report state. This reduces surprises around transactions, improves mocking and unit testing (you can stub the command independently of data reads), and simplifies caching and concurrency reasoning. It's the preferable structure in larger systems where clarity and composability matter (see Fowler's discussion on the separation between side effects and queries)."
+        }
+      ]
+    }
+  ]
+}

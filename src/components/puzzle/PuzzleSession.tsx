@@ -3,7 +3,12 @@
 import { useState, useEffect, useRef } from 'react';
 import type { GameState, Puzzle } from '@/types/puzzle';
 import { getUtcPuzzleDateKey } from '@/lib/daily-calendar';
-import { getStoredGameState, saveGameState } from '@/lib/storage';
+import {
+  getCurrentStreak,
+  getStoredGameState,
+  recordDailyCompletion,
+  saveGameState,
+} from '@/lib/storage';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ProgressDots from '@/components/ui/ProgressDots';
@@ -36,16 +41,25 @@ export default function PuzzleSession({ puzzle, dayNumber, highlightedSnippets }
     locked: false,
     fadingOut: false,
   });
+  const [streak, setStreak] = useState(0);
 
   const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    const todayKey = todayString();
+    setStreak(getCurrentStreak(todayKey));
+
     const stored = getStoredGameState();
     if (stored && stored.puzzleId === puzzle.id) {
       const phase: GameState =
         stored.state === 'REVEALING' ? 'REVEALED' : stored.state;
       setSession({ phase, answers: stored.answers, locked: false, fadingOut: false });
+
+      if (stored.state === 'COMPLETED') {
+        // Backfill streaks for already-completed days if the user refreshes.
+        setStreak(recordDailyCompletion(todayKey));
+      }
     }
   }, [puzzle.id]);
 
@@ -106,7 +120,9 @@ export default function PuzzleSession({ puzzle, dayNumber, highlightedSnippets }
       if (nextPhase === 'REVEALING') {
         setSession((prev) => ({ ...prev, phase: 'REVEALING', fadingOut: false, locked: false }));
         revealTimer.current = setTimeout(() => {
+          const streakAfterComplete = recordDailyCompletion(todayString());
           setSession((prev) => ({ ...prev, phase: 'REVEALED' }));
+          setStreak(streakAfterComplete);
           saveGameState({
             date: todayString(),
             answers: session.answers,
@@ -128,7 +144,7 @@ export default function PuzzleSession({ puzzle, dayNumber, highlightedSnippets }
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header dayNumber={dayNumber} streak={0} />
+      <Header dayNumber={dayNumber} streak={streak} />
 
       {showProgress && (
         <ProgressDots
@@ -196,7 +212,7 @@ export default function PuzzleSession({ puzzle, dayNumber, highlightedSnippets }
             puzzle={puzzle}
             answers={session.answers}
             dayNumber={dayNumber}
-            streak={0}
+            streak={streak}
           />
         )}
       </main>

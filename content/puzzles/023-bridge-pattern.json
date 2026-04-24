@@ -1,0 +1,106 @@
+{
+  "id": 23,
+  "conceptName": "Bridge Pattern",
+  "category": "design-pattern",
+  "definition": "A structural pattern that decouples an abstraction from its implementation so the two can vary independently. It splits a class into two orthogonal class hierarchies: an abstraction that holds a reference to an implementor interface, allowing independent extension of both sides.",
+  "ruleOfThumb": "When you need to support orthogonal dimensions of variability (e.g., shapes × rendering backends), prefer an abstraction that delegates to an implementation interface rather than creating a subclass for every combination.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Structural Patterns — Bridge",
+    "page": "p. 185–192",
+    "externalUrl": "https://en.wikipedia.org/wiki/Bridge_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which of the following best captures the primary intent of this structural approach?",
+      "codeSnippet": null,
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Separate an abstraction from its concrete implementations so both hierarchies can be extended independently.",
+          "isCorrect": true,
+          "explanation": "Correct — the pattern introduces an implementor interface that the abstraction delegates to. This avoids a combinatorial explosion of subclasses by allowing each axis to evolve on its own."
+        },
+        {
+          "id": "b",
+          "text": "Convert one incompatible interface into another so legacy code can be reused by new clients.",
+          "isCorrect": false,
+          "explanation": "Incorrect — that describes an adapter-style translation that wraps an interface to match another, not the separation of abstraction and implementation into parallel hierarchies."
+        },
+        {
+          "id": "c",
+          "text": "Attach additional responsibilities to an object dynamically by wrapping it with decorator objects.",
+          "isCorrect": false,
+          "explanation": "Incorrect — decorators add behavior at runtime by chaining wrappers, while this structural approach separates roles so both can be extended independently."
+        },
+        {
+          "id": "d",
+          "text": "Provide a surrogate or placeholder for another object to control access to it.",
+          "isCorrect": false,
+          "explanation": "Incorrect — that matches the proxy concept (controlling access), which is different from splitting abstraction and implementation into orthogonal hierarchies."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the code below, which statement most accurately describes the relationship between Shape and Renderer?",
+      "codeSnippet": "interface Renderer {\n  renderCircle(radius: number): void\n}\n\nclass CanvasRenderer implements Renderer {\n  renderCircle(r: number) { console.log('canvas ' + r) }\n}\n\nclass Circle {\n  constructor(private renderer: Renderer, private radius: number) {}\n  draw() { this.renderer.renderCircle(this.radius) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The shape delegates drawing to a separate implementor interface so new shapes and new renderers can be added independently.",
+          "isCorrect": true,
+          "explanation": "Correct — Circle holds a Renderer reference and delegates rendering calls. This lets you add more Renderer implementations or more Shape subclasses without creating one class per combination."
+        },
+        {
+          "id": "b",
+          "text": "This is purely a strategy for selecting a runtime algorithm; shape and renderer are the same axis of variation.",
+          "isCorrect": false,
+          "explanation": "Incorrect — although Strategy and this approach both use composition, here the intent is to maintain two orthogonal hierarchies (shape types vs rendering backends), not merely to swap algorithms for a single behavior axis."
+        },
+        {
+          "id": "c",
+          "text": "Renderer is an adapter that translates Circle calls to platform-specific drawing APIs.",
+          "isCorrect": false,
+          "explanation": "Incorrect — while a renderer may wrap platform specifics, an adapter's intent is interface translation for compatibility. The code shows a deliberate separation to allow independent extension, not only translation."
+        },
+        {
+          "id": "d",
+          "text": "Circle is a factory that produces renderer instances based on radius.",
+          "isCorrect": false,
+          "explanation": "Incorrect — Circle receives a Renderer via constructor injection and delegates to it; it doesn't instantiate or choose renderers based on state, so it isn't acting as a factory."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better supports adding new shapes and new rendering backends independently?",
+      "codeSnippet": "// Version A\ninterface Renderer { render(shapeDesc: string): void }\nclass VectorRenderer implements Renderer { render(s: string) { console.log('vector ' + s) } }\nclass RasterRenderer implements Renderer { render(s: string) { console.log('raster ' + s) } }\n\nabstract class Shape {\n  constructor(protected renderer: Renderer) {}\n  abstract draw(): void\n}\n\nclass Circle extends Shape {\n  constructor(renderer: Renderer, private radius: number) { super(renderer) }\n  draw() { this.renderer.render(`Circle radius ${this.radius}`) }\n}\n\n// Version B\nabstract class ShapeV2 { abstract draw(): void }\nclass VectorCircle extends ShapeV2 { draw() { /* vector-specific circle drawing */ } }\nclass RasterCircle extends ShapeV2 { draw() { /* raster-specific circle drawing */ } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is better because it composes a renderer with shapes, enabling independent extension of both hierarchies.",
+          "isCorrect": true,
+          "explanation": "Version A keeps shape responsibilities separate from rendering implementations by composition: a single Renderer interface can be implemented in many ways while Shape subclasses focus on geometry. This avoids combinatorial subclasses (one class per shape × backend), reduces duplication, and isolates changes to one axis."
+        },
+        {
+          "id": "b",
+          "text": "Version B is better because one class per shape-backend pair allows each combination to optimize its drawing code without indirection.",
+          "isCorrect": false,
+          "explanation": "While direct classes can optimize per combination, Version B scales poorly: adding a new renderer requires adding N subclasses for N shapes, increasing maintenance and coupling. It also scatters rendering concerns across many classes rather than centralizing backend-specific code."
+        }
+      ]
+    }
+  ]
+}

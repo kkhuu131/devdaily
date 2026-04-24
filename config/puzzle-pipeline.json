@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "generation": {
+    "defaultBatchSize": 28,
+    "maxBatchSize": 60,
+    "targetDaysAheadBuffer": 35,
+    "scheduleCronUtc": "0 9 * * 1"
+  },
+  "rotation": {
+    "policy": "no-repeat-until-exhausted",
+    "seasonRepeatGapDays": 120,
+    "activeSeasonId": "season-1"
+  },
+  "mixTargets": {
+    "code-smell": 0.22,
+    "solid": 0.2,
+    "design-pattern": 0.3,
+    "principle": 0.16,
+    "refactoring": 0.12
+  },
+  "quality": {
+    "requireDifficultyOrder": true,
+    "requireSingleCorrectOptionForMcAndWhichOne": true,
+    "maxConceptNameLength": 60
+  }
+}

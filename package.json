@@ -7,7 +7,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "puzzles:generate": "tsx scripts/generate-puzzles.ts",
+    "puzzles:generate:dry": "tsx scripts/generate-puzzles.ts --dry-run"
   },
   "dependencies": {
     "next": "16.2.4",
@@ -23,6 +25,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
+    "tsx": "^4.20.6",
     "typescript": "^5"
   }
 }

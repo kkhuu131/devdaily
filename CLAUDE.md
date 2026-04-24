@@ -8,10 +8,11 @@
 - `/about` renders a static explainer page (game framing, how-it-works flow, reading list, and external GitHub CTA) using the same day-aware header/footer shell as the home page.
 - `/archive` renders a server-side list of completed day numbers (newest first), includes concept/category metadata, and shows an explicit empty state for day 1 when no prior puzzles exist.
 - `/archive/[day]` renders archive play sessions server-side, validates that `day` is numeric and less than today (invalid/too-new values call `notFound()`), and pre-renders Shiki highlights before hydrating the client session.
+- `/robots.txt` and `/sitemap.xml` are generated from App Router metadata routes (`src/app/robots.ts`, `src/app/sitemap.ts`) and should always reflect the canonical site URL from `src/lib/site.ts`.
 - `/api/puzzle` returns `{ puzzle, dayNumber }` for the current UTC day using `getPuzzleForDate()` and `getDayNumber()`.
 
 ## Shared components
-- `PuzzleSession` owns the quiz state machine (`IDLE -> QUESTION_1..3 -> REVEALING -> REVEALED`), persists progress by `puzzleId` in localStorage, advances questions only after **Continue** (short fade-out between questions), and saves `COMPLETED` using the live `session.answers` snapshot.
+- `PuzzleSession` owns the quiz state machine (`IDLE -> QUESTION_1..3 -> REVEALING -> REVEALED`), persists progress by `puzzleId` in localStorage, advances questions only after **Continue** (short fade-out between questions), and saves `COMPLETED` using the live `session.answers` snapshot; on completion it updates UTC-based streak state and passes streak to `Header`/`RevealScreen`/share output.
 - `ArchiveSession` mirrors that flow (same Continue + fade + `QuestionCard` `key`) but stores progress under `devdaily_archive_${puzzleId}` without date-based resets, so archive attempts remain resumable indefinitely.
 - `QuestionCard` supports `multiple-choice` and `which-one`, shuffles options via `getShuffledOptions()` (seeded by `puzzleId` + question id), shows the selected option’s explanation after lock, and wires **Continue →** to the parent instead of auto-advancing on a timer.
 - `AnswerOption` handles lock states and correctness visuals.
@@ -29,6 +30,10 @@
 - Archive localStorage state is intentionally date-agnostic (`devdaily_archive_${puzzleId}`), unlike daily session storage, so old attempts persist until manually cleared.
 - Authoring `which-one` puzzles: alternate which version (A vs B) is correct across puzzles so the answer is not always “Version A”; see `AGENTS.md` for the full bias rule and required option prefixes.
 - **Shuffled answers:** anything that scores or displays correctness from stored answer **ids** must use `isAnswerCorrect()` in `puzzle-utils.ts` (same `getShuffledOptions` seed as `QuestionCard`). Comparing to the raw JSON `isCorrect` option id breaks after shuffle/remap.
+- Puzzle ordering now prefers `content/puzzle-manifest.json` season order (with file-sort fallback). If manifest and puzzle files drift, runtime still works, but intended “season” sequencing can silently change.
+- `scripts/generate-puzzles.ts` loads `.env.local` via `@next/env`; plain shell env assumptions are not required locally, but CI still needs `OPENAI_API_KEY` secret configured.
+- OpenAI Structured Outputs in strict mode requires nullable fields to still be listed in `required`; schema relaxations must follow that constraint or the API returns 400 before generation.
+- Generation is buffer-aware by default (no `--count`): it skips when `targetDaysAheadBuffer` is already satisfied, so “scheduled run succeeded” can legitimately produce no new files.
 
 ## Key Supabase tables
 - None in this project yet.

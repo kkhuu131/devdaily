@@ -1,0 +1,255 @@
+{
+  "version": 1,
+  "generatedAtUtc": "2026-04-24T02:19:56.173Z",
+  "seasons": [
+    {
+      "id": "season-1",
+      "label": "Season 1",
+      "status": "active",
+      "puzzleIds": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ]
+    }
+  ],
+  "concepts": [
+    {
+      "conceptKey": "feature-envy",
+      "conceptName": "Feature Envy",
+      "category": "code-smell",
+      "firstPuzzleId": 1,
+      "lastPuzzleId": 1,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "god-class",
+      "conceptName": "God Class",
+      "category": "code-smell",
+      "firstPuzzleId": 2,
+      "lastPuzzleId": 2,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "primitive-obsession",
+      "conceptName": "Primitive Obsession",
+      "category": "code-smell",
+      "firstPuzzleId": 3,
+      "lastPuzzleId": 3,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "single-responsibility-principle",
+      "conceptName": "Single Responsibility Principle",
+      "category": "solid",
+      "firstPuzzleId": 4,
+      "lastPuzzleId": 4,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "law-of-demeter",
+      "conceptName": "Law of Demeter",
+      "category": "principle",
+      "firstPuzzleId": 5,
+      "lastPuzzleId": 5,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "strategy-pattern",
+      "conceptName": "Strategy Pattern",
+      "category": "design-pattern",
+      "firstPuzzleId": 6,
+      "lastPuzzleId": 6,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "open-closed-principle",
+      "conceptName": "Open/Closed Principle",
+      "category": "solid",
+      "firstPuzzleId": 7,
+      "lastPuzzleId": 7,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "long-method",
+      "conceptName": "Long Method",
+      "category": "code-smell",
+      "firstPuzzleId": 8,
+      "lastPuzzleId": 8,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "liskov-substitution-principle",
+      "conceptName": "Liskov Substitution Principle",
+      "category": "solid",
+      "firstPuzzleId": 9,
+      "lastPuzzleId": 9,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "interface-segregation-principle",
+      "conceptName": "Interface Segregation Principle",
+      "category": "solid",
+      "firstPuzzleId": 10,
+      "lastPuzzleId": 10,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "dependency-inversion-principle",
+      "conceptName": "Dependency Inversion Principle",
+      "category": "solid",
+      "firstPuzzleId": 11,
+      "lastPuzzleId": 11,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "shotgun-surgery",
+      "conceptName": "Shotgun Surgery",
+      "category": "code-smell",
+      "firstPuzzleId": 12,
+      "lastPuzzleId": 12,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "duplicate-code",
+      "conceptName": "Duplicate Code",
+      "category": "code-smell",
+      "firstPuzzleId": 13,
+      "lastPuzzleId": 13,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "data-clumps",
+      "conceptName": "Data Clumps",
+      "category": "code-smell",
+      "firstPuzzleId": 14,
+      "lastPuzzleId": 14,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "refused-bequest",
+      "conceptName": "Refused Bequest",
+      "category": "code-smell",
+      "firstPuzzleId": 15,
+      "lastPuzzleId": 15,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "composition-over-inheritance",
+      "conceptName": "Composition Over Inheritance",
+      "category": "principle",
+      "firstPuzzleId": 16,
+      "lastPuzzleId": 16,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "tell-dont-ask",
+      "conceptName": "Tell, Don't Ask",
+      "category": "principle",
+      "firstPuzzleId": 17,
+      "lastPuzzleId": 17,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "observer-pattern",
+      "conceptName": "Observer Pattern",
+      "category": "design-pattern",
+      "firstPuzzleId": 18,
+      "lastPuzzleId": 18,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "adapter-pattern",
+      "conceptName": "Adapter Pattern",
+      "category": "design-pattern",
+      "firstPuzzleId": 19,
+      "lastPuzzleId": 19,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "template-method-pattern",
+      "conceptName": "Template Method Pattern",
+      "category": "design-pattern",
+      "firstPuzzleId": 20,
+      "lastPuzzleId": 20,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "command-pattern",
+      "conceptName": "Command Pattern",
+      "category": "design-pattern",
+      "firstPuzzleId": 21,
+      "lastPuzzleId": 21,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "factory-method-pattern",
+      "conceptName": "Factory Method Pattern",
+      "category": "design-pattern",
+      "firstPuzzleId": 22,
+      "lastPuzzleId": 22,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "bridge-pattern",
+      "conceptName": "Bridge Pattern",
+      "category": "design-pattern",
+      "firstPuzzleId": 23,
+      "lastPuzzleId": 23,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "command-query-separation",
+      "conceptName": "Command-Query Separation",
+      "category": "principle",
+      "firstPuzzleId": 24,
+      "lastPuzzleId": 24,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    }
+  ]
+}

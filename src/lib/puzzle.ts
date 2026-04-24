@@ -24,10 +24,12 @@ export function getAllPuzzles(): Puzzle[] {
     .filter((f) => f.endsWith('.json'))
     .sort();
 
-  return files.map((file) => {
+  const puzzles = files.map((file) => {
     const raw = fs.readFileSync(path.join(puzzlesDir, file), 'utf-8').replace(/^﻿/, '');
     return JSON.parse(raw) as Puzzle;
   });
+
+  return applyManifestRotation(puzzles);
 }
 
 export function getPuzzleForDate(date: Date): Puzzle {
@@ -42,4 +44,46 @@ export function getPuzzleByIndex(index: number): Puzzle {
   const puzzles = getAllPuzzles();
   if (puzzles.length === 0) throw new Error('No puzzles found');
   return puzzles[((index % puzzles.length) + puzzles.length) % puzzles.length];
+}
+
+interface PuzzleManifest {
+  seasons?: Array<{
+    id: string;
+    label?: string;
+    status?: 'active' | 'closed' | 'planned';
+    puzzleIds?: number[];
+  }>;
+}
+
+function readPuzzleManifest(): PuzzleManifest | null {
+  try {
+    const target = path.join(process.cwd(), 'content', 'puzzle-manifest.json');
+    const raw = fs.readFileSync(target, 'utf-8').replace(/^﻿/, '');
+    return JSON.parse(raw) as PuzzleManifest;
+  } catch {
+    return null;
+  }
+}
+
+function applyManifestRotation(puzzles: Puzzle[]): Puzzle[] {
+  const manifest = readPuzzleManifest();
+  const seasons = manifest?.seasons;
+  if (!seasons || seasons.length === 0) return puzzles;
+
+  const byId = new Map<number, Puzzle>(puzzles.map((p) => [p.id, p]));
+  const orderedIds = seasons
+    .filter((s) => s.status !== 'planned')
+    .flatMap((s) => s.puzzleIds ?? []);
+
+  if (orderedIds.length === 0) return puzzles;
+
+  const ordered = orderedIds
+    .map((id) => byId.get(id))
+    .filter((p): p is Puzzle => Boolean(p));
+
+  // Keep any untracked puzzle ids at the end for resilience.
+  const tracked = new Set(ordered.map((p) => p.id));
+  const untracked = puzzles.filter((p) => !tracked.has(p.id)).sort((a, b) => a.id - b.id);
+
+  return [...ordered, ...untracked];
 }
