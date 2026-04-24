@@ -49,6 +49,14 @@ export default function RootLayout({
     var navEntry = performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
     var navType = navEntry && navEntry.type ? navEntry.type : "";
     if (e.persisted || navType === "back_forward") {
+      // One frame of restored HTML can show before reload; cover with app base color
+      // (--bg-base) so the transition reads as a short load, not a glitchy UI flash.
+      var bg = "#0e0d0b";
+      document.documentElement.style.backgroundColor = bg;
+      var ov = document.createElement("div");
+      ov.style.cssText = "position:fixed;inset:0;z-index:2147483647;background:" + bg + ";pointer-events:auto";
+      (document.body || document.documentElement).appendChild(ov);
+      void ov.offsetHeight;
       location.reload();
     }
   });
