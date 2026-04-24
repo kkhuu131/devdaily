@@ -37,6 +37,9 @@ export const metadata: Metadata = {
   authors: [{ name: SITE_NAME }],
   creator: SITE_NAME,
   robots: { index: true, follow: true },
+  verification: {
+    google: 'zE60Zc4TmoH1H_nY-kGE1DB-Tvn41MxB0TeuwE50oRU',
+  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
