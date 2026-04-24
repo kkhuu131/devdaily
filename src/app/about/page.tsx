@@ -2,11 +2,14 @@ import type { Metadata } from 'next';
 import { getDayNumber } from '@/lib/puzzle';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { SITE_NAME } from '@/lib/site';
 
 export const metadata: Metadata = {
-  title: 'About — DevDaily',
+  title: 'About',
   description:
     'A daily puzzle game for developers. Recognize code smells, design patterns, and SOLID principles through real scenarios.',
+  alternates: { canonical: '/about' },
+  openGraph: { url: '/about' },
 };
 
 const BOOKS = [
@@ -68,7 +71,7 @@ export default function AboutPage() {
               fontStyle: 'italic',
             }}
           >
-            DevDaily
+            {SITE_NAME}
           </h1>
           <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
             A daily puzzle game for developers. Three questions, all on the same concept —

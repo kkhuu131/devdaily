@@ -1,4 +1,8 @@
+import { SITE_NAME, getSiteHostnameForDisplay } from '@/lib/site';
+
 export default function Footer() {
+  const host = getSiteHostnameForDisplay();
+
   return (
     <footer className="mt-auto py-8">
       <div className="flex items-center justify-between px-4 max-w-[640px] mx-auto w-full">
@@ -11,7 +15,7 @@ export default function Footer() {
           </a>
         </nav>
         <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-          devdaily.dev
+          {host ?? SITE_NAME}
         </span>
       </div>
     </footer>

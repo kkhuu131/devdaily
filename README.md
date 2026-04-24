@@ -49,4 +49,6 @@ The daily calendar anchor is `LAUNCH_DATE_UTC` in `src/lib/puzzle.ts` (day 1 = t
 
 ## Deployment
 
-Any Node host that supports Next.js works (for example [Vercel](https://vercel.com)). No environment variables are required for the current build.
+**Live:** [https://playdevdaily.vercel.app](https://playdevdaily.vercel.app)
+
+Any Node host that supports Next.js works (for example [Vercel](https://vercel.com)). Optional: set `NEXT_PUBLIC_SITE_URL` to your canonical URL (see `.env.example`) so metadata and shares stay correct if the deployment hostname changes.

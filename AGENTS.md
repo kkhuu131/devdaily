@@ -76,7 +76,7 @@ Format exactly like this — no deviations:
 Q1 ✅  Q2 ✅  Q3 ❌
 Score: 2/3 • Streak: 12
 
-devdaily.dev
+playdevdaily.vercel.app
 ```
 This must work as plain text in Twitter/X, Slack, Discord, Zenn, LinkedIn.
 No images for the share card — text only so it works everywhere.
@@ -285,7 +285,7 @@ Answer options (vertical stack):
   [c]  Option text here...
   [d]  Option text here...
 ────────────────────────────────────────────────────
-Footer: minimal — "devdaily.dev" only
+Footer: minimal — hostname from deployed URL (e.g. playdevdaily.vercel.app) or wordmark
 ```
 
 **Reveal screen structure (replaces question + options):**
@@ -477,7 +477,7 @@ Enable Row Level Security on both tables. Users can only read/write their own ro
 # .env.example (commit this)
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
-NEXT_PUBLIC_SITE_URL=https://devdaily.dev
+NEXT_PUBLIC_SITE_URL=https://playdevdaily.vercel.app
 
 # .env.local (never commit)
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
@@ -526,7 +526,7 @@ Components built:
 - [x] `src/components/ui/ProgressDots.tsx` — 3-dot progress indicator with pulse animation
 - [x] `src/components/ui/StreakCounter.tsx` — flame + number (hidden when streak = 0)
 - [x] `src/components/layout/Header.tsx` — wordmark + day number + streak
-- [x] `src/components/layout/Footer.tsx` — minimal devdaily.dev
+- [x] `src/components/layout/Footer.tsx` — hostname or wordmark via `getSiteHostnameForDisplay()`
 - [x] `src/app/globals.css` — design tokens, animations, Shiki reset, @theme inline fonts
 - [x] `src/app/layout.tsx` — JetBrains Mono + Instrument Serif via next/font/google
 - [x] `src/app/page.tsx` — Server Component: loads puzzle, pre-renders Shiki HTML, mounts PuzzleSession

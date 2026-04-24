@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getAllPuzzles, getDayNumber } from '@/lib/puzzle';
 import { highlightCode } from '@/lib/highlight';
 import ArchiveSession from '@/components/puzzle/ArchiveSession';
+import { SITE_NAME } from '@/lib/site';
 
 interface Props {
   params: Promise<{ day: string }>;
@@ -12,9 +13,34 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { day } = await params;
   const dayNumber = parseInt(day, 10);
   if (isNaN(dayNumber) || dayNumber < 1) {
-    return { title: 'Archive — DevDaily' };
+    return { title: 'Archive' };
   }
-  return { title: `DevDaily #${dayNumber} — Archive` };
+
+  const todayDayNumber = getDayNumber(new Date());
+  if (dayNumber >= todayDayNumber) {
+    return { title: 'Archive' };
+  }
+
+  const allPuzzles = getAllPuzzles();
+  if (allPuzzles.length === 0) {
+    return { title: 'Archive' };
+  }
+
+  const puzzleIndex = (dayNumber - 1) % allPuzzles.length;
+  const puzzle = allPuzzles[puzzleIndex];
+  const title = `${puzzle.conceptName} (day ${dayNumber})`;
+  const description = `Replay ${SITE_NAME} puzzle #${dayNumber}: ${puzzle.conceptName}. Three questions, one reveal—archive play does not affect streaks.`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `/archive/${dayNumber}` },
+    openGraph: {
+      url: `/archive/${dayNumber}`,
+      title: `${puzzle.conceptName} · ${SITE_NAME}`,
+      description,
+    },
+  };
 }
 
 export default async function ArchiveDayPage({ params }: Props) {

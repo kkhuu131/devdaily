@@ -1,6 +1,13 @@
 import type { Metadata } from 'next';
 import { JetBrains_Mono, Instrument_Serif } from 'next/font/google';
 import Script from 'next/script';
+import {
+  SITE_DESCRIPTION,
+  SITE_KEYWORDS,
+  SITE_NAME,
+  SITE_TAGLINE,
+  getSiteUrl,
+} from '@/lib/site';
 import './globals.css';
 
 const jetbrainsMono = JetBrains_Mono({
@@ -17,11 +24,49 @@ const instrumentSerif = Instrument_Serif({
   display: 'swap',
 });
 
+const siteUrl = getSiteUrl();
+
 export const metadata: Metadata = {
-  title: 'DevDaily — Daily Software Craft Puzzles',
-  description:
-    'A daily puzzle game for developers. Recognize code smells, design patterns, and SOLID principles through real scenarios.',
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    template: `%s · ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  keywords: SITE_KEYWORDS.split(',').map((k) => k.trim()),
+  authors: [{ name: SITE_NAME }],
+  creator: SITE_NAME,
+  robots: { index: true, follow: true },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: siteUrl,
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
+  },
 };
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: SITE_NAME,
+  description: SITE_DESCRIPTION,
+  url: siteUrl,
+  applicationCategory: 'GameApplication',
+  operatingSystem: 'Web browser',
+  inLanguage: 'en',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
+  },
+} as const;
 
 export default function RootLayout({
   children,
@@ -32,6 +77,12 @@ export default function RootLayout({
       className={`${jetbrainsMono.variable} ${instrumentSerif.variable} h-full`}
     >
       <body className="min-h-full flex flex-col antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(structuredData),
+          }}
+        />
         {/* Next 16 + React 19: back/forward can restore HTML while the client stays non-interactive.
             Reload on BFCache (`persisted`) or history navigation (`navigation.type === 'back_forward'`). */}
         <Script

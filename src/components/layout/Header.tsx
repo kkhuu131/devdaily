@@ -1,3 +1,5 @@
+import { SITE_NAME } from '@/lib/site';
+
 interface Props {
   dayNumber: number;
   streak?: number;
@@ -11,7 +13,7 @@ export default function Header({ dayNumber, streak = 0 }: Props) {
         className="text-sm font-mono tracking-widest uppercase"
         style={{ color: 'var(--text-primary)', textDecoration: 'none' }}
       >
-        DevDaily
+        {SITE_NAME}
       </a>
 
       <div className="flex items-center gap-4">

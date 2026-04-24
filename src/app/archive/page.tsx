@@ -5,8 +5,11 @@ import Footer from '@/components/layout/Footer';
 import type { Category } from '@/types/puzzle';
 
 export const metadata: Metadata = {
-  title: 'Archive — DevDaily',
-  description: 'Every past DevDaily puzzle, playable without streak stakes.',
+  title: 'Archive',
+  description:
+    'Browse and replay every past daily puzzle—code smells, SOLID, design patterns, and refactoring—without affecting your streak.',
+  alternates: { canonical: '/archive' },
+  openGraph: { url: '/archive' },
 };
 
 const CATEGORY_LABEL: Record<Category, string> = {

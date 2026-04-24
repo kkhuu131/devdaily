@@ -1,5 +1,6 @@
 import type { Puzzle } from '@/types/puzzle';
 import { isAnswerCorrect } from '@/lib/puzzle-utils';
+import { getShareSiteHost } from '@/lib/site';
 
 export function generateShareText(params: {
   dayNumber: number;
@@ -27,6 +28,6 @@ export function generateShareText(params: {
     `Q1 ${marks[0]}  Q2 ${marks[1]}  Q3 ${marks[2]}`,
     `Score: ${score}/3${streakLine}`,
     '',
-    'devdaily.dev',
+    getShareSiteHost(),
   ].join('\n');
 }
