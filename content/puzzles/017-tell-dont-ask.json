@@ -1,4 +1,4 @@
-{
+﻿{
   "id": 17,
   "conceptName": "Tell, Don't Ask",
   "category": "principle",
@@ -84,20 +84,20 @@
       "format": "which-one",
       "difficulty": "hard",
       "prompt": "Which version has the more problematic design if account rules keep changing every quarter?",
-      "codeSnippet": "// Version A\nclass BillingService {\n  renew(account: Account): void {\n    if (account.getStatus() === 'past_due' && account.getRetries() < 3) {\n      account.chargeAgain();\n    }\n  }\n}\n// Version B\nclass Account {\n  renew(): void {\n    if (this.status === 'past_due' && this.retries < 3) this.chargeAgain();\n  }\n}",
+      "codeSnippet": "// Version A\nclass Account {\n  renew(): void {\n    if (this.status === 'past_due' && this.retries < 3) this.chargeAgain();\n  }\n}\n// Version B\nclass BillingService {\n  renew(account: Account): void {\n    if (account.getStatus() === 'past_due' && account.getRetries() < 3) {\n      account.chargeAgain();\n    }\n  }\n}",
       "language": "typescript",
       "options": [
         {
           "id": "a",
-          "text": "Version A — it asks for account internals to make decisions externally, so rule changes force BillingService to track Account details",
-          "isCorrect": true,
-          "explanation": "Version A couples service logic to account state semantics. Version B keeps renewal rules with account behavior, where those details already belong."
+          "text": "Version A — placing renewal logic on Account violates layering and should always be moved to a service",
+          "isCorrect": false,
+          "explanation": "Method placement depends on domain boundaries. Here, keeping state-based renewal behavior on Account improves cohesion."
         },
         {
           "id": "b",
-          "text": "Version B — placing renewal logic on Account violates layering and should always be moved to a service",
-          "isCorrect": false,
-          "explanation": "Method placement depends on domain boundaries. Here, keeping state-based renewal behavior on Account improves cohesion."
+          "text": "Version B — it asks for account internals to make decisions externally, so rule changes force BillingService to track Account details",
+          "isCorrect": true,
+          "explanation": "Version B couples service logic to account state semantics. Version A keeps renewal rules with account behavior, where those details already belong."
         }
       ]
     }

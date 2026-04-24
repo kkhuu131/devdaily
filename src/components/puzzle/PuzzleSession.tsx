@@ -19,6 +19,7 @@ interface SessionState {
   phase: GameState;
   answers: (string | null)[];
   locked: boolean;
+  fadingOut: boolean;
 }
 
 function todayString(): string {
@@ -33,9 +34,10 @@ export default function PuzzleSession({ puzzle, dayNumber, highlightedSnippets }
     phase: 'IDLE',
     answers: [null, null, null],
     locked: false,
+    fadingOut: false,
   });
 
-  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -43,13 +45,13 @@ export default function PuzzleSession({ puzzle, dayNumber, highlightedSnippets }
     if (stored && stored.puzzleId === puzzle.id) {
       const phase: GameState =
         stored.state === 'REVEALING' ? 'REVEALED' : stored.state;
-      setSession({ phase, answers: stored.answers, locked: false });
+      setSession({ phase, answers: stored.answers, locked: false, fadingOut: false });
     }
   }, [puzzle.id]);
 
   useEffect(() => {
     return () => {
-      if (advanceTimer.current) clearTimeout(advanceTimer.current);
+      if (transitionTimer.current) clearTimeout(transitionTimer.current);
       if (revealTimer.current) clearTimeout(revealTimer.current);
     };
   }, []);
@@ -58,7 +60,7 @@ export default function PuzzleSession({ puzzle, dayNumber, highlightedSnippets }
 
   function handleStart() {
     const answers: (string | null)[] = [null, null, null];
-    setSession({ phase: 'QUESTION_1', answers, locked: false });
+    setSession({ phase: 'QUESTION_1', answers, locked: false, fadingOut: false });
     saveGameState({
       date: todayString(),
       answers,
@@ -80,30 +82,42 @@ export default function PuzzleSession({ puzzle, dayNumber, highlightedSnippets }
           ? 'QUESTION_3'
           : 'REVEALING';
 
-    setSession((prev) => ({ ...prev, answers: newAnswers, locked: true }));
+    setSession((prev) => ({ ...prev, answers: newAnswers, locked: true, fadingOut: false }));
     saveGameState({
       date: todayString(),
       answers: newAnswers,
       state: nextPhase,
       puzzleId: puzzle.id,
     });
+  }
 
-    advanceTimer.current = setTimeout(() => {
+  function handleContinue() {
+    const nextPhase: GameState =
+      currentQuestionIndex === 0
+        ? 'QUESTION_2'
+        : currentQuestionIndex === 1
+          ? 'QUESTION_3'
+          : 'REVEALING';
+
+    // Fade out the current question, then advance.
+    setSession((prev) => ({ ...prev, fadingOut: true }));
+
+    transitionTimer.current = setTimeout(() => {
       if (nextPhase === 'REVEALING') {
-        setSession((prev) => ({ ...prev, phase: 'REVEALING', locked: false }));
+        setSession((prev) => ({ ...prev, phase: 'REVEALING', fadingOut: false, locked: false }));
         revealTimer.current = setTimeout(() => {
           setSession((prev) => ({ ...prev, phase: 'REVEALED' }));
           saveGameState({
             date: todayString(),
-            answers: newAnswers,
+            answers: session.answers,
             state: 'COMPLETED',
             puzzleId: puzzle.id,
           });
         }, 500);
       } else {
-        setSession((prev) => ({ ...prev, phase: nextPhase, locked: false }));
+        setSession({ phase: nextPhase, answers: session.answers, locked: false, fadingOut: false });
       }
-    }, 1200);
+    }, 200);
   }
 
   const showProgress =
@@ -145,12 +159,8 @@ export default function PuzzleSession({ puzzle, dayNumber, highlightedSnippets }
                   color: 'var(--bg-base)',
                   border: 'none',
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.opacity = '0.88';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.opacity = '1';
-                }}
+                onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.88'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
               >
                 Start today&apos;s puzzle
               </button>
@@ -160,11 +170,15 @@ export default function PuzzleSession({ puzzle, dayNumber, highlightedSnippets }
 
         {currentQuestionIndex >= 0 && (
           <QuestionCard
+            key={currentQuestionIndex}
             question={puzzle.questions[currentQuestionIndex]}
             highlightedCode={highlightedSnippets[currentQuestionIndex]}
             selectedAnswer={session.answers[currentQuestionIndex]}
             locked={session.locked}
+            fadingOut={session.fadingOut}
+            puzzleId={puzzle.id}
             onAnswer={handleAnswer}
+            onContinue={handleContinue}
           />
         )}
 

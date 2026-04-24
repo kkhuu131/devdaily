@@ -1,4 +1,4 @@
-{
+﻿{
   "id": 14,
   "conceptName": "Data Clumps",
   "category": "code-smell",
@@ -90,13 +90,13 @@
       "options": [
         {
           "id": "a",
-          "text": "Version B — repeated field packs force broad signature churn whenever address shape changes",
+          "text": "Version A — repeated field packs force broad signature churn whenever address shape changes",
           "isCorrect": true,
           "explanation": "Any new field like apartmentNumber requires editing each signature and call site. Version A evolves the address model in one place."
         },
         {
           "id": "b",
-          "text": "Version A — passing objects hides required fields and should be avoided for critical business flows",
+          "text": "Version B — passing objects hides required fields and should be avoided for critical business flows",
           "isCorrect": false,
           "explanation": "A typed object makes required fields explicit and cohesive, especially for shared domain bundles like addresses."
         }

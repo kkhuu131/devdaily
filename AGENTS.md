@@ -408,6 +408,7 @@ Every puzzle JSON must have:
 - Concept name NEVER appears in any question text or options (that's the reveal)
 - All code snippets use TypeScript unless the concept is language-agnostic (then use Python)
 - `explanation` field on each option explains WHY it's right or wrong — written in plain English
+- **`which-one` answer bias rule:** Do NOT always make Version A the problematic design. Roughly half of `which-one` questions should have Version B as the correct answer. Check the existing puzzles — if the last `which-one` puzzle had Version A as the answer, make the next one Version B, and vice versa. Option texts must be prefixed `"Version A — ..."` and `"Version B — ..."` so it's always clear which version each option refers to.
 
 ---
 

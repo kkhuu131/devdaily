@@ -1,4 +1,4 @@
-{
+﻿{
   "id": 15,
   "conceptName": "Refused Bequest",
   "category": "code-smell",
@@ -85,20 +85,20 @@
       "format": "which-one",
       "difficulty": "hard",
       "prompt": "Which approach is more likely to break base-type assumptions in production?",
-      "codeSnippet": "// Version A\nclass StorageDevice {\n  read(): Buffer { return Buffer.from(''); }\n  write(data: Buffer): void { }\n  eject(): void { }\n}\nclass ReadOnlyArchive extends StorageDevice {\n  write(data: Buffer): void { throw new Error('Read-only'); }\n}\n// Version B\ninterface ReadableDevice { read(): Buffer; }\ninterface WritableDevice extends ReadableDevice { write(data: Buffer): void; }",
+      "codeSnippet": "// Version A\ninterface ReadableDevice { read(): Buffer; }\ninterface WritableDevice extends ReadableDevice { write(data: Buffer): void; }\n// Version B\nclass StorageDevice {\n  read(): Buffer { return Buffer.from(''); }\n  write(data: Buffer): void { }\n  eject(): void { }\n}\nclass ReadOnlyArchive extends StorageDevice {\n  write(data: Buffer): void { throw new Error('Read-only'); }\n}",
       "language": "typescript",
       "options": [
         {
           "id": "a",
-          "text": "Version A — a subclass rejects inherited behavior, so code written for StorageDevice can fail when swapped with ReadOnlyArchive",
-          "isCorrect": true,
-          "explanation": "A caller expecting any StorageDevice to support write gets runtime failure with ReadOnlyArchive. Version B models capabilities explicitly."
+          "text": "Version A — multiple interfaces create unnecessary complexity and should be replaced by one broad base class",
+          "isCorrect": false,
+          "explanation": "Capability interfaces reduce invalid assumptions and more accurately represent device differences."
         },
         {
           "id": "b",
-          "text": "Version B — multiple interfaces create unnecessary complexity and should be replaced by one broad base class",
-          "isCorrect": false,
-          "explanation": "Capability interfaces reduce invalid assumptions and more accurately represent device differences."
+          "text": "Version B — a subclass rejects inherited behavior, so code written for StorageDevice can fail when swapped with ReadOnlyArchive",
+          "isCorrect": true,
+          "explanation": "A caller expecting any StorageDevice to support write gets runtime failure with ReadOnlyArchive. Version A models capabilities explicitly."
         }
       ]
     }

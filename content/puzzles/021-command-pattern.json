@@ -1,4 +1,4 @@
-{
+﻿{
   "id": 21,
   "conceptName": "Command Pattern",
   "category": "design-pattern",
@@ -84,20 +84,20 @@
       "format": "which-one",
       "difficulty": "hard",
       "prompt": "Which version is harder to extend when the product adds action history and undo?",
-      "codeSnippet": "// Version A\nclass ActionRunner {\n  run(action: string, payload: Payload): void {\n    if (action === 'rename') this.docs.rename(payload.id, payload.name);\n    if (action === 'delete') this.docs.delete(payload.id);\n  }\n}\n// Version B\ninterface Command { execute(): void; undo(): void; }\nclass ActionRunner {\n  run(cmd: Command): void { cmd.execute(); this.history.push(cmd); }\n}",
+      "codeSnippet": "// Version A\ninterface Command { execute(): void; undo(): void; }\nclass ActionRunner {\n  run(cmd: Command): void { cmd.execute(); this.history.push(cmd); }\n}\n// Version B\nclass ActionRunner {\n  run(action: string, payload: Payload): void {\n    if (action === 'rename') this.docs.rename(payload.id, payload.name);\n    if (action === 'delete') this.docs.delete(payload.id);\n  }\n}",
       "language": "typescript",
       "options": [
         {
           "id": "a",
-          "text": "Version A — requests are strings plus branching logic, so undo/history requires custom handling for every action path",
-          "isCorrect": true,
-          "explanation": "A central conditional invoker becomes complex as actions grow. B treats each request as an object with consistent execute/undo behavior."
+          "text": "Version A — command objects over-abstract simple actions and make history impossible to persist",
+          "isCorrect": false,
+          "explanation": "Command objects are exactly what make history persistence and replay practical."
         },
         {
           "id": "b",
-          "text": "Version B — command objects over-abstract simple actions and make history impossible to persist",
-          "isCorrect": false,
-          "explanation": "Command objects are exactly what make history persistence and replay practical."
+          "text": "Version B — requests are strings plus branching logic, so undo/history requires custom handling for every action path",
+          "isCorrect": true,
+          "explanation": "B central conditional invoker becomes complex as actions grow. A treats each request as an object with consistent execute/undo behavior."
         }
       ]
     }

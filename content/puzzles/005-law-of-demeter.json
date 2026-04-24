@@ -1,4 +1,4 @@
-{
+﻿{
   "id": 5,
   "conceptName": "Law of Demeter",
   "category": "principle",
@@ -84,20 +84,20 @@
       "format": "which-one",
       "difficulty": "hard",
       "prompt": "Both methods look up a shipping destination. Which version will break if the Customer model is refactored?",
-      "codeSnippet": "// Version A\nclass ShipmentService {\n  getDestination(order: Order): string {\n    return order.customer.address.city\n      + ', ' + order.customer.address.country;\n  }\n}\n\n// Version B\nclass ShipmentService {\n  getDestination(order: Order): string {\n    return order.getShippingDestination();\n  }\n}",
+      "codeSnippet": "// Version A\nclass ShipmentService {\n  getDestination(order: Order): string {\n    return order.getShippingDestination();\n  }\n}\n\n// Version B\nclass ShipmentService {\n  getDestination(order: Order): string {\n    return order.customer.address.city\n      + ', ' + order.customer.address.country;\n  }\n}",
       "language": "typescript",
       "options": [
         {
           "id": "a",
-          "text": "Version A — it reaches directly into Order's customer, then into customer's address. If the Customer or Address structure changes, ShipmentService breaks even though shipping logic hasn't changed.",
-          "isCorrect": true,
-          "explanation": "Version A knows the internal structure of both Order and Customer. Version B asks Order to format its own destination — Order is the only class that needs to know how customer and address are structured. Refactoring Customer only requires updating Order, not every class that used to navigate through it."
+          "text": "Version A — delegating to order.getShippingDestination() hides what data is actually used, making the method harder to debug",
+          "isCorrect": false,
+          "explanation": "Hiding implementation details is the goal of encapsulation, not a drawback. If ShipmentService needs to debug a wrong city, it looks at Order.getShippingDestination() — one place, clearly owned by the right class."
         },
         {
           "id": "b",
-          "text": "Version B — delegating to order.getShippingDestination() hides what data is actually used, making the method harder to debug",
-          "isCorrect": false,
-          "explanation": "Hiding implementation details is the goal of encapsulation, not a drawback. If ShipmentService needs to debug a wrong city, it looks at Order.getShippingDestination() — one place, clearly owned by the right class."
+          "text": "Version B — it reaches directly into Order's customer, then into customer's address. If the Customer or Address structure changes, ShipmentService breaks even though shipping logic hasn't changed.",
+          "isCorrect": true,
+          "explanation": "Version B knows the internal structure of both Order and Customer. Version A asks Order to format its own destination — Order is the only class that needs to know how customer and address are structured. Refactoring Customer only requires updating Order, not every class that used to navigate through it."
         }
       ]
     }

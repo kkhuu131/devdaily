@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { JetBrains_Mono, Instrument_Serif } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 
 const jetbrainsMono = JetBrains_Mono({
@@ -30,7 +31,33 @@ export default function RootLayout({
       lang="en"
       className={`${jetbrainsMono.variable} ${instrumentSerif.variable} h-full`}
     >
-      <body className="min-h-full flex flex-col antialiased">{children}</body>
+      <body className="min-h-full flex flex-col antialiased">
+        {/* Next 16 + React 19: back/forward can restore HTML while the client stays non-interactive.
+            Reload on BFCache (`persisted`) or history navigation (`navigation.type === 'back_forward'`). */}
+        <Script
+          id="dd-bfcache-reload"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+(function () {
+  function isPuzzleRoute() {
+    var p = location.pathname;
+    return p === "/" || /^\\/archive\\/\\d+$/.test(p);
+  }
+  addEventListener("pageshow", function (e) {
+    if (!isPuzzleRoute()) return;
+    var navEntry = performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
+    var navType = navEntry && navEntry.type ? navEntry.type : "";
+    if (e.persisted || navType === "back_forward") {
+      location.reload();
+    }
+  });
+})();
+`,
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

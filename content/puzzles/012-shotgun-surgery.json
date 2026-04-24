@@ -1,4 +1,4 @@
-{
+﻿{
   "id": 12,
   "conceptName": "Shotgun Surgery",
   "category": "code-smell",
@@ -90,13 +90,13 @@
       "options": [
         {
           "id": "a",
-          "text": "Version B — one policy lives in several classes, so a legal update requires coordinated edits and is easy to apply incompletely",
+          "text": "Version A — one policy lives in several classes, so a legal update requires coordinated edits and is easy to apply incompletely",
           "isCorrect": true,
           "explanation": "B turns one conceptual change into multi-location maintenance. A central policy class keeps changes atomic and auditable."
         },
         {
           "id": "b",
-          "text": "Version A — centralizing policy creates a single point of failure, so duplication is safer for compliance-heavy logic",
+          "text": "Version B — centralizing policy creates a single point of failure, so duplication is safer for compliance-heavy logic",
           "isCorrect": false,
           "explanation": "For compliance, one authoritative policy is safer because it reduces mismatch risk and simplifies verification."
         }

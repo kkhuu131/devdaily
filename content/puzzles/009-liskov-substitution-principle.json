@@ -1,4 +1,4 @@
-{
+﻿{
   "id": 9,
   "conceptName": "Liskov Substitution Principle",
   "category": "solid",
@@ -84,20 +84,20 @@
       "format": "which-one",
       "difficulty": "hard",
       "prompt": "Both approaches model online notifications. Which one is more likely to violate caller expectations when swapped in?",
-      "codeSnippet": "// Version A\ninterface Notifier { send(msg: string): void; }\nclass EmailNotifier implements Notifier {\n  send(msg: string): void { this.smtp.send(msg); }\n}\nclass DisabledNotifier implements Notifier {\n  send(msg: string): void { throw new Error('Notifications disabled'); }\n}\n// Version B\ninterface Notifier { send(msg: string): boolean; }\nclass DisabledNotifier implements Notifier {\n  send(msg: string): boolean { return false; }\n}",
+      "codeSnippet": "// Version A\ninterface Notifier { send(msg: string): boolean; }\nclass DisabledNotifier implements Notifier {\n  send(msg: string): boolean { return false; }\n}\n// Version B\ninterface Notifier { send(msg: string): void; }\nclass EmailNotifier implements Notifier {\n  send(msg: string): void { this.smtp.send(msg); }\n}\nclass DisabledNotifier implements Notifier {\n  send(msg: string): void { throw new Error('Notifications disabled'); }\n}",
       "language": "typescript",
       "options": [
         {
           "id": "a",
-          "text": "Version A — one implementation turns a normal send call into an exception path, so code expecting any Notifier to be callable can fail unexpectedly",
-          "isCorrect": true,
-          "explanation": "In A, callers of Notifier.send may not be prepared for disabled mode to throw. In B, the contract explicitly models failure in the return value for all implementations."
+          "text": "Version A — returning false hides failure and therefore makes substitution less safe than throwing",
+          "isCorrect": false,
+          "explanation": "Returning false is safe if it is part of the explicit contract. What matters is consistency across implementations, not throw vs return style."
         },
         {
           "id": "b",
-          "text": "Version B — returning false hides failure and therefore makes substitution less safe than throwing",
-          "isCorrect": false,
-          "explanation": "Returning false is safe if it is part of the explicit contract. What matters is consistency across implementations, not throw vs return style."
+          "text": "Version B — one implementation turns a normal send call into an exception path, so code expecting any Notifier to be callable can fail unexpectedly",
+          "isCorrect": true,
+          "explanation": "In B, callers of Notifier.send may not be prepared for disabled mode to throw. In A, the contract explicitly models failure in the return value for all implementations."
         }
       ]
     }

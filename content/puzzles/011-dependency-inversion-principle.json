@@ -1,4 +1,4 @@
-{
+﻿{
   "id": 11,
   "conceptName": "Dependency Inversion Principle",
   "category": "solid",
@@ -84,20 +84,20 @@
       "format": "which-one",
       "difficulty": "hard",
       "prompt": "The team plans to support SMS and push alerts in addition to email. Which version keeps business rules most insulated from those changes?",
-      "codeSnippet": "// Version A\nclass AlertUseCase {\n  notify(user: User, msg: string): void {\n    const email = new SmtpMailer();\n    email.send({ to: user.email, subject: 'Alert', body: msg });\n  }\n}\n// Version B\ninterface AlertChannel { send(user: User, msg: string): void; }\nclass AlertUseCase {\n  constructor(private channel: AlertChannel) {}\n  notify(user: User, msg: string): void { this.channel.send(user, msg); }\n}",
+      "codeSnippet": "// Version A\ninterface AlertChannel { send(user: User, msg: string): void; }\nclass AlertUseCase {\n  constructor(private channel: AlertChannel) {}\n  notify(user: User, msg: string): void { this.channel.send(user, msg); }\n}\n// Version B\nclass AlertUseCase {\n  notify(user: User, msg: string): void {\n    const email = new SmtpMailer();\n    email.send({ to: user.email, subject: 'Alert', body: msg });\n  }\n}",
       "language": "typescript",
       "options": [
         {
           "id": "a",
-          "text": "Version A — policy code is tied to one concrete channel, so each new transport requires reopening this use case",
-          "isCorrect": true,
-          "explanation": "A must be modified for SMS, push, retries, and tests. In B, the use case stays stable while channel implementations vary behind an abstraction."
+          "text": "Version A — introducing an interface adds indirection that makes the design less maintainable over time",
+          "isCorrect": false,
+          "explanation": "The added abstraction is purposeful: it isolates high-level policy from implementation churn, which improves maintainability."
         },
         {
           "id": "b",
-          "text": "Version B — introducing an interface adds indirection that makes the design less maintainable over time",
-          "isCorrect": false,
-          "explanation": "The added abstraction is purposeful: it isolates high-level policy from implementation churn, which improves maintainability."
+          "text": "Version B — policy code is tied to one concrete channel, so each new transport requires reopening this use case",
+          "isCorrect": true,
+          "explanation": "B must be modified for SMS, push, retries, and tests. In A, the use case stays stable while channel implementations vary behind an abstraction."
         }
       ]
     }

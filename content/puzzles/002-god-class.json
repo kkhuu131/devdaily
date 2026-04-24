@@ -1,4 +1,4 @@
-{
+﻿{
   "id": 2,
   "conceptName": "God Class",
   "category": "code-smell",
@@ -84,20 +84,20 @@
       "format": "which-one",
       "difficulty": "hard",
       "prompt": "A team is debating how to structure their reporting service. Which version will become a maintenance problem as reporting requirements grow?",
-      "codeSnippet": "// Version A\nclass ReportService {\n  generateSales(): SalesReport { }\n  generateUsers(): UserReport { }\n  renderPDF(r: Report): Buffer { }\n  emailTo(r: Report, addr: string): void { }\n  scheduleDaily(r: Report): void { }\n}\n// Version B\nclass SalesReporter { generate(): SalesReport { } }\nclass UserReporter { generate(): UserReport { } }\nclass ReportExporter {\n  toPDF(r: Report): Buffer { }\n  emailTo(r: Report, addr: string): void { }\n}",
+      "codeSnippet": "// Version A\nclass SalesReporter { generate(): SalesReport { } }\nclass UserReporter { generate(): UserReport { } }\nclass ReportExporter {\n  toPDF(r: Report): Buffer { }\n  emailTo(r: Report, addr: string): void { }\n}\n// Version B\nclass ReportService {\n  generateSales(): SalesReport { }\n  generateUsers(): UserReport { }\n  renderPDF(r: Report): Buffer { }\n  emailTo(r: Report, addr: string): void { }\n  scheduleDaily(r: Report): void { }\n}",
       "language": "typescript",
       "options": [
         {
           "id": "a",
-          "text": "Version A — one class handles two kinds of report generation, PDF rendering, email delivery, and scheduling. Every new reporting feature lands here.",
-          "isCorrect": true,
-          "explanation": "Version A is already a miniature God Class for the reporting domain. Adding a new report type, a new export format, or a new delivery channel all modify the same file. Version B distributes these concerns so each class has room to grow independently."
+          "text": "Version A — splitting SalesReporter and UserReporter when each only has one method creates unnecessary fragmentation for a small service",
+          "isCorrect": false,
+          "explanation": "Starting small doesn't mean the structure is wrong — it means there's room to grow into it. Version A's separation means adding a ThirdPartyReporter or a new export format touches a contained class, not the central hub."
         },
         {
           "id": "b",
-          "text": "Version B — splitting SalesReporter and UserReporter when each only has one method creates unnecessary fragmentation for a small service",
-          "isCorrect": false,
-          "explanation": "Starting small doesn't mean the structure is wrong — it means there's room to grow into it. Version B's separation means adding a ThirdPartyReporter or a new export format touches a contained class, not the central hub."
+          "text": "Version B — one class handles two kinds of report generation, PDF rendering, email delivery, and scheduling. Every new reporting feature lands here.",
+          "isCorrect": true,
+          "explanation": "Version B is already a miniature God Class for the reporting domain. Adding a new report type, a new export format, or a new delivery channel all modify the same file. Version A distributes these concerns so each class has room to grow independently."
         }
       ]
     }

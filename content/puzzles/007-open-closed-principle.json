@@ -1,4 +1,4 @@
-{
+﻿{
   "id": 7,
   "conceptName": "Open/Closed Principle",
   "category": "solid",
@@ -84,20 +84,20 @@
       "format": "which-one",
       "difficulty": "hard",
       "prompt": "The team needs to add email notifications alongside existing Slack alerts. Which version requires editing already-shipped code to do it?",
-      "codeSnippet": "// Version A\nclass NotificationService {\n  send(type: string, message: string): void {\n    if (type === 'slack')   this.slack.post(message);\n    if (type === 'webhook') this.http.post(this.webhookUrl, message);\n  }\n}\n// Version B\ninterface Notifier { send(message: string): void; }\nclass NotificationService {\n  constructor(private notifiers: Notifier[]) {}\n  broadcast(message: string): void {\n    this.notifiers.forEach(n => n.send(message));\n  }\n}",
+      "codeSnippet": "// Version A\ninterface Notifier { send(message: string): void; }\nclass NotificationService {\n  constructor(private notifiers: Notifier[]) {}\n  broadcast(message: string): void {\n    this.notifiers.forEach(n => n.send(message));\n  }\n}\n// Version B\nclass NotificationService {\n  send(type: string, message: string): void {\n    if (type === 'slack')   this.slack.post(message);\n    if (type === 'webhook') this.http.post(this.webhookUrl, message);\n  }\n}",
       "language": "typescript",
       "options": [
         {
           "id": "a",
-          "text": "Version A — adding email means opening send() and editing a method that already handles Slack and webhook correctly, putting both at risk",
-          "isCorrect": true,
-          "explanation": "Version A grows by modification: open the class, add a branch, risk the existing channels. Version B grows by extension: create an EmailNotifier class, pass it in at construction. The broadcast() method and existing Slack/webhook notifiers are never touched."
+          "text": "Version A — you still have to update the code that constructs NotificationService to pass in EmailNotifier, which is also a modification",
+          "isCorrect": false,
+          "explanation": "This is a subtle but important distinction: updating the composition root (where objects are wired together) is not the same as modifying business logic. The notification service's behavior — its routing, its channels, its existing tests — is untouched. Only the wiring changes, which is expected and safe."
         },
         {
           "id": "b",
-          "text": "Version B — you still have to update the code that constructs NotificationService to pass in EmailNotifier, which is also a modification",
-          "isCorrect": false,
-          "explanation": "This is a subtle but important distinction: updating the composition root (where objects are wired together) is not the same as modifying business logic. The notification service's behavior — its routing, its channels, its existing tests — is untouched. Only the wiring changes, which is expected and safe."
+          "text": "Version B — adding email means opening send() and editing a method that already handles Slack and webhook correctly, putting both at risk",
+          "isCorrect": true,
+          "explanation": "Version B grows by modification: open the class, add a branch, risk the existing channels. Version A grows by extension: create an EmailNotifier class, pass it in at construction. The broadcast() method and existing Slack/webhook notifiers are never touched."
         }
       ]
     }

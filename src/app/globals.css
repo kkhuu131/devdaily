@@ -83,6 +83,11 @@ body {
   to   { opacity: 1; }
 }
 
+@keyframes questionFadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-6px); }
+}
+
 /* ─── Animation utility classes ──────────────────────────────────────────── */
 .animate-shake {
   animation: shake 250ms ease-in-out;
@@ -97,7 +102,15 @@ body {
 }
 
 .animate-fade-up {
-  animation: fadeUp 200ms ease-out forwards;
+  /* Base state after the animation ends (fill-mode none). Avoids `forwards`
+     sticking wrong values when the page returns from bfcache. */
+  opacity: 1;
+  transform: translateY(0);
+  animation: fadeUp 200ms ease-out;
+}
+
+.animate-question-out {
+  animation: questionFadeOut 200ms ease-in forwards;
 }
 
 /* ─── Footer nav ─────────────────────────────────────────────────────────── */
@@ -108,6 +121,25 @@ body {
 }
 .footer-nav-link:hover {
   color: var(--text-secondary);
+}
+
+/* ─── Code snippet scrollbar ─────────────────────────────────────────────── */
+.code-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-neutral) transparent;
+}
+.code-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+.code-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.code-scroll::-webkit-scrollbar-thumb {
+  background: var(--accent-neutral);
+  border-radius: 2px;
+}
+.code-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-brand);
 }
 
 /* ─── Archive list rows ──────────────────────────────────────────────────── */

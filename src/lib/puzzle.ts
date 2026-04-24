@@ -26,7 +26,7 @@ export function getAllPuzzles(): Puzzle[] {
     .sort();
 
   return files.map((file) => {
-    const raw = fs.readFileSync(path.join(puzzlesDir, file), 'utf-8');
+    const raw = fs.readFileSync(path.join(puzzlesDir, file), 'utf-8').replace(/^﻿/, '');
     return JSON.parse(raw) as Puzzle;
   });
 }

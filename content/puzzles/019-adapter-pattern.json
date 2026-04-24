@@ -1,4 +1,4 @@
-{
+﻿{
   "id": 19,
   "conceptName": "Adapter Pattern",
   "category": "design-pattern",
@@ -84,20 +84,20 @@
       "format": "which-one",
       "difficulty": "hard",
       "prompt": "Which version contains the more problematic integration design?",
-      "codeSnippet": "// Version A\nclass ImportService {\n  run(file: CsvFile): void {\n    legacyParser.set_delimiter(';');\n    const rows = legacyParser.parse_file(file.path);\n    this.repo.save(rows);\n  }\n}\n// Version B\ninterface Parser { parse(path: string): Row[]; }\nclass ImportService {\n  constructor(private parser: Parser) {}\n  run(file: CsvFile): void { this.repo.save(this.parser.parse(file.path)); }\n}",
+      "codeSnippet": "// Version A\ninterface Parser { parse(path: string): Row[]; }\nclass ImportService {\n  constructor(private parser: Parser) {}\n  run(file: CsvFile): void { this.repo.save(this.parser.parse(file.path)); }\n}\n// Version B\nclass ImportService {\n  run(file: CsvFile): void {\n    legacyParser.set_delimiter(';');\n    const rows = legacyParser.parse_file(file.path);\n    this.repo.save(rows);\n  }\n}",
       "language": "typescript",
       "options": [
         {
           "id": "a",
-          "text": "Version A — application service is tied directly to legacy parser calls and conventions instead of using a compatible parser abstraction",
-          "isCorrect": true,
-          "explanation": "A leaks legacy API choices into core service code. B lets an adapter implement Parser and contain that translation."
+          "text": "Version A — introducing Parser hides too much and makes debugging parser behavior impossible",
+          "isCorrect": false,
+          "explanation": "Abstraction doesn't remove debuggability; it isolates integration concerns and simplifies service logic."
         },
         {
           "id": "b",
-          "text": "Version B — introducing Parser hides too much and makes debugging parser behavior impossible",
-          "isCorrect": false,
-          "explanation": "Abstraction doesn't remove debuggability; it isolates integration concerns and simplifies service logic."
+          "text": "Version B — application service is tied directly to legacy parser calls and conventions instead of using a compatible parser abstraction",
+          "isCorrect": true,
+          "explanation": "B leaks legacy API choices into core service code. A lets an adapter implement Parser and contain that translation."
         }
       ]
     }

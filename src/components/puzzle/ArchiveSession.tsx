@@ -18,6 +18,7 @@ interface SessionState {
   phase: GameState;
   answers: (string | null)[];
   locked: boolean;
+  fadingOut: boolean;
 }
 
 interface StoredArchiveState {
@@ -56,22 +57,23 @@ export default function ArchiveSession({ puzzle, dayNumber, highlightedSnippets 
     phase: 'IDLE',
     answers: [null, null, null],
     locked: false,
+    fadingOut: false,
   });
 
-  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const stored = loadArchiveState(puzzle.id);
     if (stored) {
       const phase: GameState = stored.phase === 'REVEALING' ? 'REVEALED' : stored.phase;
-      setSession({ phase, answers: stored.answers, locked: false });
+      setSession({ phase, answers: stored.answers, locked: false, fadingOut: false });
     }
   }, [puzzle.id]);
 
   useEffect(() => {
     return () => {
-      if (advanceTimer.current) clearTimeout(advanceTimer.current);
+      if (transitionTimer.current) clearTimeout(transitionTimer.current);
       if (revealTimer.current) clearTimeout(revealTimer.current);
     };
   }, []);
@@ -80,7 +82,7 @@ export default function ArchiveSession({ puzzle, dayNumber, highlightedSnippets 
 
   function handleStart() {
     const answers: (string | null)[] = [null, null, null];
-    setSession({ phase: 'QUESTION_1', answers, locked: false });
+    setSession({ phase: 'QUESTION_1', answers, locked: false, fadingOut: false });
     saveArchiveState(puzzle.id, 'QUESTION_1', answers);
   }
 
@@ -97,20 +99,31 @@ export default function ArchiveSession({ puzzle, dayNumber, highlightedSnippets 
           ? 'QUESTION_3'
           : 'REVEALING';
 
-    setSession((prev) => ({ ...prev, answers: newAnswers, locked: true }));
+    setSession((prev) => ({ ...prev, answers: newAnswers, locked: true, fadingOut: false }));
     saveArchiveState(puzzle.id, nextPhase, newAnswers);
+  }
 
-    advanceTimer.current = setTimeout(() => {
+  function handleContinue() {
+    const nextPhase: GameState =
+      currentQuestionIndex === 0
+        ? 'QUESTION_2'
+        : currentQuestionIndex === 1
+          ? 'QUESTION_3'
+          : 'REVEALING';
+
+    setSession((prev) => ({ ...prev, fadingOut: true }));
+
+    transitionTimer.current = setTimeout(() => {
       if (nextPhase === 'REVEALING') {
-        setSession((prev) => ({ ...prev, phase: 'REVEALING', locked: false }));
+        setSession((prev) => ({ ...prev, phase: 'REVEALING', fadingOut: false, locked: false }));
         revealTimer.current = setTimeout(() => {
           setSession((prev) => ({ ...prev, phase: 'REVEALED' }));
-          saveArchiveState(puzzle.id, 'COMPLETED', newAnswers);
+          saveArchiveState(puzzle.id, 'COMPLETED', session.answers);
         }, 500);
       } else {
-        setSession((prev) => ({ ...prev, phase: nextPhase, locked: false }));
+        setSession({ phase: nextPhase, answers: session.answers, locked: false, fadingOut: false });
       }
-    }, 1200);
+    }, 200);
   }
 
   const showProgress =
@@ -123,7 +136,6 @@ export default function ArchiveSession({ puzzle, dayNumber, highlightedSnippets 
     <div className="flex flex-col min-h-screen">
       <Header dayNumber={dayNumber} streak={0} />
 
-      {/* Archive indicator */}
       <div className="px-4 pb-2 max-w-[640px] mx-auto w-full">
         <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
           archive · #{dayNumber}
@@ -170,11 +182,15 @@ export default function ArchiveSession({ puzzle, dayNumber, highlightedSnippets 
 
         {currentQuestionIndex >= 0 && (
           <QuestionCard
+            key={currentQuestionIndex}
             question={puzzle.questions[currentQuestionIndex]}
             highlightedCode={highlightedSnippets[currentQuestionIndex]}
             selectedAnswer={session.answers[currentQuestionIndex]}
             locked={session.locked}
+            fadingOut={session.fadingOut}
+            puzzleId={puzzle.id}
             onAnswer={handleAnswer}
+            onContinue={handleContinue}
           />
         )}
 

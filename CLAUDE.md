@@ -6,9 +6,10 @@
 - `/api/puzzle` returns `{ puzzle, dayNumber }` for the current UTC day using `getPuzzleForDate()` and `getDayNumber()`.
 
 ## Shared components
-- `PuzzleSession` owns the quiz state machine (`IDLE -> QUESTION_1..3 -> REVEALING -> REVEALED`) and persists progress by `puzzleId` in localStorage.
-- `ArchiveSession` mirrors `PuzzleSession` gameplay but stores progress under `devdaily_archive_${puzzleId}` without date-based resets, so archive attempts remain resumable indefinitely.
-- `QuestionCard` supports both `multiple-choice` and `which-one` formats, while `AnswerOption` handles lock states and correctness visuals.
+- `PuzzleSession` owns the quiz state machine (`IDLE -> QUESTION_1..3 -> REVEALING -> REVEALED`), persists progress by `puzzleId` in localStorage, advances questions only after **Continue** (short fade-out between questions), and saves `COMPLETED` using the live `session.answers` snapshot.
+- `ArchiveSession` mirrors that flow (same Continue + fade + `QuestionCard` `key`) but stores progress under `devdaily_archive_${puzzleId}` without date-based resets, so archive attempts remain resumable indefinitely.
+- `QuestionCard` supports `multiple-choice` and `which-one`, shuffles options via `getShuffledOptions()` (seeded by `puzzleId` + question id), shows the selected option’s explanation after lock, and wires **Continue →** to the parent instead of auto-advancing on a timer.
+- `AnswerOption` handles lock states and correctness visuals.
 - `RevealScreen` and `ShareCard` generate and present daily result output, including per-question marks and overall score formatting.
 - `Header` now makes the `DevDaily` wordmark a home link (`/`) so non-home routes can return to the current daily puzzle in one click.
 - `Footer` includes low-contrast navigation links for `/about` and `/archive`; the archive route now resolves to the historical puzzle index.
@@ -17,8 +18,11 @@
 - Shiki highlighting is server-only and intentionally singleton-cached in `src/lib/highlight.ts`; do not import this helper from client components.
 - Unsupported snippet languages fall back to `typescript`, so new puzzle languages must be added to `SUPPORTED_LANGS` to avoid silent fallback.
 - `getDayNumber()` is anchored to `LAUNCH_DATE_UTC`; changing launch date semantics will shift displayed day numbers across the app and API.
+- **Back/forward + Next 16 / React 19:** the App Router client can stop handling clicks after history navigation even when `pageshow.persisted` is false. Root `layout.tsx` injects a `beforeInteractive` script that `location.reload()` on `/` and `/archive/<numeric-day>` when the entry is restored from BFCache **or** `PerformanceNavigationTiming.type === 'back_forward'`—expect one extra full load when returning via those controls.
+- Puzzle JSON on disk may include a UTF-8 BOM; `getAllPuzzles()` strips a leading BOM before `JSON.parse` so editors that emit BOMs do not break the loader.
 - Archive day routes intentionally block non-past days (`/archive/[day]` must be `< today`); today's puzzle only lives at `/`.
 - Archive localStorage state is intentionally date-agnostic (`devdaily_archive_${puzzleId}`), unlike daily session storage, so old attempts persist until manually cleared.
+- Authoring `which-one` puzzles: alternate which version (A vs B) is correct across puzzles so the answer is not always “Version A”; see `AGENTS.md` for the full bias rule and required option prefixes.
 
 ## Key Supabase tables
 - None in this project yet.

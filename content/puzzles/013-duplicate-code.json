@@ -1,4 +1,4 @@
-{
+﻿{
   "id": 13,
   "conceptName": "Duplicate Code",
   "category": "code-smell",
@@ -85,20 +85,20 @@
       "format": "which-one",
       "difficulty": "hard",
       "prompt": "Which design is more likely to produce inconsistent behavior after a pricing rule update?",
-      "codeSnippet": "// Version A\nclass PricePolicy {\n  total(subtotal: number): number { return subtotal + subtotal * 0.08; }\n}\nclass Checkout {\n  constructor(private policy: PricePolicy) {}\n  total(s: number): number { return this.policy.total(s); }\n}\n// Version B\nclass Checkout { total(s: number): number { return s + s * 0.08; } }\nclass Invoice { total(s: number): number { return s + s * 0.08; } }\nclass Report { total(s: number): number { return s + s * 0.08; } }",
+      "codeSnippet": "// Version A\nclass Checkout { total(s: number): number { return s + s * 0.08; } }\nclass Invoice { total(s: number): number { return s + s * 0.08; } }\nclass Report { total(s: number): number { return s + s * 0.08; } }\n// Version B\nclass PricePolicy {\n  total(subtotal: number): number { return subtotal + subtotal * 0.08; }\n}\nclass Checkout {\n  constructor(private policy: PricePolicy) {}\n  total(s: number): number { return this.policy.total(s); }\n}",
       "language": "typescript",
       "options": [
         {
           "id": "a",
-          "text": "Version B — the same policy is copied into several classes, so rule updates can land unevenly",
-          "isCorrect": true,
-          "explanation": "Version B creates multiple maintenance points for one concept. Version A centralizes policy and keeps callers aligned."
-        },
-        {
-          "id": "b",
           "text": "Version A — centralizing policy creates hidden coupling and should be avoided in favor of local formulas",
           "isCorrect": false,
           "explanation": "Centralizing one shared rule is intentional coupling to the domain policy and improves consistency."
+        },
+        {
+          "id": "b",
+          "text": "Version B — the same policy is copied into several classes, so rule updates can land unevenly",
+          "isCorrect": true,
+          "explanation": "Version A creates multiple maintenance points for one concept. Version B centralizes policy and keeps callers aligned."
         }
       ]
     }

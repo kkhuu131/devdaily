@@ -1,4 +1,4 @@
-{
+﻿{
   "id": 20,
   "conceptName": "Template Method Pattern",
   "category": "design-pattern",
@@ -89,13 +89,13 @@
       "options": [
         {
           "id": "a",
-          "text": "Version B — each class controls its own full sequence, so step order can drift and become inconsistent",
+          "text": "Version A — each class controls its own full sequence, so step order can drift and become inconsistent",
           "isCorrect": true,
           "explanation": "B allows accidental reordering like render-before-clean in one subclass. A enforces one canonical algorithm structure."
         },
         {
           "id": "b",
-          "text": "Version A — abstract classes are rigid, so every export type should define complete workflows independently",
+          "text": "Version B — abstract classes are rigid, so every export type should define complete workflows independently",
           "isCorrect": false,
           "explanation": "Controlled rigidity is the benefit here: shared invariant sequence with explicit variation points."
         }

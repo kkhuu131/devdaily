@@ -1,6 +1,7 @@
 'use client';
 
 import type { Question } from '@/types/puzzle';
+import { getShuffledOptions } from '@/lib/puzzle-utils';
 import AnswerOption, { type OptionState } from './AnswerOption';
 import CodeSnippet from './CodeSnippet';
 
@@ -9,7 +10,10 @@ interface Props {
   highlightedCode: string | null;
   selectedAnswer: string | null;
   locked: boolean;
+  fadingOut: boolean;
+  puzzleId: number;
   onAnswer: (id: string) => void;
+  onContinue: () => void;
 }
 
 function getOptionState(
@@ -32,12 +36,21 @@ export default function QuestionCard({
   highlightedCode,
   selectedAnswer,
   locked,
+  fadingOut,
+  puzzleId,
   onAnswer,
+  onContinue,
 }: Props) {
   const isWhichOne = question.format === 'which-one';
+  const options = getShuffledOptions(question.options, puzzleId, question.id, question.format);
+
+  const selectedOption = selectedAnswer
+    ? options.find((o) => o.id === selectedAnswer)
+    : null;
+  const isCorrect = selectedOption?.isCorrect ?? false;
 
   return (
-    <div className="animate-fade-up px-4 max-w-[640px] mx-auto w-full">
+    <div className={`${fadingOut ? 'animate-question-out' : 'animate-fade-up'} px-4 max-w-[640px] mx-auto w-full`}>
       <div
         className="rounded-sm p-5 mb-4"
         style={{
@@ -58,7 +71,7 @@ export default function QuestionCard({
       </div>
 
       <div className={`flex flex-col ${isWhichOne ? 'gap-3' : 'gap-2'}`}>
-        {question.options.map((option) => (
+        {options.map((option) => (
           <AnswerOption
             key={option.id}
             option={option}
@@ -69,6 +82,45 @@ export default function QuestionCard({
           />
         ))}
       </div>
+
+      {locked && selectedOption && (
+        <div
+          className="animate-fade-up mt-3 rounded-sm p-4"
+          style={{
+            borderLeft: `2px solid ${isCorrect ? 'var(--accent-correct)' : 'var(--accent-wrong)'}`,
+            backgroundColor: isCorrect ? 'var(--accent-correct-subtle)' : 'var(--accent-wrong-subtle)',
+          }}
+        >
+          <p className="text-xs mb-1" style={{ color: isCorrect ? 'var(--accent-correct)' : 'var(--accent-wrong)' }}>
+            {isCorrect ? 'Correct' : 'Incorrect'}
+          </p>
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            {selectedOption.explanation}
+          </p>
+        </div>
+      )}
+
+      {locked && (
+        <button
+          onClick={onContinue}
+          className="w-full mt-3 py-2.5 rounded-sm text-sm transition-colors duration-150"
+          style={{
+            border: '1px solid var(--border-subtle)',
+            color: 'var(--text-secondary)',
+            backgroundColor: 'transparent',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--accent-brand)';
+            e.currentTarget.style.borderColor = 'var(--accent-brand)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--text-secondary)';
+            e.currentTarget.style.borderColor = 'var(--border-subtle)';
+          }}
+        >
+          Continue →
+        </button>
+      )}
     </div>
   );
 }
