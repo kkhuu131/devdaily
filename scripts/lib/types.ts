@@ -51,4 +51,4 @@ export interface GenerationCandidate {
   category: Category;
 }
 
-export interface GeneratedPuzzle extends Puzzle {}
+export type GeneratedPuzzle = Puzzle;

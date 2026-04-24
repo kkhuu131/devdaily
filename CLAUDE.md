@@ -14,12 +14,14 @@
 ## Shared components
 - `PuzzleSession` owns the quiz state machine (`IDLE -> QUESTION_1..3 -> REVEALING -> REVEALED`), persists progress by `puzzleId` in localStorage, advances questions only after **Continue** (short fade-out between questions), and saves `COMPLETED` using the live `session.answers` snapshot; on completion it updates UTC-based streak state and passes streak to `Header`/`RevealScreen`/share output. Its idle panel now includes a richer hero layout plus a UTC reset countdown that starts from a client-only placeholder to avoid SSR/client text drift.
 - `ArchiveSession` mirrors that flow (same Continue + fade + `QuestionCard` `key`) but stores progress under `devdaily_archive_${puzzleId}` without date-based resets, so archive attempts remain resumable indefinitely.
+- `ArchiveSession` and `PuzzleSession` now bootstrap persisted client state through lazy `useState` initializers instead of immediate `setState` calls in `useEffect`, which avoids React 19 `set-state-in-effect` lint violations while keeping hydration stable.
 - `QuestionCard` supports `multiple-choice` and `which-one`, shuffles options via `getShuffledOptions()` (seeded by `puzzleId` + question id), shows the selected option’s explanation after lock, and wires **Continue →** to the parent instead of auto-advancing on a timer.
 - `AnswerOption` handles lock states and correctness visuals.
 - `RevealScreen` and `ShareCard` generate and present daily result output, including per-question marks and overall score formatting; `RevealScreen` embeds `NextPuzzleCountdown`, a client ticker until the next UTC midnight using `daily-calendar.ts`.
 - `Header` now makes the `DevDaily` wordmark a home link (`/`) so non-home routes can return to the current daily puzzle in one click.
 - `Footer` includes low-contrast navigation links for `/about` and `/archive`; the archive route now resolves to the historical puzzle index.
 - `BfCacheReload` (client-only) runs from `RootLayout` and force-reloads restored history entries on `/` and `/archive/<day>` to recover from Next 16/React 19 back-forward non-interactive states.
+- `NextPuzzleCountdown` and the home idle countdown both render an initial placeholder (`--:--:--`) and start ticking after mount to avoid impure render-time `Date.now()` usage and SSR/client hydration drift.
 
 ## Known gotchas
 - Shiki highlighting is server-only and intentionally singleton-cached in `src/lib/highlight.ts`; do not import this helper from client components.
@@ -33,7 +35,7 @@
 - Authoring `which-one` puzzles: alternate which version (A vs B) is correct across puzzles so the answer is not always “Version A”; see `AGENTS.md` for the full bias rule and required option prefixes.
 - **Shuffled answers:** anything that scores or displays correctness from stored answer **ids** must use `isAnswerCorrect()` in `puzzle-utils.ts` (same `getShuffledOptions` seed as `QuestionCard`). Comparing to the raw JSON `isCorrect` option id breaks after shuffle/remap.
 - Puzzle ordering now prefers `content/puzzle-manifest.json` season order (with file-sort fallback). If manifest and puzzle files drift, runtime still works, but intended “season” sequencing can silently change.
-- `scripts/generate-puzzles.ts` loads `.env.local` via `@next/env`; plain shell env assumptions are not required locally, but CI still needs `OPENAI_API_KEY` secret configured.
+- `scripts/generate-puzzles.ts` includes a local `.env.local`/`.env` fallback loader for CLI runs (without Next runtime helpers); CI still needs `OPENAI_API_KEY` provided as a real environment secret.
 - OpenAI Structured Outputs in strict mode requires nullable fields to still be listed in `required`; schema relaxations must follow that constraint or the API returns 400 before generation.
 - Generation is buffer-aware by default (no `--count`): it skips when `targetDaysAheadBuffer` is already satisfied, so “scheduled run succeeded” can legitimately produce no new files.
 

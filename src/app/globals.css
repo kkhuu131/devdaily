@@ -40,6 +40,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ─── Accessibility: keyboard focus ─────────────────────────────────────── */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
 /* ─── Shiki code block reset ─────────────────────────────────────────────── */
 .shiki {
   background-color: var(--bg-code) !important;
@@ -123,6 +131,9 @@ body {
 .footer-nav-link:hover {
   color: var(--text-secondary);
 }
+.footer-nav-link:focus-visible {
+  color: var(--text-secondary);
+}
 
 /* ─── Code snippet scrollbar ─────────────────────────────────────────────── */
 .code-scroll {
@@ -156,6 +167,13 @@ body {
 .archive-row:hover .archive-row-title {
   color: var(--accent-brand);
 }
+.archive-row:focus-visible {
+  background-color: var(--bg-elevated);
+  border-left-color: var(--accent-brand);
+}
+.archive-row:focus-visible .archive-row-title {
+  color: var(--accent-brand);
+}
 
 /* ─── About page hover states ────────────────────────────────────────────── */
 .about-ext-link {
@@ -169,12 +187,19 @@ body {
   color: var(--accent-brand);
   border-color: var(--accent-brand);
 }
+.about-ext-link:focus-visible {
+  color: var(--accent-brand);
+  border-color: var(--accent-brand);
+}
 
 .about-book-link .about-book-title {
   color: var(--text-primary);
   transition: color 100ms;
 }
 .about-book-link:hover .about-book-title {
+  color: var(--accent-brand);
+}
+.about-book-link:focus-visible .about-book-title {
   color: var(--accent-brand);
 }
 
@@ -184,4 +209,19 @@ body {
 }
 .about-back-link:hover {
   color: var(--text-secondary);
+}
+.about-back-link:focus-visible {
+  color: var(--text-secondary);
+}
+
+/* ─── Accessibility: reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

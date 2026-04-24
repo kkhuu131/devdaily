@@ -28,6 +28,11 @@ interface SessionState {
   fadingOut: boolean;
 }
 
+interface InitialClientState {
+  session: SessionState;
+  streak: number;
+}
+
 function todayString(): string {
   return getUtcPuzzleDateKey();
 }
@@ -52,37 +57,47 @@ function formatCountdown(totalSeconds: number): string {
   return [hours, minutes, seconds].map((n) => String(n).padStart(2, '0')).join(':');
 }
 
-const QUESTION_PHASES: GameState[] = ['QUESTION_1', 'QUESTION_2', 'QUESTION_3'];
-
-export default function PuzzleSession({ puzzle, dayNumber, highlightedSnippets }: Props) {
-  const [session, setSession] = useState<SessionState>({
+function getInitialClientState(puzzleId: number): InitialClientState {
+  const emptySession: SessionState = {
     phase: 'IDLE',
     answers: [null, null, null],
     locked: false,
     fadingOut: false,
-  });
-  const [streak, setStreak] = useState(0);
+  };
+
+  if (typeof window === 'undefined') {
+    return { session: emptySession, streak: 0 };
+  }
+
+  const todayKey = todayString();
+  let streak = getCurrentStreak(todayKey);
+  const stored = getStoredGameState();
+
+  if (!stored || stored.puzzleId !== puzzleId) {
+    return { session: emptySession, streak };
+  }
+
+  const phase: GameState = stored.state === 'REVEALING' ? 'REVEALED' : stored.state;
+  const session: SessionState = { phase, answers: stored.answers, locked: false, fadingOut: false };
+
+  if (stored.state === 'COMPLETED') {
+    // Backfill streaks for already-completed days if the user refreshes.
+    streak = recordDailyCompletion(todayKey);
+  }
+
+  return { session, streak };
+}
+
+const QUESTION_PHASES: GameState[] = ['QUESTION_1', 'QUESTION_2', 'QUESTION_3'];
+
+export default function PuzzleSession({ puzzle, dayNumber, highlightedSnippets }: Props) {
+  const [initialClientState] = useState<InitialClientState>(() => getInitialClientState(puzzle.id));
+  const [session, setSession] = useState<SessionState>(initialClientState.session);
+  const [streak, setStreak] = useState(initialClientState.streak);
   const [secondsToReset, setSecondsToReset] = useState<number | null>(null);
 
   const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    const todayKey = todayString();
-    setStreak(getCurrentStreak(todayKey));
-
-    const stored = getStoredGameState();
-    if (stored && stored.puzzleId === puzzle.id) {
-      const phase: GameState =
-        stored.state === 'REVEALING' ? 'REVEALED' : stored.state;
-      setSession({ phase, answers: stored.answers, locked: false, fadingOut: false });
-
-      if (stored.state === 'COMPLETED') {
-        // Backfill streaks for already-completed days if the user refreshes.
-        setStreak(recordDailyCompletion(todayKey));
-      }
-    }
-  }, [puzzle.id]);
 
   useEffect(() => {
     return () => {
@@ -92,13 +107,19 @@ export default function PuzzleSession({ puzzle, dayNumber, highlightedSnippets }
   }, []);
 
   useEffect(() => {
-    setSecondsToReset(getSecondsUntilNextUtcMidnight());
+    const syncCountdown = () => {
+      setSecondsToReset(getSecondsUntilNextUtcMidnight());
+    };
+    const initialTimer = setTimeout(syncCountdown, 0);
 
     const interval = setInterval(() => {
-      setSecondsToReset(getSecondsUntilNextUtcMidnight());
+      syncCountdown();
     }, 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(interval);
+    };
   }, []);
 
   const currentQuestionIndex = QUESTION_PHASES.indexOf(session.phase);

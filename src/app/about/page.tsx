@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { getDayNumber } from '@/lib/puzzle';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -166,9 +167,9 @@ export default function AboutPage() {
 
         {/* Back to today's puzzle */}
         <div className="text-center">
-          <a href="/" className="about-back-link text-xs">
+          <Link href="/" className="about-back-link text-xs">
             ← today&apos;s puzzle
-          </a>
+          </Link>
         </div>
 
       </main>

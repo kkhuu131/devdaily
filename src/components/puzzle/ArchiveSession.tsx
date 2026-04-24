@@ -26,6 +26,10 @@ interface StoredArchiveState {
   answers: (string | null)[];
 }
 
+interface InitialArchiveState {
+  session: SessionState;
+}
+
 const QUESTION_PHASES: GameState[] = ['QUESTION_1', 'QUESTION_2', 'QUESTION_3'];
 
 function storageKey(puzzleId: number): string {
@@ -52,24 +56,29 @@ function saveArchiveState(puzzleId: number, phase: GameState, answers: (string |
   }
 }
 
-export default function ArchiveSession({ puzzle, dayNumber, highlightedSnippets }: Props) {
-  const [session, setSession] = useState<SessionState>({
+function getInitialArchiveState(puzzleId: number): InitialArchiveState {
+  const emptySession: SessionState = {
     phase: 'IDLE',
     answers: [null, null, null],
     locked: false,
     fadingOut: false,
-  });
+  };
+
+  const stored = loadArchiveState(puzzleId);
+  if (!stored) return { session: emptySession };
+
+  const phase: GameState = stored.phase === 'REVEALING' ? 'REVEALED' : stored.phase;
+  return {
+    session: { phase, answers: stored.answers, locked: false, fadingOut: false },
+  };
+}
+
+export default function ArchiveSession({ puzzle, dayNumber, highlightedSnippets }: Props) {
+  const [initialArchiveState] = useState<InitialArchiveState>(() => getInitialArchiveState(puzzle.id));
+  const [session, setSession] = useState<SessionState>(initialArchiveState.session);
 
   const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    const stored = loadArchiveState(puzzle.id);
-    if (stored) {
-      const phase: GameState = stored.phase === 'REVEALING' ? 'REVEALED' : stored.phase;
-      setSession({ phase, answers: stored.answers, locked: false, fadingOut: false });
-    }
-  }, [puzzle.id]);
 
   useEffect(() => {
     return () => {

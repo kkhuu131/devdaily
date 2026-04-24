@@ -9,6 +9,23 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+type RawQuestion = {
+  id?: unknown;
+  format?: unknown;
+  difficulty?: unknown;
+  prompt?: unknown;
+  language?: unknown;
+  options?: unknown;
+  codeSnippet?: unknown;
+};
+
+type RawOption = {
+  id?: unknown;
+  text?: unknown;
+  explanation?: unknown;
+  isCorrect?: unknown;
+};
+
 function hasSingleCorrect(options: Array<{ isCorrect?: unknown }>): boolean {
   return options.filter((o) => o.isCorrect === true).length === 1;
 }
@@ -65,7 +82,7 @@ export function validatePuzzleShape(raw: unknown): ValidationResult {
   ] as const;
 
   for (let i = 0; i < puzzle.questions.length; i++) {
-    const q = puzzle.questions[i] as any;
+    const q = puzzle.questions[i] as RawQuestion;
     const exp = expected[i];
     if (!isObject(q)) {
       errors.push(`question ${i + 1} must be an object`);
@@ -94,7 +111,7 @@ export function validatePuzzleShape(raw: unknown): ValidationResult {
       continue;
     }
 
-    const optionIds = q.options.map((o: any) => o.id);
+    const optionIds = q.options.map((o) => (o as RawOption).id);
     if (JSON.stringify(optionIds) !== JSON.stringify(expectedIds)) {
       errors.push(`question ${i + 1} option ids must be ${expectedIds.join(',')}`);
     }

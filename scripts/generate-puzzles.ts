@@ -20,6 +20,19 @@ type CliArgs = {
   startDay?: number;
 };
 
+interface OpenAiChatCompletionResponse {
+  choices?: Array<{
+    message?: {
+      content?: unknown;
+    };
+  }>;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  };
+}
+
 const ROOT = process.cwd();
 const PUZZLES_DIR = path.join(ROOT, 'content', 'puzzles');
 const MANIFEST_PATH = path.join(ROOT, 'content', 'puzzle-manifest.json');
@@ -292,7 +305,7 @@ async function callOpenAiForPuzzle(input: {
     throw new Error(`OpenAI request failed: ${response.status} ${response.statusText} :: ${body}`);
   }
 
-  const data = (await response.json()) as any;
+  const data = (await response.json()) as OpenAiChatCompletionResponse;
   const content = data?.choices?.[0]?.message?.content;
   if (typeof content !== 'string') throw new Error('OpenAI response missing JSON string content');
   return {

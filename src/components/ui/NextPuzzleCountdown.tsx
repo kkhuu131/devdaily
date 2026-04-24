@@ -4,16 +4,19 @@ import { useEffect, useState } from 'react';
 import { formatCountdownHms, getMsUntilNextUtcMidnight } from '@/lib/daily-calendar';
 
 export default function NextPuzzleCountdown() {
-  const [remainingMs, setRemainingMs] = useState(() => getMsUntilNextUtcMidnight());
+  const [remainingMs, setRemainingMs] = useState<number | null>(null);
 
   useEffect(() => {
     const tick = () => setRemainingMs(getMsUntilNextUtcMidnight());
-    tick();
+    const initialTimer = setTimeout(tick, 0);
     const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(id);
+    };
   }, []);
 
-  const unlockAt = new Date(Date.now() + remainingMs);
+  const countdownLabel = remainingMs === null ? '--:--:--' : formatCountdownHms(remainingMs);
 
   return (
     <div
@@ -25,13 +28,12 @@ export default function NextPuzzleCountdown() {
           Next puzzle
         </p>
         <time
-          dateTime={unlockAt.toISOString()}
           className="text-lg font-mono tabular-nums tracking-tight"
           style={{ color: 'var(--text-primary)' }}
           aria-live="polite"
-          aria-label={`Next puzzle in ${formatCountdownHms(remainingMs)}`}
+          aria-label={`Next puzzle in ${countdownLabel}`}
         >
-          {formatCountdownHms(remainingMs)}
+          {countdownLabel}
         </time>
       </div>
       <p className="text-[11px] mt-1.5 leading-relaxed" style={{ color: 'var(--text-muted)' }}>

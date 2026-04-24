@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { getAllPuzzles, getDayNumber } from '@/lib/puzzle';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -87,7 +88,7 @@ export default function ArchivePage() {
                       style={{ backgroundColor: 'var(--border-subtle)' }}
                     />
                   )}
-                  <a
+                  <Link
                     href={`/archive/${dayNumber}`}
                     className="archive-row flex items-start sm:items-center gap-3 sm:gap-4 px-4 sm:px-5 py-4"
                   >
@@ -115,7 +116,7 @@ export default function ArchivePage() {
                     >
                       →
                     </span>
-                  </a>
+                  </Link>
                 </div>
               );
             })}
