@@ -24,7 +24,7 @@ export default function ProgressDots({ phase, answers, puzzle }: Props) {
   const currentIndex = QUESTION_PHASES.indexOf(phase);
 
   return (
-    <div className="flex items-center gap-3 px-4 pb-6 max-w-[640px] mx-auto w-full">
+    <div className="flex flex-wrap items-center gap-3 px-4 pb-6 max-w-[760px] mx-auto w-full">
       {([0, 1, 2] as const).map((i) => {
         const result = getQuestionResult(answers[i], puzzle, i);
         const isActive = currentIndex === i;
@@ -52,7 +52,7 @@ export default function ProgressDots({ phase, answers, puzzle }: Props) {
           </div>
         );
       })}
-      <span className="ml-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+      <span className="ml-0 sm:ml-1 text-xs w-full sm:w-auto" style={{ color: 'var(--text-muted)' }}>
         {currentIndex >= 0 ? `Q${currentIndex + 1} of 3` : ''}
       </span>
     </div>

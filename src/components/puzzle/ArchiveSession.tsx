@@ -136,7 +136,7 @@ export default function ArchiveSession({ puzzle, dayNumber, highlightedSnippets 
     <div className="flex flex-col min-h-screen">
       <Header dayNumber={dayNumber} streak={0} />
 
-      <div className="px-4 pb-2 max-w-[640px] mx-auto w-full">
+      <div className="px-4 pb-2 max-w-[760px] mx-auto w-full">
         <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
           archive · #{dayNumber}
         </p>
@@ -152,9 +152,9 @@ export default function ArchiveSession({ puzzle, dayNumber, highlightedSnippets 
 
       <main className="flex-1">
         {session.phase === 'IDLE' && (
-          <div className="animate-fade-up px-4 max-w-[640px] mx-auto w-full">
+          <div className="animate-fade-up px-4 max-w-[760px] mx-auto w-full">
             <div
-              className="rounded-sm p-8 text-center"
+              className="rounded-sm p-6 sm:p-8 text-center"
               style={{
                 backgroundColor: 'var(--bg-surface)',
                 border: '1px solid var(--border-subtle)',
@@ -165,7 +165,7 @@ export default function ArchiveSession({ puzzle, dayNumber, highlightedSnippets 
               </p>
               <button
                 onClick={handleStart}
-                className="px-8 py-3 rounded-sm text-sm transition-opacity duration-150"
+                className="px-8 py-3 min-h-11 rounded-sm text-sm transition-opacity duration-150"
                 style={{
                   backgroundColor: 'var(--accent-brand)',
                   color: 'var(--bg-base)',

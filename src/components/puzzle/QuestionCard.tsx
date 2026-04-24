@@ -50,9 +50,9 @@ export default function QuestionCard({
   const isCorrect = selectedOption?.isCorrect ?? false;
 
   return (
-    <div className={`${fadingOut ? 'animate-question-out' : 'animate-fade-up'} px-4 max-w-[640px] mx-auto w-full`}>
+    <div className={`${fadingOut ? 'animate-question-out' : 'animate-fade-up'} px-4 max-w-[760px] mx-auto w-full`}>
       <div
-        className="rounded-sm p-5 mb-4"
+        className="rounded-sm p-4 sm:p-5 mb-4"
         style={{
           backgroundColor: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',
@@ -103,7 +103,7 @@ export default function QuestionCard({
       {locked && (
         <button
           onClick={onContinue}
-          className="w-full mt-3 py-2.5 rounded-sm text-sm transition-colors duration-150"
+          className="w-full mt-3 py-2.5 min-h-11 rounded-sm text-sm transition-colors duration-150"
           style={{
             border: '1px solid var(--border-subtle)',
             color: 'var(--text-secondary)',

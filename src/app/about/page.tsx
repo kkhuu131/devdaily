@@ -56,7 +56,7 @@ export default function AboutPage() {
     <div className="flex flex-col min-h-screen">
       <Header dayNumber={dayNumber} streak={0} />
 
-      <main className="flex-1 px-4 max-w-[640px] mx-auto w-full pb-12">
+      <main className="flex-1 px-4 max-w-[680px] mx-auto w-full pb-12">
 
         {/* Identity */}
         <div className="mb-8 pt-2">
@@ -64,7 +64,7 @@ export default function AboutPage() {
             about
           </p>
           <h1
-            className="text-4xl leading-tight mb-3"
+            className="text-3xl sm:text-4xl leading-tight mb-3 break-words"
             style={{
               fontFamily: 'var(--font-instrument-serif)',
               color: 'var(--accent-brand)',
@@ -82,7 +82,7 @@ export default function AboutPage() {
 
         {/* How it works */}
         <div
-          className="rounded-sm p-6 mb-4"
+          className="rounded-sm p-5 sm:p-6 mb-4"
           style={{
             backgroundColor: 'var(--bg-surface)',
             border: '1px solid var(--border-subtle)',
@@ -111,7 +111,7 @@ export default function AboutPage() {
 
         {/* Reading list */}
         <div
-          className="rounded-sm p-6 mb-4"
+          className="rounded-sm p-5 sm:p-6 mb-4"
           style={{
             backgroundColor: 'var(--bg-surface)',
             border: '1px solid var(--border-subtle)',
@@ -135,7 +135,7 @@ export default function AboutPage() {
                 rel="noopener noreferrer"
                 className="about-book-link block"
               >
-                <div className="flex items-baseline justify-between gap-3 mb-1">
+                <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 sm:gap-3 mb-1">
                   <span className="about-book-title text-sm">
                     {book.title}
                   </span>

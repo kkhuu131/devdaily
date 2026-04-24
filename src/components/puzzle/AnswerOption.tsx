@@ -78,10 +78,10 @@ export default function AnswerOption({ option, state, disabled, large = false, o
       onClick={() => !disabled && onClick(option.id)}
       disabled={disabled && state === 'default'}
       className={`
-        w-full flex items-start gap-4 text-left border rounded-sm
+        w-full min-h-11 flex items-start gap-3 sm:gap-4 text-left border rounded-sm
         transition-transform duration-100 ease-out
         ${!disabled && state === 'default' ? 'hover:translate-x-0.5 cursor-pointer' : 'cursor-default'}
-        ${large ? 'p-5' : 'p-4'}
+        ${large ? 'p-4 sm:p-5' : 'p-3.5 sm:p-4'}
       `}
       style={STATE_STYLES[state]}
     >

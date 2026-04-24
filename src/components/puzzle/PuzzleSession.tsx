@@ -218,7 +218,7 @@ export default function PuzzleSession({ puzzle, dayNumber, highlightedSnippets }
               <div className="text-center mb-9">
                 <button
                   onClick={handleStart}
-                  className="px-8 py-3 rounded-sm text-sm transition-colors duration-150"
+                  className="px-8 py-3 min-h-11 rounded-sm text-sm transition-colors duration-150"
                   style={{
                     backgroundColor: 'var(--accent-brand)',
                     color: 'var(--bg-base)',

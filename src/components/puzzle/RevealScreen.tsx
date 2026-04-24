@@ -15,7 +15,7 @@ interface Props {
 function ConceptName({ name }: { name: string }) {
   return (
     <h1
-      className="text-4xl leading-tight mb-4"
+      className="text-3xl sm:text-4xl leading-tight mb-4 break-words"
       style={{
         fontFamily: 'var(--font-instrument-serif)',
         color: 'var(--accent-brand)',
@@ -55,7 +55,7 @@ function ScoreRow({
   const score = marks.filter((m) => m === '✅').length;
 
   return (
-    <div className="flex items-center gap-4 mb-6">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6">
       <span
         className="text-2xl font-mono tabular-nums"
         style={{ color: 'var(--text-primary)' }}
@@ -73,9 +73,9 @@ function ScoreRow({
 
 export default function RevealScreen({ puzzle, answers, dayNumber, streak }: Props) {
   return (
-    <div className="animate-fade-up px-4 max-w-[640px] mx-auto w-full pb-8">
+    <div className="animate-fade-up px-4 max-w-[760px] mx-auto w-full pb-8">
       <div
-        className="rounded-sm p-6 mb-4"
+        className="rounded-sm p-5 sm:p-6 mb-4"
         style={{
           backgroundColor: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',

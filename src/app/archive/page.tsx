@@ -35,7 +35,7 @@ export default function ArchivePage() {
     <div className="flex flex-col min-h-screen">
       <Header dayNumber={todayDayNumber} streak={0} />
 
-      <main className="flex-1 px-4 max-w-[640px] mx-auto w-full pb-12">
+      <main className="flex-1 px-4 max-w-[680px] mx-auto w-full pb-12">
 
         <div className="mb-8 pt-2">
           <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
@@ -89,7 +89,7 @@ export default function ArchivePage() {
                   )}
                   <a
                     href={`/archive/${dayNumber}`}
-                    className="archive-row flex items-center gap-4 px-5 py-4"
+                    className="archive-row flex items-start sm:items-center gap-3 sm:gap-4 px-4 sm:px-5 py-4"
                   >
                     <span
                       className="text-xs tabular-nums w-8 shrink-0"
@@ -98,7 +98,7 @@ export default function ArchivePage() {
                       #{dayNumber}
                     </span>
                     <span
-                      className="archive-row-title flex-1 text-sm transition-colors duration-100"
+                      className="archive-row-title flex-1 text-sm leading-relaxed transition-colors duration-100"
                       style={{ color: 'var(--text-primary)' }}
                     >
                       {puzzle.conceptName}
@@ -110,7 +110,7 @@ export default function ArchivePage() {
                       {CATEGORY_LABEL[puzzle.category]}
                     </span>
                     <span
-                      className="text-xs shrink-0"
+                      className="text-xs shrink-0 hidden sm:inline"
                       style={{ color: 'var(--text-muted)' }}
                     >
                       →

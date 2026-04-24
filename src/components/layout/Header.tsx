@@ -7,16 +7,16 @@ interface Props {
 
 export default function Header({ dayNumber, streak = 0 }: Props) {
   return (
-    <header className="flex items-center justify-between px-4 py-4 max-w-[640px] mx-auto w-full">
+    <header className="flex items-center justify-between px-4 py-3 sm:py-4 max-w-[760px] mx-auto w-full gap-3">
       <a
         href="/"
-        className="text-sm font-mono tracking-widest uppercase"
+        className="text-xs sm:text-sm font-mono tracking-[0.2em] sm:tracking-widest uppercase whitespace-nowrap"
         style={{ color: 'var(--text-primary)', textDecoration: 'none' }}
       >
         {SITE_NAME}
       </a>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 sm:gap-4 shrink-0">
         {streak > 0 && (
           <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
             🔥 {streak}
