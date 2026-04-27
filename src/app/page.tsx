@@ -4,6 +4,8 @@ import { highlightCode } from '@/lib/highlight';
 import PuzzleSession from '@/components/puzzle/PuzzleSession';
 import { SITE_NAME, SITE_TAGLINE, getSiteUrl } from '@/lib/site';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   alternates: { canonical: '/' },
   openGraph: {

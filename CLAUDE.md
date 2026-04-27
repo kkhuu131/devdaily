@@ -38,6 +38,7 @@
 - `scripts/generate-puzzles.ts` includes a local `.env.local`/`.env` fallback loader for CLI runs (without Next runtime helpers); CI still needs `OPENAI_API_KEY` provided as a real environment secret.
 - OpenAI Structured Outputs in strict mode requires nullable fields to still be listed in `required`; schema relaxations must follow that constraint or the API returns 400 before generation.
 - Generation is buffer-aware by default (no `--count`): it skips when `targetDaysAheadBuffer` is already satisfied, so “scheduled run succeeded” can legitimately produce no new files.
+- **Next.js static caching:** `new Date()` in a Server Component does NOT trigger dynamic rendering — Next.js cannot see it as a dynamic signal. Any route that derives the current puzzle day from `new Date()` **must** export `export const dynamic = 'force-dynamic'`; without it the page is statically generated at deploy time and the day number never advances on Vercel.
 
 ## Key Supabase tables
 - None in this project yet.
