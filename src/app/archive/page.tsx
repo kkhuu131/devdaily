@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { getAllPuzzles, getDayNumber } from '@/lib/puzzle';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import type { Category } from '@/types/puzzle';
+import ArchiveList, { type ArchiveItem } from '@/components/archive/ArchiveList';
 
 export const metadata: Metadata = {
   title: 'Archive',
@@ -13,23 +12,23 @@ export const metadata: Metadata = {
   openGraph: { url: '/archive' },
 };
 
-const CATEGORY_LABEL: Record<Category, string> = {
-  'code-smell': 'smell',
-  'solid': 'SOLID',
-  'design-pattern': 'pattern',
-  'principle': 'principle',
-  'refactoring': 'refactoring',
-};
-
 export default function ArchivePage() {
   const today = new Date();
   const todayDayNumber = getDayNumber(today);
   const allPuzzles = getAllPuzzles();
 
-  // Day numbers for every completed day, newest first.
-  const pastDays = Array.from(
+  const items: ArchiveItem[] = Array.from(
     { length: todayDayNumber - 1 },
-    (_, i) => todayDayNumber - 1 - i,
+    (_, i) => {
+      const dayNumber = todayDayNumber - 1 - i;
+      const puzzle = allPuzzles[(dayNumber - 1) % allPuzzles.length];
+      return {
+        dayNumber,
+        puzzleId: puzzle.id,
+        conceptName: puzzle.conceptName,
+        category: puzzle.category,
+      };
+    },
   );
 
   return (
@@ -53,7 +52,7 @@ export default function ArchivePage() {
           </p>
         </div>
 
-        {pastDays.length === 0 ? (
+        {items.length === 0 ? (
           <div
             className="rounded-sm p-8 text-center"
             style={{
@@ -69,58 +68,7 @@ export default function ArchivePage() {
             </p>
           </div>
         ) : (
-          <div
-            className="rounded-sm overflow-hidden"
-            style={{
-              backgroundColor: 'var(--bg-surface)',
-              border: '1px solid var(--border-subtle)',
-            }}
-          >
-            {pastDays.map((dayNumber, i) => {
-              const puzzleIndex = (dayNumber - 1) % allPuzzles.length;
-              const puzzle = allPuzzles[puzzleIndex];
-
-              return (
-                <div key={dayNumber}>
-                  {i > 0 && (
-                    <div
-                      className="h-px"
-                      style={{ backgroundColor: 'var(--border-subtle)' }}
-                    />
-                  )}
-                  <Link
-                    href={`/archive/${dayNumber}`}
-                    className="archive-row flex items-start sm:items-center gap-3 sm:gap-4 px-4 sm:px-5 py-4"
-                  >
-                    <span
-                      className="text-xs tabular-nums w-8 shrink-0"
-                      style={{ color: 'var(--text-muted)' }}
-                    >
-                      #{dayNumber}
-                    </span>
-                    <span
-                      className="archive-row-title flex-1 text-sm leading-relaxed transition-colors duration-100"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      {puzzle.conceptName}
-                    </span>
-                    <span
-                      className="text-xs shrink-0"
-                      style={{ color: 'var(--text-muted)' }}
-                    >
-                      {CATEGORY_LABEL[puzzle.category]}
-                    </span>
-                    <span
-                      className="text-xs shrink-0 hidden sm:inline"
-                      style={{ color: 'var(--text-muted)' }}
-                    >
-                      →
-                    </span>
-                  </Link>
-                </div>
-              );
-            })}
-          </div>
+          <ArchiveList items={items} />
         )}
 
       </main>

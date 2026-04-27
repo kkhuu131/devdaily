@@ -175,6 +175,23 @@ button:focus-visible,
   color: var(--accent-brand);
 }
 
+/* completed archive rows: persistent faint green border; hover turns full green */
+.archive-row-done {
+  border-left-color: color-mix(in srgb, var(--accent-correct) 30%, transparent);
+}
+.archive-row-done:hover {
+  border-left-color: var(--accent-correct);
+}
+.archive-row-done:hover .archive-row-title {
+  color: var(--accent-correct);
+}
+.archive-row-done:focus-visible {
+  border-left-color: var(--accent-correct);
+}
+.archive-row-done:focus-visible .archive-row-title {
+  color: var(--accent-correct);
+}
+
 /* ─── About page hover states ────────────────────────────────────────────── */
 .about-ext-link {
   display: block;

@@ -19,7 +19,8 @@
 - `AnswerOption` handles lock states and correctness visuals.
 - `RevealScreen` and `ShareCard` generate and present daily result output, including per-question marks and overall score formatting; `RevealScreen` embeds `NextPuzzleCountdown`, a client ticker until the next UTC midnight using `daily-calendar.ts`.
 - `Header` now makes the `DevDaily` wordmark a home link (`/`) so non-home routes can return to the current daily puzzle in one click.
-- `Footer` includes low-contrast navigation links for `/about` and `/archive`; the archive route now resolves to the historical puzzle index.
+- `Footer` includes low-contrast navigation links for `/about`, `/archive`, and an external GitHub link (inline SVG icon, no icon library dependency); uses a plain `<a>` tag for the external link rather than Next `<Link>`.
+- `ArchiveList` (`src/components/archive/ArchiveList.tsx`) is a client component that renders the archive rows and hydrates completion state from localStorage after mount; it receives a minimal serializable `ArchiveItem[]` prop from the server component to avoid passing full `Puzzle` objects to the client.
 - `BfCacheReload` (client-only) runs from `RootLayout` and force-reloads restored history entries on `/` and `/archive/<day>` to recover from Next 16/React 19 back-forward non-interactive states.
 - `NextPuzzleCountdown` and the home idle countdown both render an initial placeholder (`--:--:--`) and start ticking after mount to avoid impure render-time `Date.now()` usage and SSR/client hydration drift.
 
@@ -38,6 +39,7 @@
 - `scripts/generate-puzzles.ts` includes a local `.env.local`/`.env` fallback loader for CLI runs (without Next runtime helpers); CI still needs `OPENAI_API_KEY` provided as a real environment secret.
 - OpenAI Structured Outputs in strict mode requires nullable fields to still be listed in `required`; schema relaxations must follow that constraint or the API returns 400 before generation.
 - Generation is buffer-aware by default (no `--count`): it skips when `targetDaysAheadBuffer` is already satisfied, so “scheduled run succeeded” can legitimately produce no new files.
+- **Archive completion indicators only reflect archive-session plays:** `ArchiveList` checks `devdaily_archive_${puzzleId}` for `phase === 'COMPLETED'`. Daily completions are stored in `devdaily_game_state` and cleared when the UTC date rolls over, so a user who played a puzzle on its original day will not see a `✓` on the archive page unless they replay it via `/archive/[day]`.
 - **Next.js static caching:** `new Date()` in a Server Component does NOT trigger dynamic rendering — Next.js cannot see it as a dynamic signal. Any route that derives the current puzzle day from `new Date()` **must** export `export const dynamic = 'force-dynamic'`; without it the page is statically generated at deploy time and the day number never advances on Vercel.
 
 ## Key Supabase tables
