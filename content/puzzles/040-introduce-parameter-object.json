@@ -1,0 +1,106 @@
+{
+  "id": 40,
+  "conceptName": "Introduce Parameter Object",
+  "category": "refactoring",
+  "definition": "Replace a long parameter list (or a group of parameters that are commonly passed together) with a single object that represents that data, consolidating related values and behavior.",
+  "ruleOfThumb": "If several parameters are passed together across multiple calls and represent one conceptual thing, wrap them in a dedicated type that owns validation and related operations.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Introduce Parameter Object",
+    "page": "pp. 100-104",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which of these is the clearest indicator that several function parameters should be combined into a single type?",
+      "codeSnippet": "function scheduleEmail(to: string, subject: string, body: string, sendAt: Date, timezone: string, retryCount: number) {\n  // send later\n}\n\n// many callers pass sendAt + timezone + retryCount together",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function has more than three primitive parameters, regardless of their meaning.",
+          "isCorrect": false,
+          "explanation": "A long list is a hint but not sufficient. Some APIs legitimately need multiple primitives that don't form a single concept; grouping would add an unnecessary abstraction."
+        },
+        {
+          "id": "b",
+          "text": "Parameters that are optional or have defaults should be grouped to reduce overloads.",
+          "isCorrect": false,
+          "explanation": "Optional parameters address call-site variability; grouping isn't always the right fix and can hide intent or force callers to build objects for one-off calls."
+        },
+        {
+          "id": "c",
+          "text": "Several arguments are always passed together and represent one logical entity (they travel as a unit across callers).",
+          "isCorrect": true,
+          "explanation": "When values are conceptually one thing and repeatedly moved together, a single type clarifies intent, centralizes validation, and reduces repetitive call-site wiring."
+        },
+        {
+          "id": "d",
+          "text": "The function is used only in one place, so grouping simplifies that single caller.",
+          "isCorrect": false,
+          "explanation": "If the call is unique, creating a type may be premature; the real gain comes when multiple callers or operations share the grouped data."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this fragment, which situation most justifies creating a single parameter type?",
+      "codeSnippet": "function charge(amount: number, cardNumber: string, expMonth: number, expYear: number, cvv: string) { /* ... */ }\n\nfunction refund(transactionId: string, cardNumber: string, expMonth: number, expYear: number) { /* ... */ }\n\n// cardNumber, expMonth, expYear are passed to several payment APIs",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "When the same group of fields (cardNumber, expMonth, expYear) is repeatedly passed together to multiple functions.",
+          "isCorrect": true,
+          "explanation": "Grouping those fields into a Card data structure gives a single authoritative place for parsing/validation and reduces duplicated parameter lists across payment-related functions."
+        },
+        {
+          "id": "b",
+          "text": "When the parameter types change frequently, so grouping forces fewer recompiled call sites.",
+          "isCorrect": false,
+          "explanation": "Type churn is not a good reason by itself: you still need a stable abstraction, but grouping only to hide type changes can obscure responsibility and leak complexity into the new type."
+        },
+        {
+          "id": "c",
+          "text": "When unit tests become large because many parameters need values, grouping will automatically make tests simpler.",
+          "isCorrect": false,
+          "explanation": "Grouping can help tests, but it must model a real concept. Using grouping purely to reduce test setup may create artificial types and hide test intent."
+        },
+        {
+          "id": "d",
+          "text": "When you plan to convert the function to async; a parameter object helps concurrency.",
+          "isCorrect": false,
+          "explanation": "Asynchrony itself doesn't require grouping parameters. The trade-offs for concurrency and mutability must be considered separately from parameter organization."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better addresses maintainability and validation for an address passed through multiple APIs?",
+      "codeSnippet": "/* Version A */\nclass Address {\n  constructor(\n    public street: string,\n    public city: string,\n    public state: string,\n    public zip: string\n  ) {}\n\n  validate() {\n    if (!this.zip) throw new Error('missing zip');\n  }\n}\n\nfunction createUser(name: string, address: Address) {\n  address.validate();\n  // use address\n}\n\n/* Version B */\nfunction createUser(name: string, street: string, city: string, state: string, zip: string) {\n  if (!zip) throw new Error('missing zip');\n  // use primitives\n}\n\n// callers build primitive arguments inline",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A, which encapsulates the address into a dedicated type with its own validation and methods.",
+          "isCorrect": true,
+          "explanation": "Encapsulating related fields into a type centralizes validation and behavior, clarifies intent at call sites, and prevents ordering mistakes. When multiple functions consume address data, a single Address type avoids repeating validation and reduces fragility as the address model evolves."
+        },
+        {
+          "id": "b",
+          "text": "Version B, which keeps separate primitive parameters and validates where needed inside each function.",
+          "isCorrect": false,
+          "explanation": "Scattering validation across consumers duplicates logic and risks inconsistent checks. Separate primitives increase the chance of argument order errors, make refactors harder when the address needs an extra field or behavior, and forces every caller to know validation rules."
+        }
+      ]
+    }
+  ]
+}

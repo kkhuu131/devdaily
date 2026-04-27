@@ -1,0 +1,106 @@
+{
+  "id": 34,
+  "conceptName": "Fail Fast Principle",
+  "category": "principle",
+  "definition": "Design practice that detects invalid state or incorrect inputs as early as possible and surfaces a clear error immediately, rather than letting the system continue in an incorrect state and fail later in harder-to-diagnose ways.",
+  "ruleOfThumb": "Validate inputs and invariants at the boundary; throw or return an explicit error immediately when something's wrong instead of deferring or masking it.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Bliki: Fail Fast",
+    "chapter": "Fail Fast",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/FailFast.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the function. Which option best describes how it handles invalid input?",
+      "codeSnippet": "function createAccount(req: any) {\n  if (!req.body.username) throw new Error(\"username required\");\n  if (!req.body.email) throw new Error(\"email required\");\n  // continue with DB calls...\n  return { id: 1 };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It immediately stops and raises an error when required fields are missing.",
+          "isCorrect": true,
+          "explanation": "The function checks the required fields at the start and throws right away, making the failure explicit and preventing further processing with bad data."
+        },
+        {
+          "id": "b",
+          "text": "It logs the problem and continues, hoping later steps will recover.",
+          "isCorrect": false,
+          "explanation": "This is incorrect: the snippet throws errors rather than logging and continuing. Logging-and-continue would risk later, harder-to-debug failures."
+        },
+        {
+          "id": "c",
+          "text": "It returns a neutral value to indicate the input was ignored.",
+          "isCorrect": false,
+          "explanation": "Returning a neutral value (like null) would hide the error from callers; the snippet throws, which is the opposite behavior."
+        },
+        {
+          "id": "d",
+          "text": "It attempts to patch missing fields with defaults and proceeds.",
+          "isCorrect": false,
+          "explanation": "There is no defaulting in the code. Throwing on missing required fields prevents proceeding with an assumed default that may be incorrect."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which statement best captures the risk in this payment-processing code?",
+      "codeSnippet": "async function processPayment(card: any) {\n  const token = await tokenize(card);\n  sendToGateway(token).catch(err => console.error('gateway failed', err));\n  // assume the user can continue while processing happens\n  return { status: 'processing' };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This hides gateway errors and returns an optimistic success, increasing the chance of later, confusing failures.",
+          "isCorrect": true,
+          "explanation": "The code swallows the remote error and gives an optimistic response. That defers detection and couples diagnosis to later stages, making problems harder to trace and recover."
+        },
+        {
+          "id": "b",
+          "text": "This is a robust non-blocking pattern and is always preferable for user experience.",
+          "isCorrect": false,
+          "explanation": "Non-blocking UX can be valid, but not when errors are silently ignored. A robust approach would surface failure to the caller or provide a clear retry strategy."
+        },
+        {
+          "id": "c",
+          "text": "It correctly retries indefinitely in the background until success.",
+          "isCorrect": false,
+          "explanation": "There is no retry logic shown. Indefinite background retries would also need limits and visibility to avoid masking permanent failures."
+        },
+        {
+          "id": "d",
+          "text": "This ensures the user is immediately informed of network issues by logging to console.",
+          "isCorrect": false,
+          "explanation": "Logging to console does not inform the user or calling code. Proper handling should surface an error result or status the caller can act on."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for detecting and reporting invalid inputs as early as possible?",
+      "codeSnippet": "// Version A\nfunction addProductA(p: any) {\n  if (!p.sku) throw new Error('Missing sku');\n  if (typeof p.price !== 'number' || p.price <= 0) throw new Error('Invalid price');\n  db.insert(p);\n}\n\n// Version B\nfunction addProductB(p: any) {\n  try {\n    db.insert(p); // relies on DB NOT NULL / CHECK constraints\n  } catch (e) {\n    throw new Error('Could not add product');\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A — validate at the API boundary and throw precise errors before mutating state.",
+          "isCorrect": true,
+          "explanation": "Version A enforces invariants where inputs enter the system and provides specific error messages. This prevents invalid state from reaching downstream components and makes tests and debugging simpler."
+        },
+        {
+          "id": "b",
+          "text": "Version B — let the database enforce constraints and translate DB errors into a generic message.",
+          "isCorrect": false,
+          "explanation": "Relying on the DB defers detection and obscures the root cause. Catching and rethrowing a generic message hides useful context, increases coupling to DB error formats, and makes reproducing the original failure harder."
+        }
+      ]
+    }
+  ]
+}

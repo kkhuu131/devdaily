@@ -1,0 +1,106 @@
+{
+  "id": 31,
+  "conceptName": "Replace Conditional with Polymorphism",
+  "category": "refactoring",
+  "definition": "Refactor branching logic that selects behavior based on a type or code into a type hierarchy where each subtype implements the behavior directly, removing the conditional and moving behavior to the classes that vary.",
+  "ruleOfThumb": "When you have conditionals that choose behavior based on an object's type or code and the branches contain significant, evolving logic, prefer moving that logic into subclasses or strategy objects so adding a new case doesn't require editing a central switch/if.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Conditional with Polymorphism",
+    "page": "214",
+    "externalUrl": "https://refactoring.guru/replace-conditional-with-polymorphism"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "You find a switch on order.type where each case computes a different shipping price. What change most directly addresses the design problem?",
+      "codeSnippet": "class Shipping {\n  calculatePrice(order: { type: string }) {\n    switch (order.type) {\n      case 'STANDARD': return 5;\n      case 'EXPRESS': return 20;\n      case 'INTERNATIONAL': return 50;\n    }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce subclasses or separate classes for each order type and move the price logic into them.",
+          "isCorrect": true,
+          "explanation": "Moving each branch into a dedicated class localizes the behavior for each type and eliminates the central switch. This makes adding a new order type a matter of adding a class rather than editing a conditional, reducing risk of breaking unrelated behavior."
+        },
+        {
+          "id": "b",
+          "text": "Wrap the switch in another function to make the main method shorter but keep the same cases.",
+          "isCorrect": false,
+          "explanation": "Extracting the switch to a helper only hides the conditional; the code still needs modification when new types are introduced and branch logic remains distributed in one place, preserving the maintenance problem."
+        },
+        {
+          "id": "c",
+          "text": "Replace the switch with a dictionary mapping type strings to numeric constants and use that map to look up prices.",
+          "isCorrect": false,
+          "explanation": "A lookup table is acceptable for trivial, static mappings, but if branches include distinct logic (validation, calculation steps), a map won't capture behavior differences and leads to scattered special cases."
+        },
+        {
+          "id": "d",
+          "text": "Introduce a feature flag so different price logic can be toggled at runtime.",
+          "isCorrect": false,
+          "explanation": "Feature flags manage rollout and runtime toggles, not structural duplication from type-based branching. They add operational complexity and don't address the code smell of centralized conditional logic."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A class chooses behavior with a couple of ifs based on an internal mode field. The modes may grow and each branch has its own calculation. Which approach balances clarity and extensibility?",
+      "codeSnippet": "class Invoice {\n  constructor(private mode: 'retail'|'wholesale') {}\n  calculateTax(amount: number) {\n    if (this.mode === 'retail') return amount * 0.1;\n    if (this.mode === 'wholesale') return amount * 0.06;\n    return 0;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Create subclasses or separate strategy objects for each mode and move calculateTax into them.",
+          "isCorrect": true,
+          "explanation": "Putting the calculation into mode-specific classes or strategies confines the logic and makes adding a new mode a localized change. It reduces branching in the host class and improves testability of each mode's tax logic."
+        },
+        {
+          "id": "b",
+          "text": "Keep the ifs but add more guard clauses and document each branch well.",
+          "isCorrect": false,
+          "explanation": "Better comments and guard clauses help readability but do not scale: as modes increase the method will grow, and tests will still need to cover many code paths inside one class."
+        },
+        {
+          "id": "c",
+          "text": "Store numeric multipliers in configuration and compute tax using a lookup by mode key.",
+          "isCorrect": false,
+          "explanation": "A config map works for simple multipliers but fails if different modes require different algorithms or validation steps. It treats behavior as data when it's actually behavior, risking brittle conditionals elsewhere."
+        },
+        {
+          "id": "d",
+          "text": "Use a single polymorphic function that accepts mode as an argument and switches internally, keeping calculation centralized.",
+          "isCorrect": false,
+          "explanation": "Centralizing behavior into a standalone function that still switches on mode postpones the problem: you still have branching that will need modification when modes expand, and behavior remains coupled."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for growing, format-specific rendering logic?",
+      "codeSnippet": "// Version A: central conditional\nclass ReportA {\n  constructor(private format: 'pdf'|'html') {}\n  render(data: string) {\n    if (this.format === 'pdf') return `PDF:${data}`;\n    if (this.format === 'html') return `<html>${data}</html>`;\n    return data;\n  }\n}\n\n// Version B: distinct subclasses\nabstract class ReportB {\n  abstract render(data: string): string;\n}\nclass PdfReport extends ReportB { render(data: string){ return `PDF:${data}` } }\nclass HtmlReport extends ReportB { render(data: string){ return `<html>${data}</html>` } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Prefer Version A (single class with conditionals) because it keeps related code in one place.",
+          "isCorrect": false,
+          "explanation": "Keeping logic in one class may seem convenient early, but as formats grow the render method accumulates many branches and becomes harder to test and modify. Adding a new format requires editing the class (risking regressions) and mixes multiple responsibilities, which violates open/closed and single-responsibility principles."
+        },
+        {
+          "id": "b",
+          "text": "Prefer Version B (base type with per-format subclasses) because each format's rendering is isolated and extensible.",
+          "isCorrect": true,
+          "explanation": "Separating rendering into subclasses localizes behavior, simplifies unit tests (one behavior per class), and lets you add formats by adding new classes without changing existing code. This reduces branching, improves maintainability, and aligns with open/closed and easier mocking or DI for different renderers."
+        }
+      ]
+    }
+  ]
+}

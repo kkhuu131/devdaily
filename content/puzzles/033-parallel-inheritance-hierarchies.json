@@ -1,0 +1,106 @@
+{
+  "id": 33,
+  "conceptName": "Parallel Inheritance Hierarchies",
+  "category": "code-smell",
+  "definition": "A design smell where two or more class hierarchies mirror each other so that every time you add a subclass in one hierarchy you must add a corresponding subclass in the other hierarchy. This creates duplicated structure and tight coupling between the hierarchies, making evolution error-prone and costly.",
+  "ruleOfThumb": "If you find yourself adding matching subclasses in multiple hierarchies, stop: consider combining responsibilities through composition or extracting the varying behavior into a single set of collaborating types.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Parallel Inheritance Hierarchies",
+    "page": "p. 78",
+    "externalUrl": "https://refactoring.com/catalog/parallel_inheritance_hierarchies.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the code. What problem is this most clearly showing?",
+      "codeSnippet": "abstract class Animal {\n  abstract speak(): string\n}\nclass Dog extends Animal { speak() { return 'woof' } }\nclass Cat extends Animal { speak() { return 'meow' } }\n\nabstract class AnimalSerializer {\n  abstract serialize(a: Animal): string\n}\nclass DogSerializer extends AnimalSerializer { serialize(a: Animal){ return '{dog}' } }\nclass CatSerializer extends AnimalSerializer { serialize(a: Animal){ return '{cat}' } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Two separate hierarchies mirror each other so adding a new subtype requires changes in both places.",
+          "isCorrect": true,
+          "explanation": "Correct. The Animal and AnimalSerializer hierarchies are duplicated: every new Animal leads to a matching Serializer. That symmetry signals coupled hierarchies that will force parallel edits."
+        },
+        {
+          "id": "b",
+          "text": "A large class with too many responsibilities that should be split into smaller classes.",
+          "isCorrect": false,
+          "explanation": "Incorrect. There isn't a single bloated class; responsibilities are split across classes but the issue is duplication across two hierarchies rather than one class doing everything."
+        },
+        {
+          "id": "c",
+          "text": "Excessive use of global state making methods hard to test.",
+          "isCorrect": false,
+          "explanation": "Incorrect. The snippet shows no global state. The problem is structural duplication across hierarchies, not test-unfriendly globals."
+        },
+        {
+          "id": "d",
+          "text": "Missing interfaces—concrete classes should implement interfaces to allow swapping implementations.",
+          "isCorrect": false,
+          "explanation": "Incorrect. The code already uses abstract base types. The core issue is the parallel, mirrored subclassing pattern, not a lack of abstraction."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You need to make it easier to add new Animal types and new serialization formats independently. What is the best immediate refactor?",
+      "codeSnippet": "abstract class Animal { abstract speak(): string }\nclass Dog extends Animal { speak() { return 'woof' } }\nclass Cat extends Animal { speak() { return 'meow' } }\n\n// Current: DogSerializer, CatSerializer, etc.",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Merge each Animal subclass with its serializer into a single class so there are fewer types to maintain.",
+          "isCorrect": false,
+          "explanation": "Wrong choice. Merging mixes responsibilities (behavior + serialization) into one class. That reduces duplication but increases coupling and violates single-responsibility; it makes adding new serializers harder."
+        },
+        {
+          "id": "b",
+          "text": "Introduce a serializer/strategy interface and inject a serializer instance into animals (use delegation instead of parallel subclassing).",
+          "isCorrect": true,
+          "explanation": "Right. Extracting serialization as a separate strategy and composing it with Animal decouples the two axes of variation. You can add new animals or serializers independently without creating matching subclasses."
+        },
+        {
+          "id": "c",
+          "text": "Use mixins or multiple inheritance so each serializer can be combined with different animals at runtime.",
+          "isCorrect": false,
+          "explanation": "Not ideal. Mixins increase complexity and can introduce brittle coupling and diamond problem–like behavior in TypeScript. Delegation via a small interface is simpler and clearer."
+        },
+        {
+          "id": "d",
+          "text": "Keep the hierarchies and centralize the decision with a big factory that maps animals to serializers.",
+          "isCorrect": false,
+          "explanation": "This postpones the coupling. A central factory still requires updating whenever you add a new Animal or serializer and can become a maintenance bottleneck; it doesn't decouple the two dimensions."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which design is the better long-term choice for maintainability and why? (Version A vs Version B)",
+      "codeSnippet": "// Version A: Keep parallel hierarchies and a factory\nabstract class Animal { abstract speak(): string }\nclass Dog extends Animal { speak() { return 'woof' } }\nclass Cat extends Animal { speak() { return 'meow' } }\n\nclass SerializerFactory {\n  serialize(a: Animal) {\n    if (a instanceof Dog) return '{dog}'\n    if (a instanceof Cat) return '{cat}'\n    throw new Error('unknown')\n  }\n}\n\n// Version B: Use composition/strategy\ninterface Serializer { serialize(a: Animal): string }\nclass JsonSerializer implements Serializer { serialize(a: Animal){ return '{json}' } }\nabstract class Animal2 { constructor(public serializer: Serializer) {} abstract speak(): string }\nclass Dog2 extends Animal2 { speak(){ return 'woof' } }\nclass Cat2 extends Animal2 { speak(){ return 'meow' } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A: Keep the mirrored hierarchies and centralize logic in a factory with instanceof checks.",
+          "isCorrect": false,
+          "explanation": "Incorrect. The factory with instanceof checks preserves coupling: every new Animal requires editing the factory. That scatters knowledge about types and violates the open/closed principle; tests tend to grow brittle and duplication remains."
+        },
+        {
+          "id": "b",
+          "text": "Version B: Inject serializer strategy instances into animal objects so animals and serializers can evolve independently.",
+          "isCorrect": true,
+          "explanation": "Correct. Composition separates the two axes of change: you can add new serializers without touching animal subclasses and vice versa. This reduces duplicated subclassing, improves testability (you can inject mocks), and aligns with delegation and single-responsibility principles—making maintenance and extension safer."
+        }
+      ]
+    }
+  ]
+}

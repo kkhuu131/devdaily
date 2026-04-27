@@ -1,0 +1,106 @@
+{
+  "id": 30,
+  "conceptName": "Builder Pattern",
+  "category": "design-pattern",
+  "definition": "A construction technique that separates the step-by-step assembly of a complex object from its final representation, allowing different representations and readable, configurable object creation.",
+  "ruleOfThumb": "When an object has many optional parts or combos and you want readable, validated construction with an immutable final product, prefer a dedicated assembler object rather than many constructors or mutation.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Builder",
+    "page": "107",
+    "externalUrl": "https://refactoring.guru/design-patterns/builder"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which construction style is shown by this usage?",
+      "codeSnippet": "const order = new OrderBuilder()\n  .withCustomer(customer)\n  .addItem(item1)\n  .addItem(item2)\n  .withShipping(shipping)\n  .build();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Telescoping constructors: many overloaded constructors with different parameter lists.",
+          "isCorrect": false,
+          "explanation": "Telescoping constructors are multiple constructor overloads that accept different parameter combinations. The snippet uses chained configuration methods and a final creation call, not overloaded constructors."
+        },
+        {
+          "id": "b",
+          "text": "Fluent, stepwise configuration that collects options and returns a constructed, separate object at the end.",
+          "isCorrect": true,
+          "explanation": "This usage shows a fluent API that accumulates state through chained methods and produces a final object with a terminal call. This separates the assembly steps from the final product and improves readability for many optional parts."
+        },
+        {
+          "id": "c",
+          "text": "Factory method: a single method that decides which subclass to instantiate based on parameters.",
+          "isCorrect": false,
+          "explanation": "A factory method encapsulates creation logic and returns different subclasses. The snippet shows progressive configuration and an explicit build step, not a single selector function."
+        },
+        {
+          "id": "d",
+          "text": "Prototype cloning: copy an existing instance and tweak fields.",
+          "isCorrect": false,
+          "explanation": "Prototype cloning involves duplicating an existing object, usually via a copy or clone operation. The example constructs from scratch using chained setters, so it's not prototype-based."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary advantage of this construction style compared to passing a large options object into the constructor?",
+      "codeSnippet": "class ProductBuilder {\n  private opts: any = {};\n  name(n: string) { this.opts.name = n; return this; }\n  price(p: number) { this.opts.price = p; return this; }\n  discount(d: number) { this.opts.discount = d; return this; }\n  build() { return new Product(this.opts); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Significant runtime performance gains by reducing allocations.",
+          "isCorrect": false,
+          "explanation": "While builders may avoid some intermediate objects, the main intent is API clarity and safe assembly, not measurable runtime allocation improvements. Performance is usually secondary and often negligible."
+        },
+        {
+          "id": "b",
+          "text": "Cleaner, self-documenting construction with stepwise optional parameters and a single place to validate before creating the final object.",
+          "isCorrect": true,
+          "explanation": "A dedicated assembler makes code more readable for many optional/conditional fields, and lets you enforce invariants or compute derived values in build() before producing the final object."
+        },
+        {
+          "id": "c",
+          "text": "It removes the need for type definitions or interfaces for the constructed object.",
+          "isCorrect": false,
+          "explanation": "Builders do not eliminate types; they typically complement them. You still define clear types for both the assembled product and builder configuration."
+        },
+        {
+          "id": "d",
+          "text": "It lets subclasses override construction steps at runtime without changing the client code.",
+          "isCorrect": false,
+          "explanation": "Overriding construction steps is more a concern of inheritance or subclass-specific factories. The shown approach focuses on configurable assembly, not on subclass customization at runtime."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better preserves invariants and keeps the domain object’s API clean for users?",
+      "codeSnippet": "// Version A: mutating the domain object during setup\nclass UserA {\n  name = '';\n  email = '';\n  isAdmin = false;\n  setName(n: string) { this.name = n; return this; }\n  setEmail(e: string) { this.email = e; return this; }\n  setAdmin(a: boolean) { this.isAdmin = a; return this; }\n}\nconst a = new UserA().setName('Amy').setEmail('a@x');\n\n// Version B: separate assembler that builds an immutable domain object\nclass UserB {\n  constructor(readonly name: string, readonly email: string, readonly isAdmin: boolean) {}\n}\nclass UserBuilderB {\n  private data = {name: '', email: '', isAdmin: false};\n  name(n: string) { this.data.name = n; return this; }\n  email(e: string) { this.data.email = e; return this; }\n  admin(a: boolean) { this.data.isAdmin = a; return this; }\n  build() { /* validate here */ return new UserB(this.data.name, this.data.email, this.data.isAdmin); }\n}\nconst b = new UserBuilderB().name('Amy').email('a@x').build();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is better because changing the object in place avoids an extra builder class and keeps construction concise.",
+          "isCorrect": false,
+          "explanation": "Mutating the domain object during construction exposes partially-initialized states to callers, makes it harder to enforce invariants, and couples construction logic to the object's API. It also prevents easily creating immutable instances and centralizing validation."
+        },
+        {
+          "id": "b",
+          "text": "Version B is better because a separate assembler centralizes validation and produces an immutable, fully-initialized domain object.",
+          "isCorrect": true,
+          "explanation": "Keeping assembly in a dedicated builder lets you validate all inputs in one place and return a final object whose invariants are guaranteed. It avoids leaking mutable, half-configured instances and keeps the domain object's API focused on behavior rather than stepwise configuration. This separation is recommended by classic pattern literature for complex construction."
+        }
+      ]
+    }
+  ]
+}

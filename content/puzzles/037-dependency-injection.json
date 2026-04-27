@@ -1,0 +1,105 @@
+{
+  "id": 37,
+  "conceptName": "Dependency Injection",
+  "category": "solid",
+  "definition": "A design approach where an object's required collaborators are provided from the outside rather than the object creating them itself, making dependencies explicit and easier to substitute.",
+  "ruleOfThumb": "Pass collaborators in from the outside (constructor or setter) so callers control implementations and tests can supply lightweight fakes.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Inversion of Control Containers and the Dependency Injection pattern",
+    "chapter": "Overview",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/articles/injection.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which option most clearly shows the practice of receiving collaborators from outside rather than creating them internally?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Class constructs its own helper instances with new inside the constructor and stores them as private fields.",
+          "isCorrect": false,
+          "explanation": "When a class instantiates its helpers, it controls the concrete types and lifecycle, making those collaborators implicit and hard to replace in tests or alternate environments."
+        },
+        {
+          "id": "b",
+          "text": "Class declares its required collaborator as a constructor parameter (an interface or type) and stores the provided instance for use.",
+          "isCorrect": true,
+          "explanation": "Accepting collaborators via the constructor makes dependencies explicit, allows callers to provide different implementations, and simplifies mocking or stubbing in tests."
+        },
+        {
+          "id": "c",
+          "text": "A static factory method returns a fully-configured instance, hiding how collaborators are built inside the factory.",
+          "isCorrect": false,
+          "explanation": "Static factories encapsulate construction but still hide dependencies from the consumer; they reduce duplication but don't make collaborators explicit to the consuming class."
+        },
+        {
+          "id": "d",
+          "text": "Classes call a global registry to retrieve service instances when they need them.",
+          "isCorrect": false,
+          "explanation": "Using a global registry centralizes lookup but keeps dependencies implicit and can create hard-to-test code because calls to the registry are scattered and hidden."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Examine the code. What is the primary drawback of this approach?",
+      "codeSnippet": "class Database { query(sql:string){ /* ... */ } }\n\nclass UserService {\n  private db = new Database();\n\n  getUser(id:string) {\n    return this.db.query(`select * from users where id='${id}'`);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It violates the Single Responsibility Principle because UserService now also manages database connections.",
+          "isCorrect": false,
+          "explanation": "While mixing responsibilities can be a concern, the more immediate problem here is tighter coupling to the concrete Database type; SRP may be impacted depending on how connection logic evolves, but it's not the primary testability issue."
+        },
+        {
+          "id": "b",
+          "text": "Tight coupling to a concrete Database makes unit testing and substituting alternate implementations difficult.",
+          "isCorrect": true,
+          "explanation": "Constructing Database inside UserService hides the dependency and forces tests to use the real Database or complicated setup, reducing isolation and slowing test execution."
+        },
+        {
+          "id": "c",
+          "text": "This pattern will cause a memory leak because Database instances are never released.",
+          "isCorrect": false,
+          "explanation": "Creating an instance in a field does not necessarily leak memory; proper scoping and garbage collection handle lifecycle. The main issue is coupling and testability, not automatic leaking."
+        },
+        {
+          "id": "d",
+          "text": "It will always throw a runtime error because Database wasn't validated before use.",
+          "isCorrect": false,
+          "explanation": "There is no inherent runtime error in constructing an object directly. Validation concerns are orthogonal to the hidden-dependency and testability issues shown here."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which version is preferable in a large application that needs testability, flexible configuration, and clear ownership of component lifecycles?",
+      "codeSnippet": "// Version A\nclass EmailSender { send(to:string, body:string){ /* send */ } }\nclass UserNotifierA {\n  private sender = new EmailSender();\n  notify(email:string){ this.sender.send(email, 'Welcome'); }\n}\n\n// Version B\nclass UserNotifierB {\n  constructor(private sender:{ send(to:string, body:string):void }) {}\n  notify(email:string){ this.sender.send(email, 'Welcome'); }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Choose Version A because constructing its collaborator internally keeps the notifier self-contained and reduces caller complexity.",
+          "isCorrect": false,
+          "explanation": "Although Version A is simpler to instantiate, it hides who owns and configures the EmailSender. For large systems this leads to duplicated configuration, harder testing (cannot easily inject fake senders), and difficulty controlling lifecycle or swapping implementations at composition time."
+        },
+        {
+          "id": "b",
+          "text": "Choose Version B because its dependencies are explicit, making testing and composition at the application root straightforward.",
+          "isCorrect": true,
+          "explanation": "Version B exposes its collaborator through the constructor so tests can pass fakes, configuration and pooling can be centralized at the composition root, and the notifier focuses on behavior not creation. The trade-off is slightly more wiring up-front, but that trade enables clearer ownership and flexible implementations for large systems."
+        }
+      ]
+    }
+  ]
+}

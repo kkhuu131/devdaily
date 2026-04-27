@@ -1,0 +1,106 @@
+{
+  "id": 38,
+  "conceptName": "Information Hiding",
+  "category": "solid",
+  "definition": "Design practice that keeps a module's internal representation and implementation details inaccessible to other modules, exposing only a minimal, stable interface so callers can't depend on or corrupt internal structure.",
+  "ruleOfThumb": "Expose behavior (methods) not representation (data); make fields private and provide only the operations clients need.",
+  "citation": {
+    "author": "David L. Parnas",
+    "bookTitle": "On the Criteria To Be Used in Decomposing Systems into Modules (1972)",
+    "chapter": "N/A (conference paper)",
+    "page": "421-423",
+    "externalUrl": "https://www.cs.cmu.edu/~rwh/plp/papers/parnas72.pdf"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which class best prevents external code from accidentally mutating its internal list?",
+      "codeSnippet": "class Inventory {\n  public items: string[] = [];\n}\n\nclass InventorySafe {\n  private items: string[] = [];\n  getItems() { return this.items.slice(); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Inventory exposes the array as a public field so callers can read and modify it directly.",
+          "isCorrect": false,
+          "explanation": "Exposing the array lets any caller push/splice elements and break invariants. It provides no control over how the data is changed."
+        },
+        {
+          "id": "b",
+          "text": "InventorySafe keeps the array private and returns a shallow copy from a getter.",
+          "isCorrect": true,
+          "explanation": "Returning a copy prevents callers from mutating the object's internal array. The class retains control over its state and can change representation without affecting callers."
+        },
+        {
+          "id": "c",
+          "text": "Make the array a public readonly field so callers can't assign the property.",
+          "isCorrect": false,
+          "explanation": "A readonly reference prevents reassigning the field, but does not prevent mutating the array's contents (push/pop). It doesn't protect nested state."
+        },
+        {
+          "id": "d",
+          "text": "Mark the array protected so only subclasses can access it.",
+          "isCorrect": false,
+          "explanation": "Making it protected still exposes the representation to subclasses and tightens coupling. It does not protect against external mutation and makes refactoring harder."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A Service class stores a mutable config object. Which change most directly stops callers from accidentally modifying the service's runtime config while keeping runtime cost reasonable?",
+      "codeSnippet": "interface Config { endpoints: string[]; timeoutMs: number }\n\nclass Service {\n  private config: Config;\n  getConfig(): Config { return this.config; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Return the internal config directly for best performance and trust callers to behave.",
+          "isCorrect": false,
+          "explanation": "Returning the internal object is fastest but allows callers to mutate nested arrays or fields, violating invariants and making bugs hard to track down."
+        },
+        {
+          "id": "b",
+          "text": "Make the config property public but mark it readonly so callers can read but not replace it.",
+          "isCorrect": false,
+          "explanation": "A readonly property prevents reassigning the reference but does not stop callers from mutating nested objects (e.g., config.endpoints.push(...)). It doesn't adequately protect internal state."
+        },
+        {
+          "id": "c",
+          "text": "Return a shallow copy of the config (e.g., {...this.config, endpoints: this.config.endpoints.slice()}).",
+          "isCorrect": true,
+          "explanation": "A defensive copy prevents clients from changing the service's live config while keeping the copy operation reasonably cheap. For deeply nested, mutation-prone structures you can selectively clone only the mutable parts."
+        },
+        {
+          "id": "d",
+          "text": "Deep-freeze the config once and share it everywhere so nobody can mutate it.",
+          "isCorrect": false,
+          "explanation": "Freezing can work but is often expensive, has surprising interactions with third-party code, and can complicate legitimate updates. It's a stronger tool with higher cost than a targeted defensive copy."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You need a module to maintain a list of orders and enforce business invariants (no duplicate IDs, validation on add). Which version would you choose?",
+      "codeSnippet": "// Version A\nclass OrderBookA {\n  private orders: Order[] = [];\n  add(order: Order) {\n    if (this.orders.some(o => o.id === order.id)) throw new Error('dup');\n    this.validate(order);\n    this.orders.push(order);\n  }\n  findByUser(id: string) { return this.orders.filter(o => o.userId === id); }\n}\n\n// Version B\nclass OrderBookB {\n  public orders: Order[] = [];\n  // callers push directly: book.orders.push(newOrder)\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Choose Version A: keep the list private and expose operations (add, queries) that enforce rules.",
+          "isCorrect": true,
+          "explanation": "Version A centralizes validation and preserves invariants because all mutations go through the module's API. The implementation can switch to a map, database, or indexed structure later without breaking callers. This reduces coupling, simplifies reasoning about state, and makes testing and concurrency control easier. These are the practical benefits advocated in modular design literature (see Parnas' original criteria and later guidance in Clean Code)."
+        },
+        {
+          "id": "b",
+          "text": "Choose Version B: expose the array so clients can manipulate orders directly for flexibility.",
+          "isCorrect": false,
+          "explanation": "Allowing callers to mutate the internal array leaks representation and scatters responsibility for invariants across the codebase. Callers may forget validation, create duplicates, or rely on array semantics that you might want to change. This tight coupling makes refactoring dangerous and bugs harder to localize."
+        }
+      ]
+    }
+  ]
+}

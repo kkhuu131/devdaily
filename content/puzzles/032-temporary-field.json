@@ -1,0 +1,105 @@
+{
+  "id": 32,
+  "conceptName": "Temporary Field",
+  "category": "code-smell",
+  "definition": "An instance field that exists only to hold intermediate or conditional values for some operations, remaining unused or null for most of the object's lifetime. It introduces misleading object state and coupling between methods.",
+  "ruleOfThumb": "If a field is only used to pass temporary data between a small set of methods or to hold an intermediate result during one operation, prefer a local variable, parameter, or a small helper object instead of storing it on the instance.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Temporary Field",
+    "page": "catalog/temporaryField.html",
+    "externalUrl": "https://refactoring.com/catalog/temporaryField.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best identifies the smell shown by a class that has a field only assigned and read during a specific operation and is otherwise null?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "A field maintained to cache a computed value so multiple callers can reuse it across method calls.",
+          "isCorrect": false,
+          "explanation": "Caching fields are intended for reuse across calls and typically have logic to populate and reuse the value. The smell in question is about fields that are only set for one operation and not intended as long-lived caches."
+        },
+        {
+          "id": "b",
+          "text": "An instance variable used only as a temporary holder during certain operations, left null or unused otherwise.",
+          "isCorrect": true,
+          "explanation": "This captures the core problem: the field represents transient state for a limited scope. Such fields confuse object invariants, make reasoning and testing harder, and are better as local variables or parameters."
+        },
+        {
+          "id": "c",
+          "text": "A field exposed publicly that leaks internal state to callers and breaks encapsulation.",
+          "isCorrect": false,
+          "explanation": "Exposed-public-field problems are about visibility and encapsulation. Although both are smells, a field used only temporarily is an internal design issue, not necessarily a visibility leak."
+        },
+        {
+          "id": "d",
+          "text": "A duplicated field that mirrors another property, causing inconsistency risk.",
+          "isCorrect": false,
+          "explanation": "Duplicated-state smells (two fields with overlapping data) are different: they create synchronization problems. The temporary-holder smell is about lifetime and scope of a field rather than duplication."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Examine the class below. Which change most directly addresses the design problem present?",
+      "codeSnippet": "class OrderCalculator {\n  private tempDiscount: number | null = null;\n\n  applyDiscount(order: Order) {\n    this.tempDiscount = this.lookupDiscount(order);\n    order.total -= this.tempDiscount;\n    this.tempDiscount = null;\n  }\n\n  calculateTax(order: Order) {\n    // unrelated: uses no tempDiscount\n    return order.total * 0.1;\n  }\n\n  private lookupDiscount(o: Order) { return 5; }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Keep the field but add comments clarifying its transient use so future maintainers understand it's temporary.",
+          "isCorrect": false,
+          "explanation": "Comments don't remove the core issue: the field creates state on the instance and can lead to accidental reuse or bugs. Documentation is fragile compared to changing the structure."
+        },
+        {
+          "id": "b",
+          "text": "Remove the instance field and use a local variable inside applyDiscount to hold the intermediate discount value.",
+          "isCorrect": true,
+          "explanation": "Using a local variable confines the temporary data to the operation's scope, eliminating confusing object state and making the code safer for concurrent or reentrant use."
+        },
+        {
+          "id": "c",
+          "text": "Expose the value as a public property so other components can reuse the computed discount instead of recalculating.",
+          "isCorrect": false,
+          "explanation": "Making the value public increases coupling and assumes the intermediate value belongs to the object's public contract. It turns a transient implementation detail into part of the API, which is rarely desirable."
+        },
+        {
+          "id": "d",
+          "text": "Switch to a lazily initialized getter that caches the discount on first access for reuse during the instance lifetime.",
+          "isCorrect": false,
+          "explanation": "A lazy cache is only appropriate if the value is expensive to compute and beneficial to retain across calls. Here the discount is operation-specific and cleared; caching would change semantics and potentially cause incorrect reuse."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is a better design and why? Consider clarity, testability, and reentrancy.",
+      "codeSnippet": "/* Version A */\nclass ReportGenerator {\n  private intermediate: number | null = null;\n\n  generate(data: Data) {\n    this.intermediate = this.computeStep(data);\n    const out = this.format(data, this.intermediate);\n    this.intermediate = null;\n    return out;\n  }\n\n  private computeStep(d: Data) { return 42; }\n  private format(d: Data, n: number | null) { return `v:${n}`; }\n}\n\n/* Version B */\nclass ReportGeneratorV2 {\n  generate(data: Data) {\n    const intermediate = this.computeStep(data);\n    return this.format(data, intermediate);\n  }\n\n  private computeStep(d: Data) { return 42; }\n  private format(d: Data, n: number) { return `v:${n}`; }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is better because keeping the value on the instance makes it easier to inspect during debugging and reuse between helper methods.",
+          "isCorrect": false,
+          "explanation": "Storing the value on the instance couples unrelated method calls to object state and opens up hazards: concurrent or nested generate calls can clobber the value, tests must reset the object between calls, and object invariants become harder to reason about. Debuggability doesn't justify the broader maintenance costs."
+        },
+        {
+          "id": "b",
+          "text": "Version B is better because the temporary value is kept local and passed explicitly, avoiding shared mutable state and making the API and tests simpler.",
+          "isCorrect": true,
+          "explanation": "Version B confines transient data to the operation scope, improving reentrancy (safe for concurrent or nested calls), clarifying data flow (parameters show dependencies), and easing testing since state isn't retained on the instance. This follows the principle of minimizing object-wide mutable state and keeps each instance's invariants stable."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 39,
+  "conceptName": "Singleton Pattern",
+  "category": "design-pattern",
+  "definition": "A creational design that ensures a class has only one instance and provides a global point of access to it, typically by controlling construction and exposing a single accessor.",
+  "ruleOfThumb": "Use when exactly one instance with controlled lifecycle is required (e.g., a shared registry or coordinator). Prefer dependency injection for testability and flexible lifecycles instead of using a single global instance by default.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Creational Patterns — Singleton",
+    "page": "127",
+    "externalUrl": "https://www.oreilly.com/library/view/design-patterns-elements/0201633612/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is this class primarily implementing?",
+      "codeSnippet": "class Config {\n  private static instance: Config | null = null;\n  private constructor(private settings: Record<string, string>) {}\n  static getInstance(): Config {\n    if (!Config.instance) Config.instance = new Config({});\n    return Config.instance;\n  }\n  get(key: string) { return this.settings[key]; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A factory that returns a new Config each time getInstance is called.",
+          "isCorrect": false,
+          "explanation": "Incorrect. The code caches the created object in a static field and returns that same object on subsequent calls instead of creating new instances."
+        },
+        {
+          "id": "b",
+          "text": "A module-level helper that only exposes static utility functions without instance state.",
+          "isCorrect": false,
+          "explanation": "Wrong. There is instance state (settings) and a private constructor, so this is not just a static utilities holder."
+        },
+        {
+          "id": "c",
+          "text": "A lazily created, single shared Config instance accessed through a static accessor.",
+          "isCorrect": true,
+          "explanation": "Correct. Private constructor prevents external construction and the static accessor initializes and returns a single shared instance (lazy initialization)."
+        },
+        {
+          "id": "d",
+          "text": "An implementation of dependency injection for Config construction.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Dependency injection would accept and manage Config instances externally; here the class itself controls creation and lifetime."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Consider a module that exports a single instantiated logger like below. Which statement best captures a practical downside of this approach compared to a controlled-access class?",
+      "codeSnippet": "// logger.ts\nclass Logger {\n  level = 'info';\n  log(msg: string) { console.log(msg); }\n}\nexport const defaultLogger = new Logger();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This guarantees thread-safe lazy initialization and is always better for tests.",
+          "isCorrect": false,
+          "explanation": "False. Exporting an eagerly created instance is simple but not lazy; it may introduce initialization-order issues. It also makes tests harder to isolate because substitution requires module mocking."
+        },
+        {
+          "id": "b",
+          "text": "It's simpler, but it reduces control over lifecycle and makes substituting or mocking the instance harder in tests.",
+          "isCorrect": true,
+          "explanation": "Correct. An exported instance is easy to use, but you lose control over when it's created and swapping it out requires replacing module exports (harder than injecting a mock). Controlled-access approaches allow delayed creation or explicit injection for tests."
+        },
+        {
+          "id": "c",
+          "text": "Functionally equivalent to registering the logger with a DI container; nothing to worry about.",
+          "isCorrect": false,
+          "explanation": "Not equivalent. A DI container provides explicit wiring and test-time substitution; an exported instance couples consumers to that concrete object and the module's initialization time."
+        },
+        {
+          "id": "d",
+          "text": "Prefer this for mutable global state because it's always safer than creating instances per consumer.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Mutable global state can lead to hidden coupling and lifecycle issues; creating instances per consumer or using injected single shared services are safer depending on ownership requirements."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is generally preferable when you need a single, application-wide service but also want reasonable control over initialization and test substitution?",
+      "codeSnippet": "// Version A: controlled accessor\nclass ServiceA {\n  private static instance: ServiceA | null = null;\n  private constructor() {}\n  static getInstance(): ServiceA {\n    if (!ServiceA.instance) ServiceA.instance = new ServiceA();\n    return ServiceA.instance;\n  }\n  doWork() {}\n}\n\n// Version B: eager module export\nclass ServiceB {\n  doWork() {}\n}\nexport const serviceB = new ServiceB();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is better because it centralizes and delays creation, letting you add controlled initialization or swap the instance for testing.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable in many cases. The accessor centralizes construction, enabling lazy initialization and a single point to add synchronization, logging, or a test hook such as a setInstance() for substitution. That extra control reduces initialization-order bugs and makes it easier to manage lifecycle across the app while still providing a single shared object."
+        },
+        {
+          "id": "b",
+          "text": "Version B is better because eager module exports are always simpler and introduce no downsides.",
+          "isCorrect": false,
+          "explanation": "Overly optimistic. While Version B is simple, eager export removes control over when creation happens (risking init-order problems), and swapping or mocking it requires module-level replacement which is harder and more brittle than providing a single controlled accessor. If you truly need a single shared service with predictable lifecycle and testability, the controlled accessor offers clearer trade-offs."
+        }
+      ]
+    }
+  ]
+}

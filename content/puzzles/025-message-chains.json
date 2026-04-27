@@ -1,0 +1,106 @@
+{
+  "id": 25,
+  "conceptName": "Message Chains",
+  "category": "code-smell",
+  "definition": "A pattern where client code navigates through a sequence of objects to reach a deeply nested value or behavior (repeatedly calling getters/fields on intermediate objects), creating tight coupling to an object's internal structure.",
+  "ruleOfThumb": "If you find yourself writing obj.getA().getB().getC() outside the owner of those objects, prefer asking a higher-level object for what you need or introduce a well-named delegate method to hide the traversal.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Hide Delegate / Move Method",
+    "page": "pp. 180-186",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What's the primary problem in this snippet?",
+      "codeSnippet": "class InvoicePrinter {\n  printLocation(invoice: Invoice) {\n    const code = invoice.order.customer.address.postalCode;\n    console.log(`Ship to: ${code}`);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code reaches through multiple objects to get data, coupling the printer to internal structure of Order/Customer/Address.",
+          "isCorrect": true,
+          "explanation": "Correct. The printer depends on the order of nested objects (order -> customer -> address -> postalCode). Any internal change to those types will require changes here, violating encapsulation."
+        },
+        {
+          "id": "b",
+          "text": "This is mainly a performance problem because multiple getters slow execution.",
+          "isCorrect": false,
+          "explanation": "Incorrect. A small chain of getters has negligible runtime cost; the real issue is structural coupling and fragility when object internals change."
+        },
+        {
+          "id": "c",
+          "text": "It indicates a serialization bug: primitive interpolation risks formatting errors.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Interpolating the postal code into a string is fine. The problem lies in how the value is obtained, not string formatting."
+        },
+        {
+          "id": "d",
+          "text": "The snippet misuses console.log inside a class method; side effects should be avoided.",
+          "isCorrect": false,
+          "explanation": "Incorrect. While side effects may be debated, the key maintainability issue here is the deep navigation through multiple objects."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You see this pattern repeated across the codebase. Which refactor most directly reduces coupling while keeping intentions clear?",
+      "codeSnippet": "function notifyShipping(order: Order) {\n  const city = order.customer.address.city;\n  emailService.send(`Shipping to ${city}`);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Wrap the traversal in a helper util getCity(order) used everywhere to avoid editing many sites.",
+          "isCorrect": false,
+          "explanation": "Using a free helper centralizes the traversal but leaves callers dependent on order's structure indirectly; it also separates behavior from the owning object, missing encapsulation."
+        },
+        {
+          "id": "b",
+          "text": "Add a method on Order like order.getShippingCity() that returns the city, and use it from callers.",
+          "isCorrect": true,
+          "explanation": "Correct. Moving the knowledge of internal structure into Order encapsulates traversal, reduces coupling for callers, and gives a single place to change if internals evolve."
+        },
+        {
+          "id": "c",
+          "text": "Copy the traversal code into a service that performs all email notifications so callers remain unchanged.",
+          "isCorrect": false,
+          "explanation": "Centralizing emails hides the traversal but mixes responsibilities (notification + knowledge of object internals). It may work, but it doesn't fix the design at the domain model level."
+        },
+        {
+          "id": "d",
+          "text": "Expose address as a public mutable field so callers can access it directly without getters.",
+          "isCorrect": false,
+          "explanation": "Making internals public increases coupling and breaks encapsulation further; it worsens maintainability and makes future changes harder."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version leads to a more maintainable design in the long run?",
+      "codeSnippet": "// Version A: callers traverse into nested objects\nfunction estimateTaxA(order: Order) {\n  const region = order.customer.address.regionCode;\n  return taxService.rateFor(region) * order.amount;\n}\n\n// Version B: Order provides a focused accessor\nclass Order {\n  getDestinationRegion() { return this.customer.address.regionCode; }\n}\nfunction estimateTaxB(order: Order) {\n  const region = order.getDestinationRegion();\n  return taxService.rateFor(region) * order.amount;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is preferable because it keeps data access explicit and avoids adding pass-through methods to domain objects.",
+          "isCorrect": false,
+          "explanation": "Wrong. While explicit traversal shows where the value comes from, it couples many callers to the internal graph (customer → address → region). Adding pass-through methods on the owning object reduces that coupling and centralizes the knowledge of structure, making future changes easier."
+        },
+        {
+          "id": "b",
+          "text": "Version B is preferable because it encapsulates traversal behind a meaningful method, reducing coupling and localizing future structural changes.",
+          "isCorrect": true,
+          "explanation": "Correct. Version B hides the object graph behind a clear intent-named method, so callers depend only on Order's API. It prevents widespread refactors if internal nesting changes. Note: if Order accumulates many trivial delegations, consider a small façade or a DTO, but centralizing responsibility is usually the safer, more maintainable choice."
+        }
+      ]
+    }
+  ]
+}

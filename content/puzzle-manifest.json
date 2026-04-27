@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtUtc": "2026-04-24T02:19:56.173Z",
+  "generatedAtUtc": "2026-04-27T11:12:47.389Z",
   "seasons": [
     {
       "id": "season-1",
@@ -30,7 +30,23 @@
         21,
         22,
         23,
-        24
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40
       ]
     }
   ],
@@ -248,6 +264,150 @@
       "category": "principle",
       "firstPuzzleId": 24,
       "lastPuzzleId": 24,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "message-chains",
+      "conceptName": "Message Chains",
+      "category": "code-smell",
+      "firstPuzzleId": 25,
+      "lastPuzzleId": 25,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "decorator-pattern",
+      "conceptName": "Decorator Pattern",
+      "category": "design-pattern",
+      "firstPuzzleId": 26,
+      "lastPuzzleId": 26,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "state-pattern",
+      "conceptName": "State Pattern",
+      "category": "design-pattern",
+      "firstPuzzleId": 27,
+      "lastPuzzleId": 27,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "middle-man",
+      "conceptName": "Middle Man",
+      "category": "code-smell",
+      "firstPuzzleId": 28,
+      "lastPuzzleId": 28,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "extract-function",
+      "conceptName": "Extract Function",
+      "category": "refactoring",
+      "firstPuzzleId": 29,
+      "lastPuzzleId": 29,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "builder-pattern",
+      "conceptName": "Builder Pattern",
+      "category": "design-pattern",
+      "firstPuzzleId": 30,
+      "lastPuzzleId": 30,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "replace-conditional-with-polymorphism",
+      "conceptName": "Replace Conditional with Polymorphism",
+      "category": "refactoring",
+      "firstPuzzleId": 31,
+      "lastPuzzleId": 31,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "temporary-field",
+      "conceptName": "Temporary Field",
+      "category": "code-smell",
+      "firstPuzzleId": 32,
+      "lastPuzzleId": 32,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "parallel-inheritance-hierarchies",
+      "conceptName": "Parallel Inheritance Hierarchies",
+      "category": "code-smell",
+      "firstPuzzleId": 33,
+      "lastPuzzleId": 33,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "fail-fast-principle",
+      "conceptName": "Fail Fast Principle",
+      "category": "principle",
+      "firstPuzzleId": 34,
+      "lastPuzzleId": 34,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "inappropriate-intimacy",
+      "conceptName": "Inappropriate Intimacy",
+      "category": "code-smell",
+      "firstPuzzleId": 35,
+      "lastPuzzleId": 35,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "proxy-pattern",
+      "conceptName": "Proxy Pattern",
+      "category": "design-pattern",
+      "firstPuzzleId": 36,
+      "lastPuzzleId": 36,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "dependency-injection",
+      "conceptName": "Dependency Injection",
+      "category": "solid",
+      "firstPuzzleId": 37,
+      "lastPuzzleId": 37,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "information-hiding",
+      "conceptName": "Information Hiding",
+      "category": "solid",
+      "firstPuzzleId": 38,
+      "lastPuzzleId": 38,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "singleton-pattern",
+      "conceptName": "Singleton Pattern",
+      "category": "design-pattern",
+      "firstPuzzleId": 39,
+      "lastPuzzleId": 39,
+      "usageCount": 1,
+      "lastUsedSeasonId": "season-1"
+    },
+    {
+      "conceptKey": "introduce-parameter-object",
+      "conceptName": "Introduce Parameter Object",
+      "category": "refactoring",
+      "firstPuzzleId": 40,
+      "lastPuzzleId": 40,
       "usageCount": 1,
       "lastUsedSeasonId": "season-1"
     }

@@ -1,0 +1,106 @@
+{
+  "id": 35,
+  "conceptName": "Inappropriate Intimacy",
+  "category": "code-smell",
+  "definition": "A design smell where one class knows too much about the inner workings or private data of another class and directly manipulates or depends on those internals, creating tight coupling and fragile code.",
+  "ruleOfThumb": "Each class should expose a minimal, stable API for collaborators; if a client reaches into another object's internals, either move the behavior to the owner or provide a focused operation on the owner.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Bad Smells in Code",
+    "page": "45",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary design problem in the snippet below?",
+      "codeSnippet": "class Cart {\n  private items: {sku: string, price: number}[] = [];\n  add(i){ this.items.push(i) }\n  getItems(){ return this.items }\n}\n\nclass DiscountApplier {\n  apply(cart: Cart){\n    cart.getItems().forEach(i => i.price *= 0.9);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A performance hotspot due to repeated iteration over collections.",
+          "isCorrect": false,
+          "explanation": "Incorrect. The code may iterate, but the real issue is not performance: the applier is mutating Cart's internal structure directly. Iteration alone doesn't explain the tight coupling between the two classes."
+        },
+        {
+          "id": "b",
+          "text": "A client class directly manipulating another class's internal data structure, causing tight coupling.",
+          "isCorrect": true,
+          "explanation": "Correct. DiscountApplier relies on Cart exposing its raw items and then mutates them. That makes Cart's representation part of the client's responsibility; changes to Cart's internals will ripple into DiscountApplier."
+        },
+        {
+          "id": "c",
+          "text": "A missing dependency injection pattern leading to hard-coded dependencies.",
+          "isCorrect": false,
+          "explanation": "Incorrect. While dependency injection could be useful, the snippet's core problem is the client reaching into the owner's data, not how the objects are composed or supplied."
+        },
+        {
+          "id": "d",
+          "text": "An example of inappropriate use of exceptions for control flow.",
+          "isCorrect": false,
+          "explanation": "Incorrect. There are no exceptions in the code. The issue is structural coupling, not error-handling strategy."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which refactor is the most appropriate to reduce the dependency shown here?",
+      "codeSnippet": "class Settings {\n  values: Record<string,string> = {}\n}\n\nclass Profile {\n  constructor(private s: Settings) {}\n  fullName(){ return `${this.s.values['first']} ${this.s.values['last']}` }\n  greeting(){ return `Hi, ${this.s.values['first']}!` }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Make Settings.values public across the codebase so other classes can access it consistently.",
+          "isCorrect": false,
+          "explanation": "Wrong direction. Making the data more public increases coupling and spreads knowledge of the representation. The goal is to encapsulate, not expose."
+        },
+        {
+          "id": "b",
+          "text": "Duplicate the string-lookup logic inside Profile to avoid depending on Settings' shape.",
+          "isCorrect": false,
+          "explanation": "Avoid duplication. Copying logic moves the coupling rather than eliminating it; it increases maintenance burden when naming or storage changes."
+        },
+        {
+          "id": "c",
+          "text": "Add well-named accessor methods on Settings (e.g., firstName(), lastName()) or a formatter so callers don't reach into its internal map.",
+          "isCorrect": true,
+          "explanation": "Correct. Providing a small, intention-revealing API on Settings keeps its representation private and centralizes formatting or lookup logic, reducing fragile dependencies."
+        },
+        {
+          "id": "d",
+          "text": "Convert Settings into a global singleton so Profile can request current values easily.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Global singletons increase coupling and test difficulty. They don't solve the underlying ownership of data and responsibilities."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version makes the codebase easier to maintain and less fragile over time?",
+      "codeSnippet": "// Version A: Client reaches into owner internals\nclass Order {\n  items: {id:string, qty:number}[] = [];\n}\n\nclass Shipment {\n  create(order: Order){\n    order.items.forEach(i => /* compute box allocation using item shape */ null);\n  }\n}\n\n// Version B: Owner exposes focused operation\nclass OrderV2 {\n  private items: {id:string, qty:number}[] = [];\n  forEachItem(fn: (i:{id:string, qty:number})=>void){ this.items.forEach(fn) }\n  allocateForShipment(){ /* prepare shipment-friendly view or reserve stock */ }\n}\n\nclass ShipmentV2 {\n  create(order: OrderV2){\n    order.allocateForShipment();\n    order.forEachItem(i => /* use stable API only */ null);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Choose Version A because it avoids extra indirection and keeps code simple by sharing structures directly.",
+          "isCorrect": false,
+          "explanation": "Too simplistic. While Version A looks straightforward, it couples Shipment to Order's representation. That tight coupling makes future changes to Order (different storage, validation, concurrency) ripple into Shipment. The lack of an intent-revealing API hinders safe refactoring."
+        },
+        {
+          "id": "b",
+          "text": "Choose Version B because it defines a clear boundary: Order controls its data and offers focused operations that clients use.",
+          "isCorrect": true,
+          "explanation": "Right choice. Version B encapsulates internals and gives clients a stable, intention-revealing interface (allocateForShipment, forEachItem). That centralizes changes, reduces accidental mutations, and documents responsibilities—making refactors and tests safer. This follows the principle of information hiding and keeps consumers from becoming dependent on representation details."
+        }
+      ]
+    }
+  ]
+}

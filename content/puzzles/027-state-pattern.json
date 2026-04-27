@@ -1,0 +1,106 @@
+{
+  "id": 27,
+  "conceptName": "State Pattern",
+  "category": "design-pattern",
+  "definition": "Encapsulate behavior associated with an object's internal state into separate objects so the context can delegate behavior and change its behavior at runtime by swapping the active state object.",
+  "ruleOfThumb": "When you have many conditionals that branch on an object's status or mode and each branch is a distinct behavior, extract those behaviors into small classes and delegate instead of piling up switches or if/else chains.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns — State",
+    "page": null,
+    "externalUrl": "https://refactoring.guru/design-patterns/state"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches the code below?",
+      "codeSnippet": "interface State { handle(ctx: Door): void }\nclass Closed implements State {\n  handle(ctx: Door) { console.log('opening'); ctx.state = new Open() }\n}\nclass Open implements State { handle(ctx: Door) { console.log('closing'); ctx.state = new Closed() } }\nclass Door {\n  state: State = new Closed()\n  request() { this.state.handle(this) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Strategy: the object chooses between interchangeable algorithms provided externally; the client typically picks the algorithm.",
+          "isCorrect": false,
+          "explanation": "Incorrect — Strategy focuses on selecting an algorithm (often passed in) where the context doesn't usually mutate which strategy based on its own internal behavior. Here the object changes its active handler internally and behavior evolves with internal state."
+        },
+        {
+          "id": "b",
+          "text": "Template Method: a base class defines a skeleton algorithm with hooks overridden by subclasses.",
+          "isCorrect": false,
+          "explanation": "Incorrect — Template Method uses inheritance to vary parts of an algorithm, not runtime swapping of small handler objects. This example delegates to separate objects rather than relying on subclass hooks."
+        },
+        {
+          "id": "c",
+          "text": "An object delegates state-dependent behavior to small state objects it swaps at runtime, so behavior changes when its internal status changes.",
+          "isCorrect": true,
+          "explanation": "Correct — The context (Door) defers work to State implementations and replaces its state object to change future behavior. That's characteristic of encapsulating state-specific behavior into separate objects and swapping them dynamically."
+        },
+        {
+          "id": "d",
+          "text": "Observer: multiple listeners react to changes in an observed subject's data.",
+          "isCorrect": false,
+          "explanation": "Incorrect — Observer involves a subject notifying many listeners. The snippet shows a single context delegating work to a single handler and changing that handler, not broadcasting changes."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You have an Order class with dozens of switch/case blocks on order.status (calculateRefund, nextStep, validate). What's the most appropriate refactor?",
+      "codeSnippet": "enum Status { Pending, Paid, Shipped }\nclass Order {\n  status: Status\n  nextStep() {\n    switch (this.status) {\n      case Status.Pending: // do A; break\n      case Status.Paid: // do B; break\n      case Status.Shipped: // do C; break\n    }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce a strategy object for each action (refundStrategy, nextStepStrategy) and keep the status enum in Order.",
+          "isCorrect": false,
+          "explanation": "Plausible but not ideal — strategies are good for interchangeable algorithms, but this scatters status-related behavior across multiple strategy families and keeps the conditional on status in the Order, so transitions and stateful behavior remain coupled and duplicated."
+        },
+        {
+          "id": "b",
+          "text": "Replace the conditionals with per-state classes that encapsulate all behavior for that status and let Order delegate to the current state object.",
+          "isCorrect": true,
+          "explanation": "Correct — Moving status-specific behavior into small classes centralizes the logic for each state, eliminates repeated switches, and makes adding new states or behaviors easier because you change or add classes instead of editing many conditionals."
+        },
+        {
+          "id": "c",
+          "text": "Move all switch logic into a single service utility — keep Order as a dumb data container and add procedural handlers.",
+          "isCorrect": false,
+          "explanation": "Sensible for some systems, but this trades object-oriented clarity for procedural code. It tends to create a large procedural module and loses locality of state behavior, making transitions harder to reason about and test."
+        },
+        {
+          "id": "d",
+          "text": "Keep the enum and add more helper methods on Order so the switch statements are shorter but still present.",
+          "isCorrect": false,
+          "explanation": "This is an incremental mitigation but preserves the core problem: behavior is still distributed across conditionals and the class will continue to grow as more states or behaviors are added."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better handles evolving state-specific behavior and why? Choose the better design.",
+      "codeSnippet": "// Version A: Single class with many conditionals\nclass OrderA {\n  status: 'pending'|'paid'|'shipped'\n  next() {\n    if (this.status === 'pending') { /* do A */ this.status = 'paid' }\n    else if (this.status === 'paid') { /* do B */ this.status = 'shipped' }\n    else if (this.status === 'shipped') { /* do C */ }\n  }\n  refund() {\n    switch (this.status) { /* different refund logic per status */ }\n  }\n}\n\n// Version B: Context delegates to small state objects\ninterface OrderState { next(ctx: OrderB): void; refund(ctx: OrderB): void }\nclass Pending implements OrderState { next(ctx: OrderB){ ctx.state = new Paid() } refund(ctx: OrderB){ /* pending refund */ } }\nclass Paid implements OrderState { next(ctx: OrderB){ ctx.state = new Shipped() } refund(ctx: OrderB){ /* paid refund */ } }\nclass OrderB {\n  state: OrderState = new Pending()\n  next(){ this.state.next(this) }\n  refund(){ this.state.refund(this) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A — keep behavior in one class and use conditionals; it's simpler and keeps all logic in one place.",
+          "isCorrect": false,
+          "explanation": "Incorrect — While initially straightforward, this approach leads to growing conditional complexity, scattering state-specific logic across multiple methods and making modifications error-prone. Adding a new state requires editing many branches, violating the open/closed principle and making unit testing each state's behavior harder."
+        },
+        {
+          "id": "b",
+          "text": "Version B — delegate behavior to small state objects that the context swaps; each state encapsulates its transitions and rules.",
+          "isCorrect": true,
+          "explanation": "Correct — Version B localizes each state's behavior and transitions in dedicated classes. That reduces conditional duplication, makes tests focus on single responsibilities, and lets you add or modify states by adding classes instead of mutating many methods. It also keeps transition rules co-located with the behavior that triggers them, improving maintainability and adherence to single-responsibility and open/closed principles."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "id": 36,
+  "conceptName": "Proxy Pattern",
+  "category": "design-pattern",
+  "definition": "Provide a stand-in object that implements the same interface as a real subject and controls or augments access to that subject (lazy initialization, access control, caching, logging, or remote access) without changing client code.",
+  "ruleOfThumb": "When clients must use an object through the same interface but you need to control creation, lifetime, or access (or add cross-cutting behavior) without modifying the real subject, introduce a small stand-in that delegates.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Proxy",
+    "page": "223",
+    "externalUrl": "https://refactoring.guru/design-patterns/proxy"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which scenario most strongly suggests using a small stand-in object that preserves the original interface?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "You want to defer creating a heavy service until it's first used, but callers should invoke the same methods as before.",
+          "isCorrect": true,
+          "explanation": "Deferring creation while keeping the same interface is the core use case: the stand-in can lazily instantiate and forward calls so existing clients remain unchanged."
+        },
+        {
+          "id": "b",
+          "text": "You need to add unrelated behaviors (e.g., formatting) to an object and chain multiple wrappers to build features dynamically.",
+          "isCorrect": false,
+          "explanation": "Adding orthogonal responsibilities and composing many wrappers is characteristic of the decorator approach; it focuses on augmenting behavior rather than controlling access/lifecycle."
+        },
+        {
+          "id": "c",
+          "text": "You must convert one interface to another so legacy callers can use a third-party library without changing their code.",
+          "isCorrect": false,
+          "explanation": "Adapting interfaces is the adapter concern: it changes the exposed API shape rather than acting as a stand-in that controls access to the original subject."
+        },
+        {
+          "id": "d",
+          "text": "You want a single high-level API that simplifies interactions across multiple subsystems for client convenience.",
+          "isCorrect": false,
+          "explanation": "Providing a unified, simplified API for many subsystems is a facade: it aggregates behavior, while a stand-in preserves the same interface as the real object."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given these wrappers for a network service, which implementation is acting as a stand-in that controls access to the real service rather than merely adding behavior?",
+      "codeSnippet": "interface Service { fetch(): Promise<string>; }\n\nclass RealService implements Service {\n  async fetch() { /* network call */ return 'data'; }\n}\n\nclass CachingWrapper implements Service {\n  private cache?: string;\n  constructor(private real: Service) {}\n  async fetch() {\n    if (this.cache) return this.cache; // short-circuit\n    this.cache = await this.real.fetch();\n    return this.cache;\n  }\n}\n\nclass LoggingWrapper implements Service {\n  constructor(private real: Service) {}\n  async fetch() {\n    console.log('fetch start');\n    const r = await this.real.fetch();\n    console.log('fetch end');\n    return r;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "CachingWrapper — it can short-circuit calls and avoid invoking the real service, controlling access and lifecycle.",
+          "isCorrect": true,
+          "explanation": "The caching wrapper can prevent calls to the underlying service (short-circuit) and thus controls access; that ability to intercept and decide whether to delegate is what distinguishes a stand-in controlling access from a pure behavior wrapper."
+        },
+        {
+          "id": "b",
+          "text": "LoggingWrapper — it wraps the service and adds logging before and after each call, so it acts as the stand-in.",
+          "isCorrect": false,
+          "explanation": "LoggingWrapper always delegates and merely records activity; it augments behavior but doesn't control whether the real service is invoked or manage its lifecycle, so it's better viewed as a decorator."
+        },
+        {
+          "id": "c",
+          "text": "Both wrappers are equal examples of stand-ins because they both implement the same interface and forward calls.",
+          "isCorrect": false,
+          "explanation": "Implementing the same interface and forwarding is necessary but not sufficient: a true stand-in may control access, lifecycle, or substitute remote/local behavior. Only the caching variant short-circuits and controls invocation."
+        },
+        {
+          "id": "d",
+          "text": "Neither is a stand-in because both delegate to a real service; stand-ins must be generated by the language runtime.",
+          "isCorrect": false,
+          "explanation": "Stand-ins can be hand-written. Delegation doesn't disqualify an implementation; what matters is whether the object controls access or lifecycle. The caching wrapper's short-circuiting demonstrates that capability."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You need a solution that enforces per-user access checks, delays an expensive connection until actually needed, and keeps clients unchanged. Which version is the better design and why?",
+      "codeSnippet": "// Version A\nclass LazyDBClient implements DB {\n  private real?: RealDB;\n  constructor(private user: User) {}\n  private ensure() {\n    if (!this.real) {\n      if (!Auth.allow(this.user)) throw new Error('access denied');\n      this.real = new RealDB(); // expensive connect here\n    }\n  }\n  async query(sql: string) { this.ensure(); return this.real!.query(sql); }\n}\n\n// Version B\nclass RealDB {\n  constructor(private user: User) {\n    if (!Auth.allow(user)) throw new Error('access denied');\n    // connects immediately in ctor\n  }\n  async query(sql: string) { /* ... */ }\n}\n\n// Clients must new RealDB(user) directly before use.",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A — preferred because a separate wrapper enforces access and performs lazy connection while preserving the service interface for clients.",
+          "isCorrect": true,
+          "explanation": "Version A centralizes access control and delays the expensive connection until actually needed without forcing clients to change how they call query(). This separation keeps the heavy object's lifecycle encapsulated, makes testing easier (you can inject a fake), and allows adding caching or remote/local substitution later."
+        },
+        {
+          "id": "b",
+          "text": "Version B — preferred because embedding checks in the real service's constructor enforces security earlier and reduces indirection.",
+          "isCorrect": false,
+          "explanation": "Embedding checks and eager connection in the concrete class couples lifecycle and security to construction. Clients are forced to instantiate the heavy object (making lazy init and mocking harder), and you lose the ability to interpose behavior across many clients without changing construction sites. That coupling reduces flexibility and testability."
+        }
+      ]
+    }
+  ]
+}

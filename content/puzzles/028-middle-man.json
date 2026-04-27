@@ -1,0 +1,106 @@
+{
+  "id": 28,
+  "conceptName": "Middle Man",
+  "category": "code-smell",
+  "definition": "A class that exists mainly to forward calls to another class, adding little or no additional behavior or abstraction. It increases indirection, surface area, and maintenance burden without providing clear benefits.",
+  "ruleOfThumb": "If a type's public API is mostly one-to-one delegations, inline it or merge responsibilities unless the intermediary adds validation, orchestration, caching, or a meaningful abstraction.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Middle Man",
+    "page": "p. 150",
+    "externalUrl": "https://martinfowler.com/bliki/MiddleMan.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best describes this maintainability problem?",
+      "codeSnippet": "class OrderService {\n  constructor(private orderRepo: OrderRepository) {}\n  find(id: string) { return this.orderRepo.find(id); }\n  save(o: Order) { return this.orderRepo.save(o); }\n  delete(id: string) { return this.orderRepo.delete(id); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A type that mostly forwards calls to another type and doesn't contribute meaningful behavior.",
+          "isCorrect": true,
+          "explanation": "Correct — the class's methods are thin pass-throughs. It adds indirection and more surface area to maintain without encapsulating new logic such as validation, transaction orchestration, or anti-corruption."
+        },
+        {
+          "id": "b",
+          "text": "A helper utility offering only static functions used across unrelated modules.",
+          "isCorrect": false,
+          "explanation": "Incorrect — a pure static utility is about global shared behavior, not an instance wrapper that delegates to another instance. The costs and refactor are different (extracting functions vs removing an extra layer)."
+        },
+        {
+          "id": "c",
+          "text": "A god object accumulating many unrelated responsibilities.",
+          "isCorrect": false,
+          "explanation": "Incorrect — a god object centralizes responsibilities; here the shown service does not consolidate multiple domains, it merely forwards to a repository."
+        },
+        {
+          "id": "d",
+          "text": "A facade that intentionally simplifies a complex subsystem by exposing a smaller API surface.",
+          "isCorrect": false,
+          "explanation": "Incorrect — a proper facade intentionally reduces complexity and hides details. In this snippet the service exposes nearly identical methods to the underlying type, so it doesn't simplify or aggregate behavior."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Look at the service and repository. What's the most actionable refactor to improve clarity?",
+      "codeSnippet": "class UserRepository {\n  find(id: string) { /* DB lookup */ }\n  save(u: User) { /* DB write */ }\n}\n\nclass UserService {\n  constructor(private repo: UserRepository) {}\n  getUser(id: string) { return this.repo.find(id); }\n  saveUser(u: User) { return this.repo.save(u); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Remove or inline the thin service and let callers use the repository directly, unless the service adds real behavior.",
+          "isCorrect": true,
+          "explanation": "Correct — the service only forwards calls. Inlining or collapsing the service reduces indirection and test/mocking surface. Keep a separate layer only when it performs orchestration, validation, caching, or a domain abstraction."
+        },
+        {
+          "id": "b",
+          "text": "Split the repository into multiple finer-grained repositories to satisfy single responsibility.",
+          "isCorrect": false,
+          "explanation": "Plausible but off-target — splitting repositories addresses overlarge data concerns; it doesn't fix a delegating layer that adds no behavior. If the repo is already cohesive, splitting doesn't remove the extra wrapper."
+        },
+        {
+          "id": "c",
+          "text": "Introduce an interface for the repository to decouple concrete implementation from callers.",
+          "isCorrect": false,
+          "explanation": "Also reasonable, yet orthogonal — introducing an interface helps substitution and testing but keeps the extra delegation layer intact. The primary issue here is redundant forwarding, which remains after introducing an interface."
+        },
+        {
+          "id": "d",
+          "text": "Wrap repository calls in try/catch to avoid leaking persistence errors to higher layers.",
+          "isCorrect": false,
+          "explanation": "Handling errors is important, but adding try/catch in a forwarding layer only addresses error handling, not the unnecessary indirection. If error translation is the goal, then the service should implement that behavior explicitly."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two options to address a thin delegating layer. Which is the better long-term design and why?",
+      "codeSnippet": "/* Version A: Keep thin service used across callers */\nclass ProductRepo {\n  get(id: string) { /* DB */ }\n  update(p: Product) { /* DB */ }\n}\nclass ProductService {\n  constructor(private repo: ProductRepo) {}\n  getProduct(id: string) { return this.repo.get(id); }\n  updateProduct(p: Product) { return this.repo.update(p); }\n}\n\n/* Version B: Merge service into callers or into a richer domain service when behavior exists */\n// Option 1: Call repo directly where no extra logic is needed\nconst product = productRepo.get(id);\n// Option 2: If domain logic appears, consolidate repo + thin layer into a single domain service\nclass ProductDomain {\n  constructor(private repo: ProductRepo) {}\n  updateProductWithRules(p: Product) { /* validate, apply rules, then repo.update(p) */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Prefer Version A: keep the thin delegating service as a stable indirection layer across the codebase.",
+          "isCorrect": false,
+          "explanation": "Not ideal — preserving a forwarding-only layer everywhere increases API surface, multiplies trivial tests and mocks, and hides the fact that there is no abstraction. Over time it becomes dead weight; it also makes cross-cutting refactors harder because you must update many trivial delegations."
+        },
+        {
+          "id": "b",
+          "text": "Prefer Version B: remove the wrapper where it adds no value; either use the underlying component directly or merge responsibilities into a domain-focused service when behavior is needed.",
+          "isCorrect": true,
+          "explanation": "Better long-term — eliminating unnecessary indirection reduces code to what actually matters. When callers use the underlying component directly, intent is clearer and fewer types are maintained. If new behavior arises, consolidate repo + trivial layer into a meaningful domain service that encapsulates rules, orchestration, or side effects. This follows practical refactoring guidance to keep abstractions meaningful (see Fowler) and reduces test/mocking complexity (see Clean Code)."
+        }
+      ]
+    }
+  ]
+}

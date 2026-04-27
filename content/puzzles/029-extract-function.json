@@ -1,0 +1,106 @@
+{
+  "id": 29,
+  "conceptName": "Extract Function",
+  "category": "refactoring",
+  "definition": "Isolate a contiguous set of statements from a larger function into a new, well-named function. The goal is to reduce duplication, clarify intent, and make the unit easier to test and reuse.",
+  "ruleOfThumb": "If a block in a function is more than a few lines, repeats, or can be described with a clear name, pull it out into a focused helper and replace the block with a call.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Extract Method",
+    "page": "p. 50-60",
+    "externalUrl": "https://martinfowler.com/refactoring/extractMethod.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "You see the following TypeScript function with the same three lines repeated in two places. Which action best addresses the duplication and improves clarity?",
+      "codeSnippet": "function handleOrder(order) {\n  // calculate line totals\n  let subtotal = 0;\n  for (const item of order.items) {\n    subtotal += item.price * item.qty;\n  }\n\n  // tax and shipping calculation\n  const tax = subtotal * 0.08;\n  const shipping = subtotal > 100 ? 0 : 10;\n\n  // repeated block starts\n  console.log(`Subtotal: ${subtotal}`);\n  notifyFinance(order.id, subtotal);\n  auditLog(order.id, subtotal);\n  // repeated block ends\n\n  return subtotal + tax + shipping;\n}\n\n// same three lines appear elsewhere in the module",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Move the repeated statements into a new, well-named helper and call it where needed.",
+          "isCorrect": true,
+          "explanation": "Encapsulating the repeated statements in a single helper reduces duplication, centralizes auditing behavior, and makes intent explicit. It makes future changes (e.g., adding fields to the log) in one place."
+        },
+        {
+          "id": "b",
+          "text": "Duplicate the code everywhere to keep everything inline for readability.",
+          "isCorrect": false,
+          "explanation": "Copying the same statements increases maintenance burden: bug fixes or changes must be applied repeatedly and risks inconsistencies."
+        },
+        {
+          "id": "c",
+          "text": "Wrap the statements inside a new class and make instances to manage logging state.",
+          "isCorrect": false,
+          "explanation": "Introducing a class adds unnecessary structure and indirection for three simple steps. Use a simple function unless you need object state or polymorphism."
+        },
+        {
+          "id": "d",
+          "text": "Hide the duplication behind a boolean flag that toggles logging behavior in the original function.",
+          "isCorrect": false,
+          "explanation": "Flags increase conditional complexity and couple unrelated logic. A separate helper preserves a single responsibility and keeps the main flow cleaner."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "This endpoint handler mixes parsing, validation, transformation, persistence, and notification. Which refactoring most directly improves unit testability and separates concerns here?",
+      "codeSnippet": "async function createUser(req) {\n  const body = JSON.parse(req.body);\n  if (!body.email || !body.name) throw new Error('invalid');\n\n  const user = { id: uid(), name: body.name, email: body.email };\n  await db.insert('users', user);\n  emailService.sendWelcome(user.email);\n  return { status: 201, body: user };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pull parsing/validation and transformation into small named functions so createUser becomes a simple orchestrator that is easy to unit test.",
+          "isCorrect": true,
+          "explanation": "Separating parsing and validation into focused functions makes them individually testable and reduces the need to mock infrastructure-heavy parts (like db/email) when testing the orchestration logic."
+        },
+        {
+          "id": "b",
+          "text": "Move validation into the database layer so the handler stays thin.",
+          "isCorrect": false,
+          "explanation": "Relying on the DB for input validation hides errors late, couples validation to persistence rules, and makes unit testing of request handling harder."
+        },
+        {
+          "id": "c",
+          "text": "Convert the handler into a single exported constant lambda to reduce verbosity.",
+          "isCorrect": false,
+          "explanation": "Changing syntax doesn't address the mixed responsibilities; tests still need to handle parsing, validation, and external side effects unless those are separated."
+        },
+        {
+          "id": "d",
+          "text": "Inline all logic into a shared utility module used by multiple endpoints.",
+          "isCorrect": false,
+          "explanation": "A large shared utility can become a grab-bag of unrelated behaviors. Better to extract small focused helpers and compose them rather than create another monolith."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version demonstrates the better structural choice for readability, reuse, and testability, and why?",
+      "codeSnippet": "// Version A\nfunction calculateTotal(items: {price:number, qty:number}[]) {\n  function sumLineItems(list: {price:number, qty:number}[]) {\n    return list.reduce((acc, it) => acc + it.price * it.qty, 0);\n  }\n\n  const subtotal = sumLineItems(items);\n  const tax = computeTax(subtotal);\n  return subtotal + tax;\n}\n\n// Version B\nfunction calculateTotal(items: {price:number, qty:number}[]) {\n  const subtotal = items.reduce((acc, it) => {\n    acc += it.price * it.qty;\n    return acc;\n  }, 0);\n\n  const tax = computeTax(subtotal);\n  return subtotal + tax;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is preferable because it isolates a coherent calculation in a named helper, making that logic independently testable and communicating intent.",
+          "isCorrect": true,
+          "explanation": "Naming the sub-step clarifies intent (sumLineItems) and allows writing focused tests for the reduction without invoking computeTax or the outer function. It also makes future reuse simpler and keeps the outer function at a higher level of abstraction."
+        },
+        {
+          "id": "b",
+          "text": "Version B is better because keeping the reduction inline avoids extra indirection and call overhead.",
+          "isCorrect": false,
+          "explanation": "The small cost of an extra call is negligible compared to the loss: inline reduction buries the intent in implementation details, is harder to unit-test in isolation, and makes the outer function do low-level work rather than orchestrating higher-level steps."
+        }
+      ]
+    }
+  ]
+}

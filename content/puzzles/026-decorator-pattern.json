@@ -1,0 +1,106 @@
+{
+  "id": 26,
+  "conceptName": "Decorator Pattern",
+  "category": "design-pattern",
+  "definition": "A structural approach that lets you add responsibilities to individual objects dynamically by placing them inside lightweight wrapper objects that implement the same interface.",
+  "ruleOfThumb": "Prefer wrapping objects to mix-in behaviour at runtime when inheritance would lead to many subclasses or rigid hierarchies.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Decorator",
+    "page": "175-180",
+    "externalUrl": "https://refactoring.guru/design-patterns/decorator"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the TypeScript snippet. Which statement best describes the technique used here?",
+      "codeSnippet": "interface Component { render(): string }\n\nclass SimpleWindow implements Component {\n  render() { return 'window' }\n}\n\nclass Border implements Component {\n  constructor(private inner: Component) {}\n  render() { return this.inner.render() + ' + border' }\n}\n\nconst w = new Border(new SimpleWindow())\nconsole.log(w.render())",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Wrapping an object with another object that shares the same interface to extend behavior at runtime.",
+          "isCorrect": true,
+          "explanation": "Correct. The Border class implements the same interface and holds a reference to a Component instance, delegating then adding behavior — a runtime wrapper around an object."
+        },
+        {
+          "id": "b",
+          "text": "Creating a single concrete subclass to permanently extend functionality of the base class.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Subclassing would require extending SimpleWindow directly; here behavior is added by composition at runtime, not by creating a fixed subclass."
+        },
+        {
+          "id": "c",
+          "text": "Exposing internal state from the component so callers can modify behaviour externally.",
+          "isCorrect": false,
+          "explanation": "Incorrect. The code delegates and augments render output, it does not reveal or mutate the inner object's internal state for external modification."
+        },
+        {
+          "id": "d",
+          "text": "Using a global helper function to transform the output of render calls.",
+          "isCorrect": false,
+          "explanation": "Incorrect. A helper function would be a stateless transform. This example wraps the object and preserves identity and interface via composition."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which scenario makes this wrapping technique the most appropriate choice?",
+      "codeSnippet": "class Notifier { send(msg: string) { /* send base */ } }\n\n// We want optional behaviors: encryption, logging, and rate-limiting\n// that can be combined in different combinations at runtime.",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "You need many orthogonal, combinable behaviors (e.g., logging, encrypting) that should be attachable at runtime.",
+          "isCorrect": true,
+          "explanation": "Correct. Wrapping supports composing orthogonal responsibilities dynamically, avoiding explosion of subclasses for each combination."
+        },
+        {
+          "id": "b",
+          "text": "You want to add a single, permanent field to every subtype so it exists on the concrete type itself.",
+          "isCorrect": false,
+          "explanation": "Incorrect. If the addition must be a permanent field on every concrete class, subclassing or modifying the base type is more direct; wrappers add behavior without changing the wrapped object's concrete shape."
+        },
+        {
+          "id": "c",
+          "text": "You need compile-time dispatch optimizations and no runtime overhead for behavior selection.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Wrapping introduces small runtime indirection; it is not aimed at zero-overhead static dispatch—it's chosen for flexibility, not micro-optimised call paths."
+        },
+        {
+          "id": "d",
+          "text": "You want fewer runtime objects and prefer a single class with many conditional flags to select behavior.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Consolidating flags into one class increases complexity and violates single-responsibility; wrappers keep behaviors modular and decoupled."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version would you pick for a library needing runtime composition of message-handling features (encryption, logging, retries) without combinatorial subclassing? Choose the better design and explain why.",
+      "codeSnippet": "// Version A: subclass-per-combination\nclass Notifier { send(msg: string) { /* send */ } }\nclass LoggedNotifier extends Notifier { send(m: string) { /* log */ super.send(m) } }\nclass EncryptedLoggedNotifier extends LoggedNotifier { send(m: string) { /* encrypt */ super.send(m) } }\n\n// Version B: small wrappers that implement the same interface\ninterface INotifier { send(msg: string): void }\nclass BaseNotifier implements INotifier { send(m: string) { /* send */ } }\nclass LoggingWrapper implements INotifier {\n  constructor(private inner: INotifier) {}\n  send(m: string) { /* log */ this.inner.send(m) }\n}\nclass EncryptionWrapper implements INotifier {\n  constructor(private inner: INotifier) {}\n  send(m: string) { /* encrypt */ this.inner.send(m) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is better because concrete subclasses give clearer type identities and avoid the overhead of many small wrapper objects.",
+          "isCorrect": false,
+          "explanation": "Incorrect. While subclassing yields distinct concrete types, it scales poorly: every combination needs a new subclass, leading to maintenance and duplication. The marginal runtime cost of a few thin wrappers is usually outweighed by their composability and reduced code duplication."
+        },
+        {
+          "id": "b",
+          "text": "Version B is better because behavior wrappers compose at runtime, avoid combinatorial subclass explosion, and keep each responsibility isolated.",
+          "isCorrect": true,
+          "explanation": "Correct. Wrappers implementing the same interface let you stack behaviors as needed (logging, encryption, retries) without producing a new class for every permutation. This preserves single-responsibility, is open for extension without modifying existing classes, and keeps tests focused on one concern per wrapper. The trade-offs are small delegation overhead and slightly more objects, which are acceptable in most application-level code."
+        }
+      ]
+    }
+  ]
+}
