@@ -3,9 +3,11 @@
 import { useState, useEffect, useRef } from 'react';
 import type { GameState, Puzzle } from '@/types/puzzle';
 import { getUtcPuzzleDateKey } from '@/lib/daily-calendar';
+import { isAnswerCorrect } from '@/lib/puzzle-utils';
 import {
   getCurrentStreak,
   getStoredGameState,
+  recordCompletionStats,
   recordDailyCompletion,
   saveGameState,
 } from '@/lib/storage';
@@ -57,7 +59,7 @@ function formatCountdown(totalSeconds: number): string {
   return [hours, minutes, seconds].map((n) => String(n).padStart(2, '0')).join(':');
 }
 
-function getInitialClientState(puzzleId: number): InitialClientState {
+function getInitialClientState(puzzle: Puzzle): InitialClientState {
   const emptySession: SessionState = {
     phase: 'IDLE',
     answers: [null, null, null],
@@ -73,7 +75,7 @@ function getInitialClientState(puzzleId: number): InitialClientState {
   let streak = getCurrentStreak(todayKey);
   const stored = getStoredGameState();
 
-  if (!stored || stored.puzzleId !== puzzleId) {
+  if (!stored || stored.puzzleId !== puzzle.id) {
     return { session: emptySession, streak };
   }
 
@@ -81,8 +83,12 @@ function getInitialClientState(puzzleId: number): InitialClientState {
   const session: SessionState = { phase, answers: stored.answers, locked: false, fadingOut: false };
 
   if (stored.state === 'COMPLETED') {
-    // Backfill streaks for already-completed days if the user refreshes.
+    // Backfill streak and stats on page refresh after completion.
     streak = recordDailyCompletion(todayKey);
+    const score = puzzle.questions.filter((q, i) =>
+      isAnswerCorrect(stored.answers[i], q, puzzle.id),
+    ).length;
+    recordCompletionStats(score, streak, todayKey);
   }
 
   return { session, streak };
@@ -91,7 +97,7 @@ function getInitialClientState(puzzleId: number): InitialClientState {
 const QUESTION_PHASES: GameState[] = ['QUESTION_1', 'QUESTION_2', 'QUESTION_3'];
 
 export default function PuzzleSession({ puzzle, dayNumber, highlightedSnippets }: Props) {
-  const [initialClientState] = useState<InitialClientState>(() => getInitialClientState(puzzle.id));
+  const [initialClientState] = useState<InitialClientState>(() => getInitialClientState(puzzle));
   const [session, setSession] = useState<SessionState>(initialClientState.session);
   const [streak, setStreak] = useState(initialClientState.streak);
   const [secondsToReset, setSecondsToReset] = useState<number | null>(null);
@@ -173,6 +179,10 @@ export default function PuzzleSession({ puzzle, dayNumber, highlightedSnippets }
         setSession((prev) => ({ ...prev, phase: 'REVEALING', fadingOut: false, locked: false }));
         revealTimer.current = setTimeout(() => {
           const streakAfterComplete = recordDailyCompletion(todayString());
+          const score = puzzle.questions.filter((q, i) =>
+            isAnswerCorrect(session.answers[i], q, puzzle.id),
+          ).length;
+          recordCompletionStats(score, streakAfterComplete, todayString());
           setSession((prev) => ({ ...prev, phase: 'REVEALED' }));
           setStreak(streakAfterComplete);
           saveGameState({
@@ -323,6 +333,7 @@ export default function PuzzleSession({ puzzle, dayNumber, highlightedSnippets }
             answers={session.answers}
             dayNumber={dayNumber}
             streak={streak}
+            showStats
           />
         )}
       </main>

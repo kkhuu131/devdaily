@@ -21,13 +21,13 @@
       "options": [
         {
           "id": "a",
-          "text": "The class handles authentication, email delivery, security, activity logging, and reporting — completely unrelated responsibilities packed into one place",
+          "text": "The class bundles authentication, email delivery, security, logging, and reporting together, so any change to one concern risks breaking the others",
           "isCorrect": true,
           "explanation": "UserService reaches across authentication, communication, cryptography, auditing, and reporting. Each of those could change for entirely different reasons, and any change risks all the others."
         },
         {
           "id": "b",
-          "text": "The class exposes too many public methods in its interface",
+          "text": "The class exposes too many public methods, making the interface unwieldy and giving callers too much surface area to depend on",
           "isCorrect": false,
           "explanation": "The number of public methods is a symptom, not the cause. A well-designed service can have many methods if they're all related. The issue here is that the methods belong to fundamentally different concerns."
         },
@@ -39,7 +39,7 @@
         },
         {
           "id": "d",
-          "text": "The class is missing constructor-injected dependencies",
+          "text": "The class should receive its collaborators through the constructor rather than creating or referencing them directly",
           "isCorrect": false,
           "explanation": "Dependency injection is a valid concern, but it's separate from the structural problem here. Even with injected dependencies, a class that spans authentication, email, logging, and reporting is still doing too much."
         }
@@ -55,7 +55,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Avoid AppController — it already owns users, products, orders, and notifications. Payments would make one class responsible for nearly the entire application.",
+          "text": "Avoid AppController: it already owns user management, products, orders, and notifications, and adding payments makes one class responsible for the entire system",
           "isCorrect": true,
           "explanation": "AppController is already a bottleneck for four separate domains. Payments added here would make it the single file every developer touches for every feature, making parallel work and testing nearly impossible."
         },
@@ -73,7 +73,7 @@
         },
         {
           "id": "d",
-          "text": "AppController is fine for now — add payments there and refactor later when the class gets larger",
+          "text": "AppController is manageable for now, so add payments there and plan a refactor once the class grows past a reasonable size",
           "isCorrect": false,
           "explanation": "The class is already large. Deferring the split makes it harder, not easier — more code to untangle, more callers to update. The right time to avoid the problem was before it got this big."
         }

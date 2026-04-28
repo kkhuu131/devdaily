@@ -28,19 +28,19 @@
         },
         {
           "id": "b",
-          "text": "The problem is that name should be optional for shipping flows",
+          "text": "The recipient name should be optional so shipping flows that only need a physical address don't have to supply it",
           "isCorrect": false,
           "explanation": "Optionality could be discussed, but it does not explain the repeated field cluster."
         },
         {
           "id": "c",
-          "text": "Function names should start with verbs to satisfy style guides",
+          "text": "Function names like createShipment and estimateShipping should start with verbs to satisfy team style guides and improve readability",
           "isCorrect": false,
           "explanation": "Naming style is not the key structural issue shown."
         },
         {
           "id": "d",
-          "text": "All three functions should be methods on a single utility class",
+          "text": "All three functions should live as methods on a single utility class to keep related shipping operations together",
           "isCorrect": false,
           "explanation": "Class vs function placement does not solve the repeated field bundle."
         }
@@ -68,7 +68,7 @@
         },
         {
           "id": "c",
-          "text": "Phone should be removed because contact flows should only use email",
+          "text": "Phone number should be removed from contact flows since modern systems route all communications through email",
           "isCorrect": false,
           "explanation": "Domain choice about channels is independent of the repeated argument clump."
         },

@@ -22,13 +22,13 @@
       "options": [
         {
           "id": "a",
-          "text": "Parsing, validation, database writes, email delivery, and logging all live in one method — a change to any of them forces this class to change",
+          "text": "Parsing, validation, database writes, email delivery, and logging all live in one method, meaning five different concerns each have the power to force a change here",
           "isCorrect": true,
           "explanation": "Each of those five concerns has a different owner: the data team changes validation rules, the DBA changes the schema, the marketing team changes email copy, the platform team changes logging. Every stakeholder causes this one class to change."
         },
         {
           "id": "b",
-          "text": "JSON.parse on untrusted input is unsafe without error handling",
+          "text": "Using JSON.parse on untrusted input without a try/catch is a security risk that could expose unhandled exceptions in production",
           "isCorrect": false,
           "explanation": "That's a valid security concern, but it's separate from the structural issue. Even with safe parsing, a class that combines validation, persistence, and notification still has multiple reasons to change."
         },
@@ -56,7 +56,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Both unrelated changes land in this one class — database concerns and notification concerns are coupled here, so changing one risks introducing bugs in the other",
+          "text": "Both unrelated changes must land in the same class, coupling database concerns with notification logic so that touching one risks introducing bugs in the other",
           "isCorrect": true,
           "explanation": "The ORM swap and the email provider switch have nothing to do with each other — they come from different teams for different reasons. But because OrderProcessor owns both, the same file has to absorb both changes simultaneously."
         },

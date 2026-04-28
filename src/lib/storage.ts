@@ -1,4 +1,4 @@
-import type { StoredGameState, StreakState } from '@/types/puzzle';
+import type { StoredGameState, StreakState, StatsState } from '@/types/puzzle';
 import { getUtcPuzzleDateKey } from '@/lib/daily-calendar';
 
 const STORAGE_KEY = 'devdaily_game_state';
@@ -124,4 +124,65 @@ export function recordDailyCompletion(todayKey: string = getUtcPuzzleDateKey()):
 
   saveStreakState(next);
   return next.current;
+}
+
+// ─── Stats ───────────────────────────────────────────────────────────────────
+
+const STATS_STORAGE_KEY = 'devdaily_stats';
+
+function defaultStats(): StatsState {
+  return { played: 0, distribution: [0, 0, 0, 0], bestStreak: 0, lastRecordedDate: null };
+}
+
+function readRawStatsState(): StatsState {
+  if (typeof window === 'undefined') return defaultStats();
+  try {
+    const raw = localStorage.getItem(STATS_STORAGE_KEY);
+    if (!raw) return defaultStats();
+    const parsed = JSON.parse(raw) as Partial<StatsState>;
+    return {
+      played: typeof parsed.played === 'number' ? parsed.played : 0,
+      distribution:
+        Array.isArray(parsed.distribution) && parsed.distribution.length === 4
+          ? (parsed.distribution as [number, number, number, number])
+          : [0, 0, 0, 0],
+      bestStreak: typeof parsed.bestStreak === 'number' ? parsed.bestStreak : 0,
+      lastRecordedDate:
+        typeof parsed.lastRecordedDate === 'string' ? parsed.lastRecordedDate : null,
+    };
+  } catch {
+    return defaultStats();
+  }
+}
+
+export function getStats(): StatsState {
+  return readRawStatsState();
+}
+
+export function recordCompletionStats(
+  score: number,
+  currentStreak: number,
+  todayKey: string = getUtcPuzzleDateKey(),
+): StatsState {
+  const stats = readRawStatsState();
+  if (stats.lastRecordedDate === todayKey) return stats;
+
+  const s = Math.max(0, Math.min(3, Math.floor(score))) as 0 | 1 | 2 | 3;
+  const dist: [number, number, number, number] = [...stats.distribution] as [number, number, number, number];
+  dist[s] += 1;
+
+  const updated: StatsState = {
+    played: stats.played + 1,
+    distribution: dist,
+    bestStreak: Math.max(stats.bestStreak, currentStreak),
+    lastRecordedDate: todayKey,
+  };
+
+  try {
+    localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(updated));
+  } catch {
+    // ignore quota errors
+  }
+
+  return updated;
 }

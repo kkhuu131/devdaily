@@ -33,13 +33,13 @@
         },
         {
           "id": "c",
-          "text": "getTier should return a numeric enum for faster comparisons",
+          "text": "getTier should return a numeric enum instead of a string so tier comparisons are faster and type-safe",
           "isCorrect": false,
           "explanation": "Comparison style is not the core object-design issue."
         },
         {
           "id": "d",
-          "text": "Discount logic should always live in service classes, never in entities",
+          "text": "Discount logic should always live in service classes rather than domain entities, keeping business rules out of model objects",
           "isCorrect": false,
           "explanation": "There is no absolute rule like that. The key concern here is knowledge of internals and where behavior belongs."
         }
@@ -73,7 +73,7 @@
         },
         {
           "id": "d",
-          "text": "Access checks should use decorators, since decorators always encapsulate authorization better",
+          "text": "Access checks should use decorators because decorators natively encapsulate authorization policy and cleanly remove permission checks from service methods",
           "isCorrect": false,
           "explanation": "Decorators can organize cross-cutting concerns, but they do not automatically fix misplaced decision logic."
         }

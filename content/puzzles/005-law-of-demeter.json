@@ -21,7 +21,7 @@
       "options": [
         {
           "id": "a",
-          "text": "The method navigates a chain of objects to gather data — if any object in the chain changes its structure, this code breaks even though InvoiceService hasn't changed",
+          "text": "The method navigates a chain of objects to gather its inputs, so any structural change to Customer, Address, or Account breaks this code even when invoicing logic hasn't changed",
           "isCorrect": true,
           "explanation": "InvoiceService depends not just on Order, but on Customer, Address, Account, and TaxExemption — objects it never directly owns. Renaming getRegion() or restructuring Account causes this method to break, even though none of those changes have anything to do with invoicing."
         },
@@ -39,7 +39,7 @@
         },
         {
           "id": "d",
-          "text": "Tax calculation logic doesn't belong in InvoiceService at all",
+          "text": "Tax calculation is a domain concern that shouldn't live in InvoiceService, which should only handle invoice assembly and persistence",
           "isCorrect": false,
           "explanation": "InvoiceService doing tax calculation is reasonable. The issue isn't what it's doing — it's how deeply it reaches into Order's object graph to do it."
         }
@@ -55,7 +55,7 @@
       "options": [
         {
           "id": "a",
-          "text": "The chained call — if getDefaultCard() returns null when no card exists, calling getLastFour() on it throws. The chain hides this possibility entirely.",
+          "text": "Each step in the chain can return null, so if getDefaultCard() finds nothing, calling getLastFour() on it throws with no warning in the surrounding code",
           "isCorrect": true,
           "explanation": "Each step in the chain can return null or undefined, but the code treats every intermediate result as safe. The chain obscures the failure mode — there's no signal that 'user might have no payment profile' or 'profile might have no default card'."
         },
@@ -67,7 +67,7 @@
         },
         {
           "id": "c",
-          "text": "this.gateway.charge() should be awaited since payment processing is async",
+          "text": "The gateway call should be awaited because payment processing is asynchronous and synchronous code gives false confidence about whether it succeeded",
           "isCorrect": false,
           "explanation": "Async handling is a real concern for production payment code, but it would cause a type error or unhandled promise, not the specific crash described when a user has no payment method."
         },

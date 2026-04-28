@@ -57,3 +57,10 @@ export interface StreakState {
   current: number;
   lastCompletedDate: string | null;
 }
+
+export interface StatsState {
+  played: number;
+  distribution: [number, number, number, number]; // index = score 0..3
+  bestStreak: number;
+  lastRecordedDate: string | null;
+}

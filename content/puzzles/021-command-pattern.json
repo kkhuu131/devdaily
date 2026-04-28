@@ -27,19 +27,19 @@
         },
         {
           "id": "b",
-          "text": "Toolbar should be a singleton so command history is globally accessible",
+          "text": "Toolbar should be a singleton so that command history is globally accessible to every component that needs to trigger actions",
           "isCorrect": false,
           "explanation": "Singleton scope does not solve action encapsulation or provide reusable execution metadata."
         },
         {
           "id": "c",
-          "text": "The issue is that editor methods should return booleans indicating success",
+          "text": "The issue is that editor methods should return booleans indicating success so callers can handle failures and retry individually",
           "isCorrect": false,
           "explanation": "Result values may help, but the structural gap is missing command abstraction."
         },
         {
           "id": "d",
-          "text": "These handlers should be static methods for performance",
+          "text": "These handlers should be refactored to static methods since they do not depend on instance state and avoid unnecessary allocation",
           "isCorrect": false,
           "explanation": "Static dispatch does not provide action history or decoupled invocation."
         }
@@ -67,13 +67,13 @@
         },
         {
           "id": "c",
-          "text": "Use Template Method because archive and restore share one line each",
+          "text": "Use Template Method because archive and restore share nearly identical logic and only differ in one final repository method call",
           "isCorrect": false,
           "explanation": "Template Method addresses algorithm skeletons, not request encapsulation for deferred execution."
         },
         {
           "id": "d",
-          "text": "Use Observer so actions broadcast themselves to repositories",
+          "text": "Use Observer so user actions broadcast themselves as events that repositories subscribe to and execute independently on receipt",
           "isCorrect": false,
           "explanation": "Observer addresses subscription fan-out, not representing executable requests with replay semantics."
         }

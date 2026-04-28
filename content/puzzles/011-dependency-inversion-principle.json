@@ -27,19 +27,19 @@
         },
         {
           "id": "b",
-          "text": "The problem is sending email synchronously instead of through a queue",
+          "text": "Email should be sent via an async queue so failures don't block the registration response or retry automatically",
           "isCorrect": false,
           "explanation": "Queues may be useful operationally, but they do not address the dependency direction problem shown."
         },
         {
           "id": "c",
-          "text": "The private field should be readonly to prevent accidental reassignment",
+          "text": "The smtp field should be readonly so other methods cannot reassign it and introduce unpredictable mailer behavior",
           "isCorrect": false,
           "explanation": "Readonly can improve safety, but it does not decouple policy from implementation."
         },
         {
           "id": "d",
-          "text": "The method should return a boolean indicating whether email delivery succeeded",
+          "text": "The method should return a boolean so callers can react to whether email delivery succeeded or failed",
           "isCorrect": false,
           "explanation": "Return shape can be discussed, but the architectural issue is concrete dependency wiring inside high-level code."
         }
@@ -67,7 +67,7 @@
         },
         {
           "id": "c",
-          "text": "The private method toReport should be static for better performance",
+          "text": "The toReport conversion helper should be static since it doesn't use instance state and can be called more efficiently",
           "isCorrect": false,
           "explanation": "Static conversion does not solve the tight coupling between business policy and concrete data source."
         },

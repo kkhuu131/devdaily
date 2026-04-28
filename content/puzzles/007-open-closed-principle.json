@@ -21,7 +21,7 @@
       "options": [
         {
           "id": "a",
-          "text": "A developer has to open and edit this class — even though adding a new payment method shouldn't require touching the logic for existing, working ones",
+          "text": "A developer must open and modify this class to add any new payment method, risking regressions in the existing credit card, PayPal, and bank transfer logic",
           "isCorrect": true,
           "explanation": "Every new payment method modifies a class that already correctly handles credit cards, PayPal, and bank transfers. A bug introduced while adding crypto payments could break credit card processing — two things that have nothing to do with each other."
         },
@@ -55,25 +55,25 @@
       "options": [
         {
           "id": "a",
-          "text": "'Edit this class and add a branch' — and that's the problem. Every new format requires modifying a class that already correctly handles HTML, markdown, and plain text.",
+          "text": "You'd need to open this class and add a new branch, which risks breaking the HTML, markdown, and plain text formatting that already works",
           "isCorrect": true,
           "explanation": "The honest answer is also the revealing one. A design where adding JSON export requires editing HTML and markdown logic means the class is not closed for modification. If the JSON branch introduces a bug, all three existing formats are in the same blast radius."
         },
         {
           "id": "b",
-          "text": "'Add a new method alongside format()' — that's the intended extension mechanism",
+          "text": "You'd add a new formatJSON() method alongside format(), keeping the new code separate from the existing output type handling",
           "isCorrect": false,
           "explanation": "Adding a formatJSON() method is just another form of modification. The class still grows, and the caller still needs to be updated to know when to call formatJSON() vs format(). The conditional logic just moves."
         },
         {
           "id": "c",
-          "text": "'Add a new file that imports this class' — it was designed with that extension point in mind",
+          "text": "You'd create a new file that imports and wraps ReportFormatter, since the class was designed with that kind of extension in mind",
           "isCorrect": false,
           "explanation": "A new file that imports ReportFormatter wouldn't add a new format — it would just use the existing ones. To add JSON support, you still have to open and modify this class."
         },
         {
           "id": "d",
-          "text": "'Nothing — the class already returns an empty string for unknown types, so JSON would silently return empty'",
+          "text": "You don't need to change anything since the class already returns an empty string for unrecognized types, which JSON would silently use",
           "isCorrect": false,
           "explanation": "Returning empty for unknown types is a silent failure, not an extension point. A new developer following that logic would get no output and no error — a confusing debugging experience."
         }

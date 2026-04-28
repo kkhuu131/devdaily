@@ -18,8 +18,14 @@ export function buildSystemPrompt(): string {
     'For multiple-choice, output 4 options (a,b,c,d) with exactly one isCorrect=true.',
     'For which-one, output exactly 2 options (a,b) with exactly one isCorrect=true.',
     'Never reveal the concept name in any option text.',
-    'Wrong options must be plausible misconceptions, not obviously silly.',
-    'Explanations must teach why the choice is right/wrong in concrete terms.',
+
+    // ── Anti-tell rules (prevent the correct answer from being structurally identifiable) ──
+    'CRITICAL: All option texts must be roughly equal in length — target 15–22 words each for multiple-choice, 12–20 words for which-one. Never write a long detailed correct answer alongside short dismissive wrong answers.',
+    'CRITICAL: Do NOT use em dashes (—) anywhere in option text. Use plain declarative sentences only.',
+    'CRITICAL: Wrong options must be written with the same confidence and specificity as the correct option. A wrong option should identify a real concern that a thoughtful developer could plausibly mistake for the root issue.',
+    'CRITICAL: All options for the same question must follow the same grammatical structure — either all complete sentences from the same angle, or all noun-phrase fragments. Structural uniformity prevents the correct answer from standing out by form.',
+
+    'Explanations (shown after reveal, not visible during play) may be as long as needed and may use em dashes freely.',
     'Q3 should compare two plausible designs; the wrong one should fail for nuanced structural reasons.',
     'Citations should be credible software-craft sources (Fowler, GoF, Clean Code, Pragmatic Programmer, or similarly credible references).',
     'Keep concept naming canonical and professional.',
@@ -92,5 +98,12 @@ Constraints:
 - Prefer snippets around 8-22 lines each.
 - Q3 (which-one) should generally show "Version A" and "Version B" in snippet/comments.
 - Use valid JSON escaping for newlines in codeSnippet.
+
+ANTI-TELL RULES — these prevent players from guessing by option shape rather than thinking:
+- No em dashes (—) in any option "text" field. Never. Zero exceptions.
+- All option "text" values for the same question must be within 5 words of each other in length.
+- Wrong options must be at least 12 words long and state a specific, concrete concern.
+- The correct option must NOT be a compound "verdict — reasoning" sentence. State it as a single confident observation.
+- If you find yourself writing a long correct option and short wrong options, shorten the correct option and expand the wrong ones until they match.
 `.trim();
 }

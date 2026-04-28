@@ -33,7 +33,7 @@
         },
         {
           "id": "c",
-          "text": "These classes should all be singletons so creation code is unnecessary",
+          "text": "These notifier classes should all be singletons so creation code is unnecessary and each channel shares one reusable instance",
           "isCorrect": false,
           "explanation": "Singletons alter lifecycle semantics but do not solve extensible creation design."
         },
@@ -61,7 +61,7 @@
         },
         {
           "id": "b",
-          "text": "Keep adding parser if-branches because parse logic is simple and explicit",
+          "text": "Keep adding parser if-branches because the parse logic is simple, explicit, and easy to follow for developers reading the code",
           "isCorrect": false,
           "explanation": "Explicit now becomes brittle over time when external plugins and frequent additions are required."
         },
@@ -73,7 +73,7 @@
         },
         {
           "id": "d",
-          "text": "Use Observer so parsers subscribe to parse requests dynamically",
+          "text": "Use Observer so parsers subscribe dynamically to incoming parse requests and process them without explicit selection by the engine",
           "isCorrect": false,
           "explanation": "Observer handles event reactions, not deterministic selection and creation of one parser instance."
         }

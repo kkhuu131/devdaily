@@ -40,7 +40,7 @@
         },
         {
           "id": "d",
-          "text": "Returning paymentId leaks implementation details to callers",
+          "text": "Returning paymentId in the receipt exposes an internal payment gateway concept that callers shouldn't need to depend on",
           "isCorrect": false,
           "explanation": "Return shape can be debated, but it does not explain why this function is difficult to maintain. The issue is too much behavior in one method."
         }
@@ -74,7 +74,7 @@
         },
         {
           "id": "d",
-          "text": "Tracking analytics inside business code is always an anti-pattern",
+          "text": "Mixing analytics tracking directly into business logic always violates separation of concerns and makes both harder to test independently",
           "isCorrect": false,
           "explanation": "Analytics can be acceptable depending on architecture. The bigger issue is that this one method keeps accumulating unrelated steps."
         }

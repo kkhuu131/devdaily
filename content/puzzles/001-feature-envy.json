@@ -28,19 +28,19 @@
         },
         {
           "id": "b",
-          "text": "computeRate receives too many parameters",
+          "text": "computeRate receives too many parameters, which suggests the caller is doing too much data gathering before delegating",
           "isCorrect": false,
           "explanation": "A long parameter list might be a concern in computeRate, but that's a separate issue. The core problem here is where all that data is coming from — another class."
         },
         {
           "id": "c",
-          "text": "The method is doing too many things at once",
+          "text": "The method handles too many tasks at once and should be broken into smaller, single-purpose helpers",
           "isCorrect": false,
           "explanation": "This method is fairly focused — it gathers data and delegates to computeRate. The problem isn't how much it does, but whose data it's borrowing to do it."
         },
         {
           "id": "d",
-          "text": "Order exposes too many public getters",
+          "text": "Order's public API exposes too many getters, cluttering its interface and making it easy for callers to reach into its internals",
           "isCorrect": false,
           "explanation": "Wide getter surfaces can be a design concern, but they're a symptom here, not the cause. The real issue is that ShippingCalculator is consuming all of them — suggesting this logic belongs inside Order."
         }
@@ -74,7 +74,7 @@
         },
         {
           "id": "d",
-          "text": "Invoice has too many responsibilities overall",
+          "text": "Invoice already handles too many responsibilities, and this method is just another symptom of that broader overload",
           "isCorrect": false,
           "explanation": "We can only see one method, so there's no evidence the class has too many responsibilities. Focus on what this method is doing and whose data it's depending on."
         }

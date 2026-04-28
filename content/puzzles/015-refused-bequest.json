@@ -34,7 +34,7 @@
         },
         {
           "id": "c",
-          "text": "Throwing errors in domain methods is always invalid in enterprise systems",
+          "text": "Throwing errors inside domain methods is always wrong in enterprise systems and should be replaced with result types",
           "isCorrect": false,
           "explanation": "Errors can be valid; here they are a symptom of bad inheritance fit."
         },
@@ -68,13 +68,13 @@
         },
         {
           "id": "c",
-          "text": "OfficePrinter should be final so subclasses cannot introduce unsupported behavior",
+          "text": "OfficePrinter should be marked final to prevent any subclass from overriding and weakening its established behavior",
           "isCorrect": false,
           "explanation": "Making it final avoids subclassing but does not create the right reusable abstraction for mobile printing."
         },
         {
           "id": "d",
-          "text": "The problem is that methods should be async due to I/O",
+          "text": "Printer methods should be async since device I/O is inherently slow and synchronous calls would block the calling thread",
           "isCorrect": false,
           "explanation": "Asynchrony is orthogonal to this design smell."
         }

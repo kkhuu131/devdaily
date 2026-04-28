@@ -27,13 +27,13 @@
         },
         {
           "id": "b",
-          "text": "The issue is that quack() should be abstract in Duck",
+          "text": "The quack method should be abstract in Duck so subclasses are required to provide their own implementation",
           "isCorrect": false,
           "explanation": "Abstractness does not address the rigid behavior coupling caused by inheritance."
         },
         {
           "id": "c",
-          "text": "Bird should be an interface so inheritance remains clean",
+          "text": "Bird should be converted to an interface so that unrelated duck types don't inherit unwanted concrete behavior",
           "isCorrect": false,
           "explanation": "Using an interface alone does not solve combinatorial subclass growth."
         },

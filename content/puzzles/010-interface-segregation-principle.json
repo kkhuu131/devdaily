@@ -27,7 +27,7 @@
         },
         {
           "id": "b",
-          "text": "Interfaces should never contain more than three methods",
+          "text": "Interfaces should contain at most three methods to stay focused and avoid forcing unwanted implementations",
           "isCorrect": false,
           "explanation": "Method count is not the principle. An interface can have many methods if every client needs them."
         },
@@ -67,7 +67,7 @@
         },
         {
           "id": "c",
-          "text": "Promises are the problem; synchronous interfaces avoid this kind of coupling",
+          "text": "Async interfaces are the problem; switching to synchronous APIs would eliminate the unnecessary coupling between components",
           "isCorrect": false,
           "explanation": "Sync vs async does not change whether clients are forced to depend on methods they do not need."
         },

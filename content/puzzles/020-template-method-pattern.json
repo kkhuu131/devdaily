@@ -39,7 +39,7 @@
         },
         {
           "id": "d",
-          "text": "Audit should run before transform to catch raw input size",
+          "text": "Audit should run before transform to capture raw input size and detect problems in data before any processing occurs",
           "isCorrect": false,
           "explanation": "Order tweaks may be valid, but they do not address repeated workflow skeleton."
         }

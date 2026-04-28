@@ -21,7 +21,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Each new discount type means opening and editing this method — the calculation logic for all discount types is tangled together instead of being separate, swappable units",
+          "text": "Each new discount type requires opening and modifying this method, putting all the existing discount logic at risk from an unrelated change",
           "isCorrect": true,
           "explanation": "Every new discount type requires modifying existing, working code. There's no way to add a 'loyalty' discount without touching a method that already correctly handles percentage, flat, and bogo discounts — risking regressions in all of them."
         },
@@ -55,7 +55,7 @@
       "options": [
         {
           "id": "a",
-          "text": "The class assumes the full set of sorting algorithms is known upfront — adding a new one requires modifying this class even though the sorting logic itself hasn't changed",
+          "text": "The class treats the full set of sorting algorithms as fixed at design time, requiring modification of stable, working code whenever a new algorithm is needed",
           "isCorrect": true,
           "explanation": "Adding heapsort requires: updating the union type, adding a case to the switch, and adding a private method — all inside a class that was already working. The three existing algorithms have to absorb the risk of a change that has nothing to do with them."
         },
@@ -73,7 +73,7 @@
         },
         {
           "id": "d",
-          "text": "DataSorter should be a standalone function rather than a class",
+          "text": "DataSorter would be cleaner as a standalone function since it holds no mutable state and doesn't benefit from being a class",
           "isCorrect": false,
           "explanation": "Whether it's a class or function doesn't change the structural problem — a function with the same switch logic has the same issue. The problem is how new algorithms are added, not the wrapping syntax."
         }

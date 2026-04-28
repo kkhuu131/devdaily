@@ -27,7 +27,7 @@
         },
         {
           "id": "b",
-          "text": "The issue is that amount multiplication should use bigint for precision",
+          "text": "The issue is that amount multiplication should use bigint or Decimal for financial precision instead of floating point arithmetic",
           "isCorrect": false,
           "explanation": "Precision can matter, but the design problem here is interface mismatch leaking into many callers."
         },
@@ -39,7 +39,7 @@
         },
         {
           "id": "d",
-          "text": "Using snake_case payload keys is bad style in TypeScript codebases",
+          "text": "Using snake_case payload keys violates TypeScript naming conventions and should be replaced with camelCase throughout all API integration code",
           "isCorrect": false,
           "explanation": "Snake_case might be required by the external service. The issue is where that incompatibility is handled."
         }
@@ -67,7 +67,7 @@
         },
         {
           "id": "c",
-          "text": "Use inheritance: make CheckoutService extend vendorSdk for tighter integration",
+          "text": "Use inheritance by making CheckoutService extend vendorSdk directly so the service gains tighter integration with all vendor-provided payment capabilities",
           "isCorrect": false,
           "explanation": "Inheritance does not solve interface mismatch and further couples business logic to external implementation."
         },

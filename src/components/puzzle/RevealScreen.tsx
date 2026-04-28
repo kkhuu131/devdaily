@@ -4,12 +4,14 @@ import type { Puzzle } from '@/types/puzzle';
 import { isAnswerCorrect } from '@/lib/puzzle-utils';
 import NextPuzzleCountdown from '@/components/ui/NextPuzzleCountdown';
 import ShareCard from '@/components/ui/ShareCard';
+import StatsPanel from '@/components/ui/StatsPanel';
 
 interface Props {
   puzzle: Puzzle;
   answers: (string | null)[];
   dayNumber: number;
   streak: number;
+  showStats?: boolean;
 }
 
 function ConceptName({ name }: { name: string }) {
@@ -71,7 +73,9 @@ function ScoreRow({
   );
 }
 
-export default function RevealScreen({ puzzle, answers, dayNumber, streak }: Props) {
+export default function RevealScreen({ puzzle, answers, dayNumber, streak, showStats = false }: Props) {
+  const score = puzzle.questions.filter((q, i) => isAnswerCorrect(answers[i], q, puzzle.id)).length;
+
   return (
     <div className="animate-fade-up px-4 max-w-[760px] mx-auto w-full pb-8">
       <div
@@ -147,6 +151,12 @@ export default function RevealScreen({ puzzle, answers, dayNumber, streak }: Pro
       >
         Learn more →
       </a>
+
+      {showStats && (
+        <div className="mt-4">
+          <StatsPanel currentScore={score} currentStreak={streak} />
+        </div>
+      )}
 
       <ShareCard
         puzzle={puzzle}

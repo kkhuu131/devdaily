@@ -22,7 +22,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Conceptually grouped data — patient identity, time slot, and location — is scattered as disconnected raw strings instead of dedicated types",
+          "text": "Related domain data like patient identity, time slot, and location is spread across individual raw strings with no shared structure or validation",
           "isCorrect": true,
           "explanation": "Patient name + DOB, date + time + duration, and room all form natural clusters. Expressing them as individual strings hides this structure, spreads validation everywhere they're used, and makes the function easy to call incorrectly."
         },
@@ -56,7 +56,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Money is two separate primitives — adding formatting, conversion, or arithmetic rules means finding and updating every place that handles price and currency instead of changing one type",
+          "text": "Representing money as two separate primitives means any new formatting or conversion requirement requires updating every place that handles price and currency together",
           "isCorrect": true,
           "explanation": "A Money type would own its currency, formatting logic, and arithmetic rules. As a primitive pair, that knowledge is spread across every caller. Each new money-related requirement means a search-and-update across the codebase."
         },
@@ -74,7 +74,7 @@
         },
         {
           "id": "d",
-          "text": "The class is fine — the team should add a separate CurrencyConverter utility for the new requirements",
+          "text": "The class works as-is, so build a separate CurrencyConverter utility to handle the new formatting and conversion requirements without touching ShoppingCart",
           "isCorrect": false,
           "explanation": "A separate utility still works with raw number + string pairs. Every place that uses ShoppingCart would need to know how to pass those primitives to the converter correctly. The problem multiplies instead of being solved."
         }
@@ -90,13 +90,13 @@
       "options": [
         {
           "id": "a",
-          "text": "False — wrapping primitives in an object reduces parameter count but doesn't create meaningful types. startDate is still an unvalidated string; latitude and longitude are still raw numbers with no coordinate behavior.",
+          "text": "False: wrapping primitives in an options object reduces parameter count but doesn't make them meaningful types. The strings and numbers still lack validation and domain behavior.",
           "isCorrect": true,
           "explanation": "This is 'Introduce Parameter Object' — a useful refactoring, but not the one that addresses primitive obsession. The fix is value objects: a DateRange that validates start < end, a Coordinate that validates bounds. The parameters still want to be types, not just fields in an object."
         },
         {
           "id": "b",
-          "text": "True — the refactoring groups related data together and makes the function's intent much clearer",
+          "text": "True: grouping the parameters into an options object clarifies the function's intent and removes the risk of passing them in the wrong order",
           "isCorrect": false,
           "explanation": "Grouping is an improvement in readability, but the underlying primitives are unchanged. You can still pass an invalid date string, a latitude of 9999, or swap start and end with no type-level error. The smell is the representation, not the parameter count."
         }
