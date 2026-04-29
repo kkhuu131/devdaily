@@ -8,6 +8,7 @@ import {
   getSiteUrl,
 } from '@/lib/site';
 import BfCacheReload from '@/components/app/BfCacheReload';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 
 const jetbrainsMono = JetBrains_Mono({
@@ -66,6 +67,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col antialiased">
         <BfCacheReload />
         {children}
+        <Analytics />
       </body>
     </html>
   );

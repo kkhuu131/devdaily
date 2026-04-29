@@ -23,7 +23,7 @@ export function generateShareText(params: {
   const streakLine = streak > 0 ? ` • Streak: ${streak}` : '';
 
   return [
-    `🧠 DevDaily #${dayNumber} — ${puzzle.conceptName}`,
+    `🧠 DevDaily #${dayNumber}: ${puzzle.conceptName}`,
     '',
     `Q1 ${marks[0]}  Q2 ${marks[1]}  Q3 ${marks[2]}`,
     `Score: ${score}/3${streakLine}`,

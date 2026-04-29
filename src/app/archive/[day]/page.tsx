@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const puzzleIndex = (dayNumber - 1) % allPuzzles.length;
   const puzzle = allPuzzles[puzzleIndex];
   const title = `${puzzle.conceptName} (day ${dayNumber})`;
-  const description = `Replay ${SITE_NAME} puzzle #${dayNumber}: ${puzzle.conceptName}. Three questions, one reveal—archive play does not affect streaks.`;
+  const description = `Replay ${SITE_NAME} puzzle #${dayNumber}: ${puzzle.conceptName}. Three questions, one reveal. Archive play does not affect your streak.`;
 
   return {
     title,

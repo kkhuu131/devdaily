@@ -13,7 +13,7 @@ export const SITE_NAME = 'DevDaily';
 export const SITE_TAGLINE = 'Daily software craft puzzles';
 
 export const SITE_DESCRIPTION =
-  'A daily puzzle game for developers. Three questions on one concept—code smells, design patterns, SOLID, and refactoring—with code snippets and a reveal. Same puzzle for everyone each UTC day.';
+  'A daily puzzle game for developers. Three questions on one concept (code smells, design patterns, SOLID, and refactoring) with real code snippets and a reveal. Same puzzle for everyone each UTC day.';
 
 /** Optional: comma-separated hints for crawlers (Google largely ignores keywords). */
 export const SITE_KEYWORDS = [

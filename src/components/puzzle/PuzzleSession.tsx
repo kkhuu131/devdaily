@@ -241,8 +241,8 @@ export default function PuzzleSession({ puzzle, dayNumber, highlightedSnippets }
                   One concept. Three questions.
                 </h1>
                 <p className="text-sm max-w-[520px] mx-auto leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  Spot the pattern, smell, or principle from real code situations. One guess per
-                  question, then the concept gets revealed.
+                  Spot the pattern, smell, or principle from real code. One guess per question,
+                  then you&apos;ll see how you did.
                 </p>
               </div>
 

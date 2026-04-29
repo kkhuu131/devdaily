@@ -43,7 +43,7 @@ export default function ShareCard({ puzzle, answers, dayNumber, streak }: Props)
 
       <button
         onClick={handleCopy}
-        className="w-full py-2.5 rounded-sm text-sm transition-colors duration-150"
+        className="w-full py-2.5 min-h-11 rounded-sm text-sm transition-colors duration-150"
         style={{
           backgroundColor: copied ? 'var(--accent-correct-subtle)' : 'var(--bg-surface)',
           border: `1px solid ${copied ? 'var(--accent-correct)' : 'var(--border-subtle)'}`,

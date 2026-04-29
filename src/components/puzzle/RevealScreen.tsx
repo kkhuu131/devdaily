@@ -124,7 +124,7 @@ export default function RevealScreen({ puzzle, answers, dayNumber, streak, showS
           </p>
         </div>
 
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
           {puzzle.citation.author} · {puzzle.citation.bookTitle} · {puzzle.citation.chapter}
           {puzzle.citation.page ? ` · p. ${puzzle.citation.page}` : ''}
         </p>
@@ -134,7 +134,7 @@ export default function RevealScreen({ puzzle, answers, dayNumber, streak, showS
         href={puzzle.citation.externalUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="block w-full py-2.5 rounded-sm text-sm text-center transition-colors duration-150 mb-0"
+        className="flex items-center justify-center w-full py-2.5 min-h-11 rounded-sm text-sm transition-colors duration-150 mb-0"
         style={{
           border: '1px solid var(--border-subtle)',
           color: 'var(--text-secondary)',

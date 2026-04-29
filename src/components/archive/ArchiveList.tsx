@@ -82,7 +82,7 @@ export default function ArchiveList({ items }: { items: ArchiveItem[] }) {
                 {CATEGORY_LABEL[category]}
               </span>
               <span
-                className="archive-row-end text-xs shrink-0 hidden sm:inline transition-colors duration-100"
+                className="archive-row-end text-xs shrink-0 transition-colors duration-100"
                 style={{ color: done ? 'var(--accent-correct)' : 'var(--text-muted)' }}
               >
                 {done ? '✓' : '→'}

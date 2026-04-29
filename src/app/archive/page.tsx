@@ -7,7 +7,7 @@ import ArchiveList, { type ArchiveItem } from '@/components/archive/ArchiveList'
 export const metadata: Metadata = {
   title: 'Archive',
   description:
-    'Browse and replay every past daily puzzle—code smells, SOLID, design patterns, and refactoring—without affecting your streak.',
+    'Browse and replay every past daily puzzle (code smells, SOLID, design patterns, and refactoring) without affecting your streak.',
   alternates: { canonical: '/archive' },
   openGraph: { url: '/archive' },
 };
@@ -64,7 +64,7 @@ export default function ArchivePage() {
               No past puzzles yet.
             </p>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              The archive grows one day at a time — check back tomorrow.
+              The archive grows one day at a time. Check back tomorrow.
             </p>
           </div>
         ) : (

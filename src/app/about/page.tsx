@@ -25,7 +25,7 @@ const BOOKS = [
     title: 'Clean Code',
     author: 'Robert C. Martin',
     description:
-      'Hands-on principles for writing code that communicates intent clearly — and exposes code that does not.',
+      'Hands-on principles for writing code that communicates intent clearly, and for spotting code that does not.',
     url: 'https://www.goodreads.com/book/show/3735293-clean-code',
   },
   {
@@ -39,15 +39,15 @@ const BOOKS = [
     title: 'Design Patterns',
     author: 'Gamma, Helm, Johnson & Vlissides',
     description:
-      'The original pattern catalog — still the clearest taxonomy of reusable object-oriented solutions.',
+      'The original pattern catalog. Still the clearest taxonomy of reusable object-oriented solutions.',
     url: 'https://www.goodreads.com/book/show/85009.Design_Patterns',
   },
 ];
 
 const HOW_IT_WORKS = [
-  'Each day, three questions on the same software craft concept — drawn from real code situations, not textbook definitions.',
+  'Each day, three questions on the same software craft concept, drawn from real code situations rather than textbook definitions.',
   'Questions escalate in difficulty. One guess per question, no retries. The commitment is the point.',
-  'After all three, the concept is revealed with a definition, a rule of thumb, and a book citation to go deeper.',
+  'After all three, you get the concept name with a definition, a rule of thumb, and a book citation if you want to go deeper.',
 ];
 
 export default function AboutPage() {
@@ -75,9 +75,8 @@ export default function AboutPage() {
             {SITE_NAME}
           </h1>
           <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-            A daily puzzle game for developers. Three questions, all on the same concept —
-            a code smell, design pattern, or principle. One guess each. No hints.
-            The concept is revealed only after you finish.
+            A daily puzzle game for developers. Three questions on the same concept (a code smell,
+            design pattern, or principle). One guess each, no hints. The concept reveals after you finish.
           </p>
         </div>
 

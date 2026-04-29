@@ -8,6 +8,7 @@
 - `/about` renders a static explainer page (game framing, how-it-works flow, reading list, and external GitHub CTA) using the same day-aware header/footer shell as the home page.
 - `/archive` renders a server-side list of completed day numbers (newest first), includes concept/category metadata, and shows an explicit empty state for day 1 when no prior puzzles exist.
 - `/archive/[day]` renders archive play sessions server-side, validates that `day` is numeric and less than today (invalid/too-new values call `notFound()`), and pre-renders Shiki highlights before hydrating the client session.
+- `not-found.tsx` renders a branded 404 page with two CTAs (today's puzzle and archive); matches the app shell with Header and Footer.
 - `/robots.txt` and `/sitemap.xml` are generated from App Router metadata routes (`src/app/robots.ts`, `src/app/sitemap.ts`) and should always reflect the canonical site URL from `src/lib/site.ts`.
 - `/api/puzzle` returns `{ puzzle, dayNumber }` for the current UTC day using `getPuzzleForDate()` and `getDayNumber()`.
 
