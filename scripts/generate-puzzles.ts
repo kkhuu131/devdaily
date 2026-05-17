@@ -170,6 +170,58 @@ const CONCEPT_CATALOG: GenerationCandidate[] = [
   { conceptKey: 'replace-conditional-with-polymorphism', conceptName: 'Replace Conditional with Polymorphism', category: 'refactoring' },
   { conceptKey: 'introduce-parameter-object', conceptName: 'Introduce Parameter Object', category: 'refactoring' },
   { conceptKey: 'move-method', conceptName: 'Move Method', category: 'refactoring' },
+
+  // code-smell additions
+  { conceptKey: 'long-parameter-list', conceptName: 'Long Parameter List', category: 'code-smell' },
+  { conceptKey: 'large-class', conceptName: 'Large Class', category: 'code-smell' },
+  { conceptKey: 'switch-statements', conceptName: 'Switch Statements', category: 'code-smell' },
+  { conceptKey: 'divergent-change', conceptName: 'Divergent Change', category: 'code-smell' },
+  { conceptKey: 'lazy-element', conceptName: 'Lazy Element', category: 'code-smell' },
+  { conceptKey: 'alternative-classes-with-different-interfaces', conceptName: 'Alternative Classes with Different Interfaces', category: 'code-smell' },
+  { conceptKey: 'data-class', conceptName: 'Data Class', category: 'code-smell' },
+  { conceptKey: 'global-data', conceptName: 'Global Data', category: 'code-smell' },
+  { conceptKey: 'mutable-data', conceptName: 'Mutable Data', category: 'code-smell' },
+  { conceptKey: 'mysterious-name', conceptName: 'Mysterious Name', category: 'code-smell' },
+
+  // solid additions
+  { conceptKey: 'stable-dependencies-principle', conceptName: 'Stable Dependencies Principle', category: 'solid' },
+  { conceptKey: 'acyclic-dependencies-principle', conceptName: 'Acyclic Dependencies Principle', category: 'solid' },
+
+  // design-pattern additions
+  { conceptKey: 'abstract-factory-pattern', conceptName: 'Abstract Factory Pattern', category: 'design-pattern' },
+  { conceptKey: 'facade-pattern', conceptName: 'Facade Pattern', category: 'design-pattern' },
+  { conceptKey: 'composite-pattern', conceptName: 'Composite Pattern', category: 'design-pattern' },
+  { conceptKey: 'iterator-pattern', conceptName: 'Iterator Pattern', category: 'design-pattern' },
+  { conceptKey: 'flyweight-pattern', conceptName: 'Flyweight Pattern', category: 'design-pattern' },
+  { conceptKey: 'chain-of-responsibility-pattern', conceptName: 'Chain of Responsibility Pattern', category: 'design-pattern' },
+  { conceptKey: 'mediator-pattern', conceptName: 'Mediator Pattern', category: 'design-pattern' },
+  { conceptKey: 'memento-pattern', conceptName: 'Memento Pattern', category: 'design-pattern' },
+  { conceptKey: 'visitor-pattern', conceptName: 'Visitor Pattern', category: 'design-pattern' },
+  { conceptKey: 'prototype-pattern', conceptName: 'Prototype Pattern', category: 'design-pattern' },
+  { conceptKey: 'null-object-pattern', conceptName: 'Null Object Pattern', category: 'design-pattern' },
+
+  // principle additions
+  { conceptKey: 'dry-principle', conceptName: 'DRY Principle', category: 'principle' },
+  { conceptKey: 'separation-of-concerns', conceptName: 'Separation of Concerns', category: 'principle' },
+  { conceptKey: 'boy-scout-rule', conceptName: 'Boy Scout Rule', category: 'principle' },
+  { conceptKey: 'hollywood-principle', conceptName: 'Hollywood Principle', category: 'principle' },
+  { conceptKey: 'defensive-programming', conceptName: 'Defensive Programming', category: 'principle' },
+  { conceptKey: 'postels-law', conceptName: "Postel's Law", category: 'principle' },
+  { conceptKey: 'high-cohesion', conceptName: 'High Cohesion', category: 'principle' },
+  { conceptKey: 'loose-coupling', conceptName: 'Loose Coupling', category: 'principle' },
+
+  // refactoring additions
+  { conceptKey: 'inline-function', conceptName: 'Inline Function', category: 'refactoring' },
+  { conceptKey: 'extract-class', conceptName: 'Extract Class', category: 'refactoring' },
+  { conceptKey: 'pull-up-method', conceptName: 'Pull Up Method', category: 'refactoring' },
+  { conceptKey: 'push-down-method', conceptName: 'Push Down Method', category: 'refactoring' },
+  { conceptKey: 'replace-magic-number-with-symbolic-constant', conceptName: 'Replace Magic Number with Symbolic Constant', category: 'refactoring' },
+  { conceptKey: 'decompose-conditional', conceptName: 'Decompose Conditional', category: 'refactoring' },
+  { conceptKey: 'extract-variable', conceptName: 'Extract Variable', category: 'refactoring' },
+  { conceptKey: 'replace-nested-conditional-with-guard-clauses', conceptName: 'Replace Nested Conditional with Guard Clauses', category: 'refactoring' },
+  { conceptKey: 'split-phase', conceptName: 'Split Phase', category: 'refactoring' },
+  { conceptKey: 'move-field', conceptName: 'Move Field', category: 'refactoring' },
+  { conceptKey: 'encapsulate-variable', conceptName: 'Encapsulate Variable', category: 'refactoring' },
 ];
 
 function parseArgs(argv: string[]): CliArgs {
