@@ -1,0 +1,105 @@
+{
+  "id": 63,
+  "conceptName": "Boy Scout Rule",
+  "category": "principle",
+  "definition": "A development practice advising developers to leave code cleaner than they found it by making small, safe improvements when touching code.",
+  "ruleOfThumb": "When you modify a file, make a minimal, safe cleanup so future changes are easier and the codebase gradually improves.",
+  "citation": {
+    "author": "Andrew Hunt and David Thomas",
+    "bookTitle": "The Pragmatic Programmer",
+    "chapter": "Chapter 7: Bend or Break",
+    "page": null,
+    "externalUrl": "https://pragprog.com/titles/tpp20/the-pragmatic-programmer-20th-anniversary-edition/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "You are editing this function to fix a rounding bug. What is the most appropriate additional change to make now?",
+      "codeSnippet": "// file: invoice.ts\nfunction calculateTotal(items: {price:number, qty:number}[]) {\n  let total = 0;\n  for (let i = 0; i < items.length; i++) {\n    const item = items[i];\n    total += item.price * item.qty;\n  }\n  // TODO remove console debug\n  console.log(\"total\", total);\n  return total;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Make incremental improvements to code when modifying nearby lines to keep the codebase progressively cleaner.",
+          "isCorrect": true,
+          "explanation": "This captures the idea of making small, safe cleanups while already touching a file. Removing the debug log or renaming a variable as part of the bug fix reduces future friction without introducing large risk."
+        },
+        {
+          "id": "b",
+          "text": "Refactor the entire module before making the minimal change to ensure a perfect and consistent design across files.",
+          "isCorrect": false,
+          "explanation": "A full module refactor increases risk and review scope for a simple bug fix. It is a plausible approach when design is severely flawed, but it is not the safest practice for a localized bug change."
+        },
+        {
+          "id": "c",
+          "text": "Avoid touching unrelated code and only change the minimal lines necessary to preserve historical blame accuracy.",
+          "isCorrect": false,
+          "explanation": "Preserving git blame is a valid concern, especially in regulated contexts, but this position discourages productive small cleanups that would reduce future maintenance effort when applied safely."
+        },
+        {
+          "id": "d",
+          "text": "Defer any cleanup to a dedicated refactor task to keep the current change focused and risk minimized.",
+          "isCorrect": false,
+          "explanation": "Deferring cleanup to a separate task keeps the current change narrow, which is sometimes appropriate, but it can accumulate toil when trivial, safe cleanups are repeatedly postponed."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the most practical risk teams cite when small tidy edits are added to a bug fix pull request?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Introducing unrelated tidy changes during a bug fix can increase the pull request size and slow code review throughput.",
+          "isCorrect": true,
+          "explanation": "Large PRs are harder and slower to review, which is a common operational cost. Teams weigh the benefit of incremental cleanup against increased reviewer time and cognitive load."
+        },
+        {
+          "id": "b",
+          "text": "Making small cleanups while fixing a bug can introduce unexpected changes that obscure the original failure cause in tests.",
+          "isCorrect": false,
+          "explanation": "This concern is concrete and valid when cleanups touch behavior. The mitigation is to limit cleanups to nonbehavioral changes and include focused tests to detect regressions."
+        },
+        {
+          "id": "c",
+          "text": "Adding cosmetic edits in the same commit can corrupt git blame accuracy and make future regressions harder to track down.",
+          "isCorrect": false,
+          "explanation": "This is a legitimate tradeoff in teams that rely heavily on blame for auditing. The practice can be mitigated with granular commits or by preserving context in commit messages."
+        },
+        {
+          "id": "d",
+          "text": "Deferring all cleanup until a separate refactor can accumulate technical debt and increase long term maintenance costs for the team.",
+          "isCorrect": false,
+          "explanation": "Delaying cleanup is a real systemic risk that leads to larger refactors later. This distractor highlights the long term cost tradeoff against short term review and stability concerns."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version would you choose to land in a production branch right now when touching this handler and why?",
+      "codeSnippet": "// Version A: inline renaming and logic edits\nfunction handleOrder(order: any) {\n  const totalAmount = order.items.reduce((s,n) => s + n.price * n.qty, 0);\n  // rename customerId to clientId across function and update logic directly\n  const clientId = order.customerId;\n  saveOrder({clientId, totalAmount});\n}\n\n// Version B: small helper extraction and a limited call-site change\nfunction handleOrder(order: any) {\n  const total = computeTotal(order.items);\n  saveOrder({clientId: order.customerId, totalAmount: total});\n}\nfunction computeTotal(items: any[]) {\n  return items.reduce((s,n) => s + n.price * n.qty, 0);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A mixes renaming and logic edits and creates a large diff that hides behavioral changes and review risk.",
+          "isCorrect": false,
+          "explanation": "Version A bundles renaming with logic edits producing a broader diff. That increases the chance reviewers miss behavioral changes and makes the PR harder to review. For long lived branches this also complicates bisects. If the rename is trivial and isolated, A might be acceptable, but as shown it changes multiple responsibilities in one change, which raises risk."
+        },
+        {
+          "id": "b",
+          "text": "Version B produces consistently narrower diffs and keeps the review scope small and easy to verify.",
+          "isCorrect": true,
+          "explanation": "Version B performs a focused extraction producing a small, verifiable change that is easier to review and safer to land. This aligns with making minimal, safe improvements when touching code so future changes are easier. Keep the helper extraction tiny and include tests; if the cleanup grows in scope, prefer separate refactor commits or a staged approach."
+        }
+      ]
+    }
+  ]
+}

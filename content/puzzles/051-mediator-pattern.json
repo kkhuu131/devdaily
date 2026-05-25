@@ -1,0 +1,105 @@
+{
+  "id": 51,
+  "conceptName": "Mediator Pattern",
+  "category": "design-pattern",
+  "definition": "Encapsulates how a set of objects interact by introducing an intermediary object that centralizes communication and reduces direct dependencies.",
+  "ruleOfThumb": "Use when many components interact in complex ways and you want to decouple them by centralizing coordination.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Mediator",
+    "page": "pp. 185-195",
+    "externalUrl": "https://refactoring.guru/design-patterns/mediator"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best describes the design situation where this pattern is an appropriate choice?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Use when many objects need to coordinate through a central intermediary to avoid tight coupling between concrete components.",
+          "isCorrect": true,
+          "explanation": "This correctly identifies the intent: centralize interactions to prevent many-to-many coupling. The intermediary holds the interaction logic so participants depend on it instead of on each other."
+        },
+        {
+          "id": "b",
+          "text": "Use when objects have complex interaction protocols that would scatter communication logic across classes and hinder maintainability.",
+          "isCorrect": false,
+          "explanation": "This is a plausible concern because distributed interaction logic hurts maintainability, but it is narrower. Centralizing protocols is a symptom, while the primary aim is to decouple participants by centralizing coordination."
+        },
+        {
+          "id": "c",
+          "text": "Use when direct references between components produce cyclic dependencies or make testing and reuse difficult across modules.",
+          "isCorrect": false,
+          "explanation": "Cyclic dependencies and poor testability are real issues that this pattern helps resolve, but they are consequences rather than the most precise description of when to apply the pattern."
+        },
+        {
+          "id": "d",
+          "text": "Use when you need to centralize control of interactions to simplify adding or removing participants without touching each class.",
+          "isCorrect": false,
+          "explanation": "This is a valid benefit and a good motivation, but it emphasizes extensibility rather than the core goal of decoupling interactive responsibilities into a single coordinator."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In the code below, what is the primary design concern that a reviewer should notice?",
+      "codeSnippet": "interface Participant { send(message: string): void; receive(message: string): void; }\n\nclass Coordinator {\n  participants: Participant[] = [];\n  register(p: Participant) { this.participants.push(p); }\n  send(sender: Participant, message: string) { this.participants.forEach(p => { if (p !== sender) p.receive(message); }); }\n}\n\nclass ServiceA implements Participant {\n  constructor(private coord: Coordinator) {}\n  send(message: string) { this.coord.send(this, message); }\n  receive(message: string) { console.log('A got', message); }\n}\n\nclass ServiceB implements Participant {\n  constructor(private coord: Coordinator) {}\n  send(message: string) { this.coord.send(this, message); }\n  receive(message: string) { console.log('B got', message); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A single coordinator object centralizes all participant communications and can become a maintenance bottleneck over time.",
+          "isCorrect": true,
+          "explanation": "This highlights a realistic tradeoff: the coordinator reduces direct coupling but concentrates interaction logic, increasing the chance it becomes a complex god object that is hard to change and test."
+        },
+        {
+          "id": "b",
+          "text": "Participants still rely on direct send calls to the coordinator making the system hard to reuse outside this communication protocol.",
+          "isCorrect": false,
+          "explanation": "This concern is valid because participants depend on the coordinator interface. However the code intentionally centralizes messaging to enable reuse; the bigger risk is coordinator growth rather than reuse per se."
+        },
+        {
+          "id": "c",
+          "text": "Coordinator broadcasts messages to all registered participants which can be inefficient when only a subset actually needs each message.",
+          "isCorrect": false,
+          "explanation": "Broadcast inefficiency is a concrete runtime issue, especially at scale. It is an orthogonal performance concern distinct from the primary design tradeoff of centralized responsibility."
+        },
+        {
+          "id": "d",
+          "text": "Type system has no compile time guarantees about message formats leading to fragile runtime string contract between components.",
+          "isCorrect": false,
+          "explanation": "Lack of strong message typing is a real fragility and should be addressed, but it is an implementation detail rather than the central design observation about a coordinator centralizing interaction logic."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Between these two designs which one is the better overall structure for decoupling components in a medium sized system?",
+      "codeSnippet": "// Version A: coordinator\nclass Coordinator {\n  routes = new Map<string, Function[]>();\n  register(channel: string, fn: Function) { this.routes.set(channel, (this.routes.get(channel) || []).concat(fn)); }\n  send(channel: string, data: any) { (this.routes.get(channel) || []).forEach(f => f(data)); }\n}\nclass UserService { constructor(private coord: Coordinator) {} notify(msg: any){ this.coord.send('user', msg); } }\n\n// Version B: direct references\nclass UserService2 {\n  other: NotificationService;\n  notify(msg: any){ this.other.receive(msg); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes component interactions into a single coordinating service owned by the integration layer.",
+          "isCorrect": true,
+          "explanation": "Version A isolates routing and interaction policies in one place, which reduces coupling among participants and makes it easier to change communication rules without touching each class. This improves testability and modular boundaries. The tradeoff is the coordinator can grow complex and should be kept focused or split into smaller coordinators for different concerns."
+        },
+        {
+          "id": "b",
+          "text": "Version B couples components directly with many hard references across classes which increases maintenance and test complexity.",
+          "isCorrect": false,
+          "explanation": "Version B may seem simpler initially, but direct references create many point-to-point dependencies that increase coupling, make incremental changes costly, and make isolated testing harder. Over time this approach tends to scatter coordination logic and create brittle interclass ties. For these reasons the centralized coordinator is usually preferable in systems with many interactions."
+        }
+      ]
+    }
+  ]
+}

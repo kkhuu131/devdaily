@@ -1,0 +1,106 @@
+{
+  "id": 52,
+  "conceptName": "Memento Pattern",
+  "category": "design-pattern",
+  "definition": "Encapsulate an object's state into a lightweight snapshot object so the originator can be restored later without exposing internals.",
+  "ruleOfThumb": "Provide snapshot objects that capture only the state needed to restore, and keep snapshots immutable or deeply copied.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Memento",
+    "page": "311",
+    "externalUrl": "https://refactoring.guru/design-patterns/memento"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the snippet. Which overall intent does this code most clearly show?",
+      "codeSnippet": "class EditorState { constructor(private text: string) {} getText() { return this.text } }\nclass Editor {\n  private text = ''\n  setText(t: string) { this.text = t }\n  save() { return new Snapshot(this.text) }\n  restore(s: Snapshot) { this.text = s.get() }\n}\nclass Snapshot { constructor(private state: string) {} get() { return this.state } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It captures and restores object internal state using isolated snapshot objects that preserve encapsulation.",
+          "isCorrect": true,
+          "explanation": "This code separates the originator's mutable state into a separate snapshot type returned by save and consumed by restore. The snapshot hides internal representation while enabling rollback or undo behavior. This aligns with the canonical intent of keeping internal state private while allowing state recovery."
+        },
+        {
+          "id": "b",
+          "text": "It decouples request execution from callers by encapsulating actions into command objects for flexible queuing.",
+          "isCorrect": false,
+          "explanation": "The Command pattern encapsulates operations and supports queuing, undo by replaying inverse commands, and scheduling. The snippet shows explicit state snapshots rather than encapsulated executable commands with execute and unexecute methods, so a command interpretation is plausible but not accurate here."
+        },
+        {
+          "id": "c",
+          "text": "It provides object cloning and prototype based copies to duplicate an instance for parallel modifications without side effects.",
+          "isCorrect": false,
+          "explanation": "Cloning or prototype-based duplication creates full copies for independent modification. While snapshots may be implemented by copying state, the intent in this code is explicitly to capture a restorable snapshot of state, not to provide a general cloning facility for independent parallel instances."
+        },
+        {
+          "id": "d",
+          "text": "It centralizes transactional changes in a coordinator that can commit or rollback groups of operations atomically.",
+          "isCorrect": false,
+          "explanation": "Transaction coordinators manage groups of operations with commit and rollback semantics across resources. Although snapshots can support rollback, the snippet lacks a coordinator managing multiple resources or atomic commit boundaries, making a pure transaction interpretation less likely."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "After introducing snapshot objects, which practical problem is most likely to occur in real code?",
+      "codeSnippet": "class State { items: string[]; constructor(items: string[]) { this.items = items } }\nclass Editor {\n  private state = new State([])\n  save() { return new Snapshot(this.state) }\n  restore(s: Snapshot) { this.state = s.get() }\n  add(item: string) { this.state.items.push(item) }\n}\nclass Snapshot { constructor(private stateRef: State) { } get() { return this.stateRef } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Saved snapshots retain references to mutable internal objects that remain shared with live objects.",
+          "isCorrect": true,
+          "explanation": "Here the Snapshot stores a reference to the original State object. That means later mutations to the originator will also affect previously saved snapshots, defeating the purpose of isolated history. The typical fix is to make snapshots immutable or perform deep copies when saving."
+        },
+        {
+          "id": "b",
+          "text": "Saved snapshots can accumulate indefinitely in memory leading to unbounded memory growth unless snapshots are pruned periodically.",
+          "isCorrect": false,
+          "explanation": "Unbounded growth is a real operational concern when storing many snapshots, especially in long-running processes. However, the snippet indicates a correctness issue due to shared references rather than purely retention policy. Retention strategies are an orthogonal but important consideration."
+        },
+        {
+          "id": "c",
+          "text": "Saved snapshots serialized for persistence can couple to current field layouts and break when internal fields are refactored.",
+          "isCorrect": false,
+          "explanation": "Serialization ties snapshot format to concrete structures and can cause compatibility problems across versions. This is a plausible concern for persistence, but the code here demonstrates an immediate runtime mutation hazard rather than a persistent format compatibility issue."
+        },
+        {
+          "id": "d",
+          "text": "Saved snapshots stored inside the originator leak lifecycle responsibility and create single responsibility violations across components.",
+          "isCorrect": false,
+          "explanation": "Putting storage or retention logic inside the originator can violate single responsibility principles. While architecturally relevant, the most immediate bug risk in this snippet is that snapshots are sharing mutable references, which is a correctness problem independent of lifecycle responsibility."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two versions below. Which design choice is better for preserving historical snapshots reliably?",
+      "codeSnippet": "// Version A: immutable snapshots via copy\nclass DocState { constructor(public text: string) {} }\nclass EditorA {\n  private state = new DocState('')\n  setText(t: string) { this.state.text = t }\n  save() { return new DocState(this.state.text) }\n  restore(s: DocState) { this.state = s }\n}\n\n// Version B: snapshot returns internal reference\nclass EditorB {\n  private state = { text: '' }\n  setText(t: string) { this.state.text = t }\n  save() { return this.state }\n  restore(s: any) { this.state = s }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A returns immutable snapshot objects that cannot be mutated after capture.",
+          "isCorrect": true,
+          "explanation": "Version A creates a fresh DocState instance when saving, which isolates the saved state from later changes. This preserves historical correctness and avoids subtle bugs caused by aliasing. Immutable or copied snapshots are the recommended approach when you need reliable restore semantics — see GoF and pattern discussions for the reasoning and common implementations."
+        },
+        {
+          "id": "b",
+          "text": "Version B returns direct internal references which allow external code to mutate saved states and corrupt history.",
+          "isCorrect": false,
+          "explanation": "Version B hands out a reference to the live internal state, so callers that hold the returned object can modify it and thus alter what was supposed to be a saved snapshot. This design breaks isolation and undermines any undo or historical inspection features. A common mitigation is deep copying or returning immutable snapshots instead."
+        }
+      ]
+    }
+  ]
+}

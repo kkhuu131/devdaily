@@ -1,0 +1,106 @@
+{
+  "id": 55,
+  "conceptName": "Prototype Pattern",
+  "category": "design-pattern",
+  "definition": "A creational technique where new objects are created by copying a prototypical instance instead of constructing from scratch.",
+  "ruleOfThumb": "When instances vary by configuration and creating from constructor parameters becomes cumbersome, consider cloning configured templates.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Prototype",
+    "page": "107",
+    "externalUrl": "https://refactoring.guru/design-patterns/prototype"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the code. Which description best matches the object-creation approach used here?",
+      "codeSnippet": "class Document {\n  constructor(public title: string) {}\n  clone(): Document {\n    const copy = new Document(this.title);\n    return copy;\n  }\n}\nconst d1 = new Document('Report');\nconst d2 = d1.clone();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code creates new objects by copying an existing instance using an instance-level clone method and copying fields.",
+          "isCorrect": true,
+          "explanation": "The class exposes a clone operation that produces a new instance copied from an existing one. This is the canonical prototype approach where objects are created by duplicating a prototype rather than by calling constructors with explicit configuration. Cloning keeps creation logic close to the object and can be useful when construction is expensive or complex."
+        },
+        {
+          "id": "b",
+          "text": "This code constructs new objects through a central factory that decides concrete subclass types before instantiation.",
+          "isCorrect": false,
+          "explanation": "A factory centralizes creation and chooses concrete types for callers. The shown code does not delegate creation to a separate factory and instead uses an instance method to produce a copy—so it is not a factory-based approach."
+        },
+        {
+          "id": "c",
+          "text": "This code builds objects by incrementally configuring a separate builder object and then assembling the final instance.",
+          "isCorrect": false,
+          "explanation": "A builder pattern separates stepwise configuration from construction. The example lacks a separate builder abstraction and instead performs a direct clone on the instance, so it is not following a builder-style construction."
+        },
+        {
+          "id": "d",
+          "text": "This code ensures a single shared instance is used across the application and prevents further direct construction.",
+          "isCorrect": false,
+          "explanation": "A singleton enforces a single shared instance. The snippet clearly creates a new instance via clone, producing multiple independent objects rather than enforcing a single shared instance, so singleton semantics do not apply."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the registry below, which statement most accurately characterizes the creation strategy and its trade offs?",
+      "codeSnippet": "class Widget {\n  constructor(public config: any) {}\n  clone() { return Object.create(this); }\n}\nconst prototypes = new Map<string, Widget>();\nprototypes.set('small', new Widget({size: 'S'}));\nconst w = prototypes.get('small')!.clone();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This approach registers configured instances in a lookup and creates new objects by shallowly duplicating those registered instances at runtime.",
+          "isCorrect": false,
+          "explanation": "This describes a registry of templates that are used to produce shallow duplicates. It is a plausible interpretation but depends on how clone is implemented; Object.create yields a new object with the original as prototype rather than a true shallow copy, which can cause shared mutable state issues."
+        },
+        {
+          "id": "b",
+          "text": "This approach caches single shared instances for repeated use and returns references rather than creating independent object copies.",
+          "isCorrect": false,
+          "explanation": "Caching and returning the same instance would be a singleton-like approach. In this snippet the code calls clone, so it intends to produce distinct instances; simply returning references would not match the clone call and would risk unintended shared mutations."
+        },
+        {
+          "id": "c",
+          "text": "This approach serializes and deserializes prototype state to produce independent copies for each request at runtime.",
+          "isCorrect": false,
+          "explanation": "Serialization cloning (serialize/deserialize) is a valid technique to obtain deep copies, but the snippet uses Object.create which is not serialization based. Using serialization would avoid shared prototype pitfalls but introduces performance and schema concerns."
+        },
+        {
+          "id": "d",
+          "text": "This approach keeps a registry of template instances and clones them to obtain new objects without invoking constructors directly.",
+          "isCorrect": true,
+          "explanation": "The registry holds ready-made template instances and new objects are produced by cloning those templates, avoiding constructor invocation. This fits the registered-template cloning approach—useful for runtime-configurable templates but requiring care with shallow versus deep cloning of internal state."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You need to support many configurable variants of a complex object. Which version is structurally preferable for long term maintenance?",
+      "codeSnippet": "// Version A: constructor-heavy\nclass Report {\n  constructor(public title: string, public format: string, public metadata: any) {}\n}\nconst rA = new Report('Monthly', 'PDF', {owner: 'ops'});\n\n// Version B: template registry with clone\nclass ReportTemplate {\n  constructor(public title: string, public format: string, public metadata: any) {}\n  clone() { return new ReportTemplate(this.title, this.format, {...this.metadata}); }\n}\nconst registry = { monthly: new ReportTemplate('Monthly','PDF',{owner:'ops'}) };\nconst rB = registry.monthly.clone();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A forces callers to supply low level construction details and increases coupling across modules at scale.",
+          "isCorrect": false,
+          "explanation": "Version A exposes the construction details to every caller, which proliferates knowledge about the object's internals and constructor parameter ordering. As variants grow, callers must manage many parameter combinations, increasing code duplication and coupling. This makes Version A brittle when configuration permutations expand."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes configurable templates and produces new instances by cloning those templates, preserving encapsulation.",
+          "isCorrect": true,
+          "explanation": "Version B captures common configurations in reusable template instances and creates new objects by cloning those templates. This reduces coupling to constructor signatures and centralizes variant definitions, making it easier to add or modify variants. However, be mindful of cloning depth and mutable internal state—design clones to perform deep copies where necessary. References: GoF Prototype chapter and pragmatic discussions on template registries."
+        }
+      ]
+    }
+  ]
+}

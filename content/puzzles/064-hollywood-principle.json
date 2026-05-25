@@ -1,0 +1,106 @@
+{
+  "id": 64,
+  "conceptName": "Hollywood Principle",
+  "category": "principle",
+  "definition": "A design principle where a framework or library controls the program flow and calls user supplied code at defined extension points.",
+  "ruleOfThumb": "Let the framework own lifecycle and invoke extensions instead of having clients drive framework internals.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Patterns of Enterprise Application Architecture",
+    "chapter": "Inversion of Control",
+    "page": "N/A",
+    "externalUrl": "https://martinfowler.com/articles/injection.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this minimal framework and plugin snippet. Which description best identifies the architectural idea being used?",
+      "codeSnippet": "// framework.ts\nexport class Framework {\n  private hooks: (() => void)[] = [];\n  register(h: () => void) { this.hooks.push(h); }\n  start() { this.hooks.forEach(h => h()); }\n}\n// plugin.ts\nframework.register(() => console.log('plugin runs when framework starts'))",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It is a practice where a library or framework calls back into supplied code to invert control flow.",
+          "isCorrect": true,
+          "explanation": "This is the classic \"Don't call us, we'll call you\" stance where the framework owns timing of invocation. The framework exposes hooks and invokes client code at appropriate times. This reduces client responsibility for lifecycle orchestration and is commonly used for plugin and callback systems. See Martin Fowler on inversion of control and dependency injection for related discussion."
+        },
+        {
+          "id": "b",
+          "text": "It is a practice where callbacks are used to decouple modules but still require direct control by callers.",
+          "isCorrect": false,
+          "explanation": "This describes a pull-style callback where callers manage invocation. In the snippet the framework, not the caller, triggers registered callbacks, so the concern about callers retaining direct control is misplaced here. The distinction matters because ownership of invocation affects testability and lifecycle boundaries."
+        },
+        {
+          "id": "c",
+          "text": "It is a practice where the client passes behaviors to a framework to allow extensibility without changing framework internals.",
+          "isCorrect": false,
+          "explanation": "This is close and highlights extensibility. However, the emphasis here is on providing behaviors to extend the framework, whereas the key idea demonstrated is who controls when those behaviors run. The snippet shows the framework invoking behaviors, which matters for control flow and lifecycle semantics."
+        },
+        {
+          "id": "d",
+          "text": "It is a practice where concrete classes are instantiated by callers and then managed entirely by application code.",
+          "isCorrect": false,
+          "explanation": "This option suggests caller-driven lifecycle management, which is the opposite of what the snippet shows. In this code the framework manages when registered callbacks run, so it is not an example of callers instantiating and managing everything themselves."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given a scheduler that lets modules register tasks and then runs them at intervals, what is the most likely design problem this registration approach addresses?",
+      "codeSnippet": "class Scheduler {\n  private tasks: (() => void)[] = [];\n  register(task: () => void) { this.tasks.push(task); }\n  runAll() { for (const t of this.tasks) t(); }\n}\n// usage\nscheduler.register(() => emailService.sendDailyReport());",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It creates coupling where framework internals control application behavior and lifecycle across multiple modules at runtime.",
+          "isCorrect": true,
+          "explanation": "Registering callbacks hands lifecycle and timing control to the scheduler, producing a coupling to framework-managed execution semantics. The scheduler becomes responsible for when tasks run, which affects how modules are tested and evolved. This is precisely why inversion of control via framework callbacks is adopted: to centralize lifecycle management while providing extension points."
+        },
+        {
+          "id": "b",
+          "text": "It creates a risk that asynchronous tasks will mutate shared state concurrently because there is no explicit concurrency control in registration code.",
+          "isCorrect": false,
+          "explanation": "Concurrent mutation is a valid operational risk, but the code as shown focuses on who controls invocation timing, not concurrency primitives. You could mitigate concurrency separately. The primary design concern motivating callback registration is often lifecycle and extension control rather than only concurrent mutation."
+        },
+        {
+          "id": "c",
+          "text": "It creates a tendency for business logic to drift into scheduler callbacks, making separation of concerns and reuse more difficult later on.",
+          "isCorrect": false,
+          "explanation": "Business logic leaking into callbacks is a plausible maintainability issue and worth guarding against, but it is a secondary consequence. The central architectural intent of registering tasks is to provide a stable extension point and centralize timing; discipline and layering are needed to keep business logic appropriately placed."
+        },
+        {
+          "id": "d",
+          "text": "It creates a problem where callbacks may hide errors and stack traces, making debugging flow and exception handling unpredictable across layers.",
+          "isCorrect": false,
+          "explanation": "Hidden errors and muddled stack traces can occur with callbacks, and robust error handling is required. Nevertheless, this concern is about operational visibility, not the core architectural reason for inversion of control. The scheduler pattern primarily addresses control of execution timing and lifecycle management."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two alternatives for extending a logger are shown below. Which version better embodies a framework-controlled extension point and why?",
+      "codeSnippet": "// Version A\nclass LoggerA {\n  private handlers: ((entry: string) => void)[] = [];\n  onLog(h: (entry: string) => void) { this.handlers.push(h); }\n  log(msg: string) { this.handlers.forEach(h => h(msg)); }\n}\n\n// Version B\nclass LoggerB {\n  private entries: string[] = [];\n  add(msg: string) { this.entries.push(msg); }\n  fetch() { return this.entries.splice(0); }\n}\n// Version A uses callbacks invoked by logger. Version B expects extensions to poll for entries.",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps the logger in control of event dispatch and extension execution across application lifecycle.",
+          "isCorrect": true,
+          "explanation": "Version A demonstrates the framework-invokes-extension model: the logger owns when handlers run, preserving lifecycle and timing semantics. This reduces coordination complexity for extensions and centralizes error and execution context handling. Version B forces each extension to poll and coordinate, which duplicates concerns and weakens ownership. For deeper reading, see Fowler on inversion of control and discussions in Clean Architecture about lifecycle boundaries."
+        },
+        {
+          "id": "b",
+          "text": "Version B forces extensions to poll for entries, creating timing problems and duplicated coordination logic in each extension.",
+          "isCorrect": false,
+          "explanation": "Version B pushes responsibility to every extension to know when to fetch and process work, which leads to duplicated polling loops, inconsistent processing latency, and more boilerplate. While polling can be appropriate in some contexts, it generally erodes centralized lifecycle control and makes it harder to guarantee consistent execution semantics across extensions."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 66,
+  "conceptName": "Switch Statements",
+  "category": "code-smell",
+  "definition": "A code pattern where control flow repeatedly branches on a type or discriminator, scattering variant behavior across case blocks instead of co-locating it with the variant implementations.",
+  "ruleOfThumb": "When many places branch on the same type discriminator, consider moving behavior into variant-specific types or a behavior registry to respect encapsulation and the open closed principle.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Replace Conditional with Polymorphism",
+    "page": "p. 180",
+    "externalUrl": "https://refactoring.com/catalog/replace_conditional_with_polymorphism.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this TypeScript function that computes product price. What is the primary design smell you see?",
+      "codeSnippet": "function calculatePrice(product: any) {\n  switch (product.type) {\n    case 'book':\n      return product.basePrice * 0.9;\n    case 'digital':\n      return product.basePrice;\n    case 'subscription':\n      return product.basePrice * product.duration;\n    default:\n      throw new Error('Unknown product type');\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function centralizes type based behavior and will make adding new product types error prone and harder to maintain.",
+          "isCorrect": true,
+          "explanation": "The switch centralizes the behavior for each product type in one function. As new product types are added you must change this function, violating the open closed principle. A better structure is to attach pricing behavior to product implementations or use a registry so adding a new type requires adding a new class or entry, not modifying existing branching code. See Fowler on replacing conditionals with polymorphism."
+        },
+        {
+          "id": "b",
+          "text": "The function exposes a potential security risk because it performs unvalidated type based casting on input from clients or external systems.",
+          "isCorrect": false,
+          "explanation": "While validating input is important, the snippet shows a structural maintenance concern rather than a demonstrated unvalidated cast vulnerability. The root problem here is design coupling of behavior to a discriminator, not direct evidence of unsafe casting or security holes."
+        },
+        {
+          "id": "c",
+          "text": "The function will create a runtime performance hotspot because each case will make synchronous I O calls under heavy load without batching.",
+          "isCorrect": false,
+          "explanation": "Performance could be an issue depending on implementation details, but nothing in the snippet shows synchronous I/O in the cases. The clearer observable smell is branching by type which makes the code harder to extend and maintain."
+        },
+        {
+          "id": "d",
+          "text": "The function appears to violate single responsibility because it both computes pricing and also handles audit logging within each branch.",
+          "isCorrect": false,
+          "explanation": "The example does not show any logging behavior. The main issue is that type specific logic is scattered into case blocks rather than encapsulated with the types themselves. Single responsibility could become a secondary problem later, but it is not the immediate smell illustrated."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In a payment system the same kind of branching on payment.method is implemented in several modules. What is the primary maintainability problem?",
+      "codeSnippet": "function chargeCustomer(method: string, data: any) {\n  switch (method) {\n    case 'card': return chargeCard(data);\n    case 'paypal': return chargePaypal(data);\n    case 'bank': return chargeBank(data);\n  }\n}\n\nfunction refundCustomer(method: string, data: any) {\n  switch (method) {\n    case 'card': return refundCard(data);\n    case 'paypal': return refundPaypal(data);\n    case 'bank': return refundBank(data);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code duplicates variant specific logic across functions leading to scattered updates and higher maintenance cost for new payment methods.",
+          "isCorrect": true,
+          "explanation": "The smell is duplication of decision logic across multiple places. When behavior for a variant is implemented in many switch statements, adding or modifying a payment method requires coordinated edits in several locations, increasing the chance of bugs. Consolidating behavior into payment method objects or a single dispatch registry reduces duplication and makes extensions safer."
+        },
+        {
+          "id": "b",
+          "text": "The code has an obvious performance hotspot because branching triggers frequent synchronous I O and blocking under peak payment traffic.",
+          "isCorrect": false,
+          "explanation": "Performance might matter in some systems, but the presented concern is about structural duplication and scattering. The branching itself does not inherently create synchronous I/O, so this reasoning mistakes symptom for root cause."
+        },
+        {
+          "id": "c",
+          "text": "The code suffers from poor error handling because unhandled cases throw generic exceptions that lack context for customer support personnel.",
+          "isCorrect": false,
+          "explanation": "Unhandled default cases are worth addressing, but the primary maintainability problem in the snippet is duplicated branch logic across functions. Improving error messages is useful but does not solve the underlying duplication and the open closed violation."
+        },
+        {
+          "id": "d",
+          "text": "The code lacks test coverage because the multiple branches have no unit tests to validate each payment path's expected behavior and side effects.",
+          "isCorrect": false,
+          "explanation": "Missing tests make maintenance risky, yet the main design flaw shown is repeated type branching across modules. Tests help catch regressions but reorganizing behavior into variant objects or strategies both simplifies testing and reduces the need for extensive, brittle tests across many branches."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two implementations are shown. Which version is preferable for long term maintainability?",
+      "codeSnippet": "// Version A: behavior encapsulated in classes\nabstract class Notifier { abstract send(payload: any): void }\nclass EmailNotifier extends Notifier { send(p){ /* send email */ } }\nclass SmsNotifier extends Notifier { send(p){ /* send sms */ } }\nconst registry: Record<string, Notifier> = { email: new EmailNotifier(), sms: new SmsNotifier() }\nfunction notifyA(kind: string, payload: any) { registry[kind].send(payload) }\n\n// Version B: central branching\nfunction notifyB(kind: string, payload: any) {\n  switch (kind) {\n    case 'email': sendEmail(payload); break;\n    case 'sms': sendSms(payload); break;\n    default: throw new Error('Unknown');\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A encapsulates variant behavior inside separate classes and makes adding new kinds a localized change.",
+          "isCorrect": true,
+          "explanation": "Version A keeps each variant's behavior with the variant implementation, which aligns with the Single Responsibility and Open Closed principles. New kinds are added by introducing new classes or registry entries without modifying existing dispatch logic, reducing risk of regressions. This is the classic Replace Conditional with Polymorphism refactoring described by Fowler and recommended for maintainable extensible systems."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes many type cases in one function and forces feature changes to touch multiple conditional locations across the codebase.",
+          "isCorrect": false,
+          "explanation": "Version B appears simpler at first but centralizes branching and scatters variant handling across case blocks. This structure increases coupling between unrelated features, violates open closed because adding new kinds requires editing the central function, and often leads to duplicated logic as the system grows. While a central switch can be acceptable for tiny fixed enums, it becomes fragile in evolving domains."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 61,
+  "conceptName": "Move Method",
+  "category": "refactoring",
+  "definition": "A refactoring that relocates a method from one class to another so the behavior lives where the related data is owned.",
+  "ruleOfThumb": "If a method uses more data from another class than from its own, consider relocating it to the class that owns the data.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Move Method",
+    "page": "pp. 72-76",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the snippet. The calculateTotal method iterates order items and reads their prices. What is the most appropriate refactor?",
+      "codeSnippet": "class Order {\n  items: { price: number; qty: number }[];\n}\n\nclass Invoice {\n  order: Order;\n  calculateTotal() {\n    let total = 0;\n    this.order.items.forEach(i => total += i.price * i.qty);\n    return total;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This method belongs in the Order class which owns the items, pricing, and all data needed for the calculation.",
+          "isCorrect": true,
+          "explanation": "The method primarily accesses Order data, so placing it on Order removes the detour through Invoice and improves encapsulation. By moving the behavior to the object that holds the collection and pricing, you reduce coupling and make the intent clearer. Fowler lists this exact migration when a method uses more features of another class than of its own class."
+        },
+        {
+          "id": "b",
+          "text": "This method should be extracted to a shared utility module to reduce coupling between classes.",
+          "isCorrect": false,
+          "explanation": "Extracting to a utility can appear to decouple classes, but it usually creates procedural code and loses object location of behavior. The calculation revolves around Order data and belongs with the Order rather than in a global helper. Utilities are appropriate when behavior truly has no natural home."
+        },
+        {
+          "id": "c",
+          "text": "This method should remain in place and receive its dependencies via constructor injection to avoid relocation.",
+          "isCorrect": false,
+          "explanation": "Constructor injection hides the fact that the behavior conceptually belongs to Order and shifts dependency wiring without improving cohesion. If the method still accesses many Order internals, injecting Order does not preserve encapsulation or reduce the method's need to know Order structure."
+        },
+        {
+          "id": "d",
+          "text": "This method should be split so each class implements its portion of the calculation locally to balance responsibilities.",
+          "isCorrect": false,
+          "explanation": "Splitting logic between classes can increase distributed responsibility and make maintenance harder. When a calculation is naturally centered on one aggregate, scattering parts across classes increases coupling and testing complexity. Prefer locating a cohesive behavior rather than slicing it arbitrarily."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Billing.sendReminder builds a message using many Customer fields and calls Email.send. Which change most directly improves cohesion?",
+      "codeSnippet": "class Customer {\n  name: string;\n  email: string;\n  balance: number;\n}\n\nclass Billing {\n  sendReminder(c: Customer) {\n    const msg = `Dear ${c.name}, your balance is ${c.balance}.`;\n    Email.send(c.email, msg);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This logic should be relocated into Customer so the behavior sits with the customer data and formatting.",
+          "isCorrect": true,
+          "explanation": "When formatting or message assembly depends on many fields of Customer, the behavior belongs with Customer to improve encapsulation and reduce knowledge spread. Moving the logic to Customer lets the domain object present its own state and simplifies Billing. Fowler recommends this when a method uses more features of another class than its own."
+        },
+        {
+          "id": "b",
+          "text": "This logic should be extracted into a MessagingService to encapsulate notifications away from domain objects and responsibilities.",
+          "isCorrect": false,
+          "explanation": "Creating a MessagingService centralizes delivery concerns but does not address the tight coupling to Customer fields used in message construction. You might still end up passing many Customer fields or exposing internals. MessagingService is useful for transport, not for owning domain-specific message content."
+        },
+        {
+          "id": "c",
+          "text": "This logic should be split into a helper for formatting while keeping message assembly inside the current Billing class.",
+          "isCorrect": false,
+          "explanation": "Extracting formatting helpers can reduce duplication but keeps the high-level responsibility in Billing. The core issue is that message content relies on Customer knowledge; helpers only move string work around rather than relocating responsibility to the data owner."
+        },
+        {
+          "id": "d",
+          "text": "This logic should accept a NotificationStrategy parameter so different delivery implementations can be selected at runtime.",
+          "isCorrect": false,
+          "explanation": "Introducing a strategy helps delivery flexibility but does not reduce the Billing class dependency on Customer internals. Strategy addresses variability of transport, not where the message content logic should live. The emotional coupling to Customer remains unresolved."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which design is preferable for encapsulation and why?",
+      "codeSnippet": "// Version A\nclass PaymentService {\n  processPayment(amount: number, account: Account) {\n    if (account.balance >= amount) {\n      account.balance -= amount;\n      // additional steps\n    }\n  }\n}\n\n// Version B\nclass Account {\n  balance: number;\n  processPayment(amount: number) {\n    if (this.balance >= amount) {\n      this.balance -= amount;\n      // additional steps\n    }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps behavior in a service to centralize operations and avoid changing many domain classes.",
+          "isCorrect": false,
+          "explanation": "Putting the operation in a service can be appealing for central orchestration and easier mocking, but it makes clients depend on an external actor to manipulate Account state. That choice scatters logic away from the object owning the data and often increases coupling when domain invariants belong alongside state. In many cases the domain object should enforce its own invariants."
+        },
+        {
+          "id": "b",
+          "text": "Version B attaches the operation to the domain object that directly owns the required data.",
+          "isCorrect": true,
+          "explanation": "Version B keeps the responsibility with the object that stores the data, improving encapsulation and making invariants local. This reduces other classes needing internal knowledge of Account structure and makes tests and reasoning about state simpler. Fowler and the GOF recommend locating behavior with the data it primarily manipulates to improve cohesion and reduce fragile client couplings."
+        }
+      ]
+    }
+  ]
+}

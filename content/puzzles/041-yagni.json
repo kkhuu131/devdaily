@@ -1,0 +1,105 @@
+{
+  "id": 41,
+  "conceptName": "YAGNI",
+  "category": "principle",
+  "definition": "A development principle advising teams to avoid implementing features until they are actually required by real, current needs.",
+  "ruleOfThumb": "Implement only what is necessary for the current requirements and tests; postpone abstractions until justified by use.",
+  "citation": {
+    "author": "Kent Beck",
+    "bookTitle": "Extreme Programming Explained",
+    "chapter": "Principles",
+    "page": "93",
+    "externalUrl": "https://en.wikipedia.org/wiki/YAGNI"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best describes when to add new functionality during active development?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Add a feature only when it is required by a current, validated user need or failing test.",
+          "isCorrect": true,
+          "explanation": "Correct. The principle focuses on delivering only the behavior needed now. Implementing features ahead of validated needs increases complexity and wastes effort if requirements change."
+        },
+        {
+          "id": "b",
+          "text": "Design general extensible frameworks now so future unknown requirements can be handled without later refactoring effort.",
+          "isCorrect": false,
+          "explanation": "Plausible but risky. Building generic frameworks early can introduce unused abstractions and increase maintenance burden—often costing more than later, focused refactoring."
+        },
+        {
+          "id": "c",
+          "text": "Estimate likely future features and implement them ahead of time to avoid costly integration in future.",
+          "isCorrect": false,
+          "explanation": "This is a common rationalization for premature work. Anticipated requirements frequently change, so up-front implementations may be wasted and require more change than implementing later."
+        },
+        {
+          "id": "d",
+          "text": "Delay implementing any feature until multiple stakeholders request it and sign off on the final specification.",
+          "isCorrect": false,
+          "explanation": "This approach is overly bureaucratic and can impede delivery. The tradeoff is different from avoiding speculative code; it risks blocking necessary incremental progress."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A team adds a flexible plugin system now to accommodate future integrations that may never arrive. What is the most likely problem introduced by this choice?",
+      "codeSnippet": "export interface Plugin {\n  name: string;\n  run(input: any): Promise<any>;\n}\n\nexport class ProductService {\n  constructor(private plugins: Plugin[] = []) {}\n  process(item: any) {\n    // plugins are registered now but not used yet\n  }\n  register(plugin: Plugin) { this.plugins.push(plugin); }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code adds speculative infrastructure before users require it, increasing complexity and maintenance cost prematurely.",
+          "isCorrect": true,
+          "explanation": "Correct. Introducing plumbing for anticipated features that are not yet needed increases cognitive load and maintenance work. Prefer implementing concrete needs and refactoring for extensibility when justified."
+        },
+        {
+          "id": "b",
+          "text": "The plugin approach will fail because runtime plugin loading cannot be typed safely in TypeScript without unsafe casts.",
+          "isCorrect": false,
+          "explanation": "This is a real technical challenge but not the most likely root problem in this context. Type safety can be managed; the bigger issue is speculative complexity before requirements exist."
+        },
+        {
+          "id": "c",
+          "text": "Putting plugin hooks in public API will prevent tree shaking and significantly harm bundle size in production builds.",
+          "isCorrect": false,
+          "explanation": "Bundle impact can be a concern depending on implementation, but it is a secondary effect. The primary cost is added complexity and maintenance when the feature is speculative."
+        },
+        {
+          "id": "d",
+          "text": "Delaying plugin system until needed will block integrations and require expensive retrofitting across multiple modules later.",
+          "isCorrect": false,
+          "explanation": "Retrofit cost is a valid concern, but premature generalization often costs more in the long run. Implementing targeted solutions first minimizes unnecessary coupling and can reduce overall retrofit scope."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two design versions are proposed to prepare for unknown future features. Which version better balances maintainability with readiness for change?",
+      "codeSnippet": "// Version A: speculative plugin system added up front\nclass FeatureManagerA {\n  private hooks: Record<string, Function[]> = {};\n  registerHook(name: string, fn: Function) { this.hooks[name] ||= []; this.hooks[name].push(fn); }\n  invoke(name: string, arg: any) { /* complex routing logic */ }\n}\n\n// Version B: add small focused handler when feature is requested\nclass FeatureManagerB {\n  handleFeatureX(data: any) { /* implement actual behavior now */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version B keeps production code minimal and avoids speculative scaffolding for current deliverables and easier tests.",
+          "isCorrect": true,
+          "explanation": "Version B is preferable because it implements the necessary behavior without adding speculative layers. That reduces incidental complexity, keeps tests focused, and makes future refactors local and cheaper. The principle here is to postpone abstraction until concrete duplication or change patterns justify it—otherwise you pay ongoing maintenance costs for never used features."
+        },
+        {
+          "id": "b",
+          "text": "Version A provides a generic plugin layer now which will require broad, ongoing maintenance and obscure current logic paths.",
+          "isCorrect": false,
+          "explanation": "Choosing Version A prematurely centralizes hooks and routing which can obscure the current behavior and increase maintenance burden. While it may seem to prepare for future integrations, it creates indirection and unknown coupling that complicates reasoning and testing until real use cases validate the abstraction."
+        }
+      ]
+    }
+  ]
+}

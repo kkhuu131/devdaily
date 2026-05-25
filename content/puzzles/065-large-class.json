@@ -1,0 +1,106 @@
+{
+  "id": 65,
+  "conceptName": "Large Class",
+  "category": "code-smell",
+  "definition": "A class that centralizes too many responsibilities, growing in fields and methods until it becomes hard to maintain or reason about.",
+  "ruleOfThumb": "If a class has more than one reason to change or many unrelated groups of methods, consider splitting it into smaller focused types.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Code Smells",
+    "page": "79-83",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the class below. Which symptom most clearly reveals the primary design problem shown?",
+      "codeSnippet": "class OrderProcessor {\n  private orders: Order[] = [];\n  calculateTotal(order: Order) { /* ... */ }\n  validate(order: Order) { /* ... */ }\n  saveToDb(order: Order) { /* ... */ }\n  sendInvoice(order: Order) { /* ... */ }\n  scheduleDelivery(order: Order) { /* ... */ }\n  generateReport(from: Date, to: Date) { /* ... */ }\n  exportCsv(path: string) { /* ... */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class contains many unrelated responsibilities across methods, fields, and external dependency interactions across multiple business domains.",
+          "isCorrect": true,
+          "explanation": "The class collects methods and responsibilities that span validation, persistence, reporting, delivery scheduling, and export logic. That breadth signals a single type handling multiple concerns and invites splitting responsibilities into narrower classes or services. See Fowler on code smells for guidance about extracting classes when a type has more than one reason to change."
+        },
+        {
+          "id": "b",
+          "text": "Several methods are long and complex, suggesting the primary issue is lengthy methods rather than the spread of responsibilities across the class.",
+          "isCorrect": false,
+          "explanation": "Long methods are a valid smell, but in this example the methods are short placeholders and the real signal is many distinct method groups. Addressing only method length would miss the structural problem of mixed responsibilities across reporting, persistence, and communication code."
+        },
+        {
+          "id": "c",
+          "text": "The class has many public mutable fields, suggesting the main problem is exposed mutable state and not an overload of responsibilities in one type.",
+          "isCorrect": false,
+          "explanation": "Exposed mutable state is an important concern, but the snippet shows few public fields and many different responsibilities instead. Fixing field visibility would not separate reporting, invoicing, persistence, and delivery responsibilities, which is the root maintainability problem here."
+        },
+        {
+          "id": "d",
+          "text": "The class depends on many external modules, suggesting dependency mismanagement is the root problem to address before refactoring responsibilities further.",
+          "isCorrect": false,
+          "explanation": "Heavy external dependencies can complicate testing and coupling, but they often result from mixing responsibilities. Tackling dependencies without reorganizing the responsibilities will leave a monolithic class that still violates single responsibility principles and remains hard to maintain."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "The service below mixes calculations, persistence, and side effects. Which concern most accurately identifies the primary design issue to address first?",
+      "codeSnippet": "class BillingService {\n  processPayment(invoice: Invoice) { /* calculates totals, calls payment gateway */ }\n  calculateTax(items: Item[]) { /* tax logic */ }\n  saveTransaction(record: Transaction) { /* DB call */ }\n  sendReceipt(email: string) { /* SMTP call */ }\n  cacheResults(key: string, value: any) { /* cache */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class mixes domain calculation logic with persistence and external side effects across several methods.",
+          "isCorrect": true,
+          "explanation": "The core domain work (calculating totals and tax) is entangled with persistence, emailing, and caching. Separating pure computation from IO and side effects improves testability and makes responsibilities explicit. Fowler and other refactoring guides recommend extracting services or collaborators for side effects so domain logic can remain focused and easily tested."
+        },
+        {
+          "id": "b",
+          "text": "The primary problem is long parameter lists throughout methods, indicating a need for parameter objects to group related data and reduce coupling.",
+          "isCorrect": false,
+          "explanation": "Long parameter lists are a real smell that can be solved with parameter objects, but the snippet shows the mixing of computation and IO as the more impactful issue. Grouping parameters will not address the testability and responsibility separation problems caused by intertwined persistence and side effects."
+        },
+        {
+          "id": "c",
+          "text": "The class exposes internal state through many getters and setters, indicating encapsulation boundaries are blurred and violated across services.",
+          "isCorrect": false,
+          "explanation": "Encapsulation violations are important, yet this example focuses on mixed responsibilities rather than exposed internal state. Extracting clearer boundaries between calculation and IO will naturally clarify which fields should be encapsulated rather than simply adding getters and setters."
+        },
+        {
+          "id": "d",
+          "text": "The code tightly couples domain logic to database APIs inside methods, indicating repository separation should be introduced as the immediate fix.",
+          "isCorrect": false,
+          "explanation": "Introducing repository abstractions is a good step when database coupling is the main issue. In this case, coupling to external concerns includes not only the database but also email and cache. A broader separation of side effects from pure logic gives a more general solution than only adding repositories."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B implementations below. Which version better addresses responsibilities and maintainability?",
+      "codeSnippet": "// Version A\nclass PaymentCalculator { calculate(inv: Invoice) { /* ... */ } }\nclass PaymentRepository { save(tx: Transaction) { /* ... */ } }\nclass ReceiptSender { send(email: string) { /* ... */ } }\nclass PaymentService {\n  constructor(private calc: PaymentCalculator, private repo: PaymentRepository, private sender: ReceiptSender) {}\n  process(invoice: Invoice) { const amount = this.calc.calculate(invoice); this.repo.save({ amount }); this.sender.send(invoice.email); }\n}\n\n// Version B\nclass BigPaymentService {\n  process(invoice: Invoice) { /* calculates, saves, and sends receipt all here */ }\n  calculate(invoice: Invoice) { /* ... */ }\n  save(tx: Transaction) { /* ... */ }\n  send(email: string) { /* ... */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates responsibilities into focused classes used by a single orchestrator.",
+          "isCorrect": true,
+          "explanation": "Version A separates calculation, persistence, and messaging into dedicated collaborators and composes them in a small orchestrator. This improves cohesion, testability, and the ability to evolve components independently. It follows SRP and makes unit testing easier because pure calculation can be exercised without touching IO collaborators. See Fowler on extracting classes and the Single Responsibility Principle for further guidance."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps all methods and state in one monolithic service, creating coupling and unclear responsibility boundaries.",
+          "isCorrect": false,
+          "explanation": "While a single class can be simpler at first, Version B bundles multiple responsibilities which increases coupling, makes testing harder, and causes more frequent conflicting changes. Over time this leads to fragile code where small changes ripple across unrelated features. Extracting collaborators like repositories and message senders reduces this risk."
+        }
+      ]
+    }
+  ]
+}

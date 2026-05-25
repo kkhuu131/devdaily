@@ -1,0 +1,106 @@
+{
+  "id": 36,
+  "conceptName": "Proxy Pattern",
+  "category": "design-pattern",
+  "definition": "A structural pattern where an object, the proxy, provides a surrogate or placeholder for another object to control access to it and add additional behavior transparently.",
+  "ruleOfThumb": "When you need to interpose uniform behavior around object access without changing clients, introduce an intermediary object that implements the same interface.",
+  "citation": {
+    "author": "Erich Gamma et al.",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Structural Patterns - Proxy",
+    "page": "208",
+    "externalUrl": "https://refactoring.guru/design-patterns/proxy"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the code below, what concise observation best describes the design intent of the shown classes?",
+      "codeSnippet": "interface Image { display(): void }\n\nclass RealImage implements Image {\n  constructor(private file: string) {}\n  display() { console.log(`Showing ${this.file}`) }\n}\n\nclass ImageProxy implements Image {\n  private real?: RealImage\n  constructor(private file: string) {}\n  display() { if (!this.real) this.real = new RealImage(this.file); this.real.display() }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "An object controls access to another object by providing an intermediary layer between client and real subject.",
+          "isCorrect": true,
+          "explanation": "This code defines a surrogate object that delays creation and mediates calls to the real implementation. The proxy holds responsibility for lazy instantiation and delegation so clients interact with the proxy as if it were the real object. That behavior matches the classic structural intent described by GoF and common craft guidance."
+        },
+        {
+          "id": "b",
+          "text": "A thin wrapper that only transforms method signatures between incompatible interfaces without altering access semantics.",
+          "isCorrect": false,
+          "explanation": "The wrapper here does more than adapt signatures; it manages lifecycle and access semantics such as lazy loading. An adapter focuses on interface translation rather than deferred instantiation and mediation across callers."
+        },
+        {
+          "id": "c",
+          "text": "A convenience object that primarily batches or retries network requests to improve throughput without access control.",
+          "isCorrect": false,
+          "explanation": "Batching and retry logic are orthogonal concerns. While a proxy can implement such behaviors, the shown code centers on lazy creation and direct delegation rather than request coordination for throughput."
+        },
+        {
+          "id": "d",
+          "text": "A factory helper that centralizes object creation and lifecycle management instead of mediating client calls to objects.",
+          "isCorrect": false,
+          "explanation": "A factory returns created instances but does not present the same interface to clients for ongoing calls. The code presents an object that remains in the call path and delegates, which is different from a pure creational helper."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In this service example which symptom most strongly indicates introducing an intermediary object to mediate calls to the real service?",
+      "codeSnippet": "interface Service { fetch(id: string): Promise<string> }\n\nclass RealService implements Service {\n  async fetch(id: string) { return fetch(`/api/${id}`).then(r => r.text()) }\n}\n\nclass ServiceProxy implements Service {\n  private cache = new Map<string,string>()\n  constructor(private real: RealService) {}\n  async fetch(id: string) {\n    if (!this.authorized(id)) throw new Error('unauthorized')\n    if (this.cache.has(id)) return this.cache.get(id)!\n    const v = await this.real.fetch(id)\n    this.cache.set(id, v)\n    return v\n  }\n  private authorized(id: string) { return true }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Multiple runtime concerns such as access control, caching, and lazy initialization applied to every call indicate introducing an intermediary object.",
+          "isCorrect": true,
+          "explanation": "When several crosscutting behaviors must be applied uniformly to calls, centralizing them behind an intermediary reduces duplication and keeps client code simple. This follows established guidance to separate concerns and maintain single responsibility for the real service."
+        },
+        {
+          "id": "b",
+          "text": "Having many small convenience methods could justify many wrapper classes focused on transforming parameters rather than mediating access.",
+          "isCorrect": false,
+          "explanation": "Many convenience methods might motivate a different refactor, such as composing helper functions or an adapter. That concern emphasizes interface shape rather than the repeated runtime handling present in the example."
+        },
+        {
+          "id": "c",
+          "text": "Testing difficulty alone because of external dependencies is best solved by replacing calls with mocks instead of introducing an intermediary.",
+          "isCorrect": false,
+          "explanation": "Mocks can help tests, but an intermediary can also make tests easier by allowing injection of test doubles. However, testing pain alone does not by itself mandate an intermediary unless it pairs with other runtime concerns."
+        },
+        {
+          "id": "d",
+          "text": "Performance hotspots in single methods demand inlining or micro-optimizations rather than adding indirection through another object.",
+          "isCorrect": false,
+          "explanation": "If the problem were solely per-call performance in tight loops, adding indirection could exacerbate costs. The shown design expresses crosscutting policy rather than micro-optimization concerns."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better centralizes crosscutting access control and avoids duplicating authorization checks across clients?",
+      "codeSnippet": "// Version A\ninterface Repo { get(id: string): string }\nclass RealRepo implements Repo { get(id: string) { return `row:${id}` } }\nclass AuthProxy implements Repo {\n  constructor(private real: Repo) {}\n  get(id: string) { if (!this.check()) throw new Error('no') ; return this.real.get(id) }\n  private check() { return true }\n}\n\n// Version B\nclass ClientA { constructor(private repo: RealRepo) {} request(id: string){ if (!check()) throw new Error('no'); return this.repo.get(id) } }\nclass ClientB { constructor(private repo: RealRepo) {} request(id: string){ if (!check()) throw new Error('no'); return this.repo.get(id) } }\nfunction check(){ return true }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes access control and delegation in a single object so authorization is reused and clients stay simple.",
+          "isCorrect": true,
+          "explanation": "Version A places authorization logic in an object that implements the same interface as the real resource, enabling reuse and consistent enforcement across all callers. This avoids duplicated checks scattered in many clients and preserves single responsibility for both clients and the protected resource. The approach aligns with structural pattern recommendations from classic design literature."
+        },
+        {
+          "id": "b",
+          "text": "Version B duplicates access checks across callers which increases maintenance burden and risks inconsistent authorization behavior.",
+          "isCorrect": false,
+          "explanation": "While Version B keeps the real object unmodified, it repeats the same check in every client. That duplication creates a maintenance problem when authorization rules change and increases the chance of inconsistent enforcement or forgotten checks. In systems requiring consistent crosscutting policies, centralization through a dedicated interposing object is preferable."
+        }
+      ]
+    }
+  ]
+}

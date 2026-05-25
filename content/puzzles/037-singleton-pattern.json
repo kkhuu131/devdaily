@@ -1,0 +1,106 @@
+{
+  "id": 37,
+  "conceptName": "Singleton Pattern",
+  "category": "design-pattern",
+  "definition": "A creational design that ensures a class has only one instance and provides a single global access point to it.",
+  "ruleOfThumb": "Use when exactly one instance with controlled access is required, but prefer explicit wiring for testable code.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Singleton",
+    "page": "127",
+    "externalUrl": "https://en.wikipedia.org/wiki/Singleton_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What design intent does this TypeScript class illustrate?",
+      "codeSnippet": "class Config {\n  private static instance: Config | null = null;\n  private constructor(public readonly values: Record<string,string>) {}\n  static getInstance(): Config {\n    if (!Config.instance) Config.instance = new Config({});\n    return Config.instance;\n  }\n  get(key: string) { return this.values[key]; }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It enforces a single shared instance and provides a global access point for that instance across the application.",
+          "isCorrect": true,
+          "explanation": "This class hides its constructor and exposes a static accessor that always returns the same object. That enforces a single shared instance and gives global access to it. While convenient, this creates a global point of access which affects lifecycle and testability."
+        },
+        {
+          "id": "b",
+          "text": "It implements a simple factory that centralizes object creation without restricting instance count across the system.",
+          "isCorrect": false,
+          "explanation": "A factory centralizes creation but typically returns new instances or different types on demand. This code prevents external construction and returns a single reused instance, which is different from a factory that permits multiple instances."
+        },
+        {
+          "id": "c",
+          "text": "It is a service locator that hides dependencies and makes unit testing of consumers more difficult due to hidden coupling.",
+          "isCorrect": false,
+          "explanation": "A service locator hides how dependencies are found, but it usually provides lookups for many services. This example focuses on a single class forcing one instance; the primary concern is controlled single instantiation rather than a multi-service locator."
+        },
+        {
+          "id": "d",
+          "text": "It defines a builder to incrementally construct complex objects with fluent configuration before returning a final product instance.",
+          "isCorrect": false,
+          "explanation": "A builder constructs complex objects through a stepwise API and returns a new product when finished. Here the constructor is private and a static accessor returns a single persistent instance, which is not the intent of a builder."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the main design drawback of this registry-style service implementation?",
+      "codeSnippet": "export class ServiceRegistry {\n  private static services = new Map<string, any>();\n  static register(name: string, svc: any) { this.services.set(name, svc); }\n  static get<T>(name: string): T { return this.services.get(name); }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It creates global shared mutable state which couples modules and makes unit testing and lifecycle management more difficult.",
+          "isCorrect": false,
+          "explanation": "A static registry holds mutable shared state accessible from anywhere, which increases coupling and can make tests flaky or order dependent. This is a real drawback but not the only one; more precise concern is hidden dependencies."
+        },
+        {
+          "id": "b",
+          "text": "It centralizes service lookup which hides explicit dependencies and prevents clear constructor injection across components for easier testing.",
+          "isCorrect": true,
+          "explanation": "Using a global registry hides what a class depends on because consumers call the registry instead of declaring dependencies. That obscures object graphs and undermines constructor injection, making unit testing and refactoring harder."
+        },
+        {
+          "id": "c",
+          "text": "It forces a single global instance for each service which limits reuse and prevents having multiple independent service instances when needed.",
+          "isCorrect": false,
+          "explanation": "A registry can be used to store singletons, but it does not inherently force single instances everywhere. The more fundamental design issue is the loss of explicit dependency declarations rather than the absolute limitation to one instance."
+        },
+        {
+          "id": "d",
+          "text": "It duplicates responsibilities by mixing registration and business logic which increases class coupling and violates separation of concerns.",
+          "isCorrect": false,
+          "explanation": "Mixing registration with business logic is a valid concern when registration code leaks into domain classes. In this snippet the registry itself separates those responsibilities, so the central problem remains hidden dependency and global access rather than mixed responsibilities."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation better supports testability and clear dependency ownership in a medium sized service-oriented app?",
+      "codeSnippet": "// Version A\nclass LoggerA {\n  private static instance: LoggerA | null = null;\n  private constructor() {}\n  static getInstance(): LoggerA {\n    if (!LoggerA.instance) LoggerA.instance = new LoggerA();\n    return LoggerA.instance;\n  }\n  log(msg: string) { console.log(msg); }\n}\n\n// Version B\nclass LoggerB { log(msg: string) { console.log(msg); } }\nclass OrderService {\n  constructor(private logger: LoggerB) {}\n  place() { this.logger.log('placed'); }\n}\nconst sharedLogger = new LoggerB();\nconst svc = new OrderService(sharedLogger);\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A relies on a private static accessor that produces a single global instance used across application modules.",
+          "isCorrect": false,
+          "explanation": "Version A hides the instance behind a static accessor and therefore creates implicit global coupling and hidden dependencies. Tests that need different logger behavior or isolated instances must resort to global mutation or intrusive hacks, which harms isolation and lifecycle control."
+        },
+        {
+          "id": "b",
+          "text": "Version B passes the logger instance into constructors so dependencies remain explicit and easier to mock in tests.",
+          "isCorrect": true,
+          "explanation": "Version B uses explicit constructor injection which makes dependency graphs visible and allows tests to provide test doubles or scoped instances. This approach improves testability, supports multiple instances when needed, and yields clearer ownership and lifecycle management compared to a hidden static accessor. See Fowler on dependency injection and Gamma et al. on creational tradeoffs for further reading."
+        }
+      ]
+    }
+  ]
+}

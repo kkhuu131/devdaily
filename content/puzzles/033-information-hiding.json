@@ -1,0 +1,106 @@
+{
+  "id": 33,
+  "conceptName": "Information Hiding",
+  "category": "solid",
+  "definition": "A design principle that modules should conceal internal design decisions and expose only what is necessary, minimizing coupling and protecting invariants.",
+  "ruleOfThumb": "Expose behavior, not representation; provide a small stable interface so callers cannot depend on internal data structures.",
+  "citation": {
+    "author": "David L. Parnas",
+    "bookTitle": "On the Criteria To Be Used in Decomposing Systems into Modules (Communications of the ACM)",
+    "chapter": "Information Hiding",
+    "page": "1972",
+    "externalUrl": "https://dl.acm.org/doi/10.1145/361598.361623"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this TypeScript class. What is the primary design problem here?",
+      "codeSnippet": "class ShoppingCart {\n  public items: string[] = [];\n  add(item: string) { this.items.push(item); }\n  total(): number { return this.items.length; }\n}\n\nconst cart = new ShoppingCart();\nconst external = cart.items; external.pop();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class exposes its internal array as a public mutable property that callers can access directly.",
+          "isCorrect": true,
+          "explanation": "Exposing the array lets callers mutate the internal state outside the class API, breaking encapsulation and invariants. The class should return a safe view or provide methods that enforce validation. In information hiding terms, the module reveals an implementation detail instead of a behavior, which increases coupling and makes future refactors error prone."
+        },
+        {
+          "id": "b",
+          "text": "This class returns deep copies of its collection on every access causing performance overhead and unnecessary memory allocations under load.",
+          "isCorrect": false,
+          "explanation": "Returning deep copies can indeed be costly, but the snippet shows direct access to the original array rather than defensive copying. A deep copy concern would be valid for a different implementation that always clones on access, whereas here the problem is direct exposure of mutable state."
+        },
+        {
+          "id": "c",
+          "text": "This class provides no explicit API for modification so callers will duplicate logic and risk inconsistent mutations across modules.",
+          "isCorrect": false,
+          "explanation": "Lack of a rich modification API can lead to duplicated logic, but the snippet actually provides an add method and exposes the underlying collection. The immediate risk is callers bypassing the provided API and mutating state, not merely missing convenience methods."
+        },
+        {
+          "id": "d",
+          "text": "This class relies on caller discipline and naming conventions to avoid modifying fields that should be treated as private.",
+          "isCorrect": false,
+          "explanation": "Relying on convention is a real-world issue, but the concrete problem here is that the field is public and mutable. Even disciplined teams will accidentally mutate public state; the correct fix is to enforce encapsulation in the code rather than depend on conventions."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A repository method returns domain entities directly to service layers. Which concern is most accurate about that decision?",
+      "codeSnippet": "class UserEntity {\n  id: string;\n  roles: string[];\n}\n\nclass UserRepository {\n  getUser(id: string): UserEntity { /* fetch from DB */ return userEntity; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The repository exposes mutable domain entity instances directly to callers rather than presenting a controlled or immutable projection.",
+          "isCorrect": true,
+          "explanation": "Returning mutable entities leaks persistence and representation details to higher layers, allowing callers to modify objects without repository validation. Safer alternatives include mapping to DTOs, returning immutable views, or offering repository methods for state changes. This reduces coupling and preserves module invariants."
+        },
+        {
+          "id": "b",
+          "text": "The repository returns full entities causing heavy network serialization cost when used by thin clients across service boundaries.",
+          "isCorrect": false,
+          "explanation": "Serialization overhead is a valid operational concern when sending entities over the wire, but the snippet and prompt focus on in-process module interaction. The primary design issue is leakage of internal objects in-process rather than cross-boundary serialization cost."
+        },
+        {
+          "id": "c",
+          "text": "The repository returning entities violates single responsibility because repositories take on mapping and projection responsibilities for client views.",
+          "isCorrect": false,
+          "explanation": "Mixing concerns can happen, but returning entities does not by itself prove SRP violation. The bigger problem is that callers can mutate persistence objects. If you also see repository doing view mapping, then SRP becomes a stronger critique."
+        },
+        {
+          "id": "d",
+          "text": "The repository leaks stack trace and error details by returning raw exceptions to callers instead of domain friendly errors.",
+          "isCorrect": false,
+          "explanation": "Leaking internal error details is a real security and usability problem, but it is unrelated to returning entity instances. The prompt describes object-return behavior; the error-leak concern would be visible in exception handling code rather than return types."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two cache designs below. Which version better protects module internals from caller dependencies?",
+      "codeSnippet": "// Version A\nclass CacheA {\n  private items: string[] = [];\n  add(item: string) { this.items.push(item); }\n  getItems(): string[] { return this.items; }\n}\n\n// Version B\nclass CacheB {\n  private items: string[] = [];\n  add(item: string) { this.items.push(item); }\n  getItems(): ReadonlyArray<string> { return this.items.slice(); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A returns the internal array directly so callers can mutate it and corrupt cache invariants across the system.",
+          "isCorrect": false,
+          "explanation": "Version A exposes the actual internal array reference. Callers can push, pop, or reassign elements and thus break invariants or create subtle bugs. Even if tests currently pass, downstream code can start depending on the concrete array behavior, making refactoring dangerous."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates the internal collection behind a minimal public API surface.",
+          "isCorrect": true,
+          "explanation": "Version B prevents callers from obtaining a direct reference to the internal storage by returning a copy typed as ReadonlyArray. That reduces coupling and preserves the freedom to change the internal representation. This embodies the principle of hiding implementation details and exposing behavior, making future changes safer and less risky."
+        }
+      ]
+    }
+  ]
+}

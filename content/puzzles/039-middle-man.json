@@ -1,0 +1,106 @@
+{
+  "id": 39,
+  "conceptName": "Middle Man",
+  "category": "code-smell",
+  "definition": "A class that delegates almost all work to another class, adding an extra layer of indirection without meaningful behavior.",
+  "ruleOfThumb": "If a class only forwards calls to another object without adding behavior, collapse it or move useful logic into it.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Delegation with Inheritance and Middle Man",
+    "page": "213",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this small service class. Which description best identifies the likely design problem?",
+      "codeSnippet": "class PaymentService {\n  constructor(private gateway: PaymentGateway) {}\n  charge(card, amount) { return this.gateway.charge(card, amount); }\n  refund(txId) { return this.gateway.refund(txId); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class acts as an unnecessary proxy that only forwards calls to another class without adding value.",
+          "isCorrect": true,
+          "explanation": "The class simply forwards methods to the gateway without adding logic, validation, or translation. That extra layer increases indirection and offers no encapsulation benefit. Typical remediation is to remove the pass through or move meaningful logic into this class so it justifies its existence."
+        },
+        {
+          "id": "b",
+          "text": "This class centralizes unrelated responsibilities and likely violates single responsibility by mixing business logic and forwarding duties.",
+          "isCorrect": false,
+          "explanation": "While this could indicate a single responsibility problem in other cases, here the class contains no business logic to centralize. The primary issue is unnecessary delegation rather than multiple responsibilities. Fixing SRP would not remove the delegation unless logic is added or the layer is removed."
+        },
+        {
+          "id": "c",
+          "text": "This class exposes the concrete implementation instead of an abstraction, coupling callers tightly to internal dependencies.",
+          "isCorrect": false,
+          "explanation": "Exposing concrete types can be a concern, but the snippet shows the class simply delegates rather than exposing internals. The coupling here comes from duplicated API, not from returning concrete types. An interface-based refactor could help but would not address the redundant delegation itself."
+        },
+        {
+          "id": "d",
+          "text": "This class intentionally decorates behavior to add cross cutting features and delegates core operations to another object.",
+          "isCorrect": false,
+          "explanation": "If the class were adding logging, retry, or metrics then delegation would be justified as decoration. The snippet shows no additional behavior. Assuming decoration without evidence risks adding unnecessary layers; you should confirm whether the class adds orthogonal concerns before keeping it."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A repository class forwards CRUD calls to a DAO with no transformation. Which concern is most accurate for reviewers?",
+      "codeSnippet": "class UserRepository {\n  constructor(private dao: UserDao) {}\n  getUser(id: number) { return this.dao.findById(id); }\n  updateUser(user) { return this.dao.save(user); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class is an unnecessary pass-through that adds no logic and only duplicates the DAO's interface.",
+          "isCorrect": true,
+          "explanation": "The repository methods are direct proxies to the DAO without enrichment, mapping, or authorization. That duplication increases maintenance burden. Options include removing the repository layer, or adding mapping/validation responsibilities so the layer justifies its existence."
+        },
+        {
+          "id": "b",
+          "text": "This class introduces a performance bottleneck via synchronous delegation to a remote datastore without caching or batching strategy.",
+          "isCorrect": false,
+          "explanation": "Performance might be an issue in other contexts, but the snippet gives no evidence of remote calls, latency handling, or synchronous constraints. The primary design smell in this code is delegation without value, not necessarily a bottleneck. Addressing performance requires profiling and different mitigations."
+        },
+        {
+          "id": "c",
+          "text": "This class leaks persistence details to higher layers by returning raw entities instead of mapping to domain models.",
+          "isCorrect": false,
+          "explanation": "Leaking persistence models is a real concern, but the example shows a thin forwarder rather than an explicit model leak. If the DAO returns raw entities, mapping should happen somewhere, but the immediate smell is redundant delegation. Consider combining mapping responsibilities into this layer if keeping it."
+        },
+        {
+          "id": "d",
+          "text": "This class serves as an explicit anti corruption boundary to keep calling code independent from DAO implementation details.",
+          "isCorrect": false,
+          "explanation": "An anti corruption boundary is a valid pattern, but it would normally adapt or translate different models. Since this class performs no translation and simply mirrors the DAO API, it does not fulfill that role. If intended as a boundary, it should perform adaptation or hide DAO-specific concepts."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two versions of an access layer are proposed. Which version would you prefer and why from a structural cleanliness perspective?",
+      "codeSnippet": "/* Version A */\nclass OrderServiceWrapper {\n  constructor(private repo: OrderRepository) {}\n  create(order) { return this.repo.create(order); }\n  find(id) { return this.repo.find(id); }\n  cancel(id) { return this.repo.cancel(id); }\n}\n\n/* Version B */\n// Callers use OrderRepository directly where additional logic is not required\n// Example: orderRepository.create(order)\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A introduces a stable wrapper around collaborators to isolate callers from implementation details.",
+          "isCorrect": false,
+          "explanation": "A wrapper can be useful when it adds translation, validation, or orchestration. In this case the wrapper only forwards methods, so it creates needless indirection. Keeping it might be justified if future logic is certain to appear, but premature wrappers increase cognitive load and maintenance cost."
+        },
+        {
+          "id": "b",
+          "text": "Version B collapses the redundant wrapper so callers invoke the repository directly and remove the extra delegation layer.",
+          "isCorrect": true,
+          "explanation": "Version B is preferable when the wrapper provides no behavior beyond delegation. Removing the redundant wrapper reduces indirection and simplifies the call graph. If cross cutting concerns are required later, introduce a focused adapter or decorator that has a clear responsibility rather than a general purpose proxy. See Fowler and other refactoring texts for guidance on removing unnecessary delegation."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "id": 32,
+  "conceptName": "Builder Pattern",
+  "category": "design-pattern",
+  "definition": "A creational approach that separates the construction of a complex object from its representation, allowing the same construction process to create different representations and supporting fluent, stepwise configuration before producing the final object.",
+  "ruleOfThumb": "Use when an object requires many optional configuration steps or many constructor parameters and you want readable, testable construction.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Builder",
+    "page": "149-152",
+    "externalUrl": "https://refactoring.guru/design-patterns/builder"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches this design intent?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "It separates object construction from representation by providing stepwise configuration and a final build method for objects.",
+          "isCorrect": true,
+          "explanation": "The correct description captures the essence: construction steps are exposed while final assembly is delayed to a build call. This makes client code clearer and supports immutable products and varied representations."
+        },
+        {
+          "id": "b",
+          "text": "It composes small reusable behaviors into objects at runtime through mixins and multiple inheritance strategies for flexibility.",
+          "isCorrect": false,
+          "explanation": "This describes composition via mixins or traits, not a separate construction process. While both patterns improve reuse, mixins focus on combining behavior rather than stepwise construction of a complex object."
+        },
+        {
+          "id": "c",
+          "text": "It offers a simple factory function that decides and returns different concrete subclasses based on input parameters and flags.",
+          "isCorrect": false,
+          "explanation": "A factory function encapsulates subclass selection and creation, but it does not provide a fluent, stepwise configuration API for assembling parts before the final object is produced."
+        },
+        {
+          "id": "d",
+          "text": "It centralizes many business rules into a single monolithic constructor with numerous optional parameters and complex validation logic.",
+          "isCorrect": false,
+          "explanation": "This option describes the anti-pattern the Builder solves. Crowded constructors are harder to read and test; the actual intent is to replace such monoliths with a clearer construction API."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this TypeScript constructor usage, what primary design problem is a refactor likely trying to solve?",
+      "codeSnippet": "class Order {\n  constructor(\n    public id: string,\n    public customerId: string,\n    public items: string[],\n    public discount?: number,\n    public notes?: string,\n    public priority?: 'low'|'normal'|'high'\n  ) {}\n}\n\nconst o = new Order(\"1\",\"cust\", [\"i1\"], undefined, \"deliver after 5pm\", \"high\");",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It aims to simplify construction of complex objects with many optional parameters by using a fluent stepwise configurator.",
+          "isCorrect": true,
+          "explanation": "The code shows a telescoping constructor with many optional parameters and unclear call sites. A builder-style refactor improves readability, documents options, and supports immutable final objects."
+        },
+        {
+          "id": "b",
+          "text": "It aims to improve runtime performance by reducing object allocation overhead and minimizing garbage collector pressure.",
+          "isCorrect": false,
+          "explanation": "While reducing allocations can matter, the presented problem is readability and configurability. Builder refactors trade a few allocations for much clearer construction and are not primarily a GC optimization."
+        },
+        {
+          "id": "c",
+          "text": "It aims to enable polymorphic behavior by creating different subclasses for each configuration variant at runtime.",
+          "isCorrect": false,
+          "explanation": "Polymorphic subclassing addresses behavior variation, not combinatorial optional configuration. Builders target object construction clarity rather than runtime type-switching among many subclasses."
+        },
+        {
+          "id": "d",
+          "text": "It aims to centralize authorization checks into constructors to prevent invalid object creation at the point of instantiation.",
+          "isCorrect": false,
+          "explanation": "Centralizing authorization belongs in a security or validation layer. Builders can include validation, but their main purpose is to manage complex configuration, not to consolidate access control."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better structural choice for constructing configurable domain objects in a large codebase?",
+      "codeSnippet": "// Version A: fluent configurator\nclass Meal {\n  private constructor(\n    public entree: string,\n    public side?: string,\n    public drink?: string\n  ) {}\n  static Config = class {\n    private entree!: string;\n    private side?: string;\n    private drink?: string;\n    setEntree(e: string){ this.entree = e; return this; }\n    setSide(s: string){ this.side = s; return this; }\n    setDrink(d: string){ this.drink = d; return this; }\n    build(){ return new Meal(this.entree, this.side, this.drink); }\n  }\n}\n\n// Version B: long public constructor\nclass MealV2 {\n  constructor(public entree: string, public side?: string, public drink?: string) {}\n}\nconst m = new MealV2(\"steak\", undefined, \"cola\");",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A encapsulates stepwise configuration in a dedicated fluent configurator separate from immutable product construction.",
+          "isCorrect": true,
+          "explanation": "Version A separates responsibilities: configuration lives in a fluent configurator while the domain object can remain immutable and focused on behavior. This reduces client duplication, improves readability, and makes tests easier to write. It also supports optional steps and validation before construction, and can provide named entry points for common presets. These are the classical advantages discussed in Gang of Four and practitioner texts."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes many optional parameters in public constructors leading to fragile instantiation and duplicated setup code across clients.",
+          "isCorrect": false,
+          "explanation": "Version B exposes a constructor surface that can become confusing when many parameters are optional. Call sites become hard to read and maintain, and validation or presets tend to be duplicated. That fragility is exactly what builders aim to avoid by making construction explicit and intent-revealing."
+        }
+      ]
+    }
+  ]
+}

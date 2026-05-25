@@ -1,0 +1,106 @@
+{
+  "id": 42,
+  "conceptName": "Temporary Field",
+  "category": "code-smell",
+  "definition": "An object contains a field that is only assigned and used in special circumstances for short-lived purposes instead of being passed as data or confined to a smaller scope.",
+  "ruleOfThumb": "If a field only exists to hold transient per-call data, prefer parameters, a small value object, or a different scope rather than instance state.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Bad Smells in Code",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/TemporaryField.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Review the code and choose the primary design problem shown.",
+      "codeSnippet": "class Order {\n  private discountApplied: boolean = false;\n  applyDiscount(code?: string) {\n    if (code) {\n      this.discountApplied = true;\n      // apply discount to line items\n    }\n  }\n  total() {\n    // compute total using this.discountApplied\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "An instance field is only set for a short use and remains unused for most of object lifetime.",
+          "isCorrect": true,
+          "explanation": "This is the classic case where a field exists mainly to pass transient information between methods. It creates hidden state and surprise when other methods rely on it. Refactor options include passing the value as a parameter, introducing a small value object, or moving the logic into a narrower-scoped helper."
+        },
+        {
+          "id": "b",
+          "text": "The class exposes mutable public state that other modules change unpredictably leading to race conditions and bugs.",
+          "isCorrect": false,
+          "explanation": "Although mutable shared state is a real concern, this snippet shows a private field and internal use rather than public mutation. The core issue is not external mutation but transient use of private instance state, which leads to hidden dependencies between methods."
+        },
+        {
+          "id": "c",
+          "text": "A long method performs multiple responsibilities making the method hard to test and reason about.",
+          "isCorrect": false,
+          "explanation": "Long methods are an important smell, but the example shows short methods and a field used across them. The immediate maintenance problem stems from transient instance state rather than overly long method bodies."
+        },
+        {
+          "id": "d",
+          "text": "A dependency is directly instantiated inside the class preventing easy mocking and violating inversion of control.",
+          "isCorrect": false,
+          "explanation": "Direct instantiation is a common design issue, yet the snippet contains no new expressions for external services. The notable problem is the temporary storage of per-call data on the instance, which makes behavior dependent on call order."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which explanation best identifies the root cause of the surprising behavior in this code?",
+      "codeSnippet": "class InvoicePrinter {\n  private formatHint?: string;\n  printInvoice(invoice: Invoice, format?: string) {\n    if (format) this.formatHint = format;\n    // render uses this.formatHint if present\n  }\n  printSummary(invoice: Invoice) {\n    // unexpectedly uses this.formatHint from previous call\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A shared mutable cache is updated without synchronization causing stale reads in concurrent scenarios across threads.",
+          "isCorrect": false,
+          "explanation": "Concurrency issues can cause surprising reads, but this code shows single-threaded surprising reuse of a hint between methods. The problem is the field is carrying transient call-specific data rather than acting as a shared cache, so concurrency is not the primary root cause here."
+        },
+        {
+          "id": "b",
+          "text": "An instance field is being used to pass transient call-specific data between methods instead of using method parameters.",
+          "isCorrect": true,
+          "explanation": "The field here acts as ad hoc transport for per-call data, coupling unrelated methods to call order. That hidden coupling causes surprising behavior when callers do not expect state to persist. Fixes include passing the value explicitly or encapsulating the related behavior in a single object."
+        },
+        {
+          "id": "c",
+          "text": "A missing null check leads to optional values being read without validation causing intermittent null reference errors at runtime.",
+          "isCorrect": false,
+          "explanation": "Null checks are important, but the symptom described is reuse of a hinted value across calls rather than direct null dereferences. The more precise diagnosis is misuse of instance state for transient data rather than omitted validation."
+        },
+        {
+          "id": "d",
+          "text": "An overly granular object decomposition forces multiple classes to coordinate state causing tight coupling and fragile APIs.",
+          "isCorrect": false,
+          "explanation": "Excessive decomposition can cause coordination complexity, but the snippet shows a single class storing transient data internally. The fragility arises from storing per-call information on the instance rather than from many classes coordinating state."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Choose the statement that best judges which version avoids problematic per-call instance state.",
+      "codeSnippet": "// Version A\nclass RequestHandlerV1 {\n  private requestId?: string;\n  handle(req: Request) {\n    if (req.headers['x-id']) this.requestId = req.headers['x-id'];\n    this.process();\n  }\n  process() {\n    // uses this.requestId during processing\n  }\n}\n\n// Version B\nclass RequestHandlerV2 {\n  handle(req: Request) {\n    const id = req.headers['x-id'];\n    this.process(id);\n  }\n  process(requestId?: string) {\n    // uses requestId passed explicitly\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A stores the per-call value on the instance to avoid adding parameters across many helper methods.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes the value in a field so callers do not need to thread a parameter through helpers. That convenience hides call-specific state on the object and creates subtle coupling and order dependence. This design makes testing and reasoning harder and often requires later refactoring to pass the value explicitly or group related behavior."
+        },
+        {
+          "id": "b",
+          "text": "Version B requires callers to pass the per-call value so the object does not hold call-specific state.",
+          "isCorrect": true,
+          "explanation": "Version B makes the per-call value explicit in the call graph, eliminating hidden instance state and accidental coupling between methods. This improves clarity, testability, and correctness because the value is tied to the call that needs it. Recommended references include Fowler on temporary fields and the principle of keeping object state meaningful across its lifecycle."
+        }
+      ]
+    }
+  ]
+}

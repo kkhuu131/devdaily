@@ -1,0 +1,106 @@
+{
+  "id": 62,
+  "conceptName": "Long Parameter List",
+  "category": "code-smell",
+  "definition": "A function or method that requires many parameters to perform its work, scattering related data across the call boundary and making the API hard to read, use, and evolve.",
+  "ruleOfThumb": "If a call requires more than three or four parameters, consider grouping related values into a small value object or configuration structure.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Introduce Parameter Object",
+    "page": "pp. 220-224",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What problem is illustrated by this TypeScript function signature?",
+      "codeSnippet": "function createOrder(\n  customerId: string,\n  productId: string,\n  quantity: number,\n  price: number,\n  discount: number,\n  shippingAddress: string,\n  billingAddress: string\n) {\n  // implementation omitted\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function signature exposes too many unrelated primitive parameters across multiple domains in one call.",
+          "isCorrect": true,
+          "explanation": "The signature shows many primitive parameters that likely represent distinct concerns (business values, pricing, and addresses). That makes the API hard to read and easy to misuse by passing values in the wrong order. A focused parameter object or small domain value would group related fields and improve clarity. See Fowler's Introduce Parameter Object for patterns to consolidate related parameters."
+        },
+        {
+          "id": "b",
+          "text": "The function signature lacks proper type annotations which makes the API fragile and hard to validate statically.",
+          "isCorrect": false,
+          "explanation": "While missing or weak types can cause fragility, the code already declares types for each parameter. The real issue is the number and heterogeneity of parameters rather than absent type information. Adding a grouped, typed object improves both structure and type safety."
+        },
+        {
+          "id": "c",
+          "text": "The function signature couples business and transport concerns by mixing domain values and address strings in one call.",
+          "isCorrect": false,
+          "explanation": "Mixing transport formats and domain values is a valid concern, but the immediate smell is the proliferation of parameters. Splitting concerns is one remedy, but the core problem is that related data is not grouped, which makes refactors and intent harder regardless of transport representation."
+        },
+        {
+          "id": "d",
+          "text": "The function signature indicates missing grouping of related data into objects which increases test surface and refactor cost.",
+          "isCorrect": false,
+          "explanation": "This explanation points at a real consequence of many parameters. It is a plausible distractor, but it repeats the consequence rather than identifying the primary observation that the API exposes too many unrelated primitives. The recommended fix is to introduce small value or parameter objects to reduce test and refactor burden."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which concern is the most important when you see this class constructor?",
+      "codeSnippet": "class ReportGenerator {\n  constructor(\n    private dbClient: DbClient,\n    private logger: Logger,\n    private cache: Cache,\n    private maxRows: number,\n    private includeSensitive: boolean,\n    private startDate: string,\n    private endDate: string\n  ) {}\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The constructor signature bundles an excessively large number of unrelated parameters across multiple concerns and responsibilities.",
+          "isCorrect": true,
+          "explanation": "The constructor mixes infrastructure dependencies (dbClient, logger, cache) with report configuration (maxRows, includeSensitive, date range). That suggests multiple responsibilities and makes construction cumbersome. A common refactor is to separate dependencies from a configuration object or to split responsibilities so each class has a clearer, smaller interface."
+        },
+        {
+          "id": "b",
+          "text": "The constructor signature shows lack of proper encapsulation of configuration but runtime object creation remains straightforward.",
+          "isCorrect": false,
+          "explanation": "Encapsulation of configuration is a concern, but saying runtime creation remains straightforward downplays maintenance and testing costs. The presence of both dependencies and configuration parameters together is the main structural problem, not merely the ease of instantiation at runtime."
+        },
+        {
+          "id": "c",
+          "text": "The constructor signature implies need for a factory pattern even though the class may be a simple utility.",
+          "isCorrect": false,
+          "explanation": "A factory can help hide complexity of construction, but it treats the symptom rather than the design issue. Introducing factories can complicate the codebase if the real need is grouping configuration or separating concerns into smaller classes."
+        },
+        {
+          "id": "d",
+          "text": "The constructor signature indicates possible violation of single responsibility but could be acceptable for small cohesive builders.",
+          "isCorrect": false,
+          "explanation": "This is a measured objection and sometimes true, but the listed parameters clearly mix dependencies and behavior configuration. Even for small builders, grouping related options improves clarity and reduces errors. Assess cohesion first and prefer parameter grouping where logical boundaries exist."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version would you prefer and why for a payment processing API used across the codebase?",
+      "codeSnippet": "// Version A\ninterface PaymentOptions {\n  amount: number;\n  currency: string;\n  payerId?: string;\n  method: string;\n  card?: { number: string; expiry: string; cvv: string };\n}\nfunction processPayment(options: PaymentOptions) {\n  // implementation\n}\n\n// Version B\nfunction processPayment(\n  amount: number,\n  currency: string,\n  payerId: string | null,\n  method: string,\n  cardNumber: string | null,\n  cardExpiry: string | null,\n  cardCvv: string | null,\n  metadata?: any\n) {\n  // implementation\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes related inputs in a typed configuration object improving readability and facilitating future extension.",
+          "isCorrect": true,
+          "explanation": "Version A groups related data into a single typed structure which documents intent and reduces positional errors at call sites. It makes it easier to add optional fields without changing every call site, improves discoverability in IDEs, and enables encapsulated validation. Fowler recommends introducing parameter objects when related parameters represent a conceptual group. Use careful naming and minimal public surface for the parameter object to avoid turning it into an anemic bag of unrelated fields."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps parameters separate which prevents accidental grouping but leads to fragile call sites and ordering errors.",
+          "isCorrect": false,
+          "explanation": "Keeping parameters separate can make some dependencies explicit, but a long list of primitives becomes brittle: callers must remember parameter order, optional values require awkward nulls, and adding a new parameter breaks many call sites. In library or cross-team APIs this fragility and poor extensibility outweigh the slight clarity of separate arguments."
+        }
+      ]
+    }
+  ]
+}

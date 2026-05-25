@@ -1,0 +1,106 @@
+{
+  "id": 27,
+  "conceptName": "Dependency Injection",
+  "category": "solid",
+  "definition": "A technique where a component receives its required collaborators from the outside instead of creating them internally, making dependencies explicit and substitutable.",
+  "ruleOfThumb": "Accept collaborators from outside rather than constructing them inside; prefer explicit constructor parameters for primary collaborators and use factories for optional or expensive ones.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Patterns of Enterprise Application Architecture",
+    "chapter": "Dependency Injection (note)",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/articles/injection.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best characterizes the pattern used in this TypeScript class?",
+      "codeSnippet": "interface EmailSender { send(message: string): void }\n\nclass SmtpEmailSender implements EmailSender {\n  send(message: string) { /* send via SMTP */ }\n}\n\nclass UserNotifier {\n  constructor(private emailSender: EmailSender) {}\n  notify(message: string) { this.emailSender.send(message) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class receives its collaborator through its constructor at runtime rather than creating it internally.",
+          "isCorrect": true,
+          "explanation": "This class accepts an EmailSender via its constructor which makes the collaborator explicit and substitutable. That is the core idea here: the class does not new up the dependency but instead has it provided to it. This enables easy mocking in tests and swapping implementations without changing the class."
+        },
+        {
+          "id": "b",
+          "text": "The class uses a factory object to obtain collaborators at runtime and encapsulates creation behind a factory interface.",
+          "isCorrect": false,
+          "explanation": "This describes a factory usage where creation is delegated to another object. In the snippet there is no factory abstraction or factory method being called; the collaborator arrives directly via the constructor, so this option is a plausible misreading but not correct."
+        },
+        {
+          "id": "c",
+          "text": "The class queries a global registry to pull its collaborator causing hidden runtime coupling and test difficulty.",
+          "isCorrect": false,
+          "explanation": "A global registry or service locator would hide dependencies and make tests harder. The snippet, however, shows an explicit constructor parameter, not a global lookup, so this concern is real but not what the code demonstrates."
+        },
+        {
+          "id": "d",
+          "text": "The class constructs its own concrete collaborator inside the constructor creating tight coupling and hardening unit tests.",
+          "isCorrect": false,
+          "explanation": "Constructing a concrete collaborator inside the class indeed creates tight coupling. This option describes a common anti pattern, but the provided code shows the opposite: the collaborator is injected rather than constructed internally."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the main maintainability concern with the following constructor in a domain service?",
+      "codeSnippet": "interface Repo {}\ninterface Logger {}\ninterface Metrics {}\ninterface Notifier {}\ninterface Validator {}\n\nclass OrderProcessor {\n  constructor(\n    private repo: Repo,\n    private logger: Logger,\n    private metrics: Metrics,\n    private notifier: Notifier,\n    private validator: Validator\n  ) {}\n  process(order: any) { /* ... */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This constructor accepts too many collaborator parameters which suggests the class has multiple responsibilities and is too complex.",
+          "isCorrect": true,
+          "explanation": "A long list of injected collaborators is a classic signal that the class may be doing too much or has not been split into smaller, focused services. The smell is often called a long parameter list or feature envy at the class level and suggests refactoring responsibilities or introducing a facade."
+        },
+        {
+          "id": "b",
+          "text": "This constructor requires concrete implementation types instead of abstractions which increases compile time coupling and reduces substitution flexibility.",
+          "isCorrect": false,
+          "explanation": "Using concrete types in a constructor does increase coupling, but the snippet uses interfaces for the parameters. The real issue here is the number of collaborators rather than concreteness of types."
+        },
+        {
+          "id": "c",
+          "text": "This constructor pulls optional services and creates default instances which hides configuration and complicates test scaffolding.",
+          "isCorrect": false,
+          "explanation": "Optional services with default instantiation do hide configuration and can complicate tests. In this example the services are explicit required parameters, so this concern is plausible elsewhere but not the primary one shown."
+        },
+        {
+          "id": "d",
+          "text": "This constructor depends on a container interface to resolve services at runtime which hides dependencies and complicates testing.",
+          "isCorrect": false,
+          "explanation": "Resolving dependencies from a container inside a class is the service locator concern and does hide dependencies. The code, however, lists explicit constructor parameters rather than resolving from a container, making the long parameter list the clearer maintainability problem."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You have two implementations of a billing service. Which version is preferable for long term testability and clearer dependency boundaries?",
+      "codeSnippet": "// Version A\nclass BillingServiceA {\n  private gateway = Container.get(PaymentGateway)\n  charge(amount: number) { this.gateway.charge(amount) }\n}\n\n// Version B\nclass BillingServiceB {\n  constructor(private gateway: PaymentGateway) {}\n  charge(amount: number) { this.gateway.charge(amount) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes wiring by using a global container but hides dependencies and increases implicit runtime coupling.",
+          "isCorrect": false,
+          "explanation": "Version A uses a global container lookup which does reduce explicit wiring at the call site but moves dependency knowledge into runtime resolution. That hides what the class needs, makes unit testing harder without container setup, and increases implicit global coupling. Those are real trade offs and a senior reader could plausibly argue for it in small apps, but it generally harms maintainability in larger systems."
+        },
+        {
+          "id": "b",
+          "text": "Version B requires all collaborators to be supplied via constructor parameters instead of resolving them from a container.",
+          "isCorrect": true,
+          "explanation": "Version B makes the dependencies explicit in the type signature, which documents what the class requires and simplifies unit testing because tests can pass fakes directly. Explicit constructor-supplied collaborators reduce hidden runtime coupling and align with practices advocated in SOLID and testable design. See Martin Fowler on injection approaches and discussions in Clean Code regarding explicit dependencies and testability."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 57,
+  "conceptName": "Speculative Generality",
+  "category": "code-smell",
+  "definition": "Adding abstractions, hooks, or configuration points intended for hypothetical future uses that are not currently required or used.",
+  "ruleOfThumb": "Favor simple, direct implementation; add abstractions only when a real need or at least two distinct consumers justify them.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Code Smells",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/SpeculativeGenerality.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the most likely design problem in the following payment code?",
+      "codeSnippet": "interface PaymentProcessor { process(amount: number): boolean }\n\nclass StripeProcessor implements PaymentProcessor {\n  process(amount: number) { /* call Stripe API */ return true }\n}\n\nclass PaymentService {\n  private processor: PaymentProcessor = new StripeProcessor()\n  pay(amount: number) { return this.processor.process(amount) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code introduces an unused abstraction layer for functionality that currently has a single concrete implementation and no consumers.",
+          "isCorrect": true,
+          "explanation": "The interface and indirect wiring add an abstraction without a present need to swap implementations. That extra layer increases cognitive load and maintenance overhead without delivering benefit. Fowler and other design authorities recommend keeping the design as simple as possible until a concrete need for variation appears."
+        },
+        {
+          "id": "b",
+          "text": "This code creates a responsibility split that forces the core class to manage unrelated configuration concerns and hidden side effects.",
+          "isCorrect": false,
+          "explanation": "While splitting responsibilities can be harmful if done poorly, the snippet shows an unused abstraction rather than unrelated configuration leaking into the service. The PaymentService delegates cleanly to the processor; the real issue is the premature interface, not mixed responsibilities."
+        },
+        {
+          "id": "c",
+          "text": "This code risks runtime errors because it lacks defensive null checks when external payment gateways return unexpected responses.",
+          "isCorrect": false,
+          "explanation": "Defensive checks are important around external calls, but the snippet returns a boolean and contains no evident null handling problem. The primary concern here is structural overhead from an unnecessary abstraction, not immediate runtime safety checks."
+        },
+        {
+          "id": "d",
+          "text": "This code makes future extension awkward because concrete implementations are tightly coupled to framework specific details and globals.",
+          "isCorrect": false,
+          "explanation": "Tight coupling to framework or globals would be a valid concern if constructors or global references appeared. In this example the concrete class is simple; the bigger issue is that the abstraction was introduced before there was a demonstrated need for multiple implementations."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A repository interface was added before any alternate storage exists. What is the best assessment?",
+      "codeSnippet": "interface UserRepository { find(id: string): User | null }\n\nclass PgUserRepository implements UserRepository {\n  find(id: string) { /* SQL lookup */ return null }\n}\n\nconst repo: UserRepository = new PgUserRepository()",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This interface is premature because only one database implementation exists and there is no current need to swap storage providers.",
+          "isCorrect": true,
+          "explanation": "The interface anticipates future needs that are not present now. Premature repository abstractions add indirection and tests may mock behavior equally well with a concrete class. Introduce the interface when a second implementation or clear integration need appears."
+        },
+        {
+          "id": "b",
+          "text": "This interface improves testability by allowing easy mocking of data access during unit tests without touching production database code.",
+          "isCorrect": false,
+          "explanation": "An interface can help testing, but lightweight alternatives like an in-memory concrete implementation or test doubles can achieve the same benefit without committing to abstraction upfront. The tradeoff needs evaluating against actual testing pain and maintenance cost."
+        },
+        {
+          "id": "c",
+          "text": "This interface enforces a rigid contract that will require changes in multiple places when the data schema evolves.",
+          "isCorrect": false,
+          "explanation": "Interfaces do create a contract, but they also make breaking changes explicit. The problem described is plausible but not the most direct concern given the snippet; the pressing issue is adding indirection before any real variation exists."
+        },
+        {
+          "id": "d",
+          "text": "This interface anticipates scaling to multiple storage engines and thus reduces future integration effort at the cost of small upfront complexity.",
+          "isCorrect": false,
+          "explanation": "Planning for multiple storage engines can be valuable, but speculative scaffolding often never yields payoff. Without a concrete plan or a second implementation, the upfront complexity is likely wasted. Prefer YAGNI unless requirements justify abstraction."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version should you prefer for production code today given small scope and no current extension requirements?",
+      "codeSnippet": "// Version A\nfunction generateReport(data: { id: number; value: string }[]) {\n  return data.map(d => `${d.id},${d.value}`).join(\"\\n\")\n}\n\n// Version B\ninterface ReportGenerator { generate(data: { id: number; value: string }[]): string }\nclass CsvReportGenerator implements ReportGenerator {\n  generate(data: { id: number; value: string }[]) { return data.map(d => `${d.id},${d.value}`).join(\"\\n\") }\n}\nclass ReportFactory { static create() { return new CsvReportGenerator() } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps implementation focused and avoids unused abstraction layers and extra maintenance.",
+          "isCorrect": true,
+          "explanation": "Version A implements the required behavior directly and minimizes indirection. When only one implementation is needed, simplicity reduces cognitive load and makes refactoring straightforward if future needs arise. Introduce abstractions later when you have multiple consumers or concrete variation to support. See Fowler on avoiding speculative generality and pragmatic guidance from Clean Code on delaying abstraction until necessary."
+        },
+        {
+          "id": "b",
+          "text": "Version B adds abstraction and factory layers that increase complexity and create maintenance work without current demonstrated benefit.",
+          "isCorrect": false,
+          "explanation": "Version B indeed prepares for future variation, but that preparation costs code complexity, more classes to understand, and a higher maintenance surface. Without multiple implementations or a clear integration goal, this extra structure is speculative and likely to become accidental complexity rather than a practical benefit."
+        }
+      ]
+    }
+  ]
+}

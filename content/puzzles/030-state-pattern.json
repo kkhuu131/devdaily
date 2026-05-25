@@ -1,0 +1,106 @@
+{
+  "id": 30,
+  "conceptName": "State Pattern",
+  "category": "design-pattern",
+  "definition": "An object delegates behavior to interchangeable state objects so its behavior changes when its internal state changes.",
+  "ruleOfThumb": "Encapsulate each variant of behavior in its own object and have the context delegate instead of branching on status.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns - State",
+    "page": "pp. 223-232",
+    "externalUrl": "https://en.wikipedia.org/wiki/State_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this TypeScript code. Which description best fits the design used here?",
+      "codeSnippet": "interface Mode { handle(ctx: Connection): void }\nclass Connection {\n  private mode: Mode;\n  constructor(m: Mode) { this.mode = m }\n  request() { this.mode.handle(this) }\n  setMode(m: Mode) { this.mode = m }\n}\nclass Open implements Mode {\n  handle(ctx: Connection) { console.log('sending'); ctx.setMode(new Closed()) }\n}\nclass Closed implements Mode {\n  handle(ctx: Connection) { console.log('cannot send') }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Behavior is delegated to separate state objects so an instance changes behavior by switching its internal state object.",
+          "isCorrect": true,
+          "explanation": "This code delegates request handling to Mode implementations and changes the active Mode at runtime. That is the core idea of isolating variant behavior into objects so the context simply forwards requests. This reduces large conditional logic in the context class and makes adding new behaviors a matter of adding new state objects rather than editing the context."
+        },
+        {
+          "id": "b",
+          "text": "A single procedural method branches on a status value making behavior hard to extend without modifying the method.",
+          "isCorrect": false,
+          "explanation": "This describes a common alternative where behavior is implemented with branching logic. While it correctly calls out extensibility problems, the snippet shows delegation to mode objects rather than a centralized branching method. The concern is plausible, but it does not match the shown delegation-based implementation."
+        },
+        {
+          "id": "c",
+          "text": "It centralizes state checks in the context class leading to duplicated conditionals across multiple methods in the class.",
+          "isCorrect": false,
+          "explanation": "Centralized state checks are indeed a real maintenance problem. However the snippet demonstrates separate Mode classes handling behavior, so conditionals are not duplicated in the context. This distractor names a real smell but does not match the code structure shown."
+        },
+        {
+          "id": "d",
+          "text": "This approach uses global variables to track lifecycles causing threading issues and unpredictable side effects across requests.",
+          "isCorrect": false,
+          "explanation": "Global mutable state can cause threading and lifecycle problems, and is a valid concern in many systems. The presented code uses instance fields and encapsulated mode objects, not globals. The issue is plausible but not the primary characteristic of the sample."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which concrete design concern is most important in this Order class implementation?",
+      "codeSnippet": "enum OrderStatus { New, Paid, Shipped }\nclass Order {\n  status: OrderStatus = OrderStatus.New\n  process() {\n    switch (this.status) {\n      case OrderStatus.New: this.pay(); break;\n      case OrderStatus.Paid: this.ship(); break;\n      case OrderStatus.Shipped: this.complete(); break;\n    }\n  }\n  pay() {}\n  ship() {}\n  complete() {}\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A switch on a status enum centralizes behavior in the context class requiring modification to add each new state.",
+          "isCorrect": true,
+          "explanation": "The switch dispatch pattern means new statuses require editing the Order.process method, violating the open closed principle in practice. Replacing the switch with polymorphic handlers moves responsibility to new types and reduces the need to change the context class when adding behavior."
+        },
+        {
+          "id": "b",
+          "text": "The code leaks internal data by exposing the enum publicly which allows external modules to manipulate object lifecycle incorrectly.",
+          "isCorrect": false,
+          "explanation": "Exposing enums can be a concern in some APIs, but the main maintenance cost shown is the centralized switch-based dispatch. The enum exposure issue is plausible, yet not the central scalability problem in this snippet."
+        },
+        {
+          "id": "c",
+          "text": "The class violates single responsibility by mixing persistence and business logic causing coupling between storage and operation rules.",
+          "isCorrect": false,
+          "explanation": "Mixing persistence and business logic is a common smell, but the snippet focuses on in-memory status dispatch and does not show data access code. The primary problem here is centralized conditional logic for behavior variants, not persistence coupling."
+        },
+        {
+          "id": "d",
+          "text": "It overuses inheritance hierarchies to share behavior which creates deep class trees and brittle subclass dependencies.",
+          "isCorrect": false,
+          "explanation": "Deep inheritance can cause brittleness, but the snippet uses a switch statement rather than an inheritance hierarchy. While inheritance concerns are valid elsewhere, they are not the central issue demonstrated by this specific implementation."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Comparing Version A and Version B below, which design is preferable for adding new behavior variants and why?",
+      "codeSnippet": "// Version A\ninterface DoorState { open(d: Door): void; close(d: Door): void }\nclass Door {\n  private state: DoorState\n  constructor(s: DoorState) { this.state = s }\n  open() { this.state.open(this) }\n  close() { this.state.close(this) }\n  setState(s: DoorState) { this.state = s }\n}\nclass OpenState implements DoorState { open(d: Door) { console.log('already open') } close(d: Door) { d.setState(new ClosedState()) } }\nclass ClosedState implements DoorState { open(d: Door) { d.setState(new OpenState()) } close(d: Door) { console.log('already closed') } }\n\n// Version B\nclass Door2 {\n  status: 'open'|'closed' = 'closed'\n  open() { if (this.status === 'open') { console.log('already open') } else { this.status = 'open' } }\n  close() { if (this.status === 'closed') { console.log('already closed') } else { this.status = 'closed' } }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates variant behavior into separate classes and keeps the context free from branching logic and mutations.",
+          "isCorrect": true,
+          "explanation": "Version A encapsulates each behavior variant in its own object and has the context delegate to them. This makes adding a new variant a single new class and minimal context wiring, rather than modifying existing methods. It improves maintainability and testability by keeping state-specific transitions localized and avoiding sprawling conditionals in the context."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes behavior with status checks inside the context forcing edits on the context for every new variant.",
+          "isCorrect": false,
+          "explanation": "Version B implements behavior with conditional checks on a status field. Each additional variant requires touching the Door2 methods and adds more conditionals, increasing risk of regressions and making unit tests harder to focus. While simpler initially, this design tends to become brittle as variants grow or rules diverge."
+        }
+      ]
+    }
+  ]
+}

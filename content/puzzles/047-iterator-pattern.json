@@ -1,0 +1,106 @@
+{
+  "id": 47,
+  "conceptName": "Iterator Pattern",
+  "category": "design-pattern",
+  "definition": "Encapsulate traversal of a collection by providing a separate object that exposes sequential access to elements without revealing the collection's underlying representation.",
+  "ruleOfThumb": "Return a traversal object when you need multiple independent traversals or to hide internal structure from clients.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Iterator",
+    "page": "293-302",
+    "externalUrl": "https://www.oreilly.com/library/view/design-patterns-elements/0201633612/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches the behavior implemented by the following code?",
+      "codeSnippet": "class ArrayList<T> {\n  private items: T[] = [];\n  add(item: T) { this.items.push(item); }\n  get(index: number) { return this.items[index]; }\n  size() { return this.items.length; }\n  createIterator() { return new ArrayIterator(this); }\n}\n\nclass ArrayIterator<T> {\n  private i = 0;\n  constructor(private list: ArrayList<T>) {}\n  next() { return this.list.get(this.i++); }\n  hasNext() { return this.i < this.list.size(); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code exposes the internal array and forces callers to manage index positions to iterate manually.",
+          "isCorrect": false,
+          "explanation": "This option misreads the API. The ArrayList still exposes get and size methods, but the presence of createIterator returns a distinct object that encapsulates the cursor and traversal logic. The code does not force callers to manually increment an index across calls if they use the iterator; instead callers can use the returned iterator methods."
+        },
+        {
+          "id": "b",
+          "text": "This code returns a separate object that encapsulates traversal logic so callers do not manage collection internals.",
+          "isCorrect": true,
+          "explanation": "Correct. The collection provides createIterator which constructs an ArrayIterator holding its own cursor. That separates traversal state from the collection and hides iteration mechanics from callers, allowing traversal without exposing the underlying array representation."
+        },
+        {
+          "id": "c",
+          "text": "This code embeds traversal behavior into the collection and requires consumers to use specific index APIs to walk elements.",
+          "isCorrect": false,
+          "explanation": "This option is plausible but inaccurate for this snippet. Embedding traversal into the collection would mean methods like next and hasNext live on ArrayList itself. In the shown code traversal lives in ArrayIterator, so consumers need not use collection index APIs directly when using the iterator."
+        },
+        {
+          "id": "d",
+          "text": "This code relies on callbacks to handle each element and does not provide a reusable traversal object for callers.",
+          "isCorrect": false,
+          "explanation": "This is a plausible confusion with visitor-style traversal APIs that accept callbacks. The snippet, however, constructs and returns a reusable iterator object. It does not use a callback-based forEach approach, so callers can reuse or create multiple iterator instances."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given a tree that exposes a single traverse(fn) callback API, which limitation remains most likely for callers?",
+      "codeSnippet": "class TreeNode<T> { constructor(public value: T, public left?: TreeNode<T>, public right?: TreeNode<T>) {} }\n\nclass Tree<T> {\n  constructor(private root?: TreeNode<T>) {}\n  traverse(fn: (v: T) => void) { this._walk(this.root, fn); }\n  private _walk(node?: TreeNode<T>, fn?: (v: T) => void) { if (!node || !fn) return; fn(node.value); this._walk(node.left, fn); this._walk(node.right, fn); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This traversal method prevents pausing or resuming iteration and external control of traversal state across callers.",
+          "isCorrect": true,
+          "explanation": "Because traversal is driven by a callback and the tree manages the recursive walk, callers cannot easily pause, resume, or capture an iterator state to continue later. A separate traversal object would capture cursor state so callers could control and resume traversal or maintain multiple simultaneous traversals."
+        },
+        {
+          "id": "b",
+          "text": "This traversal method exposes internal tree structure in callbacks and forces clients to depend on node layout details.",
+          "isCorrect": false,
+          "explanation": "This is a reasonable concern when callbacks receive node objects, but the snippet passes only the node value to the callback. The API shown does not expose node objects directly, so callers are not compelled to depend on tree internals."
+        },
+        {
+          "id": "c",
+          "text": "This traversal method requires synchronous, eager processing and cannot easily support incremental or lazy consumption by callers.",
+          "isCorrect": false,
+          "explanation": "This is a valid tradeoff of callback-driven traversal, but it is a consequence similar to inability to pause. The selected correct answer emphasizes external control and resumption semantics which more directly describe the inability to snapshot traversal state for later continuation."
+        },
+        {
+          "id": "d",
+          "text": "This traversal method duplicates traversal logic across callers because it does not provide a reusable traversal object to share.",
+          "isCorrect": false,
+          "explanation": "Callers could duplicate traversal code if they implement their own walks, but the API centralizes traversal logic inside the Tree. The primary limitation for clients of this API is lack of external control over the traversal state rather than duplicated traversal logic."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation is preferable when you need multiple independent traversals and to avoid coupling traversal state into the collection?",
+      "codeSnippet": "// Version A: collection holds cursor state\nclass LogBufferV1 {\n  private cursor = 0;\n  private entries: string[] = [];\n  append(e: string) { this.entries.push(e); }\n  next() { return this.entries[this.cursor++]; }\n  hasNext() { return this.cursor < this.entries.length; }\n}\n\n// Version B: collection creates independent cursors\nclass LogBufferV2 {\n  private entries: string[] = [];\n  append(e: string) { this.entries.push(e); }\n  createCursor() {\n    let i = 0;\n    return { next: () => this.entries[i++], hasNext: () => i < this.entries.length };\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A stores traversal cursor inside the aggregate and therefore prevents safe concurrent traversals by different callers.",
+          "isCorrect": false,
+          "explanation": "This statement identifies a real concern with Version A but presents it as the preferable approach for the asked goal. Centralizing a cursor avoids per-iterator allocations but couples iteration state to the aggregate and forbids concurrent independent traversals. For most cases where multiple simultaneous traversals are needed that coupling makes Version A unsuitable."
+        },
+        {
+          "id": "b",
+          "text": "Version B creates independent traversal objects so callers can iterate concurrently without sharing traversal state.",
+          "isCorrect": true,
+          "explanation": "Version B is preferable when you need independent traversals because each call to createCursor returns an object with its own index. That decouples traversal state from the collection and enables multiple callers to traverse concurrently or to snapshot and resume iteration. This aligns with the established design advice to separate traversal concerns from the aggregate to improve composability and reduce coupling. See the Iterator chapter in Design Patterns by Gamma et al., and discussions in Refactoring and Clean Code about separating behavior to reduce shared mutable state."
+        }
+      ]
+    }
+  ]
+}

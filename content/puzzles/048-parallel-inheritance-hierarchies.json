@@ -1,0 +1,106 @@
+{
+  "id": 48,
+  "conceptName": "Parallel Inheritance Hierarchies",
+  "category": "code-smell",
+  "definition": "A recurring situation where one abstraction hierarchy is mirrored by another, so corresponding subclasses in each hierarchy must be changed together.",
+  "ruleOfThumb": "If you find matching subclass families that always change together, consider collapsing variants into composition or a single hierarchy.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Code Smells",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/ParallelInheritanceHierarchies.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the code. Which observation best describes the primary structural concern here?",
+      "codeSnippet": "class Order {\n  process() {}\n}\n\nclass OnlineOrder extends Order {\n  process() {}\n}\n\nclass OrderValidator {\n  validate(order: Order) {}\n}\n\nclass OnlineOrderValidator extends OrderValidator {\n  validate(order: OnlineOrder) {}\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This example defines two subclass trees whose corresponding subclasses always change together and therefore indicate duplicated parallel subclassing.",
+          "isCorrect": true,
+          "explanation": "Correct. The snippet shows two mirrored hierarchies (Order/OnlineOrder and OrderValidator/OnlineOrderValidator) where related subclasses are paired and likely require coordinated edits. That symmetry is the smell—two hierarchies representing the same orthogonal variation. The usual fix is to collapse the mirrored variation into one abstraction, for example by using composition or by moving behavior so that only one hierarchy expresses the variation."
+        },
+        {
+          "id": "b",
+          "text": "This example demonstrates overly deep inheritance that creates fragile base classes and makes behavior changes risky across the hierarchy.",
+          "isCorrect": false,
+          "explanation": "Plausible but not the primary issue here. The inheritance depth is shallow; the noticeable problem is not depth but duplicated matching subclasses across two hierarchies. Fragile base class concerns arise with deep or unstable base behavior, which this small example does not show."
+        },
+        {
+          "id": "c",
+          "text": "This example lacks an extracted strategy interface causing conditional logic elsewhere and reducing flexibility for algorithm substitution.",
+          "isCorrect": false,
+          "explanation": "Also plausible: missing strategy interfaces can cause conditional code. However the snippet shows duplicated subclass pairs rather than client-side conditionals. Extracting a strategy might be part of the fix, but the root smell is mirrored hierarchies rather than a simple missing strategy abstraction."
+        },
+        {
+          "id": "d",
+          "text": "This example concentrates multiple responsibilities in service classes instead of splitting concerns into smaller collaborating components.",
+          "isCorrect": false,
+          "explanation": "This is a real design concern in many systems, but the code here separates validation into separate validator classes rather than crowding responsibilities. The more specific and telling issue is the matched subclass families that must be synchronized, not general responsibility bloat."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which diagnosis best fits this payment code and suggests the next refactoring target?",
+      "codeSnippet": "abstract class PaymentMethod {}\nclass CreditCard extends PaymentMethod {}\nclass PayPal extends PaymentMethod {}\n\nabstract class PaymentProcessor { handle(p: PaymentMethod) {} }\nclass CreditCardProcessor extends PaymentProcessor { handle(p: CreditCard) {} }\nclass PayPalProcessor extends PaymentProcessor { handle(p: PayPal) {} }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code couples client logic to concrete subclasses which increases risk of violating substitutability and Liskov expectations.",
+          "isCorrect": false,
+          "explanation": "A thoughtful concern: tight coupling to concrete subclasses can lead to Liskov substitution issues. In this snippet, though, the more striking pattern is that there are matched families of payment types and processors that change together. While Liskov problems may emerge, they are not the most immediate refactoring target."
+        },
+        {
+          "id": "b",
+          "text": "This code establishes matching subclass families where paired subclasses require synchronized changes and thus duplicate subtype structures.",
+          "isCorrect": true,
+          "explanation": "Correct. The code shows two hierarchies—payment methods and processors—with corresponding concrete subclasses for each payment variant. That mirroring forces coordinated changes and signals duplicated variant expression across types. A better design centralizes the variation, for example by associating a processor strategy with each method or by composing behaviors to avoid parallel subclass families."
+        },
+        {
+          "id": "c",
+          "text": "This code misses a polymorphic interface extraction which would enable strategy substitution and reduce conditional processing in client code.",
+          "isCorrect": false,
+          "explanation": "Extracting polymorphic interfaces can help, but this suggestion is generic. The real problem is mirrored hierarchies where processors and methods are paired. Introducing interfaces may be part of a refactor, but it does not directly address duplicated subclass families on its own."
+        },
+        {
+          "id": "d",
+          "text": "This code relies on inheritance for variation that could be implemented by composition to decrease coupling and increase reuse across types.",
+          "isCorrect": false,
+          "explanation": "This is a valid and related observation: composition often reduces coupling compared to inheritance. However it is phrased as a general alternative rather than pinpointing the mirrored hierarchies. The immediate smell is the matched subclass families needing consolidation; composition is one practical way to do that."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which design is preferable and why, given evolving product variants that must stay consistent across related types?",
+      "codeSnippet": "// Version A\nabstract class Notifier {}\nclass EmailNotifier extends Notifier {}\nclass SmsNotifier extends Notifier {}\n\nabstract class NotifierFormatter {}\nclass EmailFormatter extends NotifierFormatter {}\nclass SmsFormatter extends NotifierFormatter {}\n\n// Version B\ninterface Sender { send(msg: string): void }\nclass EmailSender implements Sender { send(msg: string) {} }\nclass SmsSender implements Sender { send(msg: string) {} }\nclass NotifierV2 { constructor(private sender: Sender) {} notify(msg: string) { this.sender.send(msg) } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A duplicates matched subclass trees which forces coordinated modifications and increases coupling across related type hierarchies.",
+          "isCorrect": false,
+          "explanation": "Version A demonstrates two mirrored hierarchies: Notifier variants and Formatter variants. That duplication means adding a new channel requires edits in multiple hierarchies, increasing risk of inconsistent changes and coupling. It also makes it harder to mix and match behaviors. This brittle symmetry is the core weakness."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes variant behavior via composition and removes duplicated subclass families to reduce synchronized changes.",
+          "isCorrect": true,
+          "explanation": "Version B is preferable. It models channel variation as a composable Sender implementation injected into a single Notifier class, avoiding paired subclass trees. This reduces the need for synchronized edits and makes adding or combining behaviors easier. Composition over parallel hierarchies keeps responsibilities localized and improves maintainability. See Fowler on collapsing mirrored hierarchies and consider strategy objects or delegates to express orthogonal variation."
+        }
+      ]
+    }
+  ]
+}

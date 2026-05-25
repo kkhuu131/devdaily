@@ -1,0 +1,106 @@
+{
+  "id": 44,
+  "conceptName": "Replace Conditional with Polymorphism",
+  "category": "refactoring",
+  "definition": "Move behavior selected by a conditional on an object's type or discriminator into type-specific subclasses so each type implements its own behavior.",
+  "ruleOfThumb": "If a conditional dispatches behavior based on an object's role and grows or changes, prefer moving each branch into the object hierarchy.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Conditional with Polymorphism",
+    "page": "p. 128-131",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the code. What is the primary smell and best first refactoring step?",
+      "codeSnippet": "function calculateCharge(order: any) {\n  switch (order.type) {\n    case 'online':\n      return order.items.length * 10 + 5;\n    case 'instore':\n      return order.items.length * 8;\n    case 'pickup':\n      return order.items.length * 5 - order.discount;\n    default:\n      throw new Error('Unknown order type');\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Extract each branch into its own type-specific class to encapsulate behavior by discriminator and simplify future changes.",
+          "isCorrect": true,
+          "explanation": "This switch dispatches behavior based on a type discriminator. Moving each branch into a class gives each type responsibility for its behavior, making additions and maintenance easier. Fowler recommends this when branches represent alternative behaviors owned by types. It avoids repeated switches and localizes behavior where changes are likely."
+        },
+        {
+          "id": "b",
+          "text": "Keep the switch because the number of cases is small and changes to types are unlikely in production.",
+          "isCorrect": false,
+          "explanation": "A small case count and stability are pragmatic reasons to avoid refactoring, but this ignores future growth and scattering of similar switches. If the logic for each type begins to grow or appears elsewhere, the cost of not refactoring will increase. Consider balance of YAGNI versus likely maintenance costs."
+        },
+        {
+          "id": "c",
+          "text": "Replace the switch with a map from type to function to centralize handlers without introducing new classes.",
+          "isCorrect": false,
+          "explanation": "A map-of-functions localizes handlers and can be a lightweight alternative to classes for simple cases. However this still centralizes different type behaviors in one place and can be harder to extend or to associate stateful behavior with types. It trades inheritance for a procedural registry."
+        },
+        {
+          "id": "d",
+          "text": "Extract each branch into private helper functions inside the module to reduce switch complexity without new inheritance.",
+          "isCorrect": false,
+          "explanation": "Private helpers make the switch more readable but keep the decision logic and coupling in one module. If behavior needs to vary by type with its own state or requires different collaborators, helpers will not provide a clean extension mechanism compared with pushing behavior into type-specific objects."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "The code checks a flag on a customer object before performing a calculation. Which decision is most defensible now?",
+      "codeSnippet": "class Invoice {\n  calculateTotal(customer: any, items: any[]) {\n    if (customer.isEnterprise) {\n      return items.reduce((s, i) => s + i.price, 0) * 0.95;\n    } else {\n      return items.reduce((s, i) => s + i.price, 0);\n    }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Move enterprise-specific logic into an enterprise customer subtype when the behavior is owned by customer types and will vary over time.",
+          "isCorrect": true,
+          "explanation": "If the discount logic is a responsibility of the customer role and is likely to change or be extended, the behavior belongs on a customer subtype. This keeps domain knowledge with the customer and avoids proliferating conditionals across the codebase. Fowler and domain-driven design both support placing behavior with the object it concerns."
+        },
+        {
+          "id": "b",
+          "text": "Keep the conditional here because it is only used in this one method and introducing classes would be premature complexity.",
+          "isCorrect": false,
+          "explanation": "Keeping the conditional is reasonable when the distinction is trivial and localized. However, this decision risks ad hoc duplication if similar checks appear elsewhere. Evaluate the cost of creating subclasses versus the expected frequency of similar branching in other modules."
+        },
+        {
+          "id": "c",
+          "text": "Refactor the branches into separate pure functions and keep the customer object unchanged to avoid changing the type hierarchy.",
+          "isCorrect": false,
+          "explanation": "Extracting pure functions isolates the calculation and can simplify testing, but it still centralizes different behaviors outside the domain objects. This approach is valid when you cannot change the domain model, but it loses polymorphic dispatch benefits when behavior should be owned by customer types."
+        },
+        {
+          "id": "d",
+          "text": "Use a configuration-driven rule engine to select calculation rules rather than adding subclasses for this single binary distinction.",
+          "isCorrect": false,
+          "explanation": "A rule engine adds flexibility and avoids type hierarchy changes, but it introduces operational complexity and indirection. For a single binary distinction that is well modeled by types, this is likely overengineering. Choose rule engines when business rules change frequently and non-developers must tune them."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two designs below. Which version is the better structural choice for maintainability and future extension?",
+      "codeSnippet": "// Version A\nexport function charge(order: any) {\n  switch (order.type) {\n    case 'online': return order.items.length * 10 + 5;\n    case 'instore': return order.items.length * 8;\n    case 'pickup': return order.items.length * 5 - order.discount;\n    default: throw new Error('Unknown order type');\n  }\n}\n\n// Version B\nabstract class OrderBase { constructor(public items: any[], public discount: number) {} abstract charge(): number; }\nclass OnlineOrder extends OrderBase { charge() { return this.items.length * 10 + 5; } }\nclass InStoreOrder extends OrderBase { charge() { return this.items.length * 8; } }\nclass PickupOrder extends OrderBase { charge() { return this.items.length * 5 - this.discount; } }\nfunction createOrder(type: string, items: any[], discount: number) {\n  if (type === 'online') return new OnlineOrder(items, discount);\n  if (type === 'instore') return new InStoreOrder(items, discount);\n  return new PickupOrder(items, discount);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes behavior in a switch inside a service class and scales poorly as types increase.",
+          "isCorrect": false,
+          "explanation": "Version A keeps all behavior in a procedural switch. This can look simpler initially but causes duplication and scattered switches when new types are added. It also violates the open closed principle because adding a type requires changing existing functions. Use this only for tiny, truly stable sets of types."
+        },
+        {
+          "id": "b",
+          "text": "Version B distributes behavior into subclasses where each subclass encapsulates a single type's behavior cleanly.",
+          "isCorrect": true,
+          "explanation": "Version B pushes behavior into a class per type, encapsulating variations and enabling polymorphic dispatch. This structure makes it straightforward to add new types by adding classes rather than modifying existing conditionals. It improves testability and aligns responsibility with domain objects. Fowler describes this exact transformation as appropriate when branches correspond to different object behaviors."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 49,
+  "conceptName": "Flyweight Pattern",
+  "category": "design-pattern",
+  "definition": "Share fine-grained immutable intrinsic state across many objects to reduce memory footprint, while keeping mutable extrinsic state external.",
+  "ruleOfThumb": "When many similar small objects are created, extract and share immutable intrinsic data via a keyed factory; pass extrinsic data per use.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Flyweight",
+    "page": "295-303",
+    "externalUrl": "https://refactoring.guru/design-patterns/flyweight"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this TypeScript snippet used by a text renderer. What design symptom does it illustrate?",
+      "codeSnippet": "class Glyph {\n  constructor(public char: string, public font: string) {}\n  draw(ctx: CanvasRenderingContext2D, x: number, y: number) {\n    ctx.font = this.font;\n    ctx.fillText(this.char, x, y);\n  }\n}\n\nconst cache: Map<string, Glyph> = new Map();\n\nfunction getGlyph(char: string, font: string) {\n  const key = char + '|' + font;\n  if (!cache.has(key)) cache.set(key, new Glyph(char, font));\n  return cache.get(key)!;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Factory caches and reuses many small immutable objects in a centralized shared registry implementation module.",
+          "isCorrect": true,
+          "explanation": "This snippet shows a factory keyed by character and font that returns cached Glyph objects. The factory centralizes intrinsic data (char and font) so identical objects are reused rather than recreated. That is the canonical situation where sharing intrinsic state reduces memory and allocation overhead."
+        },
+        {
+          "id": "b",
+          "text": "The code allocates many short lived objects causing potential garbage collection pressure across frequent rendering paths in loops.",
+          "isCorrect": false,
+          "explanation": "Allocating many small objects can indeed increase GC activity and allocation overhead, but this snippet explicitly caches objects rather than recreating them each time. The GC concern is plausible but not the core design symptom shown here."
+        },
+        {
+          "id": "c",
+          "text": "A global registry approach risks hidden coupling and makes unit testing and reasoning about object lifecycle considerably harder in practice.",
+          "isCorrect": false,
+          "explanation": "A global cache can introduce coupling and testability issues, which is a valid concern. However, the snippet focuses on deliberate instance sharing for identical intrinsic state. The design tradeoff is between memory savings and potential coupling, not only a global state bug."
+        },
+        {
+          "id": "d",
+          "text": "Using many shared instances may lead to accidental mutation bugs if intrinsic state is not strictly immutable and enforced by API boundaries.",
+          "isCorrect": false,
+          "explanation": "Mutating shared instances is a real hazard and would break assumptions about sharing. The snippet implies immutable intrinsic data, so mutation risk is a plausible distractor but not the primary symptom being illustrated by the caching factory approach."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given a rendering hot path that creates many identical small objects per frame, which single change most directly reduces memory usage without adding global mutable state?",
+      "codeSnippet": "class Glyph { constructor(public char: string, public font: string) {} }\nclass TextLayout {\n  render(text: string, font: string) {\n    const result: Glyph[] = [];\n    for (const c of text) {\n      const g = new Glyph(c, font);\n      result.push(g); // many allocations per render\n    }\n    return result;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce a central immutable glyph factory that returns shared intrinsic objects for identical character and font combinations.",
+          "isCorrect": true,
+          "explanation": "Creating a keyed factory that returns shared immutable glyph objects removes redundant allocations while keeping per-use layout external. This reduces memory and allocation work without introducing global mutable state, provided the intrinsic objects remain immutable."
+        },
+        {
+          "id": "b",
+          "text": "Replace classes with plain object literals everywhere to reduce memory overhead and simplify serialization and testing across the codebase.",
+          "isCorrect": false,
+          "explanation": "Switching to plain object literals may change memory layout and serialization characteristics, but it does not eliminate duplicate instances for identical intrinsic data. It is unlikely to yield the same memory savings as targeted instance sharing and may reduce clarity of intent."
+        },
+        {
+          "id": "c",
+          "text": "Pool and reuse the outer rendering container instances to avoid allocation spikes during tight rendering loops in heavy workloads.",
+          "isCorrect": false,
+          "explanation": "Object pooling can reduce allocations for expensive objects, but pooling containers or outer objects does not address duplicated intrinsic data at the glyph level. Pooling also introduces lifecycle complexity and may not be as memory efficient as sharing immutable intrinsic objects."
+        },
+        {
+          "id": "d",
+          "text": "Inline numeric encoding of glyphs into a compact buffer to prevent per object allocation in hot rendering paths inside the engine core.",
+          "isCorrect": false,
+          "explanation": "Packing glyphs into a compact buffer can reduce allocations, but it changes data representation and complicates higher level APIs. It is a lower level optimization that sacrifices readability and may not be necessary when simple instance sharing of immutable intrinsic objects suffices."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better balances memory saving and clear separation of mutable layout from shared intrinsic glyph data in a text renderer?",
+      "codeSnippet": "// Version A\nclass GlyphA { constructor(public char:string, public font:string) {}\n  draw(ctx:any,x:number,y:number){ ctx.fillText(this.char,x,y) }\n}\nconst factoryA = new Map<string,GlyphA>();\nfunction getGlyphA(char:string,font:string){ const k=char+'|'+font; if(!factoryA.has(k)) factoryA.set(k,new GlyphA(char,font)); return factoryA.get(k)!; }\n\n// Version B\nclass GlyphB { constructor(public char:string, public font:string, public x=0, public y=0) {}\n  draw(ctx:any){ ctx.fillText(this.char,this.x,this.y) }\n}\nconst poolB = new Map<string,GlyphB>();\nfunction getGlyphB(char:string,font:string){ const k=char+'|'+font; if(!poolB.has(k)) poolB.set(k,new GlyphB(char,font)); return poolB.get(k)!; }\nfunction renderB(text:string,font:string){ for(let i=0;i<text.length;i++){ const g=getGlyphB(text[i],font); g.x=i*10; g.y=0; g.draw(null); } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps shared immutable glyphs separate from per-instance layout across renderers.",
+          "isCorrect": true,
+          "explanation": "Version A stores intrinsic data (char and font) in small immutable glyph objects returned by a factory, while per-render positions are passed to draw. This cleanly separates mutable extrinsic state from shared intrinsic state, enabling safe reuse and predictable behavior. The GoF flyweight idea recommends precisely this separation to save memory while avoiding shared mutable state."
+        },
+        {
+          "id": "b",
+          "text": "Version B embeds per-instance position into cached objects causing accidental mutation and shared state coupling across draws.",
+          "isCorrect": false,
+          "explanation": "Version B stores x and y on the cached objects and mutates them before drawing. That creates shared mutable state and subtle bugs when the same cached instance is used by different renderers or frames. This design sacrifices safety and clarity for apparent reuse, and it undermines the benefits of sharing intrinsic data."
+        }
+      ]
+    }
+  ]
+}

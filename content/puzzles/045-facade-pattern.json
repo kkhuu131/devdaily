@@ -1,0 +1,106 @@
+{
+  "id": 45,
+  "conceptName": "Facade Pattern",
+  "category": "design-pattern",
+  "definition": "Provide a simplified, higher level interface that delegates to a set of subsystem interfaces, making the subsystem easier to use for clients.",
+  "ruleOfThumb": "When many clients must interact with several complex subsystems, introduce a single coordinating interface that simplifies common tasks.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Structural Patterns: Facade",
+    "page": "p. 185",
+    "externalUrl": "https://refactoring.guru/design-patterns/facade"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the ApiGateway class below, which description best matches its role in this module?",
+      "codeSnippet": "class SubsystemA {\n  doA() { /* complex work */ }\n}\nclass SubsystemB {\n  doB() { /* complex work */ }\n}\nclass ApiGateway {\n  placeOrder() { new SubsystemA().doA(); new SubsystemB().doB(); }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It provides a simplified high level interface to multiple complex subsystem classes used throughout this module.",
+          "isCorrect": true,
+          "explanation": "This class hides the direct interactions with SubsystemA and SubsystemB behind a single API for callers. In design-pattern terms the gateway consolidates common subsystem operations into one entry point so callers are decoupled from subsystem interfaces and sequencing."
+        },
+        {
+          "id": "b",
+          "text": "It enforces transactional consistency by coordinating distributed operations across subsystems and managing rollback on failure.",
+          "isCorrect": false,
+          "explanation": "This is a plausible misread because coordination looks transactional, but the snippet shows simple delegation without rollback, compensation, or transaction boundaries. Introducing a transaction coordinator is a different responsibility than providing a simplified interface."
+        },
+        {
+          "id": "c",
+          "text": "It acts as a dependency injection container that resolves and injects subsystem instances into clients at runtime automatically.",
+          "isCorrect": false,
+          "explanation": "This choice confuses object creation and DI responsibilities with a wrapper API. The shown class invokes subsystems directly for an operation rather than performing resolution, lifecycle management, or configurable injections."
+        },
+        {
+          "id": "d",
+          "text": "It is a factory responsible for creating and configuring subsystem objects based on client requested types and options.",
+          "isCorrect": false,
+          "explanation": "A factory focuses on object creation and configuration. The snippet demonstrates behavioral orchestration of multiple subsystems for a client call, not returning configured subsystem instances for later use."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Why introduce a single gateway class in this application service instead of leaving calls spread across callers?",
+      "codeSnippet": "class Inventory { reserve() {} }\nclass Payment { charge() {} }\nclass Shipping { schedule() {} }\nclass OrderGateway {\n  placeOrder() { new Inventory().reserve(); new Payment().charge(); new Shipping().schedule(); }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It provides a simpler unified interface that hides multiple subsystem details from client code.",
+          "isCorrect": true,
+          "explanation": "A single gateway reduces the surface area exposed to clients and hides subsystem APIs and sequencing. That simplification is the primary motivation for a high level wrapper here."
+        },
+        {
+          "id": "b",
+          "text": "It centralizes transaction and rollback concerns so distributed subsystem operations can be coordinated from a single place.",
+          "isCorrect": false,
+          "explanation": "Centralized transaction management is a valid concern when operations must be atomic, but the gateway pattern focuses on simplifying the API surface. Transaction coordination may require additional infrastructure beyond a simple gateway."
+        },
+        {
+          "id": "c",
+          "text": "It consolidates object creation so tests can substitute mocks more easily without changing multiple construction sites.",
+          "isCorrect": false,
+          "explanation": "Consolidating construction can improve testability, yet that is a side benefit. The shown gateway primarily unifies behavior rather than acting as a creation factory or test seam provider."
+        },
+        {
+          "id": "d",
+          "text": "It adapts differing external protocols into one internal interface so the system tolerates multiple client protocols.",
+          "isCorrect": false,
+          "explanation": "Adapting external protocols is the responsibility of an adapter or translator. While a gateway can perform adaptation, the core intent illustrated is API simplification across subsystems rather than protocol translation."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better improves client code maintainability and why? Review both implementations and choose one.",
+      "codeSnippet": "// Version A\nclass OrderControllerV1 {\n  placeOrder() {\n    inventory.reserve();\n    payment.charge();\n    shipping.schedule();\n  }\n}\n\n// Version B\nclass OrderGatewayV2 {\n  placeOrder() {\n    this.inventory.reserve();\n    this.payment.charge();\n    this.shipping.schedule();\n  }\n}\nclass OrderControllerV2 {\n  placeOrder() { new OrderGatewayV2().placeOrder(); }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps orchestration in the controller and avoids introducing an extra wrapper class that hides details.",
+          "isCorrect": false,
+          "explanation": "Keeping orchestration in the controller may seem simpler initially, but it spreads sequencing logic across callers, increasing coupling to subsystem APIs and making future changes harder. Adding a single gateway centralizes orchestration and reduces duplication across controllers."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes subsystem orchestration behind one higher level interface across the module boundary.",
+          "isCorrect": true,
+          "explanation": "Version B extracts sequencing and subsystem interactions into one reusable entry point, which reduces coupling, keeps controllers thin, and localizes change. This aligns with the intent of a facade style abstraction to simplify client-side usage and maintenance. See Gamma et al. and refactoring literature for guidance on reducing surface area and centralizing orchestration."
+        }
+      ]
+    }
+  ]
+}

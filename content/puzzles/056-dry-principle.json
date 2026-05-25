@@ -1,0 +1,106 @@
+{
+  "id": 56,
+  "conceptName": "DRY Principle",
+  "category": "principle",
+  "definition": "Avoid duplicating knowledge across a codebase so a single change affects a single place, reducing bugs and maintenance cost.",
+  "ruleOfThumb": "If you find the same logic in multiple places, extract the common part only after confirming the shared intent.",
+  "citation": {
+    "author": "Andrew Hunt and David Thomas",
+    "bookTitle": "The Pragmatic Programmer",
+    "chapter": "Orthogonality and Duplication",
+    "page": "Chapter 2",
+    "externalUrl": "https://pragprog.com/book/tpp/the-pragmatic-programmer"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary maintainability problem in the following snippet?",
+      "codeSnippet": "export function calculateInvoiceTotal(items) {\n  const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);\n  return subtotal + subtotal * 0.08;\n}\n\nexport function calculateOrderTotal(orderLines) {\n  const subtotal = orderLines.reduce((s, l) => s + l.unitPrice * l.count, 0);\n  return subtotal + subtotal * 0.08;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code repeats the same business calculation across several functions in the public API layer.",
+          "isCorrect": true,
+          "explanation": "The two functions perform the same computation with different parameter names. That duplication means a bug or rate change would require edits in multiple places. Extracting a shared helper or a centralized billing service reduces repetition and centralizes the update surface. This keeps the business rule in one testable location and lowers the chance of inconsistent behavior."
+        },
+        {
+          "id": "b",
+          "text": "This code groups unrelated concerns and violates single responsibility by mixing calculation and side effect handling in these functions.",
+          "isCorrect": false,
+          "explanation": "While single responsibility is important, the snippet shows pure calculations without side effects like logging or persistence. The concern is plausible because duplicated code can hide mixed responsibilities, but here the immediate issue is duplication of the calculation, not interleaved side effects."
+        },
+        {
+          "id": "c",
+          "text": "This code exposes a performance bottleneck due to repeated synchronous calculations that will slow request throughput under load.",
+          "isCorrect": false,
+          "explanation": "Performance is a reasonable concern when seeing repeated work, but these reductions are linear and inexpensive for normal item counts. Prematurely optimizing for throughput here would distract from the real maintainability problem, which is duplicated business logic and potential divergence over time."
+        },
+        {
+          "id": "d",
+          "text": "This code creates tight coupling by requiring callers to know calculation internals instead of using a clear service interface.",
+          "isCorrect": false,
+          "explanation": "Tight coupling to internals is a valid design smell, but the snippet shows independent functions that duplicate logic rather than exposing internals to callers. Consolidating into a shared interface would address coupling over time, but the primary immediate issue is duplicated logic across functions."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given two similar functions in different modules that differ by a small conditional, what is the primary concern?",
+      "codeSnippet": "export function getDiscountForUser(user) {\n  const base = user.loyaltyLevel > 3 ? 0.1 : 0.05;\n  return base + (user.vip ? 0.02 : 0);\n}\n\nexport function getDiscountForOrder(order) {\n  const base = order.customer.loyaltyLevel > 3 ? 0.1 : 0.05;\n  return base + (order.isVip ? 0.02 : 0);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code contains near duplicates that share most logic but differ in small condition branches across modules.",
+          "isCorrect": true,
+          "explanation": "These functions are almost identical except for how they access data and a small flag name difference. That pattern signals near-duplication where extracting a shared routine and parameterizing the small differences can reduce maintenance cost. However, you should verify that the differences are semantically aligned before refactoring—sometimes domain rules diverge and duplication is intentional."
+        },
+        {
+          "id": "b",
+          "text": "This code reflects intentional domain divergence and should remain duplicated to allow independent evolution of rules in each module.",
+          "isCorrect": false,
+          "explanation": "It is possible the differences represent future divergent requirements, so keeping them separate can preserve evolution. This answer is plausible but assumes divergence without evidence. Prefer documenting intent and writing tests first; if behavior remains aligned, consolidation will pay off."
+        },
+        {
+          "id": "c",
+          "text": "This code suffers from premature abstraction risk by extracting common parts before domain intent is fully expressed across uses.",
+          "isCorrect": false,
+          "explanation": "Premature abstraction is a legitimate risk when consolidating code that only appears similar superficially. The snippet does show similarity, but the main actionable concern is the visible near-duplication. You can mitigate premature abstraction by writing tests and extracting a small, well-named function that clearly expresses intent."
+        },
+        {
+          "id": "d",
+          "text": "This code creates a maintenance hazard by copying logic and duplicating bug surface area across modules without centralized tests.",
+          "isCorrect": false,
+          "explanation": "Duplicated logic does increase the chance of inconsistent fixes and bugs, especially without tests. This answer points to a real problem, but it restates a symptom rather than pinpointing the nuanced issue here: the code is a near-duplicate with tiny differences that invite a parameterized extraction rather than immediate abandonment of DRY concerns."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better balances avoiding repeated logic while preserving module independence and minimal coupling?",
+      "codeSnippet": "/* Version A */\nexport function computeFee(amount: number, opts: { rounding: 'up' | 'down' }) {\n  const base = Math.floor(amount * 100) / 100;\n  return opts.rounding === 'up' ? Math.ceil(base) : Math.floor(base);\n}\n\n/* Version B */\nexport class BillingHelper {\n  static roundUp(inCents: number) { return Math.ceil(inCents / 100); }\n  static roundDown(inCents: number) { return Math.floor(inCents / 100); }\n}\n\n// ServiceA uses BillingHelper.roundUp and accesses cents conversion directly\n// ServiceB uses BillingHelper.roundDown and duplicates cents conversion logic",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes the shared computation behind a minimal interface across consumer modules.",
+          "isCorrect": true,
+          "explanation": "Version A offers a focused helper function with a small, explicit parameter surface that expresses intent and hides internal units. That keeps a single place for the algorithm while preserving consumer independence because callers pass only what they need. It minimizes coupling by avoiding exposure of internal representations and prevents consumers from reimplementing or misusing conversion details."
+        },
+        {
+          "id": "b",
+          "text": "Version B removes duplication by exposing internal structures and tightly couples consumers to implementation details.",
+          "isCorrect": false,
+          "explanation": "Version B centralizes code but leaks implementation details like cents conversion and exposes multiple helpers that encourage consumers to manipulate internal representations. That form of DRY trades duplication for tight coupling, making change harder because many consumers may rely on the leaked behavior. In practice this leads to fragile code when internal units or rounding rules change, so it fails the long term modularity test."
+        }
+      ]
+    }
+  ]
+}
