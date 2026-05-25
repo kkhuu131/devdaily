@@ -1,0 +1,106 @@
+{
+  "id": 68,
+  "conceptName": "Defensive Programming",
+  "category": "principle",
+  "definition": "A programming approach that anticipates and handles unexpected inputs and states to reduce runtime failures and unclear errors.",
+  "ruleOfThumb": "Validate boundaries and contracts early, fail fast with clear errors, and centralize repetitive checks to avoid scattering logic.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code",
+    "chapter": "Chapter 10: Error Handling",
+    "page": "165-179",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-code/9780136083238/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary issue in this snippet?",
+      "codeSnippet": "function calculateTotal(order: any): number {\n  let total = 0;\n  for (const item of order.items) {\n    total += item.price * item.quantity;\n  }\n  return total;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code assumes the input object and nested properties always exist without validating them first.",
+          "isCorrect": true,
+          "explanation": "The function dereferences order.items and item.price directly. If order or items is null or malformed this will throw a runtime error. A defensive check or a clear contract would avoid surprises. This is a common source of bugs when callers can provide unexpected shapes."
+        },
+        {
+          "id": "b",
+          "text": "The code performs excessive object copying and duplicates business logic around iteration across multiple modules.",
+          "isCorrect": false,
+          "explanation": "There is no copying or duplication in the snippet; it simply iterates and aggregates. The concern is plausible in larger systems, but here the immediate risk is null or missing properties rather than duplicated logic."
+        },
+        {
+          "id": "c",
+          "text": "The code should wrap the loop in a try catch block and return a safe default when errors occur.",
+          "isCorrect": false,
+          "explanation": "Using try/catch to swallow errors can hide the real problem and make debugging harder. Prefer validating inputs or failing fast with clear errors instead of masking failures with default values."
+        },
+        {
+          "id": "d",
+          "text": "The code mixes calculation and IO responsibilities inside the same loop which hinders unit testing and reuse.",
+          "isCorrect": false,
+          "explanation": "The snippet performs only computation on an in-memory structure and does not show IO. While separating concerns is good advice, the pressing issue here is lack of input validation rather than responsibility mixing."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which concern best describes this implementation trade-off?",
+      "codeSnippet": "class PaymentService {\n  charge(card: any, amount: number) {\n    if (!card || !card.number) throw new Error('Invalid card');\n    if (!Number.isFinite(amount) || amount <= 0) throw new Error('Invalid amount');\n    processPayment(card.number, amount);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code performs duplicated runtime checks that should be centralized to keep business logic concise and consistent.",
+          "isCorrect": true,
+          "explanation": "Repeated ad hoc checks spread across services lead to inconsistency and maintenance burden. Centralizing validation or using a single validation layer keeps error handling consistent and makes future changes easier to audit and test."
+        },
+        {
+          "id": "b",
+          "text": "The code uses runtime exceptions for flow control which can mask domain errors and complicate error handling semantics.",
+          "isCorrect": false,
+          "explanation": "Throwing exceptions for invalid inputs is reasonable if inputs truly violate a contract. The bigger issue here is likely duplication and lack of a single validation strategy rather than using exceptions per se."
+        },
+        {
+          "id": "c",
+          "text": "The code validates inputs aggressively at this layer and thus avoids trusting upstream contracts and interface guarantees.",
+          "isCorrect": false,
+          "explanation": "This description is plausible and sometimes intentional, but without context it reads as defensive duplication. The symptom in this snippet is more about where validation happens rather than an explicit decision to distrust upstream code."
+        },
+        {
+          "id": "d",
+          "text": "The code fails to log contextual information about invalid inputs and thus makes diagnosing production issues harder later.",
+          "isCorrect": false,
+          "explanation": "Logging context is valuable, but the snippet's primary maintainability concern is scattered validation logic. Adding logging is orthogonal and will not fix inconsistent validation placements across the codebase."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for long term maintainability in a typed service, and why?",
+      "codeSnippet": "// Version A\nfunction createUserA(data: any) {\n  if (!data) data = {};\n  const name = data.name || 'Unknown';\n  const email = data.email || '';\n  saveUser({ name, email });\n}\n\n// Version B\ntype NewUser = { name: string; email: string };\nfunction validateNewUser(data: any): NewUser {\n  if (!data || typeof data.name !== 'string') throw new Error('Invalid name');\n  if (!data || typeof data.email !== 'string') throw new Error('Invalid email');\n  return { name: data.name, email: data.email };\n}\nfunction createUserB(data: any) {\n  const user = validateNewUser(data);\n  saveUser(user);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A tolerates malformed inputs and performs scattered defaulting at many call sites which hides root errors.",
+          "isCorrect": false,
+          "explanation": "Version A attempts to be forgiving by coercing or defaulting bad input at each caller. That can hide upstream bugs and scatter correction logic across the codebase, making it harder to reason about valid states and to write thorough tests."
+        },
+        {
+          "id": "b",
+          "text": "Version B enforces a clear input contract and centralizes validation into a single testable function.",
+          "isCorrect": true,
+          "explanation": "Centralizing validation gives you a single place to express and test the input contract, making failures explicit and predictable. It also keeps business logic focused on domain behavior rather than defensive housekeeping. This approach aligns with fail fast principles and promotes clearer ownership of invariants."
+        }
+      ]
+    }
+  ]
+}

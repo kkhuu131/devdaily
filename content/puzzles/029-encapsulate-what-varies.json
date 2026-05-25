@@ -1,0 +1,106 @@
+{
+  "id": 29,
+  "conceptName": "Encapsulate What Varies",
+  "category": "principle",
+  "definition": "Recognize parts of a system that change and separate them behind stable interfaces so variations are isolated and easier to extend.",
+  "ruleOfThumb": "When you see repeated conditionals or scattered special cases, introduce interchangeable abstractions for the varying behavior.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Principles",
+    "page": null,
+    "externalUrl": "https://www.oreilly.com/library/view/design-patterns-elements/0201633612/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this pricing function. Which description best identifies the primary design problem you see?",
+      "codeSnippet": "function calculatePrice(order: { type: string; base: number }) {\n  if (order.type === 'standard') return order.base;\n  if (order.type === 'premium') return order.base * 0.9;\n  if (order.type === 'enterprise') return order.base * 0.8;\n  return order.base;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code chooses behavior with a switch on type instead of modeling behaviors as interchangeable strategy objects.",
+          "isCorrect": true,
+          "explanation": "The function centralizes all pricing variants in conditionals tied to a type value. Extracting each variant behind a stable interface lets callers obtain behavior polymorphically, simplifying addition of new pricing policies and reducing coupling between choice and execution."
+        },
+        {
+          "id": "b",
+          "text": "This code duplicates behavior across branches, making future changes require edits in multiple conditional locations.",
+          "isCorrect": false,
+          "explanation": "While duplication is a concern, the primary issue is the conditional dispatch based on type. Duplication could be reduced by refactoring, but the structural problem is the scattering of variant logic in conditionals rather than isolating it."
+        },
+        {
+          "id": "c",
+          "text": "This code mixes responsibilities by combining decision logic and execution, increasing coupling between types and operations.",
+          "isCorrect": false,
+          "explanation": "This is a valid observation and relates to the same root cause, but it is a broader statement about responsibility mixing. The actionable problem is that behavior variation is selected by condition instead of being represented as interchangeable components."
+        },
+        {
+          "id": "d",
+          "text": "This code centralizes variation in conditionals rather than delegating to polymorphic classes for extensible behavior changes.",
+          "isCorrect": false,
+          "explanation": "This option points to the right area of concern, but it restates the situation rather than identifying the concrete refactor. The better step is to move each varying behavior into its own class or strategy and delegate selection appropriately."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the invoice class below, which refactor most directly reduces branching while making it straightforward to add new customer billing types?",
+      "codeSnippet": "class Invoice {\n  total: number;\n  customerType: string;\n  calculateTotal() {\n    if (this.customerType === 'enterprise') return this.total * 0.9;\n    if (this.customerType === 'startup') return this.total * 0.95;\n    return this.total;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce separate customer-specific strategy objects and delegate invoice total calculation to those interchangeable strategy instances.",
+          "isCorrect": true,
+          "explanation": "Creating strategy classes for each customer type isolates the varying billing logic behind a common interface. That lets adding new types involve adding a new strategy implementation and wiring it in, rather than modifying conditionals inside Invoice."
+        },
+        {
+          "id": "b",
+          "text": "Extract functions per customer type and centralize them in a utility module to reduce duplication and improve reuse.",
+          "isCorrect": false,
+          "explanation": "Extracting functions can reduce duplication but still leaves selection logic in the Invoice or a central caller. Without turning those functions into interchangeable objects, you still modify selection code when adding types, risking coupling."
+        },
+        {
+          "id": "c",
+          "text": "Introduce feature toggles for billing formulas so you can switch formulas at runtime without changing code deployment.",
+          "isCorrect": false,
+          "explanation": "Feature toggles address rollout and runtime switching, not the structural problem of branching on type. Toggles add operational complexity and do not provide a clean abstraction for new billing behaviors."
+        },
+        {
+          "id": "d",
+          "text": "Create a configuration file mapping customer types to factors and read mapping at runtime to compute totals with no code changes.",
+          "isCorrect": false,
+          "explanation": "Configuration can parameterize simple differences but fails when behaviors require distinct algorithms or dependencies. Mapping factors is limited and still requires changes if logic becomes more than a numeric multiplier."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two versions of order pricing are shown. Which version is the better structural choice for long term extensibility and why?",
+      "codeSnippet": "// Version A: separate strategy classes\ninterface PricingStrategy { compute(price: number): number }\nclass EnterprisePricing implements PricingStrategy { compute(price: number) { return price * 0.9 } }\nclass Order { constructor(private pricing: PricingStrategy, public price: number) {}\n  total() { return this.pricing.compute(this.price) }\n}\n\n// Version B: single class with conditional\nclass OrderV2 {\n  constructor(public price: number, public customerType: string) {}\n  total() {\n    if (this.customerType === 'enterprise') return this.price * 0.9;\n    if (this.customerType === 'startup') return this.price * 0.95;\n    return this.price;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A models each variant with its own injectable strategy class and keeps order logic unchanged for extensibility.",
+          "isCorrect": true,
+          "explanation": "Version A isolates varying algorithms behind a PricingStrategy interface and injects the desired variant. That reduces the need to modify Order when adding variants, supports testing of strategies independently, and enables composition. This follows the principle of encapsulating variation to keep the stable parts unchanged."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes conditional branches in one class so new behaviors are easy to see and change in a single place.",
+          "isCorrect": false,
+          "explanation": "Keeping all branches in one class makes the variation visible but couples new behaviors to core Order logic. Adding a variant requires editing OrderV2, increasing regression risk and making it harder to inject or test variants independently. Over time the conditional will grow and become harder to manage compared to strategy classes."
+        }
+      ]
+    }
+  ]
+}

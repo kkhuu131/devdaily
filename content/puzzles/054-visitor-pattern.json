@@ -1,0 +1,106 @@
+{
+  "id": 54,
+  "conceptName": "Visitor Pattern",
+  "category": "design-pattern",
+  "definition": "A way to separate algorithms from the objects on which they operate by letting external operation objects traverse and act on elements of an object structure.",
+  "ruleOfThumb": "Use when you have a stable object structure and many distinct operations that need to be defined over that structure without changing element classes.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Visitor",
+    "page": "331-337",
+    "externalUrl": "https://www.oreilly.com/library/view/design-patterns-elements/0201633612/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the code that lets operations be defined separately from the AST node classes. Which description best fits this structure?",
+      "codeSnippet": "interface Expr { accept(visitor: ExprVisitor): number }\n\ninterface ExprVisitor {\n  visitLiteral(l: Literal): number\n  visitAdd(a: Add): number\n}\n\nclass Literal implements Expr {\n  constructor(public value: number) {}\n  accept(v: ExprVisitor) { return v.visitLiteral(this) }\n}\n\nclass Add implements Expr {\n  constructor(public left: Expr, public right: Expr) {}\n  accept(v: ExprVisitor) { return v.visitAdd(this) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code separates operations from the object structure by allowing external operation objects to visit node types.",
+          "isCorrect": true,
+          "explanation": "This implementation separates algorithms from element classes by adding an accept method and visitor interface. The element classes delegate operation behavior to visitor objects, enabling new operations to be added without modifying element classes. In classical literature this technique is described as the Visitor pattern; it trades ease of adding operations for more rigid element type evolution."
+        },
+        {
+          "id": "b",
+          "text": "This code uses type switches to implement behavior variation inside each node class instead of external operation objects.",
+          "isCorrect": false,
+          "explanation": "This option is plausible because some designs use type switches or instanceof checks to vary behavior. However the snippet shows accept methods and a visitor interface rather than switch statements inside consumers. The real concern with switches would be scattering operation logic across client code instead of centralizing it."
+        },
+        {
+          "id": "c",
+          "text": "This code relies on runtime type checks and casting to choose behavior rather than using polymorphic dispatch from nodes.",
+          "isCorrect": false,
+          "explanation": "Runtime type checks and casts are a common alternative to double-dispatch approaches. The snippet, however, demonstrates explicit double-dispatch via accept and visit methods, which avoids repeated casts in client code. Casting concerns are real but do not match this code layout."
+        },
+        {
+          "id": "d",
+          "text": "This code follows standard polymorphism where each node implements its own operation logic without external operation objects.",
+          "isCorrect": false,
+          "explanation": "Standard polymorphism would place operation logic inside each concrete node. The provided code instead delegates operations to separate visitor objects through accept methods, so the behavior is not implemented directly in nodes. This choice highlights a tradeoff between putting behavior in nodes and centralizing operations."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given an AST and a set of separate operation implementations, what maintenance risk is most likely when adding a new concrete node type?",
+      "codeSnippet": "interface Operation {\n  visitLiteral(l: Literal): number\n  visitAdd(a: Add): number\n}\n\nclass Literal implements Expr { accept(op: Operation) { return op.visitLiteral(this) } }\nclass Add implements Expr { accept(op: Operation) { return op.visitAdd(this) } }\n\n// Many operation implementations exist across the codebase",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Adding a new node type will require changing parsing code and token definitions across unrelated modules in the codebase.",
+          "isCorrect": false,
+          "explanation": "Parsing and token changes can be required when a new syntactic form is added, but this option blames cross-cutting module breaks. The primary maintenance pain in this structure is usually tied to the visitor interface itself, not parsing concerns. Parsers are a different layer of the system."
+        },
+        {
+          "id": "b",
+          "text": "Adding a new node type will require updating every operation implementation to handle the new node visit method across the codebase.",
+          "isCorrect": true,
+          "explanation": "The visitor-like design centralizes operation implementations but couples them to the set of concrete element types. When you add a new element type you must update every existing visitor/operation to include a handler for that new type. This is a well known tradeoff: easy to add operations, expensive to add element types."
+        },
+        {
+          "id": "c",
+          "text": "Adding a new node type will require large visitor base classes and lead to heavy conditional logic inside operation implementations.",
+          "isCorrect": false,
+          "explanation": "Heavy conditional logic can appear in some designs, but in the shown approach operation implementations implement explicit visit methods rather than large conditionals. The real maintenance cost is the need to change all visitors, not necessarily that visitors become conditional-heavy. This option describes a plausible but secondary concern."
+        },
+        {
+          "id": "d",
+          "text": "Adding a new node type will cause serialization formats to break and require migration scripts for persisted AST payloads.",
+          "isCorrect": false,
+          "explanation": "Persisted AST formats can certainly be impacted by new node types, but this concern is orthogonal to the shown design choice. The immediate, pattern-related maintenance burden is updating operation implementations rather than data migration. Serialization concerns are real but not the primary tradeoff here."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You must choose between two designs. Version A embeds behavior inside node classes. Version B centralizes behavior into separate operation objects. Which design is preferable when operations change frequently but the node structure is stable?",
+      "codeSnippet": "/* Version A */\nclass Literal { value: number; evaluate() { return this.value } }\nclass Add { left: Expr; right: Expr; evaluate() { return this.left.evaluate() + this.right.evaluate() } }\n\n/* Version B */\ninterface Operation { visitLiteral(l: Literal): number; visitAdd(a: Add): number }\nclass Literal { accept(op: Operation) { return op.visitLiteral(this) } }\nclass Add { accept(op: Operation) { return op.visitAdd(this) } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A couples behavior into node classes and forces touching many node types to add new operations.",
+          "isCorrect": false,
+          "explanation": "Version A places behavior directly inside element classes, so adding a new operation requires changing each element to add the new method, or adding external helpers and causing scattering. This design is convenient when operations are stable and node types change often, but it is fragile when operations evolve frequently."
+        },
+        {
+          "id": "b",
+          "text": "Version B separates operations into dedicated operation objects and minimizes modifications when adding or changing operations.",
+          "isCorrect": true,
+          "explanation": "Version B centralizes operations in separate visitor-like objects so adding or modifying operations typically means creating or changing operation implementations without touching the element classes. This is the preferred design when the object structure is stable but operations change often. The tradeoff is that adding new element types becomes more expensive because every operation needs an update. See Gamma et al., \"Visitor\" chapter for the tradeoffs and applicability concerns."
+        }
+      ]
+    }
+  ]
+}

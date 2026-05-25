@@ -1,0 +1,106 @@
+{
+  "id": 25,
+  "conceptName": "Decorator Pattern",
+  "category": "design-pattern",
+  "definition": "A structural design where behavior is added to individual objects by wrapping them with lightweight wrapper objects that implement the same interface.",
+  "ruleOfThumb": "Prefer small wrapper objects to add orthogonal responsibilities at runtime instead of proliferating subclasses for every combination.",
+  "citation": {
+    "author": "Gamma, Helm, Johnson, Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Decorator",
+    "page": "175",
+    "externalUrl": "https://en.wikipedia.org/wiki/Decorator_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches the following TypeScript snippet?",
+      "codeSnippet": "interface Notifier { send(message: string): void }\nclass EmailNotifier implements Notifier { send(m: string){ console.log('email', m) } }\nclass SmsDecorator implements Notifier {\n  constructor(private inner: Notifier){}\n  send(m: string){ console.log('sms'); this.inner.send(m) }\n}\nconst n = new SmsDecorator(new EmailNotifier())\nn.send('hi')",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A small wrapper object adds responsibilities to an existing component at runtime while preserving the component interface.",
+          "isCorrect": true,
+          "explanation": "This snippet wraps an EmailNotifier with an SmsDecorator that implements the same Notifier interface and forwards calls. The wrapper augments behavior without changing the original class. See Gamma et al. on using wrappers to add responsibilities to objects."
+        },
+        {
+          "id": "b",
+          "text": "Subclassing is used to modify behavior by overriding methods at compile time, requiring new subclasses for each variation.",
+          "isCorrect": false,
+          "explanation": "Subclassing creates new types for variations, which is not what the code shows. The snippet composes at runtime by wrapping an existing instance rather than creating a new subclass per behavior."
+        },
+        {
+          "id": "c",
+          "text": "A proxy-like object controls access to the component and may lazily initialize or cache results for callers.",
+          "isCorrect": false,
+          "explanation": "A proxy focuses on access control, lazy initialization, or caching. While proxies also forward calls, the SmsDecorator purpose is to add behavior rather than to control access or lifecycle."
+        },
+        {
+          "id": "d",
+          "text": "A facade object simplifies a broad interface by combining multiple subsystems into a single higher-level interface for clients.",
+          "isCorrect": false,
+          "explanation": "A facade consolidates many operations into a simpler interface. The snippet preserves the same interface and augments behavior, which differs from collapsing multiple subsystems behind one simplified API."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In the code below, what is the primary design benefit achieved by the wrapping approach?",
+      "codeSnippet": "interface Processor { process(amount: number): boolean }\nclass BaseProcessor implements Processor { process(a:number){ return true } }\nclass LoggingDecorator implements Processor {\n  constructor(private inner: Processor){}\n  process(a:number){ console.log('pay', a); return this.inner.process(a) }\n}\nclass RetryDecorator implements Processor {\n  constructor(private inner: Processor){}\n  process(a:number){ /* retry logic */ return this.inner.process(a) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It enables adding orthogonal responsibilities to objects at runtime through composition without changing existing concrete implementations.",
+          "isCorrect": true,
+          "explanation": "The wrappers add logging and retry behavior by composing around a Processor instance. This keeps the base class unchanged and allows different combinations at runtime. Fowler and others advocate composition for orthogonal concerns."
+        },
+        {
+          "id": "b",
+          "text": "It prevents duplication by centralizing behavior in a single class which then requires many conditional branches for features.",
+          "isCorrect": false,
+          "explanation": "Centralizing behavior into one class often leads to conditionals and feature flags, which increases complexity. The snippet avoids that by distributing responsibilities across decorators instead of centralizing them."
+        },
+        {
+          "id": "c",
+          "text": "It primarily optimizes memory usage by sharing state across instances which reduces object allocations under heavy load.",
+          "isCorrect": false,
+          "explanation": "The wrapping approach trades in favor of composability rather than memory optimization. Decorators typically allocate small wrapper objects but improve modularity and extension points."
+        },
+        {
+          "id": "d",
+          "text": "It enforces strict interface segregation by splitting behaviors into separate modules which increases the number of small types.",
+          "isCorrect": false,
+          "explanation": "While decorators do split concerns into small types, the core benefit is dynamic composition of behavior rather than enforcing interface segregation per se. Interface design is related but not the primary advantage shown."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B implementations shown. Which version is preferable for flexible behavior composition and why?",
+      "codeSnippet": "// Version A\ninterface Renderer { render(text: string): string }\nclass PlainRenderer implements Renderer { render(t:string){ return t } }\nclass BoldDecorator implements Renderer {\n  constructor(private inner: Renderer){}\n  render(t:string){ return '<b>'+this.inner.render(t)+'</b>' }\n}\nclass ItalicDecorator implements Renderer {\n  constructor(private inner: Renderer){}\n  render(t:string){ return '<i>'+this.inner.render(t)+'</i>' }\n}\n// Version B\nclass RichRenderer implements Renderer {\n  constructor(private bold = false, private italic = false){}\n  render(t:string){ let s = t; if(this.bold) s = '<b>'+s+'</b>'; if(this.italic) s = '<i>'+s+'</i>'; return s }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A composes small behaviors at runtime via lightweight wrappers for flexible extension.",
+          "isCorrect": true,
+          "explanation": "Version A uses separate wrapper classes so behaviors can be combined in different orders and tested independently. This supports open extension and single responsibility. Fowler highlights composition for flexible behavior over flag-based variants."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes many feature flags into one class which increases coupling and makes extensions riskier over time.",
+          "isCorrect": false,
+          "explanation": "Version B packs multiple behaviors into a single class with conditionals. That reduces the number of classes but entangles responsibilities and makes future feature combinations and testing harder. The monolithic approach leads to tighter coupling and evolution pain."
+        }
+      ]
+    }
+  ]
+}

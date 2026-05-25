@@ -1,0 +1,106 @@
+{
+  "id": 50,
+  "conceptName": "Chain of Responsibility Pattern",
+  "category": "design-pattern",
+  "definition": "A behavioral design that lets request senders pass a request along a sequence of handler objects until one handles it, decoupling sender and receiver.",
+  "ruleOfThumb": "If multiple handlers may handle a request and you want loose coupling and extensibility, let handlers forward to the next handler instead of centralizing dispatch.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns",
+    "page": null,
+    "externalUrl": "https://refactoring.guru/design-patterns/chain-of-responsibility"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the snippet below, which description best matches the intent of the code?",
+      "codeSnippet": "interface Request { type: string; payload: any }\ninterface Handler { setNext(h: Handler): Handler; handle(req: Request): string | null }\nclass BaseHandler implements Handler {\n  protected next?: Handler\n  setNext(h: Handler) { this.next = h; return h }\n  handle(req: Request) { return this.next ? this.next.handle(req) : null }\n}\nclass AHandler extends BaseHandler { handle(req: Request) { if (req.type === 'A') return 'A done'; return super.handle(req) } }\nconst chain = new AHandler()\nchain.setNext(new BaseHandler())\nchain.handle({ type: 'A', payload: {} })",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This design sends a request through a list of handler objects until one of them handles the request.",
+          "isCorrect": true,
+          "explanation": "The snippet composes handlers with a next pointer and delegates handling down the line until a handler returns a result. That is the core behavior: requests traverse handlers and stop when handled, keeping sender decoupled from which concrete handler processes the request."
+        },
+        {
+          "id": "b",
+          "text": "This design broadcasts the request to all registered handlers and then aggregates every handler response into a combined result.",
+          "isCorrect": false,
+          "explanation": "Broadcasting and aggregation would call all handlers and combine results. The snippet instead forwards the request along a chain and returns when a handler handles it, which is different from broadcasting semantics."
+        },
+        {
+          "id": "c",
+          "text": "This design routes requests using a static type map that selects a single handler without runtime forwarding logic present.",
+          "isCorrect": false,
+          "explanation": "A static routing map would directly choose a handler by type. The snippet shows runtime forwarding through next pointers rather than a fixed lookup table, so static routing is not the primary intent here."
+        },
+        {
+          "id": "d",
+          "text": "This design centralizes responsibility in a dispatcher that decides and then immediately executes a concrete handler inline for each request.",
+          "isCorrect": false,
+          "explanation": "A centralized dispatcher pattern has a single place deciding and invoking concrete handlers. The code instead composes handlers so each can forward to the next, avoiding a central decision point; responsibility is distributed among handlers."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Inspect this payment processing code. What is the primary design problem you would address first?",
+      "codeSnippet": "interface Request { user?: string; amount: number }\nclass AuthHandler { handle(req: Request) { if (!req.user) { console.log('unauthenticated'); return true } return false } }\nclass ValidationHandler { handle(req: Request) { if (req.amount <= 0) { console.log('invalid amount'); return true } return false } }\nconst auth = new AuthHandler()\nconst validation = new ValidationHandler()\nfunction process(req: Request) {\n  if (auth.handle(req)) return\n  if (validation.handle(req)) return\n  console.log('process payment')\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The primary issue is that the client orchestrates handler sequence instead of letting handlers forward requests autonomously.",
+          "isCorrect": true,
+          "explanation": "The process function controls the order and stopping logic, coupling the caller to handler ordering. Moving forwarding into handlers decouples the sender and enables easier extension and reuse without editing the client."
+        },
+        {
+          "id": "b",
+          "text": "The primary issue is that handlers share mutable global state causing race conditions and unpredictable behavior under concurrency.",
+          "isCorrect": false,
+          "explanation": "Shared mutable state is a valid concern in many systems, but the snippet shows no shared state. The more immediate maintainability problem is the client orchestrating handler calls rather than handlers chaining themselves."
+        },
+        {
+          "id": "c",
+          "text": "The primary issue is that handlers return raw primitives forcing callers to interpret results and duplicate conditional handling logic.",
+          "isCorrect": false,
+          "explanation": "Returning primitives can be awkward, but the real smell here is duplicated orchestration logic in the caller. Using a forwarding handler interface would encapsulate the control flow and remove duplicate conditionals from clients."
+        },
+        {
+          "id": "d",
+          "text": "The primary issue is that the handler interface exposes too many methods causing implementations to depend on functionality they do not use.",
+          "isCorrect": false,
+          "explanation": "Fat interfaces are problematic, however the shown Handler objects are minimal. The evident design weakness is where the client sequences handlers; slimming interfaces would not remove the orchestration responsibility from the caller."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better structural choice for extensible request handling in a production service?",
+      "codeSnippet": "// Version A: handlers forward to next\ninterface Req { type: string }\nclass HandlerA {\n  next?: HandlerA\n  setNext(n: HandlerA) { this.next = n }\n  handle(r: Req) { if (r.type === 'A') return 'A'; return this.next?.handle(r) }\n}\n// compose\nconst a = new HandlerA(); const b = new HandlerA(); a.setNext(b);\n\n// Version B: central dispatcher decides order\nfunction process(r: Req) {\n  if (a.handle(r)) return\n  if (b.handle(r)) return\n  return null\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A uses handler objects linked by a next pointer so handlers forward requests automatically.",
+          "isCorrect": true,
+          "explanation": "Version A externalizes composition but lets each handler forward to the next, which preserves loose coupling and encapsulates handling logic inside handlers. That makes adding, removing, or reordering handlers a matter of composition rather than editing dispatch code. It supports open closed extension and simplifies testing of individual handlers. See Gamma et al. on behavioral patterns and encapsulating request forwarding for similar rationale."
+        },
+        {
+          "id": "b",
+          "text": "Version B uses a central dispatcher that invokes handlers in sequence and leaves the caller aware of the handling order.",
+          "isCorrect": false,
+          "explanation": "Version B centralizes orchestration, which couples callers to the concrete sequence and forces edits to dispatch code when requirements change. It mixes control flow with business behavior and increases the chance of duplicated sequencing logic across clients. For extensibility and separation of concerns, letting handlers forward is preferable; central dispatch is harder to maintain when many handlers or dynamic rules are introduced."
+        }
+      ]
+    }
+  ]
+}

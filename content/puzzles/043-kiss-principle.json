@@ -1,0 +1,106 @@
+{
+  "id": 43,
+  "conceptName": "KISS Principle",
+  "category": "principle",
+  "definition": "Favor straightforward, minimal solutions that do what is required and no more; avoid unnecessary complexity.",
+  "ruleOfThumb": "If a design change does not make current code easier to understand or maintain, keep it out.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code: A Handbook of Agile Software Craftsmanship",
+    "chapter": "Chapter 3: Functions and Simplicity",
+    "page": "45-52",
+    "externalUrl": "https://www.pearson.com/en-us/subject-catalog/p/clean-code/P200000002809/9780132350884"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation best identifies the simplest problem with this function?",
+      "codeSnippet": "function processOrder(order: Order) {\n  if (!order) return null;\n  if (order.items.length === 0) return null;\n  for (const item of order.items) {\n    if (item.type === 'A') {\n      // validate A\n      // enrich A\n    } else if (item.type === 'B') {\n      // validate B\n      // enrich B\n    }\n  }\n  // persist, notify, audit all in one function\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function combines many responsibilities and deep nesting, making it hard to read and maintain.",
+          "isCorrect": true,
+          "explanation": "The main issue is excessive responsibility and control flow density. The function does validation, enrichment, persistence, notification, and auditing in one place which increases cognitive load and coupling. The proper remediation is to split responsibilities into small well-named functions or services so each part is easier to understand and reason about."
+        },
+        {
+          "id": "b",
+          "text": "This function exposes a potential type safety issue because it uses any for variables without explicit interfaces.",
+          "isCorrect": false,
+          "explanation": "While type safety is important, the snippet shows typed parameters and the dominant smell is mixed responsibilities rather than missing types. Addressing types alone would not simplify the tangled flow or reduce the number of responsibilities."
+        },
+        {
+          "id": "c",
+          "text": "This function may leak resources when early returns do not consistently close opened streams or connections.",
+          "isCorrect": false,
+          "explanation": "Resource management is a valid concern, but the code does not show explicit opening of streams or sockets. The clearer problem is high procedural density. Refactoring into smaller units will also make resource handling explicit and safer."
+        },
+        {
+          "id": "d",
+          "text": "This function could cause performance problems because it performs synchronous IO in a tight loop without batching.",
+          "isCorrect": false,
+          "explanation": "Performance might be affected by implementation details, but the immediate maintainability and clarity problems are more pressing. Once responsibilities are separated, it will be easier to spot and mitigate real performance issues like synchronous IO."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which diagnosis best explains the underlying design mistake in this utility module?",
+      "codeSnippet": "export function calculatePrice(opts: any) {\n  const base = opts.basePrice || 0;\n  const discount = opts.customerTier === 'gold' ? 0.2 : opts.seasonal ? 0.1 : 0;\n  const tax = opts.country === 'US' ? base * 0.08 : base * 0.15;\n  if (opts.coupon) {\n    // dozens of special case coupon rules\n  }\n  return base - discount * base + tax;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code is over-engineered with premature abstractions that add complexity without providing tangible current benefits.",
+          "isCorrect": true,
+          "explanation": "The code accumulates conditional branches and knobs that suggest anticipatory design rather than responding to real use cases. Over-engineering here makes the function harder to understand and maintain. A simpler, focused implementation with clear extension points is preferable until real requirements demand generalization."
+        },
+        {
+          "id": "b",
+          "text": "This code hides a subtle concurrency bug because shared mutable state is accessed without synchronization in async handlers.",
+          "isCorrect": false,
+          "explanation": "Concurrency issues are a real risk in many modules, but this snippet shows a pure calculation function with local state. The more likely problem is unnecessary complexity from ad hoc branching and many special cases, not concurrent access."
+        },
+        {
+          "id": "c",
+          "text": "This code violates single responsibility because the module mixes pricing rules, localization, and coupon policies in one function.",
+          "isCorrect": false,
+          "explanation": "Mixing concerns is a valid critique and somewhat true here. However, the root cause for the snippet's maintainability burden is premature generalization and piling on rules instead of incremental abstraction. SRP violation is a symptom of that over-engineering."
+        },
+        {
+          "id": "d",
+          "text": "This code will be hard to test because many implicit global flags alter behavior and are not injected explicitly.",
+          "isCorrect": false,
+          "explanation": "Implicit globals do complicate testing, but the snippet uses an options object for configuration. The primary problem is the accumulation of special-case logic and branching rather than hidden globals. Simplifying the logic will also make tests straightforward."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better follows a simplicity-first approach for maintainable invoice creation?",
+      "codeSnippet": "// Version A\nfunction createInvoice(data: InvoiceData) {\n  const lines = validateAndMapLines(data.items);\n  const totals = calculateTotals(lines);\n  return new Invoice(lines, totals, data.customerId);\n}\n\n// Version B\nclass InvoiceBuilder {\n  withData(d: InvoiceData) { /* store state */ return this; }\n  build() { /* orchestrates many services and factories */ return {} as Invoice; }\n}\nconst invoice = new InvoiceBuilder().withData(data).build();\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A presents a clear, linear flow with minimal indirection and direct parameter passing.",
+          "isCorrect": true,
+          "explanation": "Version A favors a small, explicit sequence of steps that are easy to read, test, and refactor. Each step has a clear name and single responsibility which reduces cognitive load. This simplicity-first design makes future changes safer and cheaper unless the domain actually demands the complexity of builders and orchestration."
+        },
+        {
+          "id": "b",
+          "text": "Version B spreads responsibilities across many tiny classes and factories causing unnecessary indirection and maintenance burden.",
+          "isCorrect": false,
+          "explanation": "Version B introduces additional indirection and fragmentation before there is a demonstrated need. While builders and factories are useful for complex construction scenarios, applying them prematurely increases the number of moving parts and makes intent harder to follow. The added abstractions would only be justified if there are multiple construction variants or complex lifecycle constraints."
+        }
+      ]
+    }
+  ]
+}

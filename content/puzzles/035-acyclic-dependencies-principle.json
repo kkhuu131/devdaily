@@ -1,0 +1,106 @@
+{
+  "id": 35,
+  "conceptName": "Acyclic Dependencies Principle",
+  "category": "solid",
+  "definition": "A guideline that package and module dependencies must not form cycles; the dependency graph should be a directed acyclic graph to simplify reasoning, testing, and builds.",
+  "ruleOfThumb": "Keep package dependencies directional. If you detect cycles, extract stable abstractions or reorganize modules into explicit layers until the graph is acyclic.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Architecture",
+    "chapter": "The Dependency Rule",
+    "page": null,
+    "externalUrl": "https://www.oreilly.com/library/view/clean-architecture/9780134494272/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at these three small modules. What primary structural issue is shown by these mutual imports?",
+      "codeSnippet": "// packages/a/index.ts\nimport { B } from '../b';\nexport const A = () => B();\n\n// packages/b/index.ts\nimport { C } from '../c';\nexport const B = () => C();\n\n// packages/c/index.ts\nimport { A } from '../a';\nexport const C = () => A();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code demonstrates a cycle in module level dependencies across packages and modules in the example graph.",
+          "isCorrect": true,
+          "explanation": "The three modules import each other forming a cycle. That cycle makes build ordering, understanding, and isolated testing difficult. The usual fixes are to invert dependencies, extract shared interfaces, or reorganize responsibilities so package edges point in a single direction."
+        },
+        {
+          "id": "b",
+          "text": "This code demonstrates overly tight coupling caused by shared mutable state across modules leading to difficult reasoning.",
+          "isCorrect": false,
+          "explanation": "Tight coupling is a plausible concern, but the snippet shows explicit mutual imports rather than shared mutable state. While cycles often increase coupling, the primary structural problem here is the mutual import graph rather than direct shared state."
+        },
+        {
+          "id": "c",
+          "text": "This code demonstrates a violation of single responsibility because modules mix domain and infrastructure concerns without clear boundaries.",
+          "isCorrect": false,
+          "explanation": "Mixing concerns is another realistic issue, but the snippet specifically shows modules importing each other in a loop. That pattern is independent from whether responsibilities are mixed, and the immediate technical problem is the cyclical dependency graph."
+        },
+        {
+          "id": "d",
+          "text": "This code demonstrates premature abstraction that introduces unnecessary indirection and obscures simple control flow overall.",
+          "isCorrect": false,
+          "explanation": "Premature abstraction can obscure design, but the concrete symptom in the snippet is mutual imports forming a cycle. Indirection alone would not necessarily produce the three-way import loop shown here."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review these package-level imports. Which problem is most likely present when types or interfaces are imported across package boundaries this way?",
+      "codeSnippet": "// packages/orders/src/orderService.ts\nimport { CustomerRepo } from '@shop/customers';\nexport class OrderService { constructor(private customers: CustomerRepo) {} }\n\n// packages/customers/src/index.ts\nimport { Order } from '@shop/orders';\nexport interface CustomerRepo { findByOrder(order: Order): unknown }\n\n// packages/orders/src/types.ts\nexport interface Order { id: string }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This example indicates unnecessary runtime coupling from importing concrete implementations across packages instead of using dependency injection patterns.",
+          "isCorrect": false,
+          "explanation": "Runtime coupling is a plausible issue, but the snippet shows an explicit mutual import between packages via types. The core problem is a package-level cycle created by those mutual imports, which may break isolated package compilation and tooling even if the imports are type-only."
+        },
+        {
+          "id": "b",
+          "text": "This example indicates a hidden package-level cycle from mutual imports of types and interfaces between packages.",
+          "isCorrect": true,
+          "explanation": "Even when imports are for types only, many build systems and package resolvers detect a cycle at the package boundary. That hidden cycle makes isolated package builds and clear layering impossible. Common remediations include extracting shared contracts into a separate contract package or inverting dependencies."
+        },
+        {
+          "id": "c",
+          "text": "This example indicates ambiguous ownership of domain models causing duplication and eventual divergence across package boundaries in the long term.",
+          "isCorrect": false,
+          "explanation": "Ambiguous model ownership is a real concern when models are defined in multiple packages, but the immediate technical issue shown is the mutual import between orders and customers. Ownership concerns are secondary to the structural cycle problem highlighted here."
+        },
+        {
+          "id": "d",
+          "text": "This example indicates a build tooling misconfiguration that forces all packages to compile together and prevents isolated package compilation.",
+          "isCorrect": false,
+          "explanation": "Build configuration can exacerbate the pain of package cycles, yet the root cause illustrated is the mutual import of types between packages. Fixing the dependency structure reduces the need for special tooling workarounds."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two approaches to share an Order type across packages are shown. Which approach should you prefer for strictly directional package dependencies?",
+      "codeSnippet": "// Version A: common package re-exports order type with inward import\n// packages/common/src/index.ts\nexport type Order = import('@shop/orders').Order;\n\n// packages/orders/src/index.ts\nimport { Order } from '@shop/common';\nexport interface Order { id: string }\n\n// Version B: explicit contracts package owned outward\n// packages/contracts/src/types.ts\nexport interface Order { id: string }\n\n// packages/orders/src/index.ts\nimport { Order } from '@shop/contracts';\nexport interface Order { id: string }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Choose Version A when centralizing shared types seems simpler even if it creates mutual imports across packages.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes a type but does so by re-exporting or importing from a package that then imports the central package back, creating a package-level cycle. This breaks the goal of directional dependencies and complicates builds and dependency reasoning; it is fragile when packages must be independently versioned or built."
+        },
+        {
+          "id": "b",
+          "text": "Choose Version B when you need package dependencies to remain strictly hierarchical and easy to reason about.",
+          "isCorrect": true,
+          "explanation": "Version B introduces a separate contracts package that both consumers depend on but that does not depend on them. This produces a directional dependency graph and enables independent compilation, clearer ownership, and stable interfaces. It aligns with recommendations in architecture literature to keep package graphs acyclic and to extract stable abstractions outward."
+        }
+      ]
+    }
+  ]
+}

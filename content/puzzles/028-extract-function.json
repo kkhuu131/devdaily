@@ -1,0 +1,105 @@
+{
+  "id": 28,
+  "conceptName": "Extract Function",
+  "category": "refactoring",
+  "definition": "Refactor a contiguous chunk of code into a separate function so intent is named and duplicated or complex logic is isolated.",
+  "ruleOfThumb": "When a block is doing a single logical task or repeats across code, pull it into a small, well-named function.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Composing Methods (Extract Method)",
+    "page": "90",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best captures the primary motivation for moving a code block into a separate function?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "It gives a clear, descriptive name to a repeated or complex operation within the surrounding code.",
+          "isCorrect": true,
+          "explanation": "Extracting a block into a named function improves readability by expressing the operation's intent at call site. It also prepares for reuse and easier testing. This is the core motivation in refactorings that isolate behavior from implementation details."
+        },
+        {
+          "id": "b",
+          "text": "It reduces the owning class size by moving logic out of the class to satisfy single responsibility concerns.",
+          "isCorrect": false,
+          "explanation": "While method extraction can help with class responsibilities, the immediate reason is to name and isolate behavior. Moving code only to shrink a class can lead to scattered helpers without a clear semantic boundary."
+        },
+        {
+          "id": "c",
+          "text": "It removes private helper methods that create indirection and instead inlines all details into a single function body.",
+          "isCorrect": false,
+          "explanation": "Inlining to avoid helpers is usually the opposite of a beneficial extract. Helpers that are well named improve clarity. The concern stated is plausible but typically extraction is favored over inlining for complex blocks."
+        },
+        {
+          "id": "d",
+          "text": "It optimizes runtime performance by encouraging JIT inlining and reducing call overhead through smaller functions.",
+          "isCorrect": false,
+          "explanation": "Performance is rarely the motivation for this refactoring. Modern runtimes may inline small functions, but extraction is primarily a readability and maintainability change, not a targeted performance optimization."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the code below, which refactoring choice is the most appropriate immediate improvement for the marked block?",
+      "codeSnippet": "function processOrder(order) {\n  const items = order.items;\n  // MARKED BLOCK: compute discounts and final price\n  let subtotal = 0;\n  for (const it of items) {\n    subtotal += it.price * it.quantity;\n  }\n  const discount = subtotal > 100 ? subtotal * 0.1 : 0;\n  const total = subtotal - discount;\n  // end marked block\n  saveOrder({ ...order, total });\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Move the marked block into a well-named, side-effect-free helper function to clarify intent and enable reuse.",
+          "isCorrect": true,
+          "explanation": "Extracting the pricing logic into a pure helper gives the high-level function a clearer narrative and makes the computation testable in isolation. This keeps processOrder focused on orchestration rather than calculation details."
+        },
+        {
+          "id": "b",
+          "text": "Inline the marked block into more places to remove function call overhead and centralize arithmetic inline for performance.",
+          "isCorrect": false,
+          "explanation": "Inlining for perceived performance will duplicate logic and reduce clarity. The marked block is a cohesive calculation better expressed as a named unit rather than duplicated inline at call sites."
+        },
+        {
+          "id": "c",
+          "text": "Extract a new domain class to own pricing responsibilities and inject it to handle discounts and total calculation statefully.",
+          "isCorrect": false,
+          "explanation": "Promoting the block to a new class might be premature. The logic is currently a small calculation; creating a class adds complexity and dependencies when a simple function would suffice."
+        },
+        {
+          "id": "d",
+          "text": "Leave the block as-is because it references locals and extracting will force excessive parameter passing across the call boundary.",
+          "isCorrect": false,
+          "explanation": "Parameter passing is a common worry, but usually the right extraction reveals a small set of explicit inputs. If many locals are required, that often signals the helper should receive a smaller composed input like an items array or a context object."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two alternative refactorings are shown below. Which version better balances readability, testability, and minimal coupling in a production codebase?",
+      "codeSnippet": "/* Version A */\nfunction renderReport(rows) {\n  const total = rows.reduce((s, r) => s + r.amount, 0);\n  const formatted = formatCurrency(total);\n  return `Total: ${formatted}`;\n}\n\nfunction formatCurrency(amount) {\n  return '$' + amount.toFixed(2);\n}\n\n/* Version B */\nclass ReportFormatter {\n  constructor(locale, currencyService) { this.locale = locale; this.currencyService = currencyService; }\n  render(rows) {\n    const total = rows.reduce((s, r) => s + r.amount, 0);\n    return this.currencyService.format(total, this.locale);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is preferable because it keeps the high-level flow simple by using a small, focused helper function.",
+          "isCorrect": true,
+          "explanation": "Version A extracts a tiny, pure formatting helper that names the intent and remains easy to unit test. It keeps the rendering function readable and avoids introducing a new collaborator or hidden dependencies. For localized or complex formatting that grows over time, elevating to a service can be considered later, but the small helper is the minimal, low-coupling change."
+        },
+        {
+          "id": "b",
+          "text": "Version B is preferable because adding a formatter class centralizes formatting and prepares for multiple unrelated future formatting concerns.",
+          "isCorrect": false,
+          "explanation": "Version B introduces an object with injected dependencies which increases coupling and testing surface area for a currently small concern. While a class is appropriate if formatting policies become complex, prematurely creating a collaborator can complicate the codebase. The simpler helper in Version A should be chosen until real need for extra abstraction appears. This follows the principle of making the simplest change that improves clarity."
+        }
+      ]
+    }
+  ]
+}

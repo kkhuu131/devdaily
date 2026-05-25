@@ -1,0 +1,106 @@
+{
+  "id": 46,
+  "conceptName": "Composite Pattern",
+  "category": "design-pattern",
+  "definition": "A structural design that lets clients treat individual objects and compositions of objects uniformly by defining a common abstraction for both leaf and composite nodes.",
+  "ruleOfThumb": "Use when clients need to manipulate single objects and aggregates the same way; keep a common component interface for recursion.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Composite",
+    "page": "163",
+    "externalUrl": "https://refactoring.guru/design-patterns/composite"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the code, which description best matches the design intent demonstrated?",
+      "codeSnippet": "interface Node { render(): string }\nclass Leaf implements Node {\n  constructor(private name: string) {}\n  render() { return this.name }\n}\nclass Branch implements Node {\n  children: Node[] = []\n  add(c: Node) { this.children.push(c) }\n  render() { return this.children.map(c => c.render()).join(',') }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Implements a uniform interface so clients treat single elements and collections interchangeably through hierarchy.",
+          "isCorrect": true,
+          "explanation": "This code defines a common Node interface and both Leaf and Branch implement it, allowing recursive composition. The Branch aggregates Node children and renders by delegating to them, which is the essence of treating individuals and groups uniformly. See Gamma et al., the Composite entry, for why a common component interface supports transparent recursive structures."
+        },
+        {
+          "id": "b",
+          "text": "Provides runtime selection of algorithms by encapsulating behavior in interchangeable objects without changing client usage.",
+          "isCorrect": false,
+          "explanation": "This describes the Strategy pattern, where behavior is swapped at runtime via interchangeable algorithm objects. The snippet instead shows hierarchical aggregation and delegation rather than encapsulating variant algorithms for a single responsibility."
+        },
+        {
+          "id": "c",
+          "text": "Separates object construction from representation so different representations can be created by the same construction process.",
+          "isCorrect": false,
+          "explanation": "This option refers to Builder or Abstract Factory concerns about construction and representation. The snippet focuses on runtime composition and delegation rather than separating construction from representation."
+        },
+        {
+          "id": "d",
+          "text": "Defines a family of related interfaces with concrete implementations that can be swapped without client changes.",
+          "isCorrect": false,
+          "explanation": "This option suggests Abstract Factory or similar creational patterns about families of products. The code demonstrates recursive composition and uniform treatment of elements and aggregates, not product-family creation."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the most likely design smell or runtime risk in this code snippet?",
+      "codeSnippet": "interface Node { render(): string }\nclass Leaf implements Node { constructor(public name: string) {}\n  render() { return this.name }\n}\nclass Branch implements Node {\n  children: Node[] = []\n  add(child: Node) { this.children.push(child) }\n  render() { return this.children.map(c => c.render()).join(',') }\n}\nfunction addToIfBranch(node: Node, child: Node) {\n  if ((node as Branch).add) { (node as Branch).add(child) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Client code performs type checks or casts to call child management methods which couples callers to concrete node implementations.",
+          "isCorrect": true,
+          "explanation": "The addToIfBranch function uses casts and runtime checks to call Branch.add, which breaks the uniformity of the abstraction. Clients becoming aware of concrete types couples them to implementation details and undermines polymorphism. This is a common smell when composite-like structures are accessed directly instead of via a common parent interface that exposes child-management only where appropriate."
+        },
+        {
+          "id": "b",
+          "text": "The implementation can cause stack overflow for very deep hierarchies due to unprotected recursive render calls.",
+          "isCorrect": false,
+          "explanation": "Deep recursion can be a practical concern for tree-like structures, but the snippet shows a design-level coupling issue from casts. Stack depth problems are orthogonal and would require very deep trees; the immediate design smell is the runtime type checking."
+        },
+        {
+          "id": "c",
+          "text": "Exposing the children array publicly risks unintended mutation from callers leading to inconsistent hierarchy state.",
+          "isCorrect": false,
+          "explanation": "Public mutable collections are a real risk, but in this snippet children is private to Branch. The explicit casts calling add reveal that the main issue is client reliance on concrete methods rather than collection exposure in this example."
+        },
+        {
+          "id": "d",
+          "text": "Creating many tiny node objects may increase memory pressure and GC churn in high frequency creation scenarios.",
+          "isCorrect": false,
+          "explanation": "Object churn can matter in performance-sensitive systems, but it is an implementation concern. The more immediate and design-relevant problem here is the breaking of the abstraction barrier by client-side type checks and casts."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which design would you choose for a system requiring nested groups and uniform client handling?",
+      "codeSnippet": "// Version A\ninterface Item { process(): string }\nclass ItemLeaf implements Item { constructor(private name: string) {}\n  process() { return this.name }\n}\nclass ItemGroup implements Item {\n  private children: Item[] = []\n  add(c: Item) { this.children.push(c) }\n  process() { return this.children.map(c => c.process()).join(';') }\n}\n\n// Version B\nclass LeafItem { constructor(public name: string) {}\n  process() { return this.name }\n}\nclass GroupItem {\n  private leaves: LeafItem[] = []\n  addLeaf(l: LeafItem) { this.leaves.push(l) }\n  processAll() { return this.leaves.map(l => l.process()).join(';') }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A provides a single component abstraction so clients can treat elements and groups uniformly.",
+          "isCorrect": true,
+          "explanation": "Version A models both leaves and groups behind a common Item interface, enabling arbitrary nesting and uniform client code that calls process regardless of concrete type. This supports recursive structures and simplifies clients because they do not need type checks. Gamma et al. discuss this structure as a way to compose objects into tree structures and treat them uniformly. The design also makes it easier to extend with new component types without changing client code."
+        },
+        {
+          "id": "b",
+          "text": "Version B ties groups to leaf concrete types causing duplication and preventing nesting groups inside other groups.",
+          "isCorrect": false,
+          "explanation": "Version B couples GroupItem to LeafItem specifically, so groups cannot contain other groups without additional adapters. That coupling leads to duplicated methods and harder evolution as new node kinds are added. While Version B may be simpler initially, it fails to support recursive composition cleanly and forces client code or future changes to handle multiple concrete types explicitly, increasing maintenance cost. See Fowler on object composition tradeoffs and Gamma et al. on why a common component abstraction eases recursion."
+        }
+      ]
+    }
+  ]
+}

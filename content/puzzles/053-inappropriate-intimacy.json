@@ -1,0 +1,105 @@
+{
+  "id": 53,
+  "conceptName": "Inappropriate Intimacy",
+  "category": "code-smell",
+  "definition": "A design smell where one class relies on the internal details of another, breaking encapsulation and creating tight coupling.",
+  "ruleOfThumb": "Prefer calling a clear public API on an object instead of reaching into its internals; introduce adapters or query methods when needed.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Inappropriate Intimacy",
+    "page": "190",
+    "externalUrl": "https://martinfowler.com/bliki/InappropriateIntimacy.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which of these observations most directly identifies a class-level intimacy problem between two collaborators?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "A service class regularly reaches into another object's private state and calls its internal methods directly.",
+          "isCorrect": true,
+          "explanation": "This observation pinpoints direct access to another object's internals. That pattern shows one class depending on implementation details rather than a stable public API, which increases coupling and makes either class harder to change independently."
+        },
+        {
+          "id": "b",
+          "text": "Two classes frequently modify each other's private fields and rely on those fields for their core behavior.",
+          "isCorrect": false,
+          "explanation": "While mutual mutation is serious, this phrasing could also indicate a cyclic dependency or poor ownership boundaries rather than the specific smell of one class intruding into another's encapsulation."
+        },
+        {
+          "id": "c",
+          "text": "A module returns mutable internal collections to callers so external code can change the module's internal structure.",
+          "isCorrect": false,
+          "explanation": "Exposing mutable collections is a clear encapsulation leak, but the core issue here is exposing state rather than repeated intimate calls into another object's private behavior as the primary coupling symptom."
+        },
+        {
+          "id": "d",
+          "text": "A class depends on another class's private implementation details to perform its main business responsibilities.",
+          "isCorrect": false,
+          "explanation": "This describes a tight dependency on implementation details and is very close to the correct smell; however it reads as a broader dependency problem and may overlap with feature envy or misplaced responsibility rather than a pattern of intimate access."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the code, which behavior most strongly suggests the classes are violating encapsulation by depending on internal representation?",
+      "codeSnippet": "class Order {\n  private _items: Item[];\n  constructor(items: Item[]) { this._items = items; }\n  total() { return this._items.reduce((s, i) => s + i.price, 0); }\n}\n\nclass OrderArchiver {\n  archive(order: Order) {\n    for (const it of (order as any)._items) {\n      if (!it.persistent) saveSnapshot(it);\n    }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code bypasses the Order public interface and inspects private collection fields to implement business logic directly.",
+          "isCorrect": true,
+          "explanation": "Accessing a private collection by casting to any and iterating it shows the archiver depends on Order's concrete representation. This couples the archiver to internal layout and prevents safe refactors of Order."
+        },
+        {
+          "id": "b",
+          "text": "The archiver duplicates order formatting logic instead of reusing Order methods, risking inconsistent representation across the system.",
+          "isCorrect": false,
+          "explanation": "Duplication is a real problem, but here the critical issue is the archiver reaching into hidden fields rather than merely duplicating presentation logic. The two problems require different refactorings."
+        },
+        {
+          "id": "c",
+          "text": "The method performs many unrelated tasks such as logging, archiving, and state mutation, indicating a Single Responsibility violation.",
+          "isCorrect": false,
+          "explanation": "A bloated responsibility could be present, but the direct inspection of Order internals is a more specific signal of encapsulation breach and tight coupling than a general SRP violation."
+        },
+        {
+          "id": "d",
+          "text": "The loop creates new item snapshots for external storage, which might cause performance and memory issues when archiving.",
+          "isCorrect": false,
+          "explanation": "Performance concerns about snapshot creation are plausible, but they distract from the structural smell. The primary design flaw is depending on internal arrays rather than using a stable API."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better preserves encapsulation and reduces tight coupling between domain model and presentation code?",
+      "codeSnippet": "// Version A\nclass Invoice {\n  public items: LineItem[];\n  constructor(items: LineItem[]) { this.items = items; }\n}\nclass InvoicePdfA {\n  print(inv: Invoice) {\n    for (const it of inv.items) { this.draw(it.description, it.amount); }\n  }\n}\n\n// Version B\nclass InvoiceB {\n  private items: LineItem[];\n  getPrintableItems() { return this.items.map(i => ({ description: i.description, amount: i.amount })); }\n}\nclass InvoicePdfB {\n  print(inv: InvoiceB) {\n    for (const it of inv.getPrintableItems()) { this.draw(it.description, it.amount); }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version B centralizes access through a small public API on the domain object.",
+          "isCorrect": true,
+          "explanation": "Version B keeps the internal collection private and exposes a focused, intention-revealing API that returns only what callers need. This reduces coupling by preventing external code from depending on concrete representations, making future refactoring safer and enforcing encapsulation."
+        },
+        {
+          "id": "b",
+          "text": "Version A exposes internal collections to external classes, causing callers to depend on concrete representations and implementation details.",
+          "isCorrect": false,
+          "explanation": "Version A makes the items collection part of the object's public surface, which invites many clients to rely on that concrete shape. Over time callers will embed assumptions about the collection structure, increasing the cost and risk of changing the domain model."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 31,
+  "conceptName": "Message Chains",
+  "category": "code-smell",
+  "definition": "Client code repeatedly navigates through a sequence of objects to reach a nested property, coupling callers to internal object structure.",
+  "ruleOfThumb": "If client code uses more than one dot or getter to reach needed data, ask the owning object to provide a simpler API.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Hide Delegate",
+    "page": "130",
+    "externalUrl": "https://martinfowler.com/bliki/MessageChains.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation best identifies the smell in this snippet?",
+      "codeSnippet": "class Order {\n  customer: Customer;\n}\n\n// client code\nconst city = order.customer.address.city;\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The client accesses multiple nested properties through sequential property accesses, creating coupling to internal object structure.",
+          "isCorrect": true,
+          "explanation": "This is the classic pattern where callers reach through several objects to get data, which tightly couples callers to the internal shape. That makes refactoring the intermediate types risky because many callers depend on the traversal path."
+        },
+        {
+          "id": "b",
+          "text": "The client constructs a long SQL query string by concatenating raw fields and inline formatting.",
+          "isCorrect": false,
+          "explanation": "This describes a different issue involving string building and SQL concerns. While concatenation is dangerous and deserves attention, the snippet shows property traversal, not query composition."
+        },
+        {
+          "id": "c",
+          "text": "The client repeatedly calls a public service API in a loop without batching, causing inefficient network usage.",
+          "isCorrect": false,
+          "explanation": "This option points to performance and network inefficiency. The provided snippet is local object access rather than repeated remote calls, so the performance concern is not the primary smell here."
+        },
+        {
+          "id": "d",
+          "text": "The client mutates a shared global config object directly which leads to unpredictable side effects across modules.",
+          "isCorrect": false,
+          "explanation": "Direct mutation of shared configuration is a real problem, but the snippet accesses nested properties immutably. The core issue is coupling to nested structure rather than global mutation side effects."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this helper function, what is the primary design problem to address?",
+      "codeSnippet": "class Invoice {\n  customer: Customer;\n}\n\nfunction printInvoiceCountry(invoice: Invoice) {\n  return invoice.customer.address.country.name;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function couples external callers to nested object internals through multiple sequential property accesses directly.",
+          "isCorrect": true,
+          "explanation": "The function exposes the traversal details to callers, creating tight coupling to the nested structure. The usual fix is to provide a single method on an appropriate domain object that returns the needed information, reducing client knowledge of internals."
+        },
+        {
+          "id": "b",
+          "text": "The function violates single responsibility by mixing formatting and deep data traversal in the same routine.",
+          "isCorrect": false,
+          "explanation": "While blending responsibilities can be problematic, the immediate issue is the exposure of nested structure. You can separate concerns later, but first hide the traversal to avoid widespread coupling."
+        },
+        {
+          "id": "c",
+          "text": "The function creates a tight runtime hotspot by repeatedly traversing nested objects on every call without caching.",
+          "isCorrect": false,
+          "explanation": "Repeated traversal could be a performance concern in hotspots, but the snippet shows a design coupling problem. Performance optimizations are secondary until the API surface is stabilized and encapsulation is improved."
+        },
+        {
+          "id": "d",
+          "text": "The function risks null or undefined errors by assuming all intermediate objects are present without safety checks.",
+          "isCorrect": false,
+          "explanation": "Null safety is important and should be handled, but the primary design smell is that callers depend on the internal object graph. Fixing the API and delegation often also centralizes null checks in one place."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which design would you choose to address the traversal in the snippet labeled Version A and Version B?",
+      "codeSnippet": "// Version A: add a delegating method on Order\nclass Order {\n  customer: Customer;\n  getCustomerCountry(): string {\n    return this.customer.address.country.name;\n  }\n}\n\n// Version B: many clients keep traversing nested properties directly\nfunction printCountry(order: Order) {\n  console.log(order.customer.address.country.name);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A small delegating method on the owning object encapsulates traversal and reduces client coupling.",
+          "isCorrect": true,
+          "explanation": "Choosing a delegating method centralizes knowledge of the object graph and provides a stable, intent-revealing API. It prevents many callers from depending on intermediate structure and avoids scattering traversal logic. This follows the Hide Delegate refactoring and makes future changes to the domain model safer."
+        },
+        {
+          "id": "b",
+          "text": "A client-side flattened DTO copies domain structure and duplicates traversal logic across multiple places.",
+          "isCorrect": false,
+          "explanation": "Creating flattened DTOs at each client may avoid one chain in that spot but duplicates traversal logic and the knowledge of object relationships. Over time DTOs diverge and maintenance costs increase. The better structural fix is to encapsulate traversal in the domain, not to push copies to callers."
+        }
+      ]
+    }
+  ]
+}

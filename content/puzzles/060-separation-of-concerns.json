@@ -1,0 +1,106 @@
+{
+  "id": 60,
+  "conceptName": "Separation of Concerns",
+  "category": "principle",
+  "definition": "Organizing code so that different kinds of responsibilities are isolated into distinct modules, reducing coupling and clarifying intent.",
+  "ruleOfThumb": "Each module or class should focus on one primary responsibility or reason to change.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Chapter 2: Composing Methods",
+    "page": "p. 30",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which issue is most clearly demonstrated by the following TypeScript code?",
+      "codeSnippet": "class OrderController {\n  processOrder(order: Order) {\n    this.validate(order);\n    this.db.save(order);\n    this.payment.charge(order);\n    this.email.sendConfirmation(order);\n    this.logger.log(order);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This module mixes distinct responsibilities such as validation, persistence, payment processing, and notification into one class.",
+          "isCorrect": true,
+          "explanation": "The class performs multiple unrelated activities in one place. That makes testing, changing, and reusing individual behaviors harder. A pragmatic refactor is to extract responsibilities into focused collaborators so each part has a single reason to change."
+        },
+        {
+          "id": "b",
+          "text": "This code contains a performance hotspot due to synchronous blocking IO calls inside the request handling path.",
+          "isCorrect": false,
+          "explanation": "While synchronous IO can be a performance concern, the snippet shows responsibilities mixed rather than obvious blocking calls. Performance problems are possible but not the primary design smell here."
+        },
+        {
+          "id": "c",
+          "text": "This implementation exposes public fields and mutable state that can lead to race conditions in concurrent environments.",
+          "isCorrect": false,
+          "explanation": "Mutable shared state and public fields are legitimate worries for concurrency, but the snippet shows method calls to collaborators rather than exposed mutable fields. The main problem is responsibility entanglement, not explicit shared state."
+        },
+        {
+          "id": "d",
+          "text": "This function violates standard naming conventions and lacks documentation which makes code readability worse for new developers.",
+          "isCorrect": false,
+          "explanation": "Naming and documentation affect readability, but they are surface issues. The code demonstrates multiple responsibilities in one place which is a structural maintainability problem that outweighs mere naming concerns."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this registration service, which description best captures the primary maintainability problem?",
+      "codeSnippet": "class UserRegistrationService {\n  register(user: User) {\n    const db = new DatabaseConnection();\n    const smtp = new SmtpClient();\n    db.insert(user);\n    smtp.sendWelcome(user.email);\n    Logger.log('registered', user.id);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The service directly creates infrastructure instances, with construction occurring inside methods rather than being supplied externally.",
+          "isCorrect": true,
+          "explanation": "Directly constructing concrete dependencies inside methods couples the service to specific implementations and makes unit testing and substitution harder. Injecting collaborators or using factories separates construction from behavior and improves testability and flexibility."
+        },
+        {
+          "id": "b",
+          "text": "The service scatters domain rules across helper functions and side effects which obscures the core business intent and flow.",
+          "isCorrect": false,
+          "explanation": "Scattered domain logic is a real issue, but the snippet mainly shows local construction of infrastructure objects. The domain rules are minimal; the dominant maintainability problem is coupling to concrete infrastructure rather than scattered business rules."
+        },
+        {
+          "id": "c",
+          "text": "There is a serialization and state mutation bug when asynchronous callbacks access shared mutable variables without proper synchronization.",
+          "isCorrect": false,
+          "explanation": "Race conditions and improper synchronization are valid concerns with concurrency, but this snippet uses straightforward synchronous calls without visible async callbacks or shared mutable state. The primary smell is tight coupling through direct instantiation."
+        },
+        {
+          "id": "d",
+          "text": "The service performs heavy synchronous IO operations which will block the event loop and degrade concurrent throughput significantly.",
+          "isCorrect": false,
+          "explanation": "Blocking IO can indeed impact throughput, but the code does not show long-running loops or explicit blocking constructs. The clearer issue for maintainability is constructing concrete infrastructure inline rather than decoupling it."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Review Version A and Version B. Which implementation is preferable for long term maintainability?",
+      "codeSnippet": "// Version A\nclass OrderOrchestrator {\n  constructor(private validator: Validator, private gateway: PaymentGateway, private notifier: Notifier) {}\n  process(order: Order) {\n    if (!this.validator.isValid(order)) return;\n    this.gateway.charge(order);\n    this.notifier.notify(order);\n  }\n}\n\n// Version B\nclass OrderService {\n  process(order: Order) {\n    const validator = new Validator();\n    const gateway = new StripeGateway();\n    const notifier = new EmailNotifier();\n    if (!validator.isValid(order)) return;\n    gateway.charge(order);\n    notifier.notify(order);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A delegates responsibilities to small focused collaborators using interfaces and composition.",
+          "isCorrect": true,
+          "explanation": "Version A separates construction from behavior by accepting collaborators via constructor injection. That yields clear boundaries, easier unit testing through mocks, and simpler reuse or replacement of implementations. This design follows established guidance on modularizing responsibilities and keeping high cohesion and low coupling."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes orchestration and directly constructs dependencies inside methods, embedding multiple responsibilities and hindering reuse.",
+          "isCorrect": false,
+          "explanation": "Version B mixes object creation and orchestration in the same method. This leads to hidden coupling to concrete classes, harder testing because you cannot substitute mocks easily, and duplicated construction logic when multiple callers need similar behavior. Over time this pattern increases friction for change and extension."
+        }
+      ]
+    }
+  ]
+}

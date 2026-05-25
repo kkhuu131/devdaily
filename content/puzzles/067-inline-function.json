@@ -1,0 +1,106 @@
+{
+  "id": 67,
+  "conceptName": "Inline Function",
+  "category": "refactoring",
+  "definition": "A refactoring that removes a trivial intermediary function by replacing its calls with the function body when the intermediary adds no value.",
+  "ruleOfThumb": "If a function only delegates or returns a direct expression and adds no clarifying intent, inline it to remove needless indirection.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Inline Function",
+    "page": "70",
+    "externalUrl": "https://refactoring.com/catalog/inlineFunction.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the code below. Which statement best describes the problem with the getDisplayName function?",
+      "codeSnippet": "function getDisplayName(user: User): string {\n  return formatName(user.firstName, user.lastName);\n}\n\nfunction formatName(first: string, last: string): string {\n  return `${first} ${last}`;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function is a thin wrapper that only forwards its arguments to another function and adds no behavior.",
+          "isCorrect": true,
+          "explanation": "getDisplayName merely delegates to formatName without adding validation, naming clarification beyond the callee, or any transformation. In such cases the wrapper adds indirection, which reduces local readability. The refactoring candidate is to replace calls to getDisplayName with direct calls to formatName or to merge the two when intention and usage permit."
+        },
+        {
+          "id": "b",
+          "text": "This function serves as a compatibility layer that stabilizes the public API while underlying implementations change over time.",
+          "isCorrect": false,
+          "explanation": "A compatibility layer is plausible when an API must remain stable across versions. Here there is no evidence of versioning, deprecation, or different implementations behind the wrapper. The wrapper simply forwards arguments without adapting behavior, so treating it as a compatibility facade is not supported by the snippet."
+        },
+        {
+          "id": "c",
+          "text": "This function exists to improve testability by acting as a seam where mocks can be injected during unit tests.",
+          "isCorrect": false,
+          "explanation": "Using a wrapper as a seam for testing can be valid when the wrapper isolates external dependencies. In this example both functions are pure and deterministic string operations, so there is nothing to mock. Calling it a test seam misreads the code's structure and would lead to unnecessary indirection."
+        },
+        {
+          "id": "d",
+          "text": "This function encapsulates a security check so that authentication policy can be updated without touching callers.",
+          "isCorrect": false,
+          "explanation": "Security or authorization wrappers are common, but the snippet contains no authentication logic or conditional checks. Assuming a security purpose would be speculative. The concrete issue is that the wrapper just forwards to another pure function, not that it centralizes policy concerns."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "formatCurrency is a small helper used across the UI. Which observation most accurately guides whether to keep it separate or merge it?",
+      "codeSnippet": "function formatCurrency(amount: number): string {\n  return '$' + amount.toFixed(2);\n}\n\nconst total = items.reduce((sum, it) => sum + it.price, 0);\nconsole.log(formatCurrency(total));",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function centralizes formatting rules and communicates intent across multiple call sites in the user interface.",
+          "isCorrect": true,
+          "explanation": "When a tiny helper encodes a formatting rule used in many places, it becomes the single place to change presentation. Keeping it as a named helper documents intent and reduces duplication. Inline refactoring would scatter the format expression and risk inconsistent presentation later."
+        },
+        {
+          "id": "b",
+          "text": "This function should be inlined to avoid the small runtime cost in a performance critical loop at scale.",
+          "isCorrect": false,
+          "explanation": "Inlining for micro performance can be valid in hot loops, but decisions must be based on profiling evidence. Premature inlining sacrifices a clear single formatting rule and increases duplication. The performance concern is concrete yet often not the primary factor without measurable hotspot data."
+        },
+        {
+          "id": "c",
+          "text": "This function only helps tests by being a seam and can be replaced with direct formatting in tests instead.",
+          "isCorrect": false,
+          "explanation": "Extracting helpers to aid testing is a real technique, but here the helper is a simple formatting helper used by the UI code itself. Tests can still exercise UI output without keeping a trivial helper solely for tests. Treating it as only a test seam underestimates its expressive role."
+        },
+        {
+          "id": "d",
+          "text": "This function hides domain intent by abstracting the format details and makes debugging output sources harder for new developers.",
+          "isCorrect": false,
+          "explanation": "Abstraction can obscure details when poorly named, but formatCurrency has an explicit name that clarifies purpose. In this case the helper surfaces intent rather than hiding it. The concern about obscuring behavior is valid in other contexts but not well supported here."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which design is preferable when the helper is tiny and used only by this caller?",
+      "codeSnippet": "// Version A\nfunction computeOrderSummary(order: Order) {\n  const total = order.items.reduce((s, i) => s + i.price * i.quantity, 0);\n  const taxed = total * 1.08;\n  return { total, taxed };\n}\n\n// Version B\nfunction itemTotal(item: Item) {\n  return item.price * item.quantity;\n}\n\nfunction computeOrderSummary(order: Order) {\n  const total = order.items.reduce((s, i) => s + itemTotal(i), 0);\n  const taxed = total * 1.08;\n  return { total, taxed };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps the simple item calculation inside the caller and removes an unnecessary private indirection.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable here because the multiplication is trivial and only used in one place. Removing the tiny private helper reduces cognitive overhead and keeps the logic localized where a reader expects it. Extracting such a helper is useful when it documents intent, is reused, or encapsulates complex behavior, none of which apply in this snippet."
+        },
+        {
+          "id": "b",
+          "text": "Version B preserves a tiny extracted helper that creates indirection and hides the straightforward arithmetic across files.",
+          "isCorrect": false,
+          "explanation": "Keeping a tiny helper can be justified when the helper names a nonobvious domain concept, is reused, or isolates complex logic. In this case the helper offers no additional naming clarity and is only used by one private caller, so it merely adds indirection and forces a reader to jump between definitions. That makes Version B less suitable for clarity and local reasoning."
+        }
+      ]
+    }
+  ]
+}

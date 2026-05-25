@@ -1,0 +1,106 @@
+{
+  "id": 34,
+  "conceptName": "Stable Dependencies Principle",
+  "category": "solid",
+  "definition": "A guideline that modules should depend on other modules that are more stable than themselves, so changes ripple minimally through the system.",
+  "ruleOfThumb": "Depend on smaller, low-change abstractions so higher-level modules do not need frequent updates when lower-level code evolves.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Agile Software Development, Principles, Patterns, and Practices",
+    "chapter": "Dependency Management",
+    "page": "295-302",
+    "externalUrl": "https://www.pearson.com/us/higher-education/program/Martin-Agile-Software-Development-Principles-Patterns-and-Practices/PGM310254.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the code below. What is the primary design problem demonstrated by these imports?",
+      "codeSnippet": "// services/payments/index.ts\nimport { renderCart } from '../ui/cart';\n\nexport function processPayment(order) {\n  renderCart(order.items);\n  // payment processing logic\n}\n\n// ui/cart/index.ts\nexport function renderCart(items) { /* interactive UI rendering */ }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A core business module depends on a frequently changing UI implementation, risking cascading changes across unrelated services.",
+          "isCorrect": true,
+          "explanation": "The payments service is a domain component and should not import a change-prone UI module. Depending on volatile UI code forces the business module to change whenever the UI evolves. A common mitigation is to move a small interface or event boundary into a stable package that both layers depend on, or invert the dependency so the UI depends on domain abstractions."
+        },
+        {
+          "id": "b",
+          "text": "A circular import between the two modules will cause runtime load errors and unpredictable initialization ordering failures.",
+          "isCorrect": false,
+          "explanation": "There is no evidence of a circular import in the snippet; payments imports UI but UI does not import payments here. Circular imports are a real runtime concern, but the core issue in this example is architectural coupling between domain and UI, not import cycles."
+        },
+        {
+          "id": "c",
+          "text": "A single class handles business logic and rendering responsibilities, making unit testing and maintenance more difficult.",
+          "isCorrect": false,
+          "explanation": "Conflated responsibilities are a valid smell, but the code shows two modules with improper layering rather than one class doing both concerns. The maintenance risk stems from the domain layer depending on presentation code rather than a single large class doing both jobs."
+        },
+        {
+          "id": "d",
+          "text": "A module leaks UI implementation details into the payment domain which increases coupling and obscures domain boundaries.",
+          "isCorrect": false,
+          "explanation": "Leaking UI details into domain logic is a concrete concern and closely related to the real problem. However, the core architectural problem is the direction of dependency between layers; the leak is a symptom rather than the precise design violation that will cause broad change propagation."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this package dependency, which long term risk is most relevant to the system's stability?",
+      "codeSnippet": "// packages/feature/src/reportGenerator.ts\nimport { formatDate } from '../../lib/date-utils';\n\nexport function generateReport(items) {\n  const now = formatDate(new Date());\n  // heavy report creation logic\n  return { items, generatedAt: now };\n}\n\n// packages/lib/date-utils is under active development and changes APIs frequently\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The feature module depends on a lower-level utility that has a higher expected change frequency than itself.",
+          "isCorrect": true,
+          "explanation": "When a higher-level feature module depends on a more volatile utility, the feature will need repeated updates when that utility changes. The remedy is to isolate a stable interface or move the abstraction to a less volatile location so consumers are shielded from implementation churn."
+        },
+        {
+          "id": "b",
+          "text": "The dependency will introduce a cyclic import that will likely cause runtime initialization errors in production deployments.",
+          "isCorrect": false,
+          "explanation": "Cyclic imports are a real danger, but the snippet only shows a one-way import from feature to lib. The more relevant long term risk here is change churn from depending on an unstable utility rather than a cycle causing runtime failures."
+        },
+        {
+          "id": "c",
+          "text": "The dependency will create a security vulnerability through unvalidated data paths exposing internal business logic to external inputs.",
+          "isCorrect": false,
+          "explanation": "Security concerns are important, but nothing in the snippet indicates unvalidated external input or unsafe handling. The central architectural worry is maintainability and change impact from depending on a frequently changing utility package."
+        },
+        {
+          "id": "d",
+          "text": "The dependency will significantly increase bundle size and page load time across the application when it is included.",
+          "isCorrect": false,
+          "explanation": "Bundle size can be a practical concern for front end code, but the snippet and comment emphasize frequent API changes in the utility package. The primary long term risk is change propagation, not necessarily an increase in delivered bundle size."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better protects higher-level modules from frequent changes over time?",
+      "codeSnippet": "// Version A: small shared contracts package\n// packages/contracts/index.ts\nexport interface PaymentProcessor { process(amount: number): Promise<void> }\n\n// packages/payment-service/index.ts\nimport { PaymentProcessor } from '../contracts';\nexport class OrderService { constructor(private p: PaymentProcessor) {} }\n\n// packages/stripe-adapter/index.ts\nimport { PaymentProcessor } from '../contracts';\nexport class StripeAdapter implements PaymentProcessor { async process(a:number) {} }\n\n// Version B: direct concrete dependency\n// packages/payment-service/index.ts\nimport { StripeAdapter } from '../stripe-adapter';\nexport class OrderService { private p = new StripeAdapter(); }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A depends on a small shared abstraction package that changes infrequently.",
+          "isCorrect": true,
+          "explanation": "Version A isolates the dependency behind a minimal interface in a shared contracts package that is unlikely to change often. High-level code depends on that stable abstraction so downstream changes in concrete adapters do not force modifications in domain logic. This aligns with dependency management best practices described by Robert C. Martin and supports independent evolution of adapters and domain services."
+        },
+        {
+          "id": "b",
+          "text": "Version B couples high-level modules directly to concrete lower-level implementation details that change frequently.",
+          "isCorrect": false,
+          "explanation": "Version B creates tight coupling because OrderService constructs a concrete StripeAdapter directly. Any required change in the adapter or swapping providers forces edits in the high-level module. This design reduces reuse, complicates testing, and increases change surface area compared to depending on a minimal shared abstraction."
+        }
+      ]
+    }
+  ]
+}

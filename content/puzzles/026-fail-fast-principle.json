@@ -1,0 +1,106 @@
+{
+  "id": 26,
+  "conceptName": "Fail Fast Principle",
+  "category": "principle",
+  "definition": "A software design approach that surfaces errors as early as possible in execution so faults are detected and addressed near their origin.",
+  "ruleOfThumb": "Validate and throw at the earliest clear boundary you control rather than letting invalid state propagate silently.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code: A Handbook of Agile Software Craftsmanship",
+    "chapter": "Chapter 9: Error Handling",
+    "page": null,
+    "externalUrl": "https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Inspect the function. Which statement best describes the primary problem in this code?",
+      "codeSnippet": "function parseUser(input: string): User | null {\n  try {\n    const user = JSON.parse(input);\n    if (!user.id) return null;\n    return user;\n  } catch (e) {\n    return null;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function swallows parsing exceptions and returns null for parse failures, preventing callers from seeing original failures.",
+          "isCorrect": true,
+          "explanation": "This code hides the original parsing failure by converting any exception into a null return. That makes it hard to distinguish between legitimately missing data and a parsing error, and it hides stack traces and diagnostic details. In fail fast terms, an early throw would surface the cause closer to where it occurred so operators and calling code can react appropriately."
+        },
+        {
+          "id": "b",
+          "text": "The function synchronously validates input and throws for malformed data which forces immediate failure in the caller code.",
+          "isCorrect": false,
+          "explanation": "While immediate throwing would be a fail fast behavior, this snippet does not throw for malformed input. Instead it returns null and swallows exceptions. The concern about synchronous throws forcing caller failure is a design trade off rather than the concrete bug shown here."
+        },
+        {
+          "id": "c",
+          "text": "The function constructs user objects directly from untrusted input without any schema enforcement or structural validation rules.",
+          "isCorrect": false,
+          "explanation": "Missing schema enforcement is a valid concern in general, but the snippet actually attempts a minimal structural check for user.id. The central issue shown is that parsing errors are swallowed, not the absence of any validation at all."
+        },
+        {
+          "id": "d",
+          "text": "The function performs JSON.parse inside a try block which might be expensive on hot paths and could cause performance regressions.",
+          "isCorrect": false,
+          "explanation": "Performance of JSON.parse could matter at scale, but the code smell visible here is correctness and observability related, not CPU cost. Performance concerns would be secondary and require profiling to verify."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review the request handler. What is the primary design risk related to error handling and system behavior?",
+      "codeSnippet": "async function processOrder(req: Request) {\n  const order = req.body;\n  await db.save(order);\n  if (!order.id) {\n    console.error('Missing id');\n    return { status: 202, message: 'Accepted for later validation' };\n  }\n  await publishOrder(order);\n  return { status: 200 };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code acknowledges the API request before validating essential fields which can cause lost or inconsistent processing later on.",
+          "isCorrect": false,
+          "explanation": "Acknowledging a request before validation is indeed risky because callers assume success. However the more immediate and concrete hazard in this snippet is that data is persisted before validation, which can seed storage with invalid rows even if the caller got an early accept."
+        },
+        {
+          "id": "b",
+          "text": "This code persists user data before validation, writing potentially invalid records into storage synchronously inside the request handler.",
+          "isCorrect": true,
+          "explanation": "Persisting before validation allows invalid data to enter your primary datastore where it can affect analytics, integrations, and later processing. The problem is structural: side effects happen before the invariant checks. Detecting and rejecting bad input at the boundary prevents poisoning downstream systems and simplifies recovery."
+        },
+        {
+          "id": "c",
+          "text": "This code logs validation issues instead of failing at the boundary which hides failures from upstream callers and delays detection.",
+          "isCorrect": false,
+          "explanation": "Logging rather than failing is a real concern because it hides errors from callers. In this snippet logging happens but the more dangerous operation is the unconditional save before validation. That persistence makes the logging issue a secondary symptom rather than the primary architectural flaw."
+        },
+        {
+          "id": "d",
+          "text": "This code performs synchronous database writes inside request handling which might block the event loop and reduce throughput under load.",
+          "isCorrect": false,
+          "explanation": "Blocking or expensive I/O in request handlers can reduce throughput and is worth addressing. In this example the persistence is asynchronous and awaited; the immediate correctness risk of persisting invalid data is more critical than a performance concern."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two versions of a create handler are proposed. Which version better prevents invalid data from polluting storage and why?",
+      "codeSnippet": "// Version A: persist then validate\nasync function handleCreateA(req: Request) {\n  const payload = req.body;\n  await db.insert(payload);\n  const errors = validate(payload);\n  if (errors.length) logger.warn('Invalid payload persisted', errors);\n  return { status: 202 };\n}\n\n// Version B: validate then persist\nasync function handleCreateB(req: Request) {\n  const payload = req.body;\n  const errors = validate(payload);\n  if (errors.length) throw new ValidationError(errors);\n  await db.insert(payload);\n  return { status: 201 };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A defers validation until after persistence which can create partially applied side effects and complicate rollback strategies significantly.",
+          "isCorrect": false,
+          "explanation": "Version A persists the payload before validating, which can leave invalid rows in the database and require compensating actions or complex cleanup. That approach increases operational burden and makes tracing the origin of bad data harder. Deferring validation undermines transactional clarity and amplifies coupling between validation and downstream consumers."
+        },
+        {
+          "id": "b",
+          "text": "Version B validates inputs at the boundary and throws before any persistence, preventing invalid payloads from entering downstream systems.",
+          "isCorrect": true,
+          "explanation": "Version B enforces invariants before performing side effects, which keeps the system state cleaner and errors closer to their origin. Failing fast at the service boundary simplifies error handling, reduces the need for compensating transactions, and improves observability. This aligns with established guidance on validating at clear boundaries to avoid polluting shared resources and to keep failure modes localized."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 59,
+  "conceptName": "Introduce Parameter Object",
+  "category": "refactoring",
+  "definition": "Replace a long parameter list with a single object parameter that groups related values, reducing call-site complexity and improving cohesion.",
+  "ruleOfThumb": "If a function accepts several parameters that travel together or represent a single conceptual thing, wrap them in an object parameter.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Introduce Parameter Object",
+    "page": "page 128",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Inspect the function signature. What is the primary smell in this code?",
+      "codeSnippet": "function scheduleMeeting(title: string, date: Date, location: string, organizerId: number, attendeeIds: number[], notify: boolean) {\n  // scheduling logic\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function accepts many related parameters and should be called with a single object parameter instead.",
+          "isCorrect": true,
+          "explanation": "A long parameter list with related values indicates they represent a single conceptual entity. Wrapping them in an object simplifies calls, documents grouping at the type level, and makes future additions less intrusive. This reduces positional errors and improves readability at call sites."
+        },
+        {
+          "id": "b",
+          "text": "The function violates single responsibility because it performs multiple tasks and should be split into smaller focused functions.",
+          "isCorrect": false,
+          "explanation": "While single responsibility is important, the snippet only shows a long parameter list, not multiple distinct responsibilities. Splitting into smaller functions would not address the confusion caused by many related parameters passed together."
+        },
+        {
+          "id": "c",
+          "text": "The function is exposed as a wide public API and should be restricted or moved into more specific service classes.",
+          "isCorrect": false,
+          "explanation": "Making the function less public may be appropriate in some contexts, but the primary design smell here is the parameter list size and cohesion. Restricting visibility does not solve call-site clarity or parameter grouping."
+        },
+        {
+          "id": "d",
+          "text": "The function leaks implementation details through primitive parameters and should use richer domain types for clearer intent.",
+          "isCorrect": false,
+          "explanation": "Using domain types can improve clarity, but the immediate issue is the number and grouping of parameters. Introducing a parameter object can both encapsulate domain types and reduce the surface area simultaneously."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which refactoring is most appropriate for this signature with core parameters and several optional flags?",
+      "codeSnippet": "function createOrder(productId: number, quantity: number, couponCode?: string, giftWrap: boolean = false, deliveryInstructions?: string) {\n  // create order\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Combine the optional and related parameters into a single options object while keeping core required parameters as separate arguments.",
+          "isCorrect": true,
+          "explanation": "Optional flags and auxiliary data that naturally belong together are good candidates for an options object. Keeping required positional parameters separate preserves clarity for the essential inputs while grouping variable extras reduces overloads and call-site noise."
+        },
+        {
+          "id": "b",
+          "text": "Create several overloads to express common combinations of optional features and avoid callers passing undefined for unused arguments.",
+          "isCorrect": false,
+          "explanation": "Overloads can escalate complexity as combinations grow and still leave many call sites unclear. They do not scale well when new optional parameters are introduced and can duplicate implementation logic."
+        },
+        {
+          "id": "c",
+          "text": "Encode these options into a bit field or flags enum to compactly represent gift wrap and coupon presence across calls.",
+          "isCorrect": false,
+          "explanation": "Bit fields reduce parameter count but sacrifice readability and expressiveness. They obscure intent at call sites and make adding richer option data like instructions harder compared to an object with named fields."
+        },
+        {
+          "id": "d",
+          "text": "Leave the signature unchanged because splitting parameters may complicate callers and hurt backward compatibility of public APIs.",
+          "isCorrect": false,
+          "explanation": "Backward compatibility is a valid concern, but you can often introduce an options object with minimal disruption (for example by adding a new overload or a new function) and then migrate callers. Leaving a noisy signature misses an opportunity to improve clarity."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation is preferable for evolving an order API where optional fields are common? Choose the better design.",
+      "codeSnippet": "// Version A\nfunction placeOrder(productId: number, qty: number, coupon?: string, gift?: boolean, note?: string) {\n  // implementation\n}\n\n// Version B\ninterface OrderOptions { coupon?: string; gift?: boolean; note?: string }\nfunction placeOrder(productId: number, qty: number, options?: OrderOptions) {\n  // implementation\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is preferable because it keeps required parameters explicit and prevents creating small DTO types for simple calls.",
+          "isCorrect": false,
+          "explanation": "Keeping required parameters explicit has merit, but Version A forces callers to manage many optional positional parameters which degrades readability and is brittle when parameters are reordered or more options are added. Small DTO types are rarely harmful compared to clearer call sites."
+        },
+        {
+          "id": "b",
+          "text": "Version B is preferable because it groups related optional parameters into a single object and improves readability at call sites.",
+          "isCorrect": true,
+          "explanation": "Version B centralizes optional data and names fields at the call site, reducing positional errors and improving discoverability. It also makes it easier to extend options without breaking existing callers. Use a focused options type to preserve domain meaning and consider keeping essential parameters separate."
+        }
+      ]
+    }
+  ]
+}

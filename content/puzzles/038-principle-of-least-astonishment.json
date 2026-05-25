@@ -1,0 +1,106 @@
+{
+  "id": 38,
+  "conceptName": "Principle of Least Astonishment",
+  "category": "principle",
+  "definition": "Design systems so their behavior matches user and developer expectations; avoid surprising callers with inconsistent or unexpected behavior.",
+  "ruleOfThumb": "Prefer predictable, consistent APIs and defaults so callers rarely need to guess intention or handle surprising edge cases.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Bliki",
+    "chapter": "PrincipleOfLeastSurprise entry",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/PrincipleOfLeastSurprise.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the function below. What is the primary problem a caller would notice?",
+      "codeSnippet": "function normalizeEmail(email?: string) {\n  if (!email) return;\n  return email.trim().toLowerCase();\n}\n\n// normalizeEmail('') -> undefined\n// normalizeEmail('A@X.COM') -> 'a@x.com'",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It returns undefined for empty input while otherwise returning a trimmed lowercase string to callers.",
+          "isCorrect": true,
+          "explanation": "The function returns different types depending on input presence, which surprises callers expecting a consistent string result. Returning undefined for falsy inputs mixes return semantics and often forces callers to add null/undefined checks. A clearer approach is to always return a string (for example an empty string) or clearly document and type the optional return value."
+        },
+        {
+          "id": "b",
+          "text": "It throws no error for missing input, allowing silent failures that callers may not detect.",
+          "isCorrect": false,
+          "explanation": "While silent failures are a valid concern, this function does not silently swallow errors in the typical sense — it purposely returns undefined for missing input. The real problem is the inconsistent return shape rather than an unhandled exception. Making the return type consistent or explicit is the more targeted fix."
+        },
+        {
+          "id": "c",
+          "text": "It uses a truthiness check that treats whitespace strings as missing and therefore loses data unexpectedly.",
+          "isCorrect": false,
+          "explanation": "This is a plausible issue: using a truthiness check can misclassify whitespace-only strings as absent. However the provided code calls trim after the presence check, so a whitespace-only string is treated as missing due to the initial check. While that is a symptom, the higher-level astonishment is the inconsistent return type rather than just whitespace handling."
+        },
+        {
+          "id": "d",
+          "text": "It exposes trimming and lowercasing behavior in a utility expected to only validate or parse email formats.",
+          "isCorrect": false,
+          "explanation": "Leaking transformation behavior is a reasonable concern for API clarity, but it is secondary here. The immediate surprise for callers is receiving undefined sometimes and a normalized string other times. Addressing return consistency should come first, then consider separating normalization from validation if responsibilities feel mixed."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this partial-update API. Which statement best describes the main design smell a caller would encounter?",
+      "codeSnippet": "interface User { name?: string | null; email?: string | null }\nfunction updateUser(id: string, changes: Partial<User>) {\n  const user = db.find(id);\n  if (!user) throw new Error('not found');\n  if (changes.name !== undefined) user.name = changes.name;\n  if (changes.email !== undefined) user.email = changes.email;\n  db.save(user);\n}\n\n// updateUser('1', { name: null }) intends deletion of name field",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It conflates null as a deletion marker and undefined as no-change, making partial updates ambiguous for callers.",
+          "isCorrect": true,
+          "explanation": "The API uses undefined to mean no-change and allows null as a stored value, which callers may use to signal deletion. That dual meaning can easily lead to accidental deletions or unclear caller intent. A clearer design uses explicit intent types or a dedicated command object where deletion and no-change are unambiguous."
+        },
+        {
+          "id": "b",
+          "text": "It lacks explicit intent types so callers must rely on sentinel values to express deletion or no-change intentions.",
+          "isCorrect": false,
+          "explanation": "This is a valid observation and closely related to the correct answer. It highlights that the type system does not express intent. However, the specific risk that causes surprise is the conflation of null and undefined semantics during updates. The fix is to introduce explicit intent rather than rely on sentinel values."
+        },
+        {
+          "id": "c",
+          "text": "It performs no defensive validation on incoming changes which could lead to accidental property overwrites with null values.",
+          "isCorrect": false,
+          "explanation": "Missing validation is a real problem and can cause accidental overwrites. In this snippet the core surprise is semantic ambiguity between omission and explicit deletion rather than simple absence of validation. Validation can help, but the API contract should first clarify how to represent deletion and no-change."
+        },
+        {
+          "id": "d",
+          "text": "It leaks implementation detail by using Partial type instead of a clear command object to express update intentions.",
+          "isCorrect": false,
+          "explanation": "This is a practical critique: Partial leaks that updates are applied by copying fields directly. While true, the immediate confusion for callers is how to signal removal versus omission. Defining a command object with explicit operations (set, clear, leave) would remove both the leak and the ambiguity."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation better reduces surprises for library callers based on the code examples?",
+      "codeSnippet": "// Version A: returns raw Response to callers\nasync function fetchUserA(id: string): Promise<Response> {\n  return fetch(`/users/${id}`);\n}\n\n// Version B: normalizes and returns explicit result object\ntype UserResult = { ok: true; data: User } | { ok: false; error: string };\nasync function fetchUserB(id: string): Promise<UserResult> {\n  const res = await fetch(`/users/${id}`);\n  if (!res.ok) return { ok: false, error: res.statusText };\n  return { ok: true, data: await res.json() };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A leaves transport details exposed and forces every caller to parse responses and handle errors manually.",
+          "isCorrect": false,
+          "explanation": "Version A gives callers the raw Response object which allows flexibility but pushes responsibility for error handling and parsing onto every consumer. That design can lead to duplicated code and subtle bugs when different callers make different assumptions about error handling and content parsing. It is plausible in low-level libraries but tends to surprise higher-level callers who expect normalized results."
+        },
+        {
+          "id": "b",
+          "text": "Version B provides a consistent normalized result object that callers can reliably consume.",
+          "isCorrect": true,
+          "explanation": "Version B reduces surprise by normalizing transport variability into an explicit, predictable shape. Callers get a single, documented contract to inspect instead of needing to remember status checks and parsing details. This aligns with minimizing unexpected behavior for consumers and improves discoverability. References: Martin Fowler on predictable APIs and Eric Evans on ubiquitous language; practical guidance also appears in Clean Code regarding clear APIs and responsibility segregation."
+        }
+      ]
+    }
+  ]
+}

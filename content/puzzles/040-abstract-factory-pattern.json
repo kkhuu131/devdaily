@@ -1,0 +1,106 @@
+{
+  "id": 40,
+  "conceptName": "Abstract Factory Pattern",
+  "category": "design-pattern",
+  "definition": "A creational design approach that provides an interface for creating families of related objects without specifying their concrete classes.",
+  "ruleOfThumb": "Use when your system needs to create related product families and you want to enforce consistent product variants across families.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Abstract Factory",
+    "page": "107-116",
+    "externalUrl": "https://refactoring.guru/design-patterns/abstract-factory"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches the behavior of the following code?",
+      "codeSnippet": "interface Button { render(): void }\ninterface Checkbox { render(): void }\n\nclass WinButton implements Button { render() { /* win draw */ } }\nclass WinCheckbox implements Checkbox { render() { /* win draw */ } }\n\ninterface GUIFactory { createButton(): Button; createCheckbox(): Checkbox }\nclass WinFactory implements GUIFactory { createButton() { return new WinButton() } createCheckbox() { return new WinCheckbox() } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code defines families of related products and encapsulates their creation through a factory interface.",
+          "isCorrect": true,
+          "explanation": "Correct. The snippet declares product interfaces (Button, Checkbox) and a factory interface (GUIFactory) with concrete families (WinButton, WinCheckbox, WinFactory). This encapsulation lets clients use products without depending on concrete classes, which is the core intent of the pattern illustrated here."
+        },
+        {
+          "id": "b",
+          "text": "The code centralizes all concrete product creation in a single concrete factory class causing tight coupling.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect. While a concrete factory centralizes creation for one family, the design actually separates the factory interface from concrete factories, allowing different families and avoiding a single monolithic creator. Tight coupling would be more evident if clients directly instantiated concrete products."
+        },
+        {
+          "id": "c",
+          "text": "The code provides interchangeable product implementations but lacks a simple helper for creating individual product instances.",
+          "isCorrect": false,
+          "explanation": "Plausible observation but not the primary issue. The snippet already provides factory methods for creating individual products via the factory interface. The missing helper critique is subjective and not visible here, whereas the primary structure is family-oriented factory encapsulation."
+        },
+        {
+          "id": "d",
+          "text": "The code exposes product constructors directly and does not encapsulate creation behind an interface for testing.",
+          "isCorrect": false,
+          "explanation": "This is incorrect. The snippet explicitly encapsulates creation behind GUIFactory, so clients can be tested against the factory interface and mock or swap families. Exposing constructors directly would mean clients call new WinButton() themselves, which they do not in this example."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "With the factory assembly below, which maintenance concern is most likely to cause friction as product kinds increase?",
+      "codeSnippet": "interface GUIFactory { createButton(): Button; createCheckbox(): Checkbox }\n\n// New product type Slider added later\ninterface GUIFactoryV2 { createButton(): Button; createCheckbox(): Checkbox; createSlider(): Slider }\n\n// Many concrete factories must implement GUIFactoryV2",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Adding a new product type requires changing the factory interface and updating every concrete factory implementation.",
+          "isCorrect": true,
+          "explanation": "Correct. A classic trade-off: the pattern groups product creation per family, so introducing a new product kind forces modification of the factory interface and all concrete factories, causing scattered changes across families."
+        },
+        {
+          "id": "b",
+          "text": "Runtime selection code may become complex when many concrete factories are registered increasing configuration and discovery complexity at runtime.",
+          "isCorrect": false,
+          "explanation": "Plausible. While runtime factory discovery can add complexity, the more acute and structural maintenance pain when product kinds change remains modification of the factory interface across all families, not just runtime registration complexity."
+        },
+        {
+          "id": "c",
+          "text": "Using factory interfaces increases the number of small classes which can make navigation and debugging harder in large codebases.",
+          "isCorrect": false,
+          "explanation": "Plausible and real; many small classes can increase cognitive load. However, the primary scalability concern as product kinds grow is the need to update the factory contract and every concrete factory, which is a stronger structural issue."
+        },
+        {
+          "id": "d",
+          "text": "Concrete factories tend to duplicate product initialization logic across families and force repeated maintenance when behavior changes.",
+          "isCorrect": false,
+          "explanation": "Plausible. Duplication can occur, especially if initialization varies little across families. But duplication is an implementation detail that can be refactored; the unavoidable maintenance cost when adding new product types remains the required interface changes across factories."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation is preferable for a plugin architecture where many independent teams add families and the system frequently adds new product kinds?",
+      "codeSnippet": "// Version A: plugin modules register family factories\nconst registry = new Map<string, GUIFactory>()\n// plugin A registers: registry.set('win', new WinFactory())\n// plugin B registers: registry.set('mac', new MacFactory())\n\n// Version B: single central factory with conditionals\nclass CentralFactory { create(kind, product) { if(kind==='win') { if(product==='button') return new WinButton() } /* many conditionals */ } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A groups family-specific factories into plugins so adding product kinds does not require changing existing factories.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable. Plugins encapsulate family implementations and their registration, allowing teams to evolve families independently. When new product kinds are added, a plugin can handle its own products without changing other plugins or a central conditional, minimizing coordination and risk. This aligns with modular design practices and reduces coupling between families. See Gamma et al. for guidance on composing families and minimizing central conditionals."
+        },
+        {
+          "id": "b",
+          "text": "Version B uses a single factory with conditional logic that requires modifying central code for new product kinds.",
+          "isCorrect": false,
+          "explanation": "Version B is the less desirable choice in this context. A central factory with conditionals forces changes in a shared location whenever a new product kind is introduced, creating a merge hotspot and coupling teams to a common implementation. While simpler initially, it undermines independent evolution of plugin families and can lead to bloated conditional trees and fragile code."
+        }
+      ]
+    }
+  ]
+}

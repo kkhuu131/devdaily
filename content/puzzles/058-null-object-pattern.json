@@ -1,0 +1,106 @@
+{
+  "id": 58,
+  "conceptName": "Null Object Pattern",
+  "category": "design-pattern",
+  "definition": "Provide an object with neutral behavior in place of null so clients can call methods without conditional checks.",
+  "ruleOfThumb": "When you see repeated null checks for a collaborator, consider supplying a do-nothing implementation at the boundary.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Patterns of Enterprise Application Architecture",
+    "chapter": "Null Object",
+    "page": "n/a",
+    "externalUrl": "https://martinfowler.com/eaaCatalog/nullObject.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches the intent of this code snippet?",
+      "codeSnippet": "interface Logger {\n  log(message: string): void\n}\nclass ConsoleLogger implements Logger {\n  log(message: string) { console.log(message) }\n}\nclass NullLogger implements Logger {\n  log(_message: string) { /* no-op */ }\n}\n// Client always calls logger.log without null checks\nconst logger: Logger = new NullLogger()\nlogger.log('started')",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Provides a do-nothing implementation to avoid conditional checks when a collaborator is absent at runtime.",
+          "isCorrect": true,
+          "explanation": "This code shows a concrete no-op implementation that fulfills the Logger interface so consumers can invoke methods without checking for null. The NullLogger embodies the pattern by behaving safely when no real logger is available, eliminating scattered conditional logic."
+        },
+        {
+          "id": "b",
+          "text": "Provides an alternative implementation that centralizes business logic and changes behavior based on runtime flags.",
+          "isCorrect": false,
+          "explanation": "This option confuses a behavioral switcher with a no-op implementation. The presented NullLogger does not change business rules or switch behavior based on flags; it simply provides a benign implementation to avoid null checks."
+        },
+        {
+          "id": "c",
+          "text": "Provides a lightweight wrapper that logs calls and rethrows errors while preserving original API shape.",
+          "isCorrect": false,
+          "explanation": "A wrapper that logs and rethrows would add behavior rather than suppress it. The shown NullLogger intentionally performs no actions, so this explanation describes a cross-cutting decorator rather than the shown neutral implementation."
+        },
+        {
+          "id": "d",
+          "text": "Provides a factory method that lazily constructs heavy collaborators and caches instances for reuse across requests.",
+          "isCorrect": false,
+          "explanation": "Lazy construction and caching are unrelated concerns. The snippet supplies a simple no-op object rather than deferring creation of heavy resources or implementing caching, so this distractor points to a different optimization."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this notifier usage, which improvement most directly reduces conditional branches in client code?",
+      "codeSnippet": "interface Notifier { notify(msg: string): void }\nclass EmailNotifier implements Notifier { notify(msg: string) { /* send email */ } }\nclass Service {\n  notifier?: Notifier\n  sendReport(data: any) {\n    if (this.notifier) { this.notifier.notify('report ready') }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Use a default no-op implementation assigned at construction so client code can call methods without conditional checks.",
+          "isCorrect": true,
+          "explanation": "Assigning a default no-op Notifier at construction time means sendReport can invoke notify unconditionally. That centralizes the absence handling and removes conditional branching from all call sites, simplifying maintenance and testing."
+        },
+        {
+          "id": "b",
+          "text": "Use optional chaining at every call site to avoid errors and keep the existing optional field handling.",
+          "isCorrect": false,
+          "explanation": "Optional chaining reduces errors but preserves conditional logic at call sites. It defers the handling rather than encapsulating it, so the number of conditional constructs remains and the responsibility is scattered across callers."
+        },
+        {
+          "id": "c",
+          "text": "Use a central event bus to publish notifications so observers handle actions without clients needing direct collaborator references.",
+          "isCorrect": false,
+          "explanation": "Introducing an event bus is an architectural shift that decouples publishers from subscribers, but it changes semantics and complexity. It may be overkill when the goal is simply to remove null checks for a single collaborator."
+        },
+        {
+          "id": "d",
+          "text": "Use a factory that returns concrete implementations based on configuration and pass the chosen instance into consumers consistently.",
+          "isCorrect": false,
+          "explanation": "A factory helps selection and instantiation concerns, but it does not by itself remove conditional calls at usage sites. Unless the factory returns a benign implementation for the absent case, callers still need to handle optional collaborators."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better handles an optional Logger for long-term maintainability?",
+      "codeSnippet": "// Version A\ninterface Logger { log(msg: string): void }\nclass NoopLogger implements Logger { log(_msg: string) { /* no-op */ } }\nclass AppA { constructor(public logger: Logger = new NoopLogger()) {} doWork() { this.logger.log('work') } }\n\n// Version B\nclass AppB { constructor(public logger?: Logger) {} doWork() { if (this.logger) { this.logger.log('work') } } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A supplies a default no-op logger instance that clients always call directly.",
+          "isCorrect": true,
+          "explanation": "Version A centralizes the absence behavior by providing a benign implementation at the boundary, so all callers use the same contract without conditional checks. This reduces duplicated branching, simplifies tests, and preserves invariants about the logger being callable."
+        },
+        {
+          "id": "b",
+          "text": "Version B requires conditional checks at each call site which scatters branching logic and increases maintenance burden.",
+          "isCorrect": false,
+          "explanation": "Version B leaves the responsibility of handling absence to every caller, which results in repeated if checks, higher risk of missed checks, and more maintenance. The scattered logic makes adding new methods or clients more error prone compared with a centralized no-op implementation."
+        }
+      ]
+    }
+  ]
+}
