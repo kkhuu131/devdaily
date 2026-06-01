@@ -1,0 +1,106 @@
+{
+  "id": 32,
+  "conceptName": "Temporary Field",
+  "category": "code-smell",
+  "definition": "An instance field that holds data only for a limited operation or to shuttle values between methods, remaining unused otherwise.",
+  "ruleOfThumb": "Prefer passing values as parameters or using local variables rather than storing short lived data on the object.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Temporary Field",
+    "page": "p. 79",
+    "externalUrl": "https://refactoring.com/catalog/temporary_field.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation best identifies the primary problem in this class?",
+      "codeSnippet": "class Report {\n  private debugLines: string[] = [];\n\n  addLine(line: string) {\n    this.debugLines.push(line);\n  }\n\n  generate() {\n    if (this.debugLines.length === 0) return \"empty\";\n    const output = this.debugLines.join(\"\\n\");\n    return output;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The field exists only to hold interim data used during one method and is otherwise unused.",
+          "isCorrect": true,
+          "explanation": "The debugLines field is only relevant during generation and otherwise idle. This is a classic temporary-field smell where state is stored on the instance just to support a single operation. The usual fixes are to make the data local to the operation, pass it through parameters, or encapsulate the behavior in a dedicated builder object."
+        },
+        {
+          "id": "b",
+          "text": "The field is intended as a cache for repeated computations across calls but lacks invalidation and control.",
+          "isCorrect": false,
+          "explanation": "A caching concern would imply reuse across multiple operations and cache invalidation logic. Here debugLines is only populated for the immediate generate call and then unused, so cache semantics are not present. Treating it as a cache would lead to unnecessary complexity rather than addressing the root issue."
+        },
+        {
+          "id": "c",
+          "text": "The field is a concurrency control token shared across threads and may cause race conditions without synchronization.",
+          "isCorrect": false,
+          "explanation": "Concurrency issues are a plausible worry for mutable instance fields, but the snippet shows a collection used locally for output rather than a synchronization primitive. If concurrency were a real requirement, you would see explicit sharing patterns, synchronization, or thread-safety concerns to justify that diagnosis."
+        },
+        {
+          "id": "d",
+          "text": "The field is a configuration flag used by many methods indicating business rules and should be refactored to a policy.",
+          "isCorrect": false,
+          "explanation": "A configuration flag would be referenced across multiple behaviors to alter business logic. In this snippet debugLines is only used in generate and addLine, and it represents transient content rather than policy. Refactoring to a policy object would not address the transient nature of the data."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the most likely root cause of the issue in this PaymentService?",
+      "codeSnippet": "class PaymentService {\n  private tempAuthToken: string | null = null;\n\n  authorize(card: any) {\n    this.tempAuthToken = requestAuth(card);\n    const allowed = this.checkLimits(card);\n    this.applyCharge(card);\n    this.tempAuthToken = null;\n    return allowed;\n  }\n\n  private checkLimits(card: any) {\n    return this.tempAuthToken === 'ADMIN';\n  }\n\n  private applyCharge(card: any) {\n    // logs using this.tempAuthToken\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class uses a mutable field as a temporary bridge between methods causing hidden coupling and testability problems.",
+          "isCorrect": true,
+          "explanation": "The code sets an instance field to pass authentication state between methods instead of using method parameters or a short lived context object. That creates hidden coupling, makes methods impure and harder to test, and risks errors if the field is not reliably cleared. Refactoring to pass the token explicitly or to a dedicated context object removes the smell."
+        },
+        {
+          "id": "b",
+          "text": "This class leaves the token set across method boundaries causing lifecycle confusion and risking leaks into subsequent operations.",
+          "isCorrect": false,
+          "explanation": "Leaving state set across boundaries is a valid concern and matches part of the problem, but it describes a symptom rather than the root design choice. The deeper issue is using instance state to shuttle request-specific data; addressing that design removes the lifecycle leakage symptom."
+        },
+        {
+          "id": "c",
+          "text": "This class conflates authorization and charging logic by relying on instance state instead of isolating responsibilities per method.",
+          "isCorrect": false,
+          "explanation": "Mixing responsibilities is plausible because authorize touches multiple behaviors. However, the main smell here is the temporary instance field used to carry context between methods; separating responsibilities may help but does not directly eliminate the transient shared state without also changing parameter passing."
+        },
+        {
+          "id": "d",
+          "text": "This class will break under concurrent or asynchronous reuse because request specific data is stored on the shared instance.",
+          "isCorrect": false,
+          "explanation": "Concurrency and async reuse are legitimate risks for mutable instance fields holding request-scoped data. While this is an important practical problem, the immediate design defect is the use of instance state for short lived values. Fixing the passing mechanism both improves concurrency safety and clarifies responsibilities."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for eliminating short lived instance state while keeping clear method boundaries?",
+      "codeSnippet": "// Version A\nclass OrderHandlerA {\n  private tempCustomerId: string | null = null;\n\n  process(order: any) {\n    this.tempCustomerId = lookupCustomer(order);\n    this.validate(order);\n    this.charge(order);\n    this.tempCustomerId = null;\n  }\n\n  private validate(o: any) { /* uses this.tempCustomerId */ }\n  private charge(o: any) { /* uses this.tempCustomerId */ }\n}\n\n// Version B\nclass OrderHandlerB {\n  process(order: any) {\n    const customerId = lookupCustomer(order);\n    this.validate(order, customerId);\n    this.charge(order, customerId);\n  }\n\n  private validate(o: any, customerId: string) { /* uses customerId */ }\n  private charge(o: any, customerId: string) { /* uses customerId */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A reuses instance fields to share data across methods and retains hidden mutable state that complicates reasoning.",
+          "isCorrect": false,
+          "explanation": "Version A keeps transient data on the object which can lead to subtle bugs, harder tests, and lifecycle management issues. While it may avoid allocating extra locals in some languages, that minor optimization is rarely worth the increased coupling. The problems are especially painful with concurrent or asynchronous code paths where the field can be observed or mutated unexpectedly."
+        },
+        {
+          "id": "b",
+          "text": "Version B avoids transient instance state and keeps methods pure by passing required data explicitly.",
+          "isCorrect": true,
+          "explanation": "Version B removes the temporary instance field and instead passes the necessary value as a parameter, making each method's dependencies explicit. This improves testability, reasoning, and concurrency safety without changing behavior. This aligns with refactorings recommended by Fowler and general advice to prefer local or parameter-passed state over short lived instance fields."
+        }
+      ]
+    }
+  ]
+}

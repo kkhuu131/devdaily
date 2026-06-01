@@ -1,0 +1,106 @@
+{
+  "id": 26,
+  "conceptName": "Extract Function",
+  "category": "refactoring",
+  "definition": "Move a cohesive block of code out of a larger routine into a new, well-named function to improve readability, reduce duplication, and make intent explicit.",
+  "ruleOfThumb": "If a block is 3-5 lines long, expresses a single idea, or appears more than once, consider extracting it into its own function.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Extract Method",
+    "page": "pp. 30-36",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this function. What refactor most directly addresses the visible problem in the implementation?",
+      "codeSnippet": "function processOrder(order: Order) {\n  const tax = order.total * 0.08;\n  const formatted = `$${(order.total + tax).toFixed(2)}`;\n  if (order.type === 'online') {\n    console.log('Online order', formatted);\n  } else {\n    console.log('In-store order', formatted);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce a new helper function to name and reuse the duplicated calculation, improving readability and reducing code repetition across branches.",
+          "isCorrect": true,
+          "explanation": "The code repeats the tax calculation and formatting in the same routine. Pulling that block into a small, well-named function both documents intent and eliminates repetition. This also makes the numeric logic easier to unit test independently of the logging branches."
+        },
+        {
+          "id": "b",
+          "text": "Collapse the conditional branches into a single complex expression to keep logic in one place without adding new functions.",
+          "isCorrect": false,
+          "explanation": "Collapsing branches into a complex expression keeps all code inline but increases cognitive load and reduces clarity. It does not address the duplicated calculation or make the calculation testable, so it is a less helpful first step."
+        },
+        {
+          "id": "c",
+          "text": "Extract the duplicated calculation into a class field to preserve state and avoid passing many parameters between calls.",
+          "isCorrect": false,
+          "explanation": "Turning a transient calculation into stored state couples formatting to object lifecycle and risks stale values. The duplication here is best solved by extracting a focused computation, not by introducing shared mutable state."
+        },
+        {
+          "id": "d",
+          "text": "Create a higher order function that composes the steps to reduce duplication and centralize control flow behavior.",
+          "isCorrect": false,
+          "explanation": "A higher order function could abstract control flow but would introduce unnecessary indirection for this simple duplicated calculation. The immediate issue is a small reusable block, which warrants a straightforward helper function."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "This function mixes responsibilities. What is the most appropriate first change to improve its structure?",
+      "codeSnippet": "function buildInvoice(items: Item[]) {\n  let total = 0;\n  const rows: string[] = [];\n  for (const it of items) {\n    total += it.qty * it.price;\n    rows.push(`${it.name} x${it.qty} $${(it.qty*it.price).toFixed(2)}`);\n  }\n  rows.push(`Total: $${total.toFixed(2)}`);\n  return rows.join('\\n');\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Separate numeric calculation from string formatting into a focused helper so each concern becomes independently testable and clearer.",
+          "isCorrect": true,
+          "explanation": "The function intertwines arithmetic and presentation. Extracting the calculation into its own function isolates business logic from formatting, making numeric logic easier to verify and the formatter simpler to change for different outputs."
+        },
+        {
+          "id": "b",
+          "text": "Inline the formatting into callers so the function only returns numbers and leaves presentation to higher layers.",
+          "isCorrect": false,
+          "explanation": "Having callers handle formatting moves responsibility upward and can work, but it may scatter presentation code across the codebase. A better first step is to separate concerns within this module by extracting focused helpers."
+        },
+        {
+          "id": "c",
+          "text": "Wrap the function in a transaction so the totals are consistent when multiple threads update the same items.",
+          "isCorrect": false,
+          "explanation": "Transactions address concurrency concerns, which are not evident here. The immediate issue is mixed responsibilities and testability, not concurrent updates, so transactions are premature and do not simplify the logic."
+        },
+        {
+          "id": "d",
+          "text": "Introduce a domain object to encapsulate item arithmetic and formatting to move logic into richer value objects.",
+          "isCorrect": false,
+          "explanation": "Modeling the domain with richer objects can be beneficial long term, but it is a larger change. A smaller, safer first step is extracting focused functions to clarify and test individual concerns before introducing new types."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation is preferable and why based on testability and long term maintenance?",
+      "codeSnippet": "// Version A\nfunction applyDiscount(order: Order) {\n  for (const item of order.items) {\n    const discount = item.price > 100 ? item.price * 0.1 : 0;\n    item.finalPrice = +(item.price - discount).toFixed(2);\n  }\n  // more code using finalPrice\n}\n\n// Version B\nfunction applyDiscount(order: Order) {\n  for (const item of order.items) {\n    item.finalPrice = calculateFinalPrice(item);\n  }\n  // more code using finalPrice\n}\nfunction calculateFinalPrice(item: Item) {\n  const discount = item.price > 100 ? item.price * 0.1 : 0;\n  return +(item.price - discount).toFixed(2);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps logic together reducing indirection but increases duplication and makes testing the pricing calculation harder.",
+          "isCorrect": false,
+          "explanation": "Version A embeds the pricing logic inline where it is used, which avoids an extra function call but hides the calculation among other concerns. That inline placement makes it harder to write focused unit tests for the pricing rule and to reuse or modify the calculation safely in the future."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates the pricing calculation into a named helper improving readability and making that calculation independently testable.",
+          "isCorrect": true,
+          "explanation": "Version B extracts the pricing computation to a single, well-named function. This clarifies intent in the loop, enables targeted unit tests for the calculation, and reduces risk when the pricing rule changes. Extracting such a cohesive piece is a classic refactoring that simplifies maintenance and supports reuse."
+        }
+      ]
+    }
+  ]
+}

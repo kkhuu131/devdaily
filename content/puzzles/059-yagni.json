@@ -1,0 +1,106 @@
+{
+  "id": 59,
+  "conceptName": "YAGNI",
+  "category": "principle",
+  "definition": "A software-development guideline that discourages adding functionality until it is necessary for current requirements, avoiding wasted effort and premature complexity.",
+  "ruleOfThumb": "Implement only the behavior you need now; delay generalized solutions until a second caller or real need appears.",
+  "citation": {
+    "author": "Andrew Hunt and David Thomas",
+    "bookTitle": "The Pragmatic Programmer",
+    "chapter": "You Aren't Gonna Need It",
+    "page": null,
+    "externalUrl": "https://pragprog.com/titles/tpp20/the-pragmatic-programmer-20th-anniversary-edition/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the payment service below. What is the primary smell in this implementation?",
+      "codeSnippet": "class PaymentService {\n  processCreditCard(card: Card) {\n    // existing implemented flow for current customers\n  }\n\n  // Planned but unused support\n  processCrypto(wallet: Wallet) {\n    // not wired into any use case yet\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code implements functionality that is not required by the product at this time in production.",
+          "isCorrect": true,
+          "explanation": "The extra crypto method is implemented despite having no callers or requirements yet. That adds maintenance burden and increases the surface area for bugs. The principle advises deferring such code until there is a demonstrated need or a second concrete use case."
+        },
+        {
+          "id": "b",
+          "text": "This code violates single responsibility by combining unrelated feature toggles and payment logic making future changes harder.",
+          "isCorrect": false,
+          "explanation": "While mixing responsibilities is a real concern, the snippet shows a separate method for a new payment type rather than mixing concerns inside one method. The bigger issue is premature addition of unused capability rather than clear SRP breach."
+        },
+        {
+          "id": "c",
+          "text": "This code over-abstracts for possible future payment methods and introduces indirection without current practical benefit for the product.",
+          "isCorrect": false,
+          "explanation": "Over-abstraction is a plausible diagnosis, but the snippet does not show a complex abstraction layer yet. The immediate problem is the implemented but unused feature. Abstraction criticism fits if many fictitious paths were already wired in."
+        },
+        {
+          "id": "d",
+          "text": "This code contains a security vulnerability from missing validation on payment inputs which could allow malformed transactions.",
+          "isCorrect": false,
+          "explanation": "Missing validation is a specific and serious issue but the snippet contains no evidence of input handling or validation gaps. The concrete smell present is implementing unused functionality rather than an obvious security bug."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A team added a small abstraction to handle multiple customer behaviors before those customers existed. What is the most accurate critique?",
+      "codeSnippet": "class CustomerRouter {\n  handleRequest(req: Req) {\n    if (req.customerId === SPECIAL_CUSTOMER) {\n      // special case not used by current clients\n      this.handleSpecial(req)\n    } else {\n      this.handleDefault(req)\n    }\n  }\n\n  handleSpecial(req: Req) { /* special logic planned */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code introduces an abstraction to handle hypothetical future customers that are not needed by current requirements.",
+          "isCorrect": true,
+          "explanation": "The conditional and a dedicated special handler were added for anticipated customers that do not yet exist. That is classic premature extension that increases complexity without validated need. Defer until a real business requirement or multiple callers justify the abstraction."
+        },
+        {
+          "id": "b",
+          "text": "This code violates open closed by requiring modification when adding new customers due to hardcoded condition checks.",
+          "isCorrect": false,
+          "explanation": "Open Closed is relevant when frequent changes are expected, but here the primary issue is that an unused branch was added before need. The immediate problem is premature generalization rather than an inability to extend without modification."
+        },
+        {
+          "id": "c",
+          "text": "This code leaks business logic into transport layer making future protocol changes risky and harder to test in isolation.",
+          "isCorrect": false,
+          "explanation": "Leaking concerns into transport is a legitimate architectural worry, but the snippet shows a routing decision for a planned business case. The more precise problem is adding speculative behavior rather than cross-layer leakage."
+        },
+        {
+          "id": "d",
+          "text": "This code prematurely generalizes the interface and will force unnecessary complexity for the current single customer use case.",
+          "isCorrect": false,
+          "explanation": "This option correctly identifies premature generalization as a concern and is close to the correct critique, but it frames the problem as an interface issue. The most accurate description is that an abstraction was introduced for customers that do not yet exist, which is a specific instance of premature generalization."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two team proposals for optional features are shown. Which version is preferable for now?",
+      "codeSnippet": "// Version A: defer optional feature until used\nclass FeatureRegistryA {\n  getFeature(name: string) {\n    if (!this.loaded[name]) {\n      this.loaded[name] = loadFeatureDynamically(name)\n    }\n    return this.loaded[name]\n  }\n}\n\n// Version B: implement all optional features in core up front\nclass FeatureRegistryB {\n  constructor() { this.features = { a: featureA(), b: featureB(), c: featureC() } }\n  getFeature(name: string) { return this.features[name] }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A defers optional feature implementation until it is required by production usage.",
+          "isCorrect": true,
+          "explanation": "Version A postpones adding optional behavior until there is a real need, minimizing upfront complexity and reducing code to maintain. In practice this lowers risk and keeps the design adaptable. If usage proves the feature necessary, you can then introduce a cleaner, well-informed abstraction."
+        },
+        {
+          "id": "b",
+          "text": "Version B eagerly implements many optional features in the core to reduce runtime branching but increases maintenance overhead.",
+          "isCorrect": false,
+          "explanation": "Version B may seem simpler at runtime, but it bakes hypotheticals into the core and creates unnecessary code paths and maintenance cost. Over time this leads to fragile conditional logic and costlier changes when requirements actualize differently than anticipated."
+        }
+      ]
+    }
+  ]
+}

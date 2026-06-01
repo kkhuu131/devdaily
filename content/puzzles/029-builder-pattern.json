@@ -1,0 +1,106 @@
+{
+  "id": 29,
+  "conceptName": "Builder Pattern",
+  "category": "design-pattern",
+  "definition": "A creational design approach that separates the construction of a complex object from its representation so the same construction process can create different representations.",
+  "ruleOfThumb": "When constructors become unwieldy or you need stepwise, readable assembly of complex immutable objects, extract a dedicated builder-like creator.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Builder",
+    "page": "107",
+    "externalUrl": "https://en.wikipedia.org/wiki/Builder_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given this class used across the codebase, which statement best describes the design characteristic shown?",
+      "codeSnippet": "class ReportConfig {\n  title?: string;\n  footer?: string;\n  includeSummary = false;\n  setTitle(t: string) { this.title = t; return this; }\n  setFooter(f: string) { this.footer = f; return this; }\n  setIncludeSummary(v: boolean) { this.includeSummary = v; return this; }\n}\nconst cfg = new ReportConfig().setTitle(\"Q1\").setIncludeSummary(true);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A type with many optional construction parameters and chained setters indicates a candidate for extraction into a fluent configurator.",
+          "isCorrect": true,
+          "explanation": "The class exposes numerous optional settings with fluent setters, which is the typical signal to extract a dedicated builder-like configurator to make construction explicit and reduce API misuse. Extracting construction clarifies intent and helps create immutable final objects. See Gamma et al. on separating construction from representation for complex objects."
+        },
+        {
+          "id": "b",
+          "text": "A type with many optional construction parameters indicates a need to collapse properties into a single monolithic constructor.",
+          "isCorrect": false,
+          "explanation": "Collapsing into a single constructor would increase parameter count and harm readability. While constructors centralize creation, they do not solve optionality or stepwise configuration concerns and tend to produce error-prone overloads. A dedicated constructor with many parameters is generally worse than a builder-style approach."
+        },
+        {
+          "id": "c",
+          "text": "A type with many optional construction parameters implies the object should be immutable and built by cloning on each update.",
+          "isCorrect": false,
+          "explanation": "Cloning to achieve immutability is a valid technique but does not address the usability problems of many construction options. Cloning also adds runtime overhead and does not provide the clear, readable fluent API that a separate construction helper yields when assembling complex objects."
+        },
+        {
+          "id": "d",
+          "text": "A type with many optional construction parameters means the API should expose raw mutable fields for callers to set directly.",
+          "isCorrect": false,
+          "explanation": "Exposing mutable fields trades encapsulation for convenience and increases the risk of inconsistent state. That approach shifts responsibility to callers and makes it harder to validate or enforce invariants during construction. A controlled builder-like creation process allows validation before producing the final object."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the most accurate characterization of the API style implemented below?",
+      "codeSnippet": "class OrderBuilder {\n  private items: string[] = [];\n  private priority = false;\n  addItem(item: string) { this.items.push(item); return this; }\n  setPriority(p: boolean) { this.priority = p; return this; }\n  build() { return new Order(this.items, this.priority); }\n}\nconst order = new OrderBuilder().addItem('a').setPriority(true).build();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This API presents a fluent stepwise construction interface that accumulates configuration and returns a final constructed object.",
+          "isCorrect": true,
+          "explanation": "The class offers chained mutating methods and a terminal build method that assembles a finished instance. That fluent, stepwise assembly is a hallmark of extracting construction responsibilities into a dedicated helper, which improves readability and separates configuration from the object itself."
+        },
+        {
+          "id": "b",
+          "text": "This API exposes unsafe mutability because callers can reuse the same instance after build producing shared mutated state across calls.",
+          "isCorrect": false,
+          "explanation": "Reusing the builder instance can cause shared mutable state but that is an operational usage issue rather than a characterization of the API style. Proper usage patterns or making build create defensive copies mitigate this concern without changing the fundamental fluent construction approach."
+        },
+        {
+          "id": "c",
+          "text": "This API is equivalent to multiple overload constructors and therefore should be replaced with many typed factory functions instead.",
+          "isCorrect": false,
+          "explanation": "Factories can replace builders for simple variants, but they are not equivalent when configuration is stepwise or highly optional. Factory functions quickly proliferate when options combine, while a fluent configurator composes more naturally for many optional parameters."
+        },
+        {
+          "id": "d",
+          "text": "This API primarily indicates overuse of inheritance and should be refactored to move configuration into subclasses instead.",
+          "isCorrect": false,
+          "explanation": "The example shows fluent configuration, not inheritance issues. Moving configuration into subclasses adds complexity and obscures configuration choices. Extracting a dedicated creator keeps configuration orthogonal to class hierarchies and avoids subclass explosion."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version would you choose for constructing complex immutable invoices in the payment service, and why?",
+      "codeSnippet": "/* Version A */\nclass InvoiceBuilder {\n  private lines: Line[] = [];\n  private taxMode: string = 'standard';\n  addLine(l: Line) { this.lines.push(l); return this; }\n  setTaxMode(m: string) { this.taxMode = m; return this; }\n  build(): Invoice { return new Invoice(this.lines.slice(), this.taxMode); }\n}\n\n/* Version B */\nclass Invoice {\n  constructor(lines: Line[], taxMode?: string) { /* many overloads elsewhere */ }\n}\nconst iA = new InvoiceBuilder().addLine(line).setTaxMode('reduced').build();\nconst iB = new Invoice([line], 'reduced');",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A extracts construction into a separate fluent creator class supporting incremental, readable assembly of the final object.",
+          "isCorrect": true,
+          "explanation": "Version A encapsulates the assembly process in a dedicated creator with fluent methods and a single build step. That separates mutable assembly from the immutable Invoice representation, improves discoverability of configuration options, and centralizes validation. These benefits align with best practices for constructing complex objects and reduce constructor overload proliferation. See Gamma et al. and Fowler on separating construction responsibility for complex object graphs."
+        },
+        {
+          "id": "b",
+          "text": "Version B relies on direct constructor invocation and overloads which duplicate initialization logic and become brittle as options grow.",
+          "isCorrect": false,
+          "explanation": "Telescoping constructors or many overloads embed assembly logic in the domain type, causing duplicated code paths and poor readability when many optional parameters exist. This approach makes adding new optional features risky and scatters validation logic across constructors. It also encourages large parameter lists and reduces clarity about which combinations are valid."
+        }
+      ]
+    }
+  ]
+}

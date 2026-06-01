@@ -1,0 +1,106 @@
+{
+  "id": 65,
+  "conceptName": "Switch Statements",
+  "category": "code-smell",
+  "definition": "A pattern where control flow branches on a value discriminant across the codebase, concentrating behavior in conditional blocks rather than in types or modules.",
+  "ruleOfThumb": "If adding a new variant requires changing many conditionals, prefer encapsulating behavior in types or handler registries.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Conditional with Polymorphism",
+    "page": "p. 90",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which design smell best matches the code below?",
+      "codeSnippet": "function total(order: any) {\n  switch (order.type) {\n    case 'sale':\n      return order.items.reduce((s: number, i: any) => s + i.price, 0);\n    case 'rental':\n      return order.items.reduce((s: number, i: any) => s + i.dailyRate * order.days, 0);\n    default:\n      throw new Error('unknown order type');\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A large conditional on a type code that requires modification whenever new variants or behaviors are introduced.",
+          "isCorrect": true,
+          "explanation": "This is the classic conditional concentration smell. The switch centralizes variant logic so adding a new order kind forces edits here. Refactoring to polymorphism or a handler registry moves behavior into extension points and follows the Open/Closed Principle."
+        },
+        {
+          "id": "b",
+          "text": "A function performing multiple unrelated responsibilities that would be easier to manage if each responsibility were extracted.",
+          "isCorrect": false,
+          "explanation": "While the function performs different calculations, the core issue is not mixed responsibilities but branching by type. Extracting responsibilities might help readability but would not solve the need to add new type branches across callers."
+        },
+        {
+          "id": "c",
+          "text": "A lack of abstraction hiding platform details so callers must know internal representation and duplicate conversion logic.",
+          "isCorrect": false,
+          "explanation": "This suggests leaky abstraction, which is a real concern in some code. Here the problem surfaces as variant branching rather than leaked platform details; the callers are not duplicating conversion logic, they are subject to centralized conditional logic."
+        },
+        {
+          "id": "d",
+          "text": "A poor naming convention causing confusion about intent and forcing readers to inspect implementation to understand behavior.",
+          "isCorrect": false,
+          "explanation": "Poor names can hinder comprehension, but the snippet shows explicit type values and distinct behaviors. The maintenance cost comes from adding new branches, not from ambiguous identifiers, so naming is not the primary smell."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the event handler below, which concern most directly threatens future extensibility?",
+      "codeSnippet": "function handleEvent(e: { type: string; payload: any }) {\n  switch (e.type) {\n    case 'USER_CREATED':\n      createWelcomeEmail(e.payload);\n      break;\n    case 'USER_DELETED':\n      archiveAccount(e.payload);\n      break;\n    default:\n      console.log('unhandled event');\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code relies on branching by event type and will require modification when adding additional event kinds to the system.",
+          "isCorrect": true,
+          "explanation": "The handler centralizes dispatch logic. Every new event kind needs an edit here, risking merge conflicts and forgotten cases. A registry of handlers or polymorphic event objects would decouple additions from this switch."
+        },
+        {
+          "id": "b",
+          "text": "This code couples handler logic to external API payload shapes requiring global changes when the external contract changes across services.",
+          "isCorrect": false,
+          "explanation": "Coupling to payload shapes is a valid concern, but the snippet shows payloads passed through to targeted functions. The immediate extensibility risk is adding new event types, not the shape of existing payloads."
+        },
+        {
+          "id": "c",
+          "text": "This code performs synchronous heavy work inside the main request path causing latency spikes and preventing easy asynchronous scaling.",
+          "isCorrect": false,
+          "explanation": "Synchronous work would be a scalability problem, yet the example shows simple delegation calls. The main maintenance liability is branching by type; you could address latency separately without resolving the branching smell."
+        },
+        {
+          "id": "d",
+          "text": "This code lacks validation for unexpected types enabling silent failures when unknown payloads are received by downstream modules.",
+          "isCorrect": false,
+          "explanation": "Validation is important and the default branch is minimal here, but the code already logs unhandled events. The question targets structural extensibility risks, which are better described as centralized conditional dispatch rather than missing validation."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version demonstrates a better design for adding new payment methods over time?",
+      "codeSnippet": "// Version A\ninterface Payment { process(): void }\nclass CreditCard implements Payment { process(){ /* card logic */ } }\nclass PayPal implements Payment { process(){ /* paypal logic */ } }\nfunction processPayment(p: Payment){ p.process(); }\n\n// Version B\nfunction processPaymentRaw(payment: { type: string; data: any }){\n  switch (payment.type) {\n    case 'card': /* card logic */ break;\n    case 'paypal': /* paypal logic */ break;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A cleanly encapsulates each payment behavior behind a polymorphic type boundary.",
+          "isCorrect": true,
+          "explanation": "Version A isolates behavior per type so adding a new payment method only requires a new implementation, not editing a central dispatch. This follows Replace Conditional with Polymorphism and the Open/Closed Principle — it reduces change impact, eases testing, and supports dependency injection."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes behavior in conditionals requiring modification of a single dispatch function for each new payment method added.",
+          "isCorrect": false,
+          "explanation": "Version B keeps all variants in one place, which might seem convenient initially, but it becomes brittle as methods proliferate. Every new method requires touching the same function, increasing merge conflicts and the risk of regressions. Refactoring to per-variant classes or a handler registry mitigates these issues."
+        }
+      ]
+    }
+  ]
+}

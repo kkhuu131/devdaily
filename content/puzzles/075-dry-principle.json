@@ -1,0 +1,105 @@
+{
+  "id": 75,
+  "conceptName": "DRY Principle",
+  "category": "principle",
+  "definition": "A guideline to avoid repeating knowledge or logic in multiple places so a single source of truth is maintained.",
+  "ruleOfThumb": "If a change requires touching the same logic in two places, consider centralizing that logic first.",
+  "citation": {
+    "author": "Andy Hunt and Dave Thomas",
+    "bookTitle": "The Pragmatic Programmer",
+    "chapter": "Don't Repeat Yourself",
+    "page": "pp. 35-38",
+    "externalUrl": "https://pragprog.com/titles/tpp20/the-pragmatic-programmer-20th-anniversary-edition/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which problem is visible when the same implementation appears in several files of a codebase?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "The codebase contains repeated implementation logic across multiple modules, appearing in identical function bodies and files.",
+          "isCorrect": true,
+          "explanation": "This is the textbook symptom of duplicated implementation across modules. Consolidating the shared logic reduces maintenance points and variance. Other options describe plausible issues but do not match the immediate observation: inconsistent error handling, missing helpers, or duplicated configuration can coexist with duplication but are not as direct as identical function bodies appearing in different files."
+        },
+        {
+          "id": "b",
+          "text": "Different modules independently reimplement the same behavior, creating multiple maintenance points with inconsistent bug fixes over time.",
+          "isCorrect": false,
+          "explanation": "This is a plausible consequence of duplication and is often true in practice, but it emphasizes consequence over the immediate symptom. The primary recognition task is spotting identical implementations first; inconsistent bug fixes are a downstream risk rather than the direct code smell shown."
+        },
+        {
+          "id": "c",
+          "text": "A single public helper is missing so duplicated utilities accumulate across packages and teams add local copies.",
+          "isCorrect": false,
+          "explanation": "This is a reasonable diagnosis and a common root cause for repetition, but it presumes the absence of a helper rather than identifying the visible symptom of duplicated code. The snippet asked about what is visible, not the precise organizational reason."
+        },
+        {
+          "id": "d",
+          "text": "There is repeated configuration or string literal duplication that should be consolidated into a shared constant store or service.",
+          "isCorrect": false,
+          "explanation": "Duplicated configuration or literals are a real duplication category, but this option focuses on a specific subtype. The correct identification is general duplicated implementation logic; this distractor narrows to configuration duplication which may not be present."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In the snippet below, what is the primary issue you should address first?",
+      "codeSnippet": "export function calculateFinalPriceA(item: Item) {\n  const base = item.basePrice;\n  const discount = Math.min(base * 0.1, item.maxDiscount || 0);\n  const tax = base * 0.2;\n  return base - discount + tax;\n}\n\nexport function calculateFinalPriceB(product: Product) {\n  const base = product.basePrice;\n  const discount = Math.min(base * 0.1, product.maxDiscount || 0);\n  const tax = base * 0.2;\n  return base - discount + tax;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Business logic is duplicated across services with near identical code blocks implementing price calculation in two separate modules.",
+          "isCorrect": true,
+          "explanation": "Both functions implement the same pricing algorithm with only parameter naming differences. Centralizing the calculation removes duplication and prevents divergence. Other concerns like typing, performance, or tests matter, but the clearest, highest value improvement is consolidating the duplicated business logic into a single, well tested function."
+        },
+        {
+          "id": "b",
+          "text": "The types Item and Product have inconsistent fields causing duplication rather than a shared domain model for pricing.",
+          "isCorrect": false,
+          "explanation": "This is a plausible structural problem and sometimes the right fix is to unify types, but the snippet shows identical algorithmic code rather than type-driven differences. Addressing duplication first buys a clearer abstraction surface which can reveal whether types should be unified."
+        },
+        {
+          "id": "c",
+          "text": "Performance inefficiency from repeated tax computation is causing latency because calculations run in many request paths.",
+          "isCorrect": false,
+          "explanation": "Repeated computation could become a performance issue at scale, yet the shown calculations are trivial CPU work. Premature optimization here distracts from the more immediate maintainability issue of duplicated logic that risks divergence."
+        },
+        {
+          "id": "d",
+          "text": "Lack of unit tests is the root cause because duplicated code has no shared test coverage to protect behavior.",
+          "isCorrect": false,
+          "explanation": "Missing tests are a real concern and tests should be added, but tests do not eliminate duplication by themselves. Consolidating the logic into a single function makes it easier to test and prevents multiple fragile copies from drifting, so duplication is the more direct problem to fix first."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better design choice to address repeated price calculation across handlers?",
+      "codeSnippet": "// Version A\nexport function calculateFinalPrice(item: { basePrice:number, maxDiscount?:number }) {\n  const discount = Math.min(item.basePrice * 0.1, item.maxDiscount || 0);\n  const tax = item.basePrice * 0.2;\n  return item.basePrice - discount + tax;\n}\nexport function handlerA(item:any){ return calculateFinalPrice(item); }\nexport function handlerB(product:any){ return calculateFinalPrice(product); }\n\n// Version B\nclass BasePricer {\n  protected compute(item:any) {\n    const discount = Math.min(item.basePrice * 0.1, item.maxDiscount || 0);\n    const tax = item.basePrice * 0.2;\n    return item.basePrice - discount + tax;\n  }\n}\nclass OrderPricer extends BasePricer { public price(o:any){ return this.compute(o); } }\nclass CartPricer extends BasePricer { public price(c:any){ return this.compute(c); } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes the calculation into a focused pure function used by both handlers.",
+          "isCorrect": true,
+          "explanation": "Version A extracts a single, clear implementation that is easy to test and reuse without creating artificial inheritance. This keeps the abstraction narrow and avoids coupling unrelated handler concerns. Extracting a pure function preserves intent and reduces surface area for accidental dependencies."
+        },
+        {
+          "id": "b",
+          "text": "Version B introduces a shared base class that couples unrelated handler behavior and increases subtle cross module dependencies.",
+          "isCorrect": false,
+          "explanation": "While Version B removes line-for-line duplication, it does so by introducing inheritance that can couple distinct handlers and encourage placing unrelated responsibilities on the base class. That form of abstraction risks brittle coupling and harder-to-change code compared with a focused shared function. GoF and pragmatic sources recommend favoring composition and small focused abstractions over premature inheritance."
+        }
+      ]
+    }
+  ]
+}

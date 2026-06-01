@@ -1,0 +1,106 @@
+{
+  "id": 45,
+  "conceptName": "Replace Conditional with Polymorphism",
+  "category": "refactoring",
+  "definition": "A refactoring that moves logic which chooses behavior from conditionals into a type hierarchy so each variant implements its own behavior.",
+  "ruleOfThumb": "If you find repeated conditionals that switch on a type or code to decide behavior, consider moving behavior into type-specific implementations.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Conditional with Polymorphism",
+    "page": "pg. 120",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this billing calculation. What is the most likely design issue shown by this code?",
+      "codeSnippet": "class Billing {\n  calculate(plan: string, amount: number) {\n    if (plan === 'premium') return amount * 0.9;\n    if (plan === 'silver') return amount * 0.95;\n    if (plan === 'basic') return amount;\n    return amount;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code uses explicit type checks to choose behavior and should instead delegate behavior to variants.",
+          "isCorrect": true,
+          "explanation": "The method selects behavior by checking the plan value, concentrating all behavior in one place. Moving each plan's calculation into a subtype or strategy makes adding or changing plans local to that type and avoids scattering conditional logic. This is the classic situation the refactoring addresses."
+        },
+        {
+          "id": "b",
+          "text": "This code will become hard to test because many different branches live in one conditional method.",
+          "isCorrect": false,
+          "explanation": "This is a plausible concern because a long conditional can require many branch-specific tests. However, the root structural issue is centralized behavior selection by plan value rather than testability alone. Extracting per-plan behavior more directly addresses growth and testing needs."
+        },
+        {
+          "id": "c",
+          "text": "This code risks duplicated conditional logic across services when new types are added, increasing maintenance cost.",
+          "isCorrect": false,
+          "explanation": "Duplication across services is a real risk as conditionals proliferate, but the immediate smell is centralized type-based dispatch. Refactoring to give each type responsibility prevents duplication by keeping behavior with the type rather than scattered checks."
+        },
+        {
+          "id": "d",
+          "text": "This code centralizes unrelated responsibilities in a single function which makes the class hard to extend.",
+          "isCorrect": false,
+          "explanation": "Mixing multiple responsibilities can make extension painful, and this conditional is one form of that mixing. Still, the more specific design problem is behavior selection by type code; separating responsibilities by moving behavior into types is the more targeted refactoring."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this invoice total calculator. Which observation best identifies the structural improvement needed?",
+      "codeSnippet": "class InvoiceCalculator {\n  calculateTotal(type: string, subtotal: number) {\n    if (type === 'standard') return subtotal;\n    if (type === 'discount') return subtotal * 0.9;\n    if (type === 'promo') return subtotal * 0.8 + 5;\n    return subtotal;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function dispatches behavior based on type codes and should be refactored so types encapsulate their own calculation.",
+          "isCorrect": true,
+          "explanation": "The method is a type-code dispatch: behavior is determined by a string type. Encapsulating the calculation in a type-specific implementation (subclass, strategy, or polymorphic object) makes adding new invoice kinds require creating a new type instead of modifying conditionals."
+        },
+        {
+          "id": "b",
+          "text": "This function likely needs a configuration-driven table to avoid hardcoded percentages and reduce future change risk.",
+          "isCorrect": false,
+          "explanation": "A configuration table can centralize numbers and ease changes, but it does not address the structural coupling of behavior to type codes. The core design problem is behavior selection tied to a type value rather than encapsulation by type."
+        },
+        {
+          "id": "c",
+          "text": "This function should probably inline the calculations into call sites to simplify dependencies and reduce indirection across modules.",
+          "isCorrect": false,
+          "explanation": "Inlining could appear to simplify one caller but would duplicate logic across call sites and worsen maintenance. The better structural fix is to encapsulate variant behavior where it belongs rather than duplicating or further dispersing calculations."
+        },
+        {
+          "id": "d",
+          "text": "This function appears to violate single responsibility and should be split into smaller helper functions for clarity.",
+          "isCorrect": false,
+          "explanation": "Splitting into helpers could improve readability, but helpers still defer to a central type dispatch. The higher value refactor is to delegate the entire calculation to type-specific implementations so behavior lives with the type."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version would you prefer for adding many new invoice variants over time?",
+      "codeSnippet": "// Version A\nabstract class InvoiceType {\n  abstract calculate(invoice: Invoice): number;\n}\nclass StandardInvoice extends InvoiceType {\n  calculate(invoice: Invoice) { return invoice.subtotal; }\n}\nclass DiscountInvoice extends InvoiceType {\n  calculate(invoice: Invoice) { return invoice.subtotal * 0.9; }\n}\nclass Invoice { constructor(public type: InvoiceType, public subtotal: number) {}\n  calculateTotal() { return this.type.calculate(this); }\n}\n\n// Version B\nclass InvoiceOld {\n  constructor(public type: string, public subtotal: number) {}\n  calculateTotal() {\n    if (this.type === 'standard') return this.subtotal;\n    if (this.type === 'discount') return this.subtotal * 0.9;\n    return this.subtotal;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A encapsulates variant behavior in subclasses, improving extensibility and keeping behavior close to the type.",
+          "isCorrect": true,
+          "explanation": "Version A assigns responsibility for the calculation to types themselves, so adding a new variant is implemented by adding a new subtype rather than modifying a central conditional. This reduces the risk of scattered changes and supports open closed principles. It also makes each variant easier to test individually and to evolve independently."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes behavior in type checks, which will require modifying the conditional when adding new invoice kinds.",
+          "isCorrect": false,
+          "explanation": "Version B keeps the branching logic in a single method using type codes, so each new invoice kind forces a change to that method. Over time this leads to a growing conditional, higher chance of regression, and coupling between all callers and the conditional. While simpler initially, it scales poorly when variants multiply."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 41,
+  "conceptName": "Long Parameter List",
+  "category": "code-smell",
+  "definition": "A function or method that accepts many parameters, especially multiple primitive or boolean parameters that obscure intent and increase coupling.",
+  "ruleOfThumb": "If a method has more than about four parameters, consider grouping related values into an object or employing a builder.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Introduce Parameter Object",
+    "page": "p. 110",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Review the function below. What is the most immediate maintainability problem with this API?",
+      "codeSnippet": "function createOrder(userId: string, productId: string, quantity: number, price: number, discount: number, shippingAddress: string, giftMessage?: string) {\n  // assemble order and persist\n}\n\ncreateOrder('u1', 'p9', 2, 19.99, 0, '123 Main St', 'Happy birthday');",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It makes the function signature hard to read and understand when passed many primitive values.",
+          "isCorrect": true,
+          "explanation": "This signature forces callers to remember argument order and meaning. The primary maintainability cost is reduced readability and higher chance of mixing up arguments at call sites. Grouping parameters or using a typed parameter object clarifies intent and reduces breakage risk when adding fields."
+        },
+        {
+          "id": "b",
+          "text": "It increases the chance of caller confusion because argument positions are easy to mix up at call sites.",
+          "isCorrect": false,
+          "explanation": "While caller confusion is a real risk, it is a symptom closely related to readability. The deeper issue is that the signature exposes many unrelated primitives, which makes the API brittle and hard to extend. Refactorings like parameter objects address both confusion and extensibility."
+        },
+        {
+          "id": "c",
+          "text": "It couples callers to parameter order and makes future API changes risky and costly to clients.",
+          "isCorrect": false,
+          "explanation": "This is a valid concern but framed as a future evolution problem. Coupling to parameter order is a consequence of long primitive lists. The immediate maintainability problem is the unclear signature; addressing that will also reduce coupling and make changes safer."
+        },
+        {
+          "id": "d",
+          "text": "It hides intent since primitive arguments do not express the higher level domain meaning of the data.",
+          "isCorrect": false,
+          "explanation": "Lack of expressed intent is indeed a real issue with many primitives. However, the most actionable single observation is poor signature readability. Introducing domain types or a parameter object both reveals intent and improves comprehension at call sites."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which refactoring most directly reduces the risks demonstrated by this function signature?",
+      "codeSnippet": "function configureReport(title: string, includeSummary: boolean, showCharts: boolean, authorId: string, pageSize: string, includeToc: boolean) {\n  // build report\n}\n\nconfigureReport('Q1', true, false, 'u42', 'A4', true);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Use a configuration object to group related parameters into a single named argument for the function.",
+          "isCorrect": true,
+          "explanation": "Introducing a typed config/parameter object consolidates related values into a single argument, improving call-site readability and enabling optional fields without changing the function signature. This is the refactoring Fowler describes as 'Introduce Parameter Object' and it directly targets the multiple-primitive parameter problem."
+        },
+        {
+          "id": "b",
+          "text": "Introduce a fluent builder type to construct argument sets incrementally and improve caller readability.",
+          "isCorrect": false,
+          "explanation": "A builder is a reasonable alternative, especially when many combinations exist or construction is complex. However, it is heavier and more appropriate when constructing immutable objects or when many optional combinations exist. For a simple grouping problem a config object is usually simpler."
+        },
+        {
+          "id": "c",
+          "text": "Split the function into multiple smaller functions each handling a subset of the original responsibilities.",
+          "isCorrect": false,
+          "explanation": "Splitting responsibilities is valuable when the function does multiple things, but if the parameters represent one cohesive operation this fragmentation can scatter related logic. If the root problem is the parameter list rather than mixed responsibilities, grouping parameters is the more direct fix."
+        },
+        {
+          "id": "d",
+          "text": "Replace primitive booleans with descriptive enums to make callers' intent clearer at the call site.",
+          "isCorrect": false,
+          "explanation": "Using enums for booleans that represent modes can improve clarity but does not address the broader problem of many parameters. This change helps intent for specific flags but leaves the call-site with many separate arguments and still brittle to change."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which implementation better addresses API clarity and safe evolution?",
+      "codeSnippet": "// Version A\nfunction scheduleEmailA(to: string, subject: string, body: string, sendAt: Date, retryCount: number, priority: number, trackingId?: string, isTransactional = false) {\n  // send email\n}\n\n// Version B\ntype EmailOptions = {\n  to: string;\n  subject: string;\n  body: string;\n  sendAt?: Date;\n  retryCount?: number;\n  priority?: number;\n  trackingId?: string;\n  isTransactional?: boolean;\n};\n\nfunction scheduleEmailB(opts: EmailOptions) {\n  // send email\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A exposes many positional parameters which keeps call sites explicit but makes the API fragile to change.",
+          "isCorrect": false,
+          "explanation": "Version A is explicit at call sites, but the positional signature couples callers to parameter order and makes any addition or reordering a breaking change. It also reduces discoverability about which fields are optional and what each primitive means. These subtle fragilities tend to grow maintenance costs in larger codebases."
+        },
+        {
+          "id": "b",
+          "text": "Version B accepts a single typed options object for its function parameters.",
+          "isCorrect": true,
+          "explanation": "Version B centralizes parameters into a single typed object which clarifies intent at call sites, groups related data, and enables nonbreaking extension by adding optional properties. This pattern improves discoverability through named properties and supports validation and defaulting in one place. Fowler recommends introducing a parameter object when many parameters represent a cohesive concept; the builder pattern is an alternative for complex construction but carries more ceremony."
+        }
+      ]
+    }
+  ]
+}

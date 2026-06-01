@@ -1,0 +1,106 @@
+{
+  "id": 54,
+  "conceptName": "Chain of Responsibility Pattern",
+  "category": "design-pattern",
+  "definition": "A behavioral design that lets a request be passed along a sequence of handlers until one handles it, decoupling senders from receivers.",
+  "ruleOfThumb": "Use when multiple processors may handle a request and you want to decouple request initiation from handling logic and ordering.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns",
+    "page": "233",
+    "externalUrl": "https://en.wikipedia.org/wiki/Chain-of-responsibility_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which of the following best describes the structure you see in this code snippet?",
+      "codeSnippet": "interface Handler {\n  setNext(h: Handler): void\n  handle(req: string): boolean\n}\n\nclass AuthHandler implements Handler { next?: Handler; setNext(h: Handler){this.next = h}\n  handle(req: string){ if (req === 'auth') return true; return this.next?.handle(req) ?? false }\n}\n\n// client composes handlers: auth.setNext(extra); auth.handle('auth')",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A sequence of handler objects passes a request along until some handler accepts and processes it.",
+          "isCorrect": true,
+          "explanation": "Correct. The code shows handlers linked by setNext and each handler either handles or forwards the request. This decouples the sender from the specific handler and allows different handlers to be composed at runtime."
+        },
+        {
+          "id": "b",
+          "text": "A single centralized switch or if ladder decides handling logic for every request within one service class.",
+          "isCorrect": false,
+          "explanation": "This is a plausible misunderstanding, but the snippet does not use a central switch or if ladder. Instead it uses discrete handler objects and forwarding, which is structurally different and more composable."
+        },
+        {
+          "id": "c",
+          "text": "A stateless utility function transforms input then returns a response without delegating processing to handler objects.",
+          "isCorrect": false,
+          "explanation": "This is incorrect because a stateless utility function would not include setNext or per-handler logic. The snippet shows objects with control flow that can delegate to next handlers, not a single pure function."
+        },
+        {
+          "id": "d",
+          "text": "Multiple threads concurrently consuming from a queue and invoking independent handlers resulting in parallel processing semantics.",
+          "isCorrect": false,
+          "explanation": "This option confuses concurrency topology with structural delegation. The code demonstrates a linked chain of responsibility where handlers forward requests, not a concurrent queue consumer pattern."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this implementation. What is the most likely maintenance drawback of this approach?",
+      "codeSnippet": "class HandlerA { handle(req:string){ /* ... */ return false } }\nclass HandlerB { handle(req:string){ /* ... */ return true } }\n\nclass RequestProcessor {\n  chain:any\n  constructor(){ this.chain = new HandlerA(); this.chain.next = new HandlerB() }\n  process(req:string){ return this.chain.handle(req) }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The processor directly constructs concrete handler instances, producing tight coupling in the handling chain and limiting independent testing.",
+          "isCorrect": true,
+          "explanation": "Correct. The processor's constructor creates concrete handlers and wires them together, which couples composition logic to the processor. This makes it harder to substitute handlers, inject mocks for tests, or extend the chain without modifying the processor."
+        },
+        {
+          "id": "b",
+          "text": "The implementation may fail when multiple threads share the same handler instances without synchronization causing race conditions in stateful handlers.",
+          "isCorrect": false,
+          "explanation": "This is a realistic concern for stateful handlers, but the shown code's primary maintainability issue is tight coupling from direct construction. Thread-safety may be relevant, but it is secondary to the composition design decision."
+        },
+        {
+          "id": "c",
+          "text": "Using a processor-owned chain will break inversion of control and prevent swapping handler implementations at runtime for testing.",
+          "isCorrect": false,
+          "explanation": "This option correctly identifies an inversion of control problem as a consequence, but it is essentially another way to state tight coupling. It is a plausible answer yet less specific than the direct-construction coupling critique."
+        },
+        {
+          "id": "d",
+          "text": "Serial processing through handlers will always be slower than parallel handling and will not meet high throughput requirements.",
+          "isCorrect": false,
+          "explanation": "Throughput concerns are valid in high-scale systems, but the snippet's core maintenance drawback is structural coupling. Performance tradeoffs depend on requirements and are not the most likely immediate maintenance problem here."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version would you prefer for an extensible request handling subsystem in a business rules service?",
+      "codeSnippet": "// Version A\ninterface IHandler { setNext(h:IHandler): void; handle(req:string): boolean }\nclass BaseHandler implements IHandler { next?: IHandler; setNext(h:IHandler){ this.next = h }\n  handle(req:string){ return this.next ? this.next.handle(req) : false }\n}\n// Version B\nclass RequestService { process(req:string){ if (req === 'A') return doA(); if (req === 'B') return doB(); return false } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A cleanly decouples request processing into composable handlers enabling incremental extension and focused testing.",
+          "isCorrect": true,
+          "explanation": "Version A is preferred. Its handler objects separate concerns and allow adding or reordering behaviors without touching central code. This supports single responsibility, easier unit testing of each handler, and runtime composition. Authors such as Gamma et al. discuss this structure as a behavioral solution for decoupling senders and receivers."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes branching logic in one class, making it harder to extend handlers and to reuse behavior separately.",
+          "isCorrect": false,
+          "explanation": "Version B couples multiple responsibilities into one service, which makes adding new cases require modifying the central method and increases the risk of regressions. This harms maintainability and violates open closed principles compared with the composable handler approach."
+        }
+      ]
+    }
+  ]
+}

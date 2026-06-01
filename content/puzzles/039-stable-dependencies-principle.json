@@ -1,0 +1,106 @@
+{
+  "id": 39,
+  "conceptName": "Stable Dependencies Principle",
+  "category": "solid",
+  "definition": "A guideline that packages should only depend on packages that are more stable than themselves, so dependencies point toward stability and reduce ripple changes.",
+  "ruleOfThumb": "Prefer depending on packages that change less often than you do; put abstractions in the more stable side of the graph.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Agile Software Development, Principles, Patterns, and Practices",
+    "chapter": "The Principles of Package Design",
+    "page": null,
+    "externalUrl": "https://www.objectmentor.com/resources/articles/PrinciplesOfPackageDesign.pdf"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation most clearly signals a dependency-direction problem in a modular TypeScript codebase?",
+      "codeSnippet": null,
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A widely used package depends on a frequently changing package with many external commits recently.",
+          "isCorrect": true,
+          "explanation": "This indicates a package that is relied on by many clients is itself changing often, which violates the expectation that heavily depended-on code should be stable. The Stable Dependencies Principle recommends that packages with many dependents should depend only on packages that are at least as stable as themselves to avoid widespread breakage."
+        },
+        {
+          "id": "b",
+          "text": "A utility package contains unrelated business logic and general helpers mixed together, making isolated testing and reuse difficult.",
+          "isCorrect": false,
+          "explanation": "This describes poor cohesion within a package, which is a real design problem but not primarily about dependency direction or stability. It points toward refactoring for single responsibility and clearer module boundaries rather than addressing which packages depend on which."
+        },
+        {
+          "id": "c",
+          "text": "A critical package exposes many concrete types publicly instead of interfaces, coupling clients to implementation details tightly.",
+          "isCorrect": false,
+          "explanation": "Public concretes increase coupling and reduce flexibility, creating maintenance pain; however, this is primarily an encapsulation and API-design issue rather than a cross-package stability dependency problem. The stable-dependencies concern is about which packages depend on which, not only whether types are concrete."
+        },
+        {
+          "id": "d",
+          "text": "A frequently changed package is located in the core layer, forcing many teams to coordinate releases for any small fix.",
+          "isCorrect": false,
+          "explanation": "An unstable core that requires coordinated releases is a deployment and organization problem that can be caused by violating stability principles, but this observation alone does not prove improper dependency direction. It could be addressed by reorganizing responsibilities or by introducing interfaces in a stable layer."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the code below, what is the most likely architectural concern to investigate?",
+      "codeSnippet": "// core/AccountService.ts\nimport { ExperimentalFeature } from \"../experimental/ExperimentalFeature\";\nexport class AccountService {\n  create() { ExperimentalFeature.run(); }\n}\n\n// experimental/ExperimentalFeature.ts\nexport const ExperimentalFeature = {\n  run() { /* unstable API under active change */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A core domain module depends on an unstable experimental module with frequent API churn from several contributors.",
+          "isCorrect": true,
+          "explanation": "The core package importing an experimental module that changes often is a textbook sign that the dependency direction is risky: a stable or central package should not depend on volatile modules. Moving abstractions into a more stable package or inverting the dependency reduces ripple failures and aligns with package stability principles."
+        },
+        {
+          "id": "b",
+          "text": "A risky cyclic import pattern could create runtime initialization order bugs and make module loading fragile in production.",
+          "isCorrect": false,
+          "explanation": "Cyclic imports are a plausible concern when seeing inter-module imports, but the snippet shows a one-way import from core to experimental without an obvious cycle. While cycles are important to check for, the more immediate architectural smell is depending on a volatile module from core."
+        },
+        {
+          "id": "c",
+          "text": "A core module performing external side effects increases surface area and complicates isolated unit testing.",
+          "isCorrect": false,
+          "explanation": "Side effects in core make testing harder and are a valid concern, yet the snippet highlights a dependency on an experimental API rather than the presence of side effects alone. The dependency's volatility is the stronger architectural risk here."
+        },
+        {
+          "id": "d",
+          "text": "A feature scattered across directories duplicates responsibility and risks subtle divergence of behavior across similar flows.",
+          "isCorrect": false,
+          "explanation": "Scattered feature code leading to duplication is a real maintainability problem, but it is not the primary issue illustrated. The snippet shows a central service importing an experimental module, so dependency direction and stability are the primary architectural concerns to investigate first."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better aligns package dependency direction to reduce widespread breakage as the codebase evolves?",
+      "codeSnippet": "// Version A: APIs in a stable api package, implementations in feature packages\n// api/IReporting.ts\nexport interface IReporting { report(data: any): void }\n// feature/ConsoleReporting.ts\nimport { IReporting } from \"../api/IReporting\";\nexport class ConsoleReporting implements IReporting { report(d:any){ /*...*/ } }\n// core/Processor.ts\nimport { IReporting } from \"../api/IReporting\";\nexport class Processor { constructor(private r: IReporting) {} }\n\n// Version B: core depends directly on feature implementation\n// feature/ConsoleReporting.ts\nexport class ConsoleReporting { report(d:any){ /*...*/ } }\n// core/Processor.ts\nimport { ConsoleReporting } from \"../feature/ConsoleReporting\";\nexport class Processor { constructor(private r: ConsoleReporting) {} }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps the core dependent on stable abstractions instead of depending directly on concrete implementations.",
+          "isCorrect": true,
+          "explanation": "Version A places the interface in a stable API package that rarely changes, while implementations live in less stable feature packages. This inverts the direction of instability so that the core depends on a stable abstraction. According to Robert C. Martin's package design guidance, depending on more stable packages reduces ripple effects when implementations evolve and supports independent release of feature packages."
+        },
+        {
+          "id": "b",
+          "text": "Version B couples core packages directly to concrete implementations, increasing the risk that core will break when implementations change.",
+          "isCorrect": false,
+          "explanation": "Version B ties core to concrete classes implemented in feature packages, so changes in those feature packages will directly impact core. This increases coupling and release coordination. While Version B may simplify initial wiring, it creates a fragile dependency graph that violates the stability guidance of depending toward more stable things. For deeper reading see Martin's package principles and the idea of pushing volatile code to the periphery."
+        }
+      ]
+    }
+  ]
+}

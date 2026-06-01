@@ -1,0 +1,106 @@
+{
+  "id": 35,
+  "conceptName": "Singleton Pattern",
+  "category": "design-pattern",
+  "definition": "A creational pattern that restricts a class to a single instance and provides a global access point to it.",
+  "ruleOfThumb": "Use only when exactly one instance is required and global access is unavoidable; prefer explicit lifecycle control otherwise.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Singleton",
+    "page": "127",
+    "externalUrl": "https://en.wikipedia.org/wiki/Singleton_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the most accurate description of the pattern used in the code below?",
+      "codeSnippet": "class Database {\n  private static instance: Database | null = null;\n  private constructor() {}\n  static getInstance(): Database {\n    if (!Database.instance) Database.instance = new Database();\n    return Database.instance;\n  }\n}\nexport default Database;",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class restricts instantiation to a single globally accessible instance used via a static getter method.",
+          "isCorrect": true,
+          "explanation": "This implementation enforces a single shared instance by hiding the constructor and exposing a static accessor. That is the canonical intent of the pattern shown. It centralizes instance creation and global access which is useful in some contexts but also creates a global point of coupling and state."
+        },
+        {
+          "id": "b",
+          "text": "The code creates a global mutable object that will produce hidden shared state across the application modules.",
+          "isCorrect": false,
+          "explanation": "This observation is accurate about consequences but is narrower than the structural description. The code indeed exposes a single global instance which can lead to hidden shared mutable state, making tests order dependent and coupling modules to a runtime global."
+        },
+        {
+          "id": "c",
+          "text": "The implementation forces callers to depend on a concrete class via a static accessor increasing coupling and harming substitution.",
+          "isCorrect": false,
+          "explanation": "This is a valid downside: static access encourages direct dependency on the concrete class and makes swapping implementations harder. However it describes an effect rather than naming the intent of the pattern implemented by the code."
+        },
+        {
+          "id": "d",
+          "text": "This is simply a factory method centralizing object creation but still allows multiple independent instances to exist anywhere.",
+          "isCorrect": false,
+          "explanation": "This option mischaracterizes the code. A factory centralizes creation but usually allows multiple instances; the shown code actively prevents multiple instances by keeping the constructor private and returning a single stored instance."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In a codebase where a module exports a single shared instance, which maintenance problem is most likely to surface?",
+      "codeSnippet": "// cache.ts\nexport class Cache {\n  private data = new Map<string, string>();\n  set(k: string, v: string) { this.data.set(k, v); }\n  get(k: string) { return this.data.get(k); }\n}\nexport const cache = new Cache();\n\n// service.ts\nimport { cache } from './cache';\ncache.set('x', '1');",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Hidden shared mutable state causes tests and modules to couple to runtime ordering and prevents reliable isolated unit tests.",
+          "isCorrect": true,
+          "explanation": "Exporting a single shared instance creates implicit global state that tests and modules can accidentally depend on. This leads to brittle tests and behaviors that depend on execution order or prior initialization, making maintenance and parallel testing difficult."
+        },
+        {
+          "id": "b",
+          "text": "Tight coupling to a global instance prevents replacing behavior with test doubles and complicates configuration per environment.",
+          "isCorrect": false,
+          "explanation": "This is a real concern: global instances make substitution harder because consumers import the concrete instance directly. It is closely related to the correct answer but focuses on substitution and configuration rather than the primary testability and hidden state problem."
+        },
+        {
+          "id": "c",
+          "text": "Resource initialization timing could cause consumers to access an uninitialized instance leading to unpredictable runtime errors.",
+          "isCorrect": false,
+          "explanation": "Initialization order can be a practical issue for singletons, especially during startup. However in most module systems the exported instance is initialized during module evaluation; the dominant maintenance problem remains hidden shared mutable state and test coupling."
+        },
+        {
+          "id": "d",
+          "text": "Broad reliance on a concrete exported instance increases coupling and makes future refactoring to multiple instances costly.",
+          "isCorrect": false,
+          "explanation": "This describes a plausible long term cost: converting code to support multiple instances requires invasive refactoring. It is a valid consequence, but the primary maintainability symptom encountered day to day tends to be the implicit shared state that breaks tests and expectations."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "For a multi-tenant web service that must isolate tenant data and allow per-request lifecycle control, which implementation is preferable?",
+      "codeSnippet": "// Version A\nclass LoggerA {\n  private static instance: LoggerA | null = null;\n  private constructor() {}\n  static getInstance() { if (!LoggerA.instance) LoggerA.instance = new LoggerA(); return LoggerA.instance; }\n}\n\n// Version B\nclass LoggerB {\n  constructor(private tenantId: string) {}\n}\n// Bootstrap creates and injects a LoggerB per tenant or request.",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A relies on a static global instance which creates cross-tenant shared state and impedes controlled lifecycle management.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes a single shared instance. In a multi-tenant environment that leads to accidental sharing and makes it hard to tie instance lifecycle to tenant boundaries or request scope. It also complicates testing because the global instance must be reset between tests."
+        },
+        {
+          "id": "b",
+          "text": "Version B uses explicit injection and provides per-tenant instance control and predictable lifecycle.",
+          "isCorrect": true,
+          "explanation": "Version B favors explicit dependency injection so callers receive instances with clear ownership and scope. This design enables per-tenant or per-request instances, simpler testing with injected doubles, and predictable lifecycle management. In multi-tenant services explicit injection avoids hidden sharing and supports clean resource isolation and configuration. For further reading see discussions in GoF and Martin Fowler on when to avoid single shared instances in favor of explicit wiring."
+        }
+      ]
+    }
+  ]
+}

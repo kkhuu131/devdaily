@@ -1,0 +1,106 @@
+{
+  "id": 69,
+  "conceptName": "Decompose Conditional",
+  "category": "refactoring",
+  "definition": "A refactoring that replaces complex conditional logic by extracting individual condition branches into well named functions or objects, clarifying intent and making each case easier to test and maintain.",
+  "ruleOfThumb": "If a conditional has many branches or nested checks, extract each branch into a small function or replace variants with explicit polymorphism.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Simplifying Conditional Expressions",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this pricing function. What is the primary code smell present?",
+      "codeSnippet": "function calculatePrice(order) {\n  if (order.isPriority && order.total > 1000) {\n    return order.total * 0.9;\n  } else if (order.customer.isVip) {\n    return order.total * 0.85;\n  } else if (order.items.length > 10) {\n    return order.total * 0.95;\n  }\n  return order.total;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function contains a large conditional with multiple responsibilities mixed into one block, harming clarity and reuse.",
+          "isCorrect": true,
+          "explanation": "The code centralizes multiple conditional branches that encode different business rules. Extracting each branch into a named function clarifies intent, makes tests focused, and separates responsibilities. This is the classic situation for extracting conditional branches to improve readability and maintainability."
+        },
+        {
+          "id": "b",
+          "text": "This function violates single responsibility because it mixes presentation formatting with core pricing calculations in one block.",
+          "isCorrect": false,
+          "explanation": "The example does not show presentation formatting; it shows multiple pricing rules in conditionals. While single responsibility concerns are relevant, the root smell here is the conditional branching that bundles multiple rules, not a formatting versus calculation mix."
+        },
+        {
+          "id": "c",
+          "text": "This function suffers from primitive obsession by scattering literal status codes and magic numbers inside conditional checks.",
+          "isCorrect": false,
+          "explanation": "There are numeric literals but they represent domain discounts more than primitive obsession of data structures. Primitive obsession would involve using raw tuples or repeated primitives instead of domain types; here the main problem is the branching logic itself."
+        },
+        {
+          "id": "d",
+          "text": "This function exhibits feature envy by manipulating external cart object details instead of using its public API.",
+          "isCorrect": false,
+          "explanation": "Feature envy refers to methods that reach into other objects excessively. In this snippet the function inspects order properties but does not repeatedly delegate across objects; the pressing issue is the complex conditional decision tree, not excessive object field access."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this approval decision, which refactoring approach most directly improves clarity and testability?",
+      "codeSnippet": "function approveLoan(applicant) {\n  if (applicant.creditScore > 700 && applicant.income > 50000) {\n    return 'approved';\n  }\n  if (applicant.creditScore > 600 && applicant.employmentYears > 2) {\n    return 'manual-review';\n  }\n  return 'declined';\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Extract each branch into its own well named function and invoke the small functions from the main decision function.",
+          "isCorrect": true,
+          "explanation": "Extracting each branch into a descriptive helper turns implicit conditions into readable behaviors and lets you test each rule in isolation. It is the most direct way to clarify intent without prematurely introducing heavier abstractions."
+        },
+        {
+          "id": "b",
+          "text": "Introduce a Strategy pattern and move each conditional variant into separate classes implementing a common decision interface.",
+          "isCorrect": false,
+          "explanation": "Strategy is a valid long term approach when variants are numerous or vary at runtime. For a few simple branches extracting functions is lighter weight and keeps the code simpler while achieving clarity and testability."
+        },
+        {
+          "id": "c",
+          "text": "Replace the conditional with a data driven lookup object mapping condition keys to result values and handlers.",
+          "isCorrect": false,
+          "explanation": "A data driven lookup can work when conditions map cleanly to keys, but complex boolean logic does not always translate well to simple keys. This approach can obscure intent for composite predicates compared to small named functions."
+        },
+        {
+          "id": "d",
+          "text": "Keep the current conditional but add inline comments and comprehensive tests to reduce risk during future changes.",
+          "isCorrect": false,
+          "explanation": "Comments and tests help, but they do not remove the cognitive load of multiple branches in one place. Refactoring to extract branches yields more durable clarity than annotation alone."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation is preferable for maintainability and why?",
+      "codeSnippet": "// Version A\nfunction computeFee(order) {\n  if (order.type === 'standard' && order.weight < 5) {\n    return 5;\n  }\n  if (order.type === 'standard' && order.weight >= 5) {\n    return 10 + order.weight * 0.5;\n  }\n  if (order.type === 'express') {\n    if (order.destination === 'local') return 20;\n    return 50;\n  }\n  return 0;\n}\n\n// Version B\nfunction computeFee(order) {\n  if (isStandardLight(order)) return standardLightFee(order);\n  if (isStandardHeavy(order)) return standardHeavyFee(order);\n  if (isExpress(order)) return expressFee(order);\n  return 0;\n}\n\nfunction isStandardLight(o){ return o.type === 'standard' && o.weight < 5; }\nfunction standardLightFee(o){ return 5; }\nfunction isStandardHeavy(o){ return o.type === 'standard' && o.weight >= 5; }\nfunction standardHeavyFee(o){ return 10 + o.weight * 0.5; }\nfunction isExpress(o){ return o.type === 'express'; }\nfunction expressFee(o){ return o.destination === 'local' ? 20 : 50; }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps all logic in one place which makes the code easier to change without introducing helper function overhead.",
+          "isCorrect": false,
+          "explanation": "While putting logic in one place can seem simpler, Version A mixes multiple rules and nested checks making individual cases harder to understand and test. The apparent avoidance of helper functions creates cognitive complexity that grows as rules evolve."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates each branch into focused functions which improves readability and enables targeted unit testing.",
+          "isCorrect": true,
+          "explanation": "Version B extracts predicates and fee calculations into small, well named functions. That separation documents intent, reduces duplication of conditional expressions, and lets you test and evolve each rule independently. This refactoring keeps the decision flow simple while making maintenance safer and clearer. See Fowler on breaking up complex conditionals and extracting methods for clarity."
+        }
+      ]
+    }
+  ]
+}

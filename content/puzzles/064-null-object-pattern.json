@@ -1,0 +1,106 @@
+{
+  "id": 64,
+  "conceptName": "Null Object Pattern",
+  "category": "design-pattern",
+  "definition": "A behavioral design approach where a harmless default implementation is supplied in place of null references to avoid conditional checks and centralize fallback behavior.",
+  "ruleOfThumb": "Provide a do-nothing substitute object so callers can treat absence like any other concrete implementation without explicit null checks.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Introduce Null Object",
+    "page": null,
+    "externalUrl": "https://refactoring.com/catalog/introduceNullObject.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What design idea does the following TypeScript snippet illustrate?",
+      "codeSnippet": "interface Notifier { notify(msg: string): void }\nclass ConsoleNotifier implements Notifier { notify(msg: string) { console.log(msg) } }\nclass NullNotifier implements Notifier { notify(msg: string) { /* no-op */ } }\nfunction getNotifier(enabled: boolean): Notifier {\n  return enabled ? new ConsoleNotifier() : new NullNotifier();\n}\nconst notifier = getNotifier(false);\nnotifier.notify('Order placed');",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It uses dependency injection to supply different concrete implementations to the client at runtime when available.",
+          "isCorrect": false,
+          "explanation": "This is a plausible interpretation but not the primary idea here. Dependency injection describes supplying implementations from outside, whereas the snippet specifically supplies a harmless default implementation to avoid conditional checks. The key is avoiding null checks by providing a benign object rather than merely injecting different implementations. See Martin Fowler on introducing a null object for details."
+        },
+        {
+          "id": "b",
+          "text": "It provides a default no-op object instance used in place of missing implementations to avoid scattered null checks.",
+          "isCorrect": true,
+          "explanation": "This is the observed pattern: the code returns a concrete no-op implementation so callers can invoke methods without null checks. This is the essence of the null object approach — supply a benign implementation rather than propagate null to callers. See Fowler's 'Introduce Null Object' refactoring and related examples in design pattern literature."
+        },
+        {
+          "id": "c",
+          "text": "It demonstrates the Strategy idea by encapsulating interchangeable behaviors behind a common interface for runtime selection.",
+          "isCorrect": false,
+          "explanation": "While Strategy also uses a common interface and interchangeable behavior, the snippet's intent is not to vary algorithms but to provide a harmless default. Strategy implies multiple meaningful algorithms to choose among, whereas the null-object variant focuses on a do-nothing substitute to simplify callers."
+        },
+        {
+          "id": "d",
+          "text": "It shows a Factory pattern approach by creating implementation instances centrally based on configuration or environment choice.",
+          "isCorrect": false,
+          "explanation": "A factory can certainly be used to obtain instances, and the code does centralize creation, but that description misses the important behavior: the chosen instance is a benign substitute rather than signaling absence. The distinguishing intent here is to avoid null handling by providing a default implementation."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this repository and call site. What is the most significant maintainability concern?",
+      "codeSnippet": "class User { constructor(public email: string) {}\n  sendWelcomeEmail() { /* send email */ }\n}\nclass UserRepo {\n  findById(id: number): User | undefined {\n    // database lookup stub\n    return undefined;\n  }\n}\nconst repo = new UserRepo();\nconst user = repo.findById(42);\nif (user) {\n  user.sendWelcomeEmail();\n} else {\n  logger.info('User not found');\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code fails to fail fast by returning undefined instead of throwing when entities are missing which hides errors later.",
+          "isCorrect": false,
+          "explanation": "Fail-fast is a valid strategy in many systems, but returning undefined is often deliberate in repositories to indicate absence rather than error. The core maintainability issue in this snippet is the duplicated conditional handling at each call site, not necessarily the choice between throwing and returning undefined. A null-object substitute would address duplication while preserving control over error semantics."
+        },
+        {
+          "id": "b",
+          "text": "The code repeatedly checks for undefined and lacks a default substitute object to encapsulate no-op behavior across callers.",
+          "isCorrect": true,
+          "explanation": "This observation points to the real problem: callers must duplicate absence handling. Providing a default benign implementation from the repository would let callers invoke methods unconditionally and centralize fallback behavior. This reduces duplication and the chance of inconsistent handling. Fowler documents this as 'Introduce Null Object' to improve clarity and reduce conditional proliferation."
+        },
+        {
+          "id": "c",
+          "text": "The code forces callers to duplicate absence handling because the repository returns undefined rather than an explicit Option wrapper type.",
+          "isCorrect": false,
+          "explanation": "Using an Option/Maybe wrapper is a viable alternative that enforces explicit handling, but it moves the handling burden to callers in a different, more explicit form. The snippet's maintainability concern is duplication of absence logic; both Option types and null-object substitutes are valid strategies, and the choice depends on API semantics and team conventions."
+        },
+        {
+          "id": "d",
+          "text": "The code duplicates null handling across call sites instead of encapsulating fallback behavior in a centralized helper which increases maintenance.",
+          "isCorrect": false,
+          "explanation": "Centralizing null handling in a helper reduces duplication, but it can still leave callers with conditional logic and procedural handling. A default object approach centralizes behavior inside a polymorphic implementation, allowing object-oriented callers to treat the value uniformly without helper interventions. The nuanced benefit of a default object is behavioral encapsulation rather than just centralized checks."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better suits a large codebase where callers should not scatter absence checks?",
+      "codeSnippet": "// Version A: repository returns undefined and callers check before use\ninterface PaymentProcessor { process(o: any): void }\nclass StripeProcessor implements PaymentProcessor { process(o: any) { /* ... */ } }\nclass RepoA { getProcessor(name: string): PaymentProcessor | undefined { return undefined } }\nconst pA = new RepoA().getProcessor('stripe');\nif (pA) pA.process(order);\n\n// Version B: repository returns a default no-op implementation so callers always call process\nclass NoopProcessor implements PaymentProcessor { process(o: any) { /* no-op */ } }\nclass RepoB { getProcessor(name: string): PaymentProcessor { return new NoopProcessor() } }\nconst pB = new RepoB().getProcessor('stripe');\npB.process(order);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A surfaces missing implementations by returning undefined and forces explicit caller handling for visibility.",
+          "isCorrect": false,
+          "explanation": "Version A does make absence explicit, which some teams prefer for strict error handling, but it scatters conditional logic across callers and increases the risk of inconsistent behavior. In large codebases that value stable invocation semantics, scattering checks leads to duplication and subtle bugs when one caller forgets to handle absence. The null object approach centralizes fallback behavior and reduces that surface area."
+        },
+        {
+          "id": "b",
+          "text": "Version B returns a default no-op implementation so callers do not repeat null checks and behavior stays consistent.",
+          "isCorrect": true,
+          "explanation": "Version B is preferable here because it centralizes fallback behavior and eliminates repeated conditional logic at each call site. That reduces duplicated code and the chance of inconsistent handling across consumers. This is the practical benefit of the Null Object Pattern. Use it when silence or harmless behavior is an acceptable default; otherwise pair it with explicit error signaling. See Martin Fowler's 'Introduce Null Object' and examples in pragmatic design discussions."
+        }
+      ]
+    }
+  ]
+}

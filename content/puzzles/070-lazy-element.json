@@ -1,0 +1,106 @@
+{
+  "id": 70,
+  "conceptName": "Lazy Element",
+  "category": "code-smell",
+  "definition": "A class defers creating or initializing a collaborator until a property or method is first accessed, hiding construction and side effects behind incidental access.",
+  "ruleOfThumb": "Prefer making expensive initialization explicit or inject a provider; avoid hiding resource creation behind ordinary property access.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Lazy Initialization",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary issue illustrated by this code pattern?",
+      "codeSnippet": "class ReportService {\n  private _client?: HeavyClient;\n  get client() {\n    if (!this._client) {\n      this._client = new HeavyClient();\n    }\n    return this._client;\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class delays creating a dependency until the first property access at runtime across service usages.",
+          "isCorrect": true,
+          "explanation": "Correct. The getter defers constructing HeavyClient until client is accessed, which hides when initialization happens and can surprise callers. This can make performance, error handling, and lifecycle management implicit rather than intentional."
+        },
+        {
+          "id": "b",
+          "text": "This class delays creating a dependency until first access and therefore can hide memory leaks from long lived services.",
+          "isCorrect": false,
+          "explanation": "This is a plausible consequence but not the primary issue shown. Hidden initialization can contribute to memory retention if the created object is large, yet the core smell is the deferred construction tied to property access rather than explicit lifecycle management."
+        },
+        {
+          "id": "c",
+          "text": "This class delays creating a dependency until first access and therefore prevents constructor injection and obscures testable dependencies.",
+          "isCorrect": false,
+          "explanation": "Also plausible. Hiding creation in a getter makes it harder to inject test doubles, but the specific code shows deferred construction rather than explicitly violating dependency injection patterns. The root is deferred, hidden initialization."
+        },
+        {
+          "id": "d",
+          "text": "This class delays creating a dependency until first access and therefore introduces implicit order and threading risks in concurrent requests.",
+          "isCorrect": false,
+          "explanation": "Concurrent access risks are real if multiple threads or requests access the getter concurrently, but the immediate recognition is deferred initialization. Concurrency adds complexity but is a secondary concern of the pattern shown."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this getter-based initialization in a domain class, which concern is most directly represented by the code?",
+      "codeSnippet": "class Cache {\n  private _data?: Data;\n  get data() {\n    if (!this._data) {\n      this._data = fetchDataFromNetwork();\n    }\n    return this._data;\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This getter performs lazy loading of a heavy resource on first access at runtime across typical usage flows.",
+          "isCorrect": true,
+          "explanation": "Correct. The getter defers fetchDataFromNetwork until data is accessed, making loading implicit and moving network work into property access. That hidden timing is the main concern because it affects performance and observability."
+        },
+        {
+          "id": "b",
+          "text": "This getter performs an implicit cache that can retain large objects and may cause unexpected memory pressure over time.",
+          "isCorrect": false,
+          "explanation": "Plausible and often true. The pattern does create a cached instance, which could grow memory usage, but the code emphasizes deferred loading rather than uncontrolled cache growth. Memory pressure is a consequential worry."
+        },
+        {
+          "id": "c",
+          "text": "This getter performs network loading under property access which can obscure transient errors and complicate retry handling.",
+          "isCorrect": false,
+          "explanation": "Also credible. Moving network calls into a getter hides error timing and complicates retry strategies. However, the most direct representation of the snippet is deferred initialization; error handling complexity is a related effect."
+        },
+        {
+          "id": "d",
+          "text": "This getter performs service resolution from globals which hides dependencies and makes unit testing less direct and more brittle.",
+          "isCorrect": false,
+          "explanation": "A realistic concern when globals are used. In this snippet there is no explicit global resolution shown, so while hiding dependencies is a valid criticism of lazy init, this specific diagnosis misattributes the source of the smell."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which design is preferable for avoiding hidden initialization responsibilities in domain code?",
+      "codeSnippet": "// Version A\nclass OrderProcessorA {\n  private _client?: PaymentClient;\n  private get client() {\n    if (!this._client) this._client = new PaymentClient();\n    return this._client;\n  }\n  process() { this.client.charge(); }\n}\n\n// Version B\nclass OrderProcessorB {\n  constructor(private clientProvider: () => PaymentClient) {}\n  process() { const client = this.clientProvider(); client.charge(); }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps hidden runtime construction inside the domain class coupling construction to incidental access patterns.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Version A hides construction behind a getter, tying creation to whether a particular code path accessed the property. This couples lifecycle to incidental access and makes behavior timing implicit, complicating testing and reasoning."
+        },
+        {
+          "id": "b",
+          "text": "Version B exposes an explicit provider abstraction separating construction responsibilities from domain behavior.",
+          "isCorrect": true,
+          "explanation": "Correct. Version B moves responsibility for obtaining a PaymentClient out of the domain class into a provider that can be injected or composed. This makes initialization explicit, improves testability, and avoids accidental runtime costs. Fowler and many refactoring guides recommend making expensive creation explicit or injecting a factory when lazy creation would otherwise be hidden."
+        }
+      ]
+    }
+  ]
+}

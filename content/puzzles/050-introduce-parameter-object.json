@@ -1,0 +1,106 @@
+{
+  "id": 50,
+  "conceptName": "Introduce Parameter Object",
+  "category": "refactoring",
+  "definition": "Replace a long list of parameters that represent a single conceptual unit with a single object that groups those values.",
+  "ruleOfThumb": "If several parameters travel together or the parameter list keeps growing, group them into a single object with a clear name.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Introduce Parameter Object",
+    "page": null,
+    "externalUrl": "https://refactoring.com/catalog/introduceParameterObject.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What problem does the following TypeScript function most clearly indicate?",
+      "codeSnippet": "function createInvoice(customerId: string, date: Date, items: Item[], taxRate: number, notes?: string, billingAddress?: Address) {\n  // build invoice\n}\n\ncreateInvoice('C123', new Date(), items, 0.07, undefined, addr);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function takes many related arguments that should be combined into a single data object to reduce coupling.",
+          "isCorrect": true,
+          "explanation": "Grouping related parameters into a single object clarifies intent at call sites, reduces positional errors, and centralizes validation. Fowler calls this refactoring when multiple parameters represent one conceptual thing. It also simplifies signatures when you add fields later."
+        },
+        {
+          "id": "b",
+          "text": "This likely indicates a violation of single responsibility because the function appears to orchestrate many unrelated duties through parameters.",
+          "isCorrect": false,
+          "explanation": "The SRP concern is plausible, but here the parameters look like data describing a single invoice rather than multiple responsibilities. SRP would be the reason if the body performed many unrelated operations, which is not shown."
+        },
+        {
+          "id": "c",
+          "text": "This looks like a performance concern since passing many arguments might cause copying and runtime overhead in hot code paths.",
+          "isCorrect": false,
+          "explanation": "Allocation and copying are valid considerations in hot code, but modern runtimes typically pass references for complex types. The more common maintenance issue is clarity and call-site ergonomics rather than measurable allocation costs."
+        },
+        {
+          "id": "d",
+          "text": "This suggests an API design smell where the calling sites will be error prone due to many positional arguments.",
+          "isCorrect": false,
+          "explanation": "This diagnosis is closely related to the correct one, but it is less specific. Saying the API is error prone describes the symptom; the actionable fix is to group parameters that belong to the same domain concept."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A constructor has many parameters that are often passed together. Which interpretation is the most accurate?",
+      "codeSnippet": "class MeetingScheduler {\n  constructor(public start: Date, public end: Date, public timezone: string, public organizerId: string, public attendees: string[], public location?: string) {}\n}\n\nnew MeetingScheduler(start, end, 'UTC', 'u1', ['u2','u3'], 'Room A');",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This parameter list contains cohesive domain data and should be grouped into one domain value to improve readability and maintainability.",
+          "isCorrect": true,
+          "explanation": "When several constructor parameters represent a single concept such as a meeting definition, encapsulating them in a named value object reduces duplication, clarifies intent, and makes validation and future extensions easier."
+        },
+        {
+          "id": "b",
+          "text": "This is mostly a performance optimization case and keeping primitives avoids allocations and keeps hot paths efficient without extra objects.",
+          "isCorrect": false,
+          "explanation": "Avoiding allocations can matter in tight loops, but constructors and scheduling code are usually not hot paths. The maintainability gains from grouping related fields usually outweigh tiny allocation costs in typical application code."
+        },
+        {
+          "id": "c",
+          "text": "This implies the class has multiple responsibilities and should be decomposed into smaller classes rather than merging parameters into a single object.",
+          "isCorrect": false,
+          "explanation": "Decomposing responsibilities is important when methods do unrelated work, but many parameters alone do not prove multiple responsibilities. Grouping related parameters into a single value is often the simpler and more appropriate first step."
+        },
+        {
+          "id": "d",
+          "text": "This calls for an options bag because some parameters are optional and grouping them preserves backward compatibility for future changes.",
+          "isCorrect": false,
+          "explanation": "An options bag is a pragmatic approach for optional settings, but it often hides intent and validation. A well-named domain object provides clearer semantics and stronger typing than an unstructured options bag."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two API designs are proposed. Which version should you prefer for evolving domain models?",
+      "codeSnippet": "// Version A\nfunction placeOrder(customerId: string, productId: string, qty: number, price: number, discountCode?: string, shippingAddr?: string) {\n  // build order\n}\n\n// Version B\ninterface PlaceOrderRequest { customerId: string; productId: string; qty: number; price: number; discountCode?: string; shippingAddr?: string }\nfunction placeOrder(req: PlaceOrderRequest) {\n  // build order\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Prefer Version A when calls are performance critical and avoiding small temporary objects prevents measurable allocation overhead.",
+          "isCorrect": false,
+          "explanation": "Version A keeps the signature primitive and avoids an extra object at call sites, which can be beneficial in micro-optimized hotspots. However, it becomes brittle as parameters grow or reorder, increasing chance of positional mistakes and making refactoring harder."
+        },
+        {
+          "id": "b",
+          "text": "Prefer Version B when parameters form a single domain concept and readability and evolution are priorities.",
+          "isCorrect": true,
+          "explanation": "Version B groups related fields into a named request value, improving call-site clarity, centralizing validation, and making API evolution safer. It also enables adding behavior or invariants to the value object later. Fowler recommends this refactoring for exactly these reasons. Complementary guidance appears in Clean Code and Pragmatic Programmer on making intent explicit and easing change."
+        }
+      ]
+    }
+  ]
+}

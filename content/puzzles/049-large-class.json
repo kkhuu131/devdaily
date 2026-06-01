@@ -1,0 +1,106 @@
+{
+  "id": 49,
+  "conceptName": "Large Class",
+  "category": "code-smell",
+  "definition": "A type that centralizes too many responsibilities, resulting in excessive methods, fields, and mixed concerns that reduce cohesion and increase maintenance cost.",
+  "ruleOfThumb": "If a type grows beyond a single clear responsibility or needs many collaborators to test, consider extracting focused types.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Extract Class / Composing Methods",
+    "page": "N/A",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the class below. Which observation most directly indicates a structural problem?",
+      "codeSnippet": "class OrderProcessor {\n  private orders: Order[];\n  calculateTotals(order) { /* ... */ }\n  validateOrder(order) { /* ... */ }\n  saveOrder(order) { /* ... */ }\n  sendConfirmation(order) { /* ... */ }\n  renderOrderSummary(order) { /* ... */ }\n  logActivity(entry) { /* ... */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class groups multiple distinct responsibilities like validation, persistence, presentation, and logging into a single type.",
+          "isCorrect": true,
+          "explanation": "This observation captures the core structural issue: several orthogonal responsibilities are co-located in one type. That increases coupling, makes the class harder to test in isolation, and hinders evolving each responsibility independently. Refactor techniques include Extract Class and moving behavior to collaborators as described by Fowler."
+        },
+        {
+          "id": "b",
+          "text": "The class has too many methods which will slow runtime performance during batch processing under heavy load.",
+          "isCorrect": false,
+          "explanation": "Method count alone does not imply performance problems. The number of methods typically affects maintainability rather than raw runtime speed. The real issue is often cohesion and responsibility distribution rather than CPU overhead."
+        },
+        {
+          "id": "c",
+          "text": "The class uses imperative code patterns that prevent functional composition and make unit testing more difficult overall.",
+          "isCorrect": false,
+          "explanation": "Imperative style can complicate testing, but seeing varied responsibilities suggests cohesion problems first. Conflating style concerns with structural responsibility hides the more actionable refactor of separating responsibilities."
+        },
+        {
+          "id": "d",
+          "text": "The class is missing explicit interfaces so external modules cannot mock its behavior during integration testing.",
+          "isCorrect": false,
+          "explanation": "Missing interfaces can hinder testing, but adding an interface does not reduce the cognitive load of a class that mixes many responsibilities. Extracting focused collaborators yields better testability than merely introducing interfaces."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Examine the class below. Which diagnosis best describes the structural risk that should prompt refactoring?",
+      "codeSnippet": "class MonthlyReport {\n  constructor(dataSource) { this.ds = dataSource }\n  fetchData() { /* query db and api */ }\n  aggregateData(raw) { /* combine and calculate metrics */ }\n  formatCsv(aggregate) { /* string output */ }\n  calculateSummary(aggregate) { /* compute totals */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class mixes data retrieval, aggregation, and presentation responsibilities which increases coupling and hinders independent reuse.",
+          "isCorrect": true,
+          "explanation": "The methods show distinct concerns: I/O, domain calculation, and formatting. Combining them reduces cohesion and makes it hard to reuse or test parts independently. A targeted Extract Class or separating IO from formatting improves design."
+        },
+        {
+          "id": "b",
+          "text": "The class relies on synchronous blocking IO which will cause thread starvation under high concurrency in server environments.",
+          "isCorrect": false,
+          "explanation": "Blocking IO is a runtime performance concern worth addressing, but the snippet highlights mixed responsibilities more clearly. Refactoring for asynchrony is orthogonal to splitting responsibilities and may be applied after separation."
+        },
+        {
+          "id": "c",
+          "text": "The class lacks typed return values on public methods which will allow runtime type errors to leak into production.",
+          "isCorrect": false,
+          "explanation": "Missing explicit types can cause subtle bugs, but types do not address the heavier maintainability issue of mixed responsibilities. Adding types helps safety but does not improve cohesion or reduce coupling between concerns."
+        },
+        {
+          "id": "d",
+          "text": "The class violates DRY by repeating aggregation logic across multiple private methods making maintenance error prone.",
+          "isCorrect": false,
+          "explanation": "Duplicated logic is a real maintainability problem, but the snippet indicates distinct roles rather than clear duplication. The higher priority is separating responsibilities before deduplicating code across newly focused classes."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two refactoring options are shown. Which version is preferable for long term maintainability and why?",
+      "codeSnippet": "// Version A\nclass OrderRepository {\n  save(order) { /* db insert */ }\n}\nclass OrderNotifier {\n  send(order) { /* email */ }\n}\nclass OrderService {\n  constructor(repo, notifier) { this.repo = repo; this.notifier = notifier }\n  place(order) { this.repo.save(order); this.notifier.send(order) }\n}\n\n// Version B\nclass OrderManager {\n  place(order) { /* db insert and send email and log and validate all here */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A separates responsibilities into focused smaller classes improving testability and reducing coupling for future changes.",
+          "isCorrect": true,
+          "explanation": "Version A applies separation of concerns by extracting persistence and notification into dedicated classes. This reduces the cognitive load of each type, simplifies unit testing with targeted mocks, and limits ripple effects when requirements change. Refactoring techniques like Extract Class align with this approach and are recommended by Fowler and other refactoring authorities."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes behavior into one utility class to simplify deployment and avoid cross-module coordination complexity.",
+          "isCorrect": false,
+          "explanation": "Centralizing everything in a single class increases coupling and makes the code harder to reason about, test, and evolve. Initial deployment simplicity is outweighed by long term costs such as larger change surfaces and brittle tests. Good design favors small cohesive types even if it introduces more classes to coordinate."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 46,
+  "conceptName": "Composite Pattern",
+  "category": "design-pattern",
+  "definition": "A structural pattern that composes objects into tree structures to represent part-whole hierarchies, letting clients treat individual objects and compositions uniformly.",
+  "ruleOfThumb": "Use when you need to treat individual objects and groups uniformly and want to add new kinds of components without changing client code.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Composite",
+    "page": null,
+    "externalUrl": "https://en.wikipedia.org/wiki/Composite_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the code below, which description best matches the design being used?",
+      "codeSnippet": "interface Component {\n  render(): string;\n}\n\nclass Leaf implements Component {\n  constructor(private text: string) {}\n  render() { return this.text; }\n}\n\nclass Container implements Component {\n  private children: Component[] = [];\n  add(c: Component) { this.children.push(c); }\n  render() { return this.children.map(c => c.render()).join('\\n'); }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This design exposes a uniform interface and allows containers to delegate requests to children for uniform treatment.",
+          "isCorrect": true,
+          "explanation": "The code defines a Component interface implemented by both Leaf and Container, and Container forwards render calls to children, allowing clients to treat both uniformly. This matches the pattern described in GoF where compositions and leaves share an interface so operations apply recursively."
+        },
+        {
+          "id": "b",
+          "text": "This design focuses on dynamically changing object behavior at runtime by wrapping instances with additional functionality through delegation.",
+          "isCorrect": false,
+          "explanation": "Wrapping instances to add behavior at runtime describes the Decorator pattern. The snippet shows a tree structure with children aggregation and uniform interface rather than incremental behavior wrapping."
+        },
+        {
+          "id": "c",
+          "text": "This design organizes unrelated utility functions into a single holder to reduce parameter passing across unrelated modules.",
+          "isCorrect": false,
+          "explanation": "Grouping utility functions in a holder is more akin to a Facade or utility module, not a tree structure of components and containers. The snippet shows objects implementing the same interface and composing children, which is different from mere utility aggregation."
+        },
+        {
+          "id": "d",
+          "text": "This design defines strict inheritance hierarchies to force compile time polymorphism and avoid runtime composition overhead.",
+          "isCorrect": false,
+          "explanation": "The code relies on runtime composition of components rather than enforcing a strict inheritance-only hierarchy. It uses object composition and delegation at runtime, whereas the option describes an inheritance-heavy approach that is not represented here."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review the following tree implementation and client usage. What is the primary maintenance concern this code introduces?",
+      "codeSnippet": "abstract class Node {}\nclass File extends Node { size = 10 }\nclass Folder extends Node { children: Node[] = [] }\n\nfunction totalSize(nodes: Node[]) {\n  return nodes.reduce((sum, n) => {\n    if (n instanceof Folder) return sum + totalSize(n.children);\n    return sum + (n as File).size;\n  }, 0);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Client code performs instanceof checks to apply different logic, indicating missing polymorphic operations inside the component implementations.",
+          "isCorrect": true,
+          "explanation": "The client inspects concrete types with instanceof and branches behavior accordingly. That scatters traversal and operation logic across callers and prevents adding new node types without modifying clients. Moving the operation into nodes (polymorphism) resolves this and is the core intent of the Composite approach described by GoF."
+        },
+        {
+          "id": "b",
+          "text": "Client code mixes traversal logic with business rules causing poor separation and harder testing of tree operations.",
+          "isCorrect": false,
+          "explanation": "While mixing traversal with business rules is a valid concern, the more specific issue here is reliance on type checks. Separation could be improved by extracting traversal, but the fundamental maintenance risk is inability to extend node types without changing callers."
+        },
+        {
+          "id": "c",
+          "text": "Client code exposes child collections directly causing tight coupling to internal structure and preventing safe encapsulated changes.",
+          "isCorrect": false,
+          "explanation": "Exposing children arrays is a real coupling problem, but the snippet hides children behind Folder and only the client uses instanceof. The pressing issue is the type-based branching rather than direct exposure of internal collections."
+        },
+        {
+          "id": "d",
+          "text": "Client code relies on parent references and manual cleanup creating risk of resource leaks and complex lifecycle management.",
+          "isCorrect": false,
+          "explanation": "This option describes lifecycle and memory management concerns which do appear in some tree implementations, but the provided code does not show parent references or manual cleanup. The observable maintainability problem is the type checks in the client."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better supports adding new element types without modifying client logic?",
+      "codeSnippet": "// Version A: client inspects types\ninterface Node {}\nclass File implements Node { constructor(public size: number) {} }\nclass Folder implements Node { constructor(public children: Node[]) {} }\nfunction totalA(nodes: Node[]): number {\n  let sum = 0;\n  for (const n of nodes) {\n    if (n instanceof Folder) sum += totalA((n as Folder).children);\n    else sum += (n as File).size;\n  }\n  return sum;\n}\n\n// Version B: polymorphic operation on nodes\ninterface Node2 { totalSize(): number }\nclass File2 implements Node2 { constructor(private size: number) {} totalSize() { return this.size } }\nclass Folder2 implements Node2 { constructor(private children: Node2[]) {} totalSize() { return this.children.reduce((s, c) => s + c.totalSize(), 0) } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes operations in the caller with explicit type checks which hinders extension and violates encapsulation.",
+          "isCorrect": false,
+          "explanation": "Version A forces every client to know about concrete node types and implement traversal logic with type checks. Adding a new node type requires changing all callers. This scatters behavior and violates encapsulation, making the design brittle and harder to evolve."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates operations within components and removes client type checks to enable safe extension without client changes.",
+          "isCorrect": true,
+          "explanation": "Version B puts the operation on the node interface so each concrete node implements its own behavior. Clients call totalSize on nodes uniformly, so adding new node types does not require changing client code. This is the essence of the Composite approach as explained by the Gang of Four—organize objects into tree structures and let clients treat individual and composed objects uniformly."
+        }
+      ]
+    }
+  ]
+}

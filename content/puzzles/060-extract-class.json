@@ -1,0 +1,105 @@
+{
+  "id": 60,
+  "conceptName": "Extract Class",
+  "category": "refactoring",
+  "definition": "Split a large class into two or more classes so each resulting class has a single, well-focused responsibility and higher cohesion.",
+  "ruleOfThumb": "When a class holds fields and methods that form distinct clusters of behavior or change for different reasons, split those clusters into dedicated collaborator classes.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Extract Class",
+    "page": "166",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which symptom most clearly indicates a class should be refactored into separate collaborators?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "The class contains two distinct groups of fields and methods that are changed together independently.",
+          "isCorrect": true,
+          "explanation": "This symptom shows low cohesion and multiple responsibilities; splitting into focused collaborators groups related state and behavior. Fowler recommends splitting when subsets of members form their own reason to change."
+        },
+        {
+          "id": "b",
+          "text": "The class has many small private helper methods used only inside a single public operation without outside access.",
+          "isCorrect": false,
+          "explanation": "Many small private helpers often indicate a need for method extraction rather than class splitting; the code can often be improved by clarifying a single operation without creating new classes."
+        },
+        {
+          "id": "c",
+          "text": "The class is large because it implements several unrelated third party interfaces with different lifecycle and config requirements.",
+          "isCorrect": false,
+          "explanation": "Implementing multiple external interfaces can indicate an adapter or facade mismatch; depending on context, introducing adapters or small wrappers may be preferable to splitting core domain data into new classes."
+        },
+        {
+          "id": "d",
+          "text": "The class has long methods performing multiple steps that could be split into smaller private helper functions.",
+          "isCorrect": false,
+          "explanation": "Long methods usually call for extracting methods to improve readability and testability, not necessarily creating new classes unless the extracted behavior has its own state or independent lifecycle."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this service, what is the most appropriate short-term refactoring to improve design without changing behavior?",
+      "codeSnippet": "class OrderService {\n  constructor(private paymentGateway: PaymentGateway, private notifier: Notifier) {}\n\n  process(order: Order) {\n    this.validate(order);\n    const receipt = this.paymentGateway.charge(order.total);\n    this.notifier.send(order.customerEmail, receipt);\n  }\n\n  validate(order: Order) { /* validation logic */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Isolate payment and notification behavior into a single, focused, collaborating service class owned by OrderService.",
+          "isCorrect": true,
+          "explanation": "Moving payment and notification into a dedicated collaborator reduces mixed responsibilities and clarifies the service's role. This keeps OrderService focused on workflow orchestration while the new collaborator encapsulates payment details and can be tested independently."
+        },
+        {
+          "id": "b",
+          "text": "Extract only the validate method into a helper object to reduce method length and increase testability for validation logic.",
+          "isCorrect": false,
+          "explanation": "Extracting validation improves testability but does not address payment and notification mixing. The core cohesion problem stems from multiple responsibilities in the same class rather than a single long method."
+        },
+        {
+          "id": "c",
+          "text": "Introduce function-level decomposition by breaking process into multiple smaller private methods within the same class to clarify flow.",
+          "isCorrect": false,
+          "explanation": "Splitting process into smaller private methods clarifies control flow but leaves payment and notification responsibilities co-located. Better long term is a collaborating service that encapsulates those behaviors and reduces coupling."
+        },
+        {
+          "id": "d",
+          "text": "Replace Notifier with an event emitter so notification is asynchronous and decoupled while leaving all responsibilities in place.",
+          "isCorrect": false,
+          "explanation": "Using an event emitter decouples timing but does not separate responsibilities or reduce the class's overall cohesion. It also increases architectural complexity without resolving the core design smell of mixed responsibilities."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two versions below. Which version demonstrates the better structural change for maintainability?",
+      "codeSnippet": "// Version A\nclass PaymentProcessor {\n  charge(amount: number): Receipt { /* payment logic */ }\n}\n\nclass OrderService {\n  constructor(private paymentProcessor: PaymentProcessor, private notifier: Notifier) {}\n  process(order: Order) {\n    this.validate(order);\n    const receipt = this.paymentProcessor.charge(order.total);\n    this.notifier.send(order.customerEmail, receipt);\n  }\n}\n\n// Version B\nclass OrderServiceV2 {\n  constructor(private paymentGateway: PaymentGateway, private notifier: Notifier, private taxService: TaxService) {}\n  process(order: Order) {\n    this.validate(order);\n    const receipt = this.paymentGateway.charge(order.total);\n    this.notifier.send(order.customerEmail, receipt);\n    this.logPayment(receipt);\n  }\n  logPayment(receipt: Receipt) { /* logging and other responsibilities */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates payment responsibilities into a focused, independently testable collaborator class.",
+          "isCorrect": true,
+          "explanation": "Version A separates responsibilities by moving payment behavior into a dedicated PaymentProcessor, improving cohesion and enabling focused unit tests for payment concerns. This approach aligns with refactoring guidance—extracting a cohesive role into its own class reduces coupling and makes future changes safer. In contrast, Version B keeps unrelated concerns and adds more dependencies to the same class, which increases complexity and the chance of regression when changes are made."
+        },
+        {
+          "id": "b",
+          "text": "Version B increases constructor dependencies and keeps unrelated notification logic alongside payment handling.",
+          "isCorrect": false,
+          "explanation": "Version B centralizes more behavior into a single service by adding dependencies and ad hoc methods like logPayment. That pattern may seem simpler initially but leads to lower cohesion and harder testing over time. The nuance is that merely adding collaborators without organizing them around single responsibilities does not address the root design smell; extraction into a focused collaborator is the preferable structural change when behaviors are separable."
+        }
+      ]
+    }
+  ]
+}

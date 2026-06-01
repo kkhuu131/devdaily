@@ -1,0 +1,105 @@
+{
+  "id": 55,
+  "conceptName": "Mediator Pattern",
+  "category": "design-pattern",
+  "definition": "An object that encapsulates how a set of objects interact, promoting loose coupling by preventing objects from referring to each other explicitly.",
+  "ruleOfThumb": "If many objects communicate and coordination logic is scattered, introduce a central coordinator to isolate interaction rules.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns - Mediator",
+    "page": "185-197",
+    "externalUrl": "https://refactoring.guru/design-patterns/mediator"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description most precisely matches the pattern intent in plain terms?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "It centralizes communication between collaborating objects into a single intermediary to reduce direct object coupling.",
+          "isCorrect": true,
+          "explanation": "This option captures the core intent: interactions are routed through a dedicated intermediary rather than direct object-to-object calls. That intermediary encapsulates the interaction protocols, allowing colleagues to change independently."
+        },
+        {
+          "id": "b",
+          "text": "It encapsulates interchangeable behaviors and selects appropriate algorithms at runtime for different scenarios without altering client-level usage.",
+          "isCorrect": false,
+          "explanation": "This description aligns more with the Strategy pattern, where algorithms are encapsulated and swapped at runtime. It does not emphasize centralizing interactions among multiple objects."
+        },
+        {
+          "id": "c",
+          "text": "It separates object creation from usage so callers remain unaware of concrete implementation details and configuration.",
+          "isCorrect": false,
+          "explanation": "This describes Factory or Abstract Factory concerns about object creation and decoupling clients from concrete types. It does not address coordinating communication among existing objects."
+        },
+        {
+          "id": "d",
+          "text": "It structures related families of classes into tree hierarchies to share common functionality via inheritance mechanisms.",
+          "isCorrect": false,
+          "explanation": "This is a description of Composite or general inheritance organization where a tree structure is used. It focuses on hierarchical composition rather than routing interactions through a central coordinator."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this Bus implementation used for component interaction, what is the primary maintainability risk?",
+      "codeSnippet": "class Bus {\n  private handlers: Record<string, Function[]> = {};\n  register(event: string, handler: Function) {\n    this.handlers[event] = this.handlers[event] || [];\n    this.handlers[event].push(handler);\n  }\n  notify(event: string, payload: any) {\n    (this.handlers[event] || []).forEach(h => h(payload));\n  }\n}\nclass ComponentA {\n  constructor(private bus: Bus) { bus.register('x', this.onX.bind(this)); }\n  private onX(payload: any) { /* react */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code centralizes communication into the Bus and concentrates coordination responsibilities into a single maintainability hotspot.",
+          "isCorrect": true,
+          "explanation": "The Bus is taking on coordination logic and routing responsibilities. That centralization can create a maintenance hotspot where rules and conditional routing accumulate, making changes riskier and harder to test in isolation. In some contexts the Bus is a deliberate coordinator, but if it grows unchecked it violates single responsibility and hinders clarity."
+        },
+        {
+          "id": "b",
+          "text": "The code centralizes event handling into the Bus which risks making it global state and hard to unit test in isolation.",
+          "isCorrect": false,
+          "explanation": "This is a real concern: a global or widely shared Bus can act like global state and complicate testing. However the primary maintainability issue is broader coordination accumulation and unclear interaction rules rather than only testability. Testability is a consequence but not the most diagnostic root cause here."
+        },
+        {
+          "id": "c",
+          "text": "The code centralizes messaging into the Bus and can hide implicit coupling that reduces clarity when tracing interactions across components.",
+          "isCorrect": false,
+          "explanation": "Hiding implicit coupling and making traces harder is a valid worry because indirect routing obscures who depends on whom. That concern is closely related to the correct answer, but it emphasizes traceability rather than the architectural accumulation of coordination responsibilities inside the Bus."
+        },
+        {
+          "id": "d",
+          "text": "The code centralizes component coordination into the Bus and may make evolving interaction rules more error prone over time in larger systems.",
+          "isCorrect": false,
+          "explanation": "This option describes the long term symptom of evolving brittle interaction rules, which is accurate but more of an effect than the immediate structural diagnosis. The correct choice points at the root structural issue of concentrated coordination responsibilities."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better suits managing complex component interactions in a large codebase?",
+      "codeSnippet": "// Version A\nclass Coordinator {\n  private comps: Record<string, any> = {};\n  register(name: string, comp: any) { this.comps[name] = comp; }\n  send(sender: string, message: string, data: any) {\n    Object.values(this.comps).forEach(c => { if (c.receive) c.receive(sender, message, data); });\n  }\n}\nclass Comp1 { constructor(c: Coordinator) { c.register('c1', this); } receive(s: string, m: string, d: any) { /*...*/ } }\n\n// Version B\nclass CompY { onNotify(ev: string, d: any) { /*...*/ } }\nclass CompX { constructor(private other: CompY) {} doWork() { this.other.onNotify('event', {}); } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates interaction rules in a coordinator class so components avoid direct references to many peers.",
+          "isCorrect": true,
+          "explanation": "Version A centralizes the mapping and sequencing of interactions in a focused coordinator. That isolates interaction protocols from component logic, reducing peer-to-peer coupling and making the interaction rules easier to reason about, test, and evolve. For large systems where many components interact, the coordinator helps contain complexity and prevents a mesh of direct dependencies."
+        },
+        {
+          "id": "b",
+          "text": "Version B scatters direct references between components causing tighter coupling that makes evolving interaction topologies more fragile and risky.",
+          "isCorrect": false,
+          "explanation": "Version B couples components directly by holding references and invoking each other. This spreads interaction logic across components and creates a dense dependency graph that becomes fragile as the system grows. Changes to interaction protocols require touching many classes, increasing regression risk and making it harder to introduce new participants without widespread modification."
+        }
+      ]
+    }
+  ]
+}

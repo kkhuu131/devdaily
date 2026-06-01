@@ -1,0 +1,106 @@
+{
+  "id": 71,
+  "conceptName": "Extract Variable",
+  "category": "refactoring",
+  "definition": "Introduce a local named variable to hold an intermediate expression so the code's intent and structure become clearer.",
+  "ruleOfThumb": "When an expression is long, repeated, or conceptually distinct, give it a short well named local to improve readability and reduce duplication.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Introduce Explaining Variable",
+    "page": "40",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which symptom most clearly indicates you should extract a local to represent an intermediate expression?",
+      "codeSnippet": "function total(order) {\n  return order.items.reduce((s, it) => s + it.price * (1 + order.taxRate) - it.discount, 0);\n}\nconst final = total(myOrder) > 100 ? applyPremium(total(myOrder)) : applyStandard(total(myOrder));",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The same complex expression appears in several places which makes the function harder to read and update consistently.",
+          "isCorrect": true,
+          "explanation": "This is the classic case for extracting a local: duplication of a nontrivial expression increases reading cost and the chance of inconsistent edits. Introducing a named variable both documents intent and centralizes the expression for future changes."
+        },
+        {
+          "id": "b",
+          "text": "The long expression should stay inline to avoid adding unnecessary local variables and losing immediate expression locality.",
+          "isCorrect": false,
+          "explanation": "Keeping everything inline preserves locality but sacrifices clarity when expressions are complex or duplicated. If the expression is long and reused, a local improves readability more than it harms locality."
+        },
+        {
+          "id": "c",
+          "text": "The compiler will optimize repeated calculations so duplication is harmless for performance and needs no refactor.",
+          "isCorrect": false,
+          "explanation": "Compiler optimizations are not a justification for duplicated complex expressions; maintainability and clarity are primary concerns. Also optimizations may not eliminate semantic duplication or help with intent."
+        },
+        {
+          "id": "d",
+          "text": "The expression should be wrapped into a helper class method to centralize logic and support testing in isolation.",
+          "isCorrect": false,
+          "explanation": "Moving logic into another class or method can be appropriate for reuse or abstraction, but the simpler first step is often a local variable that documents intent without changing structure or test boundaries."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You have a single long conditional expression used once. What is the best guideline about introducing a named intermediate?",
+      "codeSnippet": "function canAccess(user, resource) {\n  if (user && user.isActive && (user.role === 'admin' || (resource.ownerId === user.id && !user.isSuspended))) {\n    return true;\n  }\n  return false;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The complex boolean should be given a named intermediate to clarify intent and reduce cognitive load in the conditional.",
+          "isCorrect": true,
+          "explanation": "Naming the boolean (for example isAuthorized) makes the conditional read like a sentence and separates intent from implementation. Even for single use, an explanatory name reduces cognitive load for future readers."
+        },
+        {
+          "id": "b",
+          "text": "The expression should remain inline because extracting a single use name can obscure immediate evaluation details and context.",
+          "isCorrect": false,
+          "explanation": "This is a reasonable concern when the expression is short or the surrounding context depends on its structure. But when the boolean is complex, a name usually improves clarity without hiding important evaluation details."
+        },
+        {
+          "id": "c",
+          "text": "Extracting will change short circuit evaluation and may introduce subtle bugs when conditions rely on side effect evaluation.",
+          "isCorrect": false,
+          "explanation": "Changing evaluation order can indeed introduce bugs if subexpressions have side effects. In pure boolean checks it is safe, but be cautious if expressions perform mutations or depend on sequencing."
+        },
+        {
+          "id": "d",
+          "text": "The long condition should be refactored into a policy object instead of naming a local to avoid future growth issues.",
+          "isCorrect": false,
+          "explanation": "Refactoring into a policy object may be appropriate for complex authorization logic, but it is a larger structural change. A named local is a lower cost step that documents intent before extracting a bigger abstraction."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better demonstrates the right way to name intermediate results for clarity and minimal scope impact?",
+      "codeSnippet": "function computeFinalPrice(order) {\n  // Version A\n  // const itemTotal = order.items.reduce((s, it) => s + it.price * it.qty, 0);\n  // const discountAmount = Math.min(order.couponValue, itemTotal * 0.1);\n  // const tax = (itemTotal - discountAmount) * order.taxRate;\n  // return itemTotal - discountAmount + tax;\n\n  // Version B\n  // let x = order.items.reduce((s, it) => s + it.price * it.qty, 0);\n  // x = x - Math.min(order.couponValue, x * 0.1);\n  // x = x + (x * order.taxRate);\n  // return x;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A uses small well named locals that keep intent local and make each subcomputation explicit and clear.",
+          "isCorrect": true,
+          "explanation": "Version A introduces descriptive constants for each subexpression, which documents intent and keeps the scope limited. This makes the function easier to read and reason about, reduces mistakes when changing formulas, and avoids name reuse pitfalls. Fowler recommends explaining variables for complex expressions; Clean Code also favors meaningful names to reveal intent."
+        },
+        {
+          "id": "b",
+          "text": "Version B reuses a generic temporary variable which hides intermediate intent and increases the chance of incorrect future edits.",
+          "isCorrect": false,
+          "explanation": "Version B mutates a generic variable and relies on its changing value, obscuring the meaning of each step. That pattern harms readability and makes refactoring riskier because later readers must reconstruct intent from mutation. Prefer descriptive constants unless there is a performance or memory reason that truly requires mutation."
+        }
+      ]
+    }
+  ]
+}

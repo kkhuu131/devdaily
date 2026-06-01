@@ -1,0 +1,106 @@
+{
+  "id": 68,
+  "conceptName": "Divergent Change",
+  "category": "code-smell",
+  "definition": "A single class is repeatedly modified for different, unrelated reasons because it mixes multiple responsibilities.",
+  "ruleOfThumb": "If a type changes in many unrelated ways for different reasons, split responsibilities into separate types.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Divergent Change",
+    "page": null,
+    "externalUrl": "https://refactoring.com/catalog/divergentChange.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What symptom most clearly indicates the problem in this code?",
+      "codeSnippet": "class Customer {\n  updateAddress(addr) {\n    this.address = addr;\n    this.db.save(this);\n    this.audit.log('address changed');\n  }\n  changeEmail(email) {\n    this.email = email;\n    this.db.save(this);\n    this.audit.log('email changed');\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class mixes persistence and auditing responsibilities with core business methods in the same type.",
+          "isCorrect": true,
+          "explanation": "The class combines application logic with persistence and auditing duties, so changes driven by different concerns will collide here. This is the classic symptom described by Fowler where a single type accumulates responsibilities and must be split so each concern can evolve independently. A focused refactor could extract persistence and auditing collaborators so business logic changes no longer affect those areas."
+        },
+        {
+          "id": "b",
+          "text": "This code repeats persistence calls and should be refactored to remove duplicated save logic into a helper.",
+          "isCorrect": false,
+          "explanation": "While duplicated save calls are visible, treating this solely as duplication misses the deeper issue: mixing different responsibilities. Extracting a helper reduces repetition but does not separate auditing and persistence from business behavior. Refactoring should aim for clearer responsibility boundaries rather than only removing call-site duplication."
+        },
+        {
+          "id": "c",
+          "text": "A single change will require editing many different classes across the codebase in inconsistent ways.",
+          "isCorrect": false,
+          "explanation": "This describes shotgun surgery, the opposite smell where one change forces edits across many classes. The snippet shows one class accumulating unrelated responsibilities rather than many classes being affected. Conflating these two smells leads to the wrong remediation strategy."
+        },
+        {
+          "id": "d",
+          "text": "Method parameters vary too much and this class should be redesigned to use parameter objects for clarity.",
+          "isCorrect": false,
+          "explanation": "Parameter-object refactoring addresses overly long or varying parameter lists. The shown issue is about mixed responsibilities across methods, not parameter complexity. Applying parameter objects would not resolve the fundamental coupling between business, persistence, and auditing responsibilities."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which description best characterizes the primary maintainability risk in the following component?",
+      "codeSnippet": "class BillingService {\n  calculateTotal(items) {\n    // apply discounts and tax\n  }\n  formatInvoice(items) {\n    // render html, pdf and csv versions\n  }\n  sendInvoice(customer, payload) {\n    // email and external API delivery\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class groups calculation formatting and delivery responsibilities together in a single component across multiple methods.",
+          "isCorrect": true,
+          "explanation": "The component mixes distinct responsibilities: pricing logic, presentation formatting, and delivery concerns. This coupling means independent changes to formatting or delivery will require edits to the same class. The pragmatic fix is to separate responsibilities into focused collaborators so each concern can evolve without touching the others."
+        },
+        {
+          "id": "b",
+          "text": "The class is simply too large and needs splitting purely for size reasons with no change in responsibility.",
+          "isCorrect": false,
+          "explanation": "Splitting only for size addresses readability but may not fix conceptual mixing of responsibilities. The real problem is responsibility coupling rather than mere line-count. A refactor should separate responsibilities by role, not just slice the class arbitrarily to reduce size."
+        },
+        {
+          "id": "c",
+          "text": "This pattern will cause many classes to change whenever a single formatting option is added in the system.",
+          "isCorrect": false,
+          "explanation": "This statement suggests shotgun surgery where one change affects many classes. In the example the opposite is true: one class will change for many unrelated reasons. The correct diagnosis leads to extracting collaborators rather than distributing the change across many classes."
+        },
+        {
+          "id": "d",
+          "text": "Methods in this class overly reference external objects and should be moved closer to the data owner class.",
+          "isCorrect": false,
+          "explanation": "Moving code to the data owner targets feature envy. The example shows distinct responsibilities colocated in one service rather than methods improperly focusing on external data. The better approach is to relocate responsibilities into dedicated components rather than only moving methods to owners."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation version better addresses the maintainability risk shown earlier?",
+      "codeSnippet": "// Version A\nclass PaymentService {\n  processPayment(order) {\n    // calculate totals\n    // persist payment record\n    // send receipt email\n    // notify external ledger\n  }\n}\n\n// Version B\nclass PaymentProcessor { process(order) { /* calculate totals */ } }\nclass PaymentRepository { save(record) { /* persist */ } }\nclass Notifier { sendReceipt(customer, payload) { /* email */ } }\nclass PaymentService { constructor(p, r, n){} processPayment(o){ /* delegate to components */ } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes multiple responsibilities in one service and will continue to require unrelated changes across its methods.",
+          "isCorrect": false,
+          "explanation": "Version A keeps calculation, persistence, notification, and external communication inside one class. That centralization means changes for independent concerns will repeatedly touch the same type, perpetuating maintenance pain. Although simpler initially, it obstructs isolated testing and incremental evolution. Fowler recommends separating responsibilities so each concern can change independently."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates responsibilities into focused components that place each concern in its own collaborating class.",
+          "isCorrect": true,
+          "explanation": "Version B breaks the monolith into purpose-driven collaborators, reducing the chance that unrelated changes touch the same class. This improves testability, clarifies boundaries, and supports independent evolution of formatting, persistence, and notification code. See Fowler on Divergent Change and the refactoring goal of creating types that change for a single reason. Clean Code and Pragmatic Programmer also recommend small, focused modules to minimize cognitive load and coupling."
+        }
+      ]
+    }
+  ]
+}

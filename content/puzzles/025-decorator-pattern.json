@@ -1,0 +1,106 @@
+{
+  "id": 25,
+  "conceptName": "Decorator Pattern",
+  "category": "design-pattern",
+  "definition": "A structural pattern that attaches additional responsibilities to an object by wrapping it with another object implementing the same interface, allowing behavior to be added at runtime.",
+  "ruleOfThumb": "Prefer lightweight, composable wrappers when you need to add orthogonal responsibilities without subclass proliferation.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Decorator",
+    "page": "175-183",
+    "externalUrl": "https://en.wikipedia.org/wiki/Decorator_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What approach does this code snippet illustrate?",
+      "codeSnippet": "interface Component { operation(): string }\nclass ConcreteComponent implements Component {\n  operation(){ return \"core\" }\n}\nclass Wrapper implements Component {\n  constructor(private wrappee: Component) {}\n  operation(){ return `decorated:${this.wrappee.operation()}` }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It composes objects by wrapping one instance with another to add responsibilities at runtime.",
+          "isCorrect": true,
+          "explanation": "This snippet shows runtime composition: a wrapper holds a reference to the wrapped component and delegates calls while adding behavior. This allows adding responsibilities without changing the wrapped object's code, aligning with the pattern described by the GoF."
+        },
+        {
+          "id": "b",
+          "text": "It creates a separate subclass to override and extend behavior at compile time through inheritance hierarchies.",
+          "isCorrect": false,
+          "explanation": "Subclassing modifies behavior by inheritance, but the snippet uses delegation to an inner instance rather than extending a class. Subclassing would require a new class per variation whereas the shown approach composes behavior dynamically."
+        },
+        {
+          "id": "c",
+          "text": "It uses a proxy object to intercept calls for cross cutting concerns rather than composing behavior per instance.",
+          "isCorrect": false,
+          "explanation": "A proxy typically controls access or adds generic interception, but the provided wrapper explicitly delegates to the component and augments return values. While proxies and decorators can look similar, the intent and structure here are about extending responsibilities per instance."
+        },
+        {
+          "id": "d",
+          "text": "It relies on a static helper or extension to mutate call results instead of instance composition for added responsibilities.",
+          "isCorrect": false,
+          "explanation": "Static helpers would be external utilities invoked directly, not objects implementing the same interface and holding a wrapped instance. The code shows instance composition where behavior travels with the object, which differs from static extension functions."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this implementation, which concern is most likely to become a maintenance problem?",
+      "codeSnippet": "interface Service { fetch(id: number): Promise<string> }\nclass BaseService implements Service { async fetch(id:number){ return `data ${id}` } }\nclass AuthWrapper implements Service { constructor(private svc:Service){} async fetch(id:number){ /* auth */ return this.svc.fetch(id) } }\nclass CacheWrapper implements Service { constructor(private svc:Service){} async fetch(id:number){ /* cache */ return this.svc.fetch(id) } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This implementation will lead to a combinatorial explosion of wrapper classes as features and combinations grow.",
+          "isCorrect": true,
+          "explanation": "Creating a distinct wrapper for each orthogonal feature can multiply combinations when features must be composed in different ways. The GoF notes that while wrappers add flexibility, they can also lead to many small classes if not managed carefully."
+        },
+        {
+          "id": "b",
+          "text": "This implementation will tightly couple wrapper logic to concrete types making it hard to test or substitute mock implementations.",
+          "isCorrect": false,
+          "explanation": "Tight coupling can occur if wrappers depend on concrete implementations, but when wrappers accept the same interface type as shown, substitution and mocking remain straightforward. The bigger risk here is combinatorial growth rather than direct type coupling."
+        },
+        {
+          "id": "c",
+          "text": "This implementation will introduce brittle ordering dependencies where wrapping sequence changes runtime behavior in unexpected ways.",
+          "isCorrect": false,
+          "explanation": "Ordering can matter with wrappers, and that is a real concern. However, the more prominent, commonly encountered problem in this style is the proliferation of wrapper classes and combinations; ordering issues are secondary and often managed by clear composition rules."
+        },
+        {
+          "id": "d",
+          "text": "This implementation will add runtime overhead and confusing stack traces that complicate debugging across multiple wrapper layers.",
+          "isCorrect": false,
+          "explanation": "Additional layers can add marginal overhead and deeper call stacks, but these are typically manageable trade offs. The primary maintenance pain in practical systems tends to be the number of wrapper combinations rather than performance or debugging complexity alone."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the preferable design for adding new independent notification behaviors?",
+      "codeSnippet": "// Version A: small composable wrappers\ninterface Notifier { send(msg: string): void }\nclass BasicNotifier implements Notifier { send(msg:string){ console.log(msg) } }\nclass EmailWrapper implements Notifier { constructor(private n:Notifier){} send(msg:string){ /* send email */ this.n.send(msg) } }\nclass SmsWrapper implements Notifier { constructor(private n:Notifier){} send(msg:string){ /* send sms */ this.n.send(msg) } }\n\n// Version B: single configurable class\nclass MultiChannelNotifier implements Notifier {\n  constructor(private sendEmail:boolean, private sendSms:boolean) {}\n  send(msg:string){\n    if(this.sendEmail){ /* send email */ }\n    if(this.sendSms){ /* send sms */ }\n    console.log(msg)\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A uses composition with small wrappers and keeps notification behaviors decoupled for extension.",
+          "isCorrect": true,
+          "explanation": "Version A composes independent behaviors as separate small classes that implement the same interface. This keeps each concern isolated, simplifies unit testing, and makes adding new channels incremental without touching existing classes. Martin Fowler and the GoF recommend composition for orthogonal responsibilities when runtime flexibility is needed."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes toggles with conditional branches and creates conditional complexity when adding independent notification behaviors.",
+          "isCorrect": false,
+          "explanation": "Version B centralizes multiple behaviors behind boolean flags which tends to accumulate conditionals and branching logic as features are added. Over time this becomes hard to test and extend because new behavior requires modifying the monolithic class and its conditional paths rather than composing new, focused components."
+        }
+      ]
+    }
+  ]
+}

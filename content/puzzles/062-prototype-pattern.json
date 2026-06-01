@@ -1,0 +1,106 @@
+{
+  "id": 62,
+  "conceptName": "Prototype Pattern",
+  "category": "design-pattern",
+  "definition": "A creational technique where new objects are created by copying a prototypical instance rather than by instantiating classes directly.",
+  "ruleOfThumb": "Use cloning of configured exemplars when creating many similar objects at runtime can avoid costly construction or complex setup.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Prototype",
+    "page": "121",
+    "externalUrl": "https://refactoring.guru/design-patterns/prototype"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the following TypeScript code. Which observation best describes the demonstrated design choice?",
+      "codeSnippet": "class Widget {\n  constructor(public name: string, public config: any) {}\n  clone(): Widget {\n    return new Widget(this.name, { ...this.config });\n  }\n}\nconst original = new Widget('report', { size: 'A4' });\nconst copy = original.clone();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A class provides a clone method that returns a new object instance copied from the existing object.",
+          "isCorrect": true,
+          "explanation": "This code supplies an instance-level clone operation, which is the core of the Prototype approach — creating new objects by copying an existing exemplar. The clone method returns a new Widget constructed from the existing instance state. This is useful when direct constructor calls are undesirable or when creating many similar instances efficiently."
+        },
+        {
+          "id": "b",
+          "text": "The code implements a factory by exposing a method that constructs domain objects with different initial configurations.",
+          "isCorrect": false,
+          "explanation": "While factories create new objects, this implementation attaches cloning behavior to the instance rather than centralizing construction logic. A factory would typically encapsulate creation steps in a separate object or function, not provide an instance method that duplicates the instance state."
+        },
+        {
+          "id": "c",
+          "text": "This is a singleton disguised through module state where a single instance is shared across the entire application.",
+          "isCorrect": false,
+          "explanation": "A singleton restricts instantiation to one shared instance, but the example creates multiple Widget instances via clone. The presence of a clone method and explicit creation of new copies contradicts the singleton intent, so singleton concerns are a plausible but incorrect interpretation."
+        },
+        {
+          "id": "d",
+          "text": "The class illustrates a builder style API for stepwise construction of complex objects before finalizing creation.",
+          "isCorrect": false,
+          "explanation": "Builder patterns provide a fluent or stepwise API to assemble complex objects before finalization. The code shows instantaneous duplication of an existing instance rather than incremental construction, so interpreting it as a builder would be a misclassification even though both patterns address object creation."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A team stores exemplar objects in a registry and clones them to produce new instances. What is the most likely rationale for choosing that approach?",
+      "codeSnippet": "const prototypeRegistry: Record<string, any> = {};\nprototypeRegistry['report'] = { type: 'report', settings: { size: 'A4' } };\n\nfunction createFromPrototype(key: string, overrides: any) {\n  const proto = prototypeRegistry[key];\n  return Object.assign(Object.create(proto), overrides);\n}\n\nconst r = createFromPrototype('report', { settings: { size: 'A3' } });",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "To produce new objects by cloning preconfigured exemplar instances at runtime and avoid repeating expensive construction logic.",
+          "isCorrect": true,
+          "explanation": "Cloning exemplars stored in a registry is often chosen to avoid costly constructor work or complex initialization each time an object is needed. This enables quick creation of customized instances derived from a prebuilt template. Fowler and the Gang of Four note this as a use case when instantiation cost or runtime configuration makes direct construction undesirable."
+        },
+        {
+          "id": "b",
+          "text": "To enforce type invariants by delegating all validation logic to a central factory before instance creation occurs.",
+          "isCorrect": false,
+          "explanation": "Centralized validation is a real concern for factories, but the shown registry approach focuses on copying existing exemplars rather than centralizing validation. Factories typically run validation and construction logic upfront, whereas prototype-style registries reuse prevalidated exemplars to sidestep repeated checks."
+        },
+        {
+          "id": "c",
+          "text": "To achieve deep immutability by freezing prototype graphs and returning referentially transparent object references for consumers.",
+          "isCorrect": false,
+          "explanation": "Freezing objects to achieve immutability is a valid strategy, but the code uses Object.assign and Object.create to produce mutable copies. The intent shown is customization via overrides, not returning frozen shared references, so immutability is unlikely the primary rationale here."
+        },
+        {
+          "id": "d",
+          "text": "To support dependency injection frameworks by wiring constructor parameters through reflection rather than copying an exemplar instance.",
+          "isCorrect": false,
+          "explanation": "Dependency injection frameworks address wiring dependencies and often rely on constructors or setters. The registry-and-clone approach sidesteps constructor wiring by copying configured instances, so DI concerns could be present but are not the central justification for using exemplar cloning as depicted."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation would you prefer for runtime customization when instances require expensive setup? Choose the better design for maintainability and performance.",
+      "codeSnippet": "// Version A: exemplar clones\nclass Template {\n  constructor(public props: any) {}\n  clone(overrides = {}) {\n    return Object.assign(Object.create(Object.getPrototypeOf(this)), { ...this.props, ...overrides });\n  }\n}\nconst exemplar = new Template({ heavy: true });\nconst a = exemplar.clone({ heavy: false });\n\n// Version B: constructor based\nclass TemplateV2 {\n  constructor(private options: any) { this.setup(); }\n  private setup() { /* expensive initialization */ }\n}\nfunction createV2(opts: any) { return new TemplateV2(opts); }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A reduces runtime construction cost and keeps instance customization simple through cloning configured exemplar objects.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable when setup is expensive and many similar but slightly different instances are needed. By cloning a preinitialized exemplar you avoid repeating costly setup and keep customization limited to overrides. This yields better runtime performance and separation between setup and per-instance variation. The Prototype approach makes this explicit and can simplify maintenance when exemplar configuration evolves independently of creation logic."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes heavy initialization in constructors leading to repeated expensive setup and tight coupling to creation code.",
+          "isCorrect": false,
+          "explanation": "Version B forces each creation through the constructor and its setup logic, which duplicates expensive work and couples clients to construction details. This complicates testing and scaling when many variations are required. While V2 may be clearer for simple objects, it becomes problematic when initialization cost or runtime variability is significant — making exemplar cloning a better structural choice in such cases."
+        }
+      ]
+    }
+  ]
+}

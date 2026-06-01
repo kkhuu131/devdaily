@@ -1,0 +1,106 @@
+{
+  "id": 42,
+  "conceptName": "Abstract Factory Pattern",
+  "category": "design-pattern",
+  "definition": "Provides an interface for creating families of related or dependent objects without specifying their concrete classes.",
+  "ruleOfThumb": "Use when your code needs to produce related objects that must be used together and you want to keep clients decoupled from concrete implementations.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Abstract Factory",
+    "page": null,
+    "externalUrl": "https://refactoring.guru/design-patterns/abstract-factory"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which design is exemplified by the following TypeScript code?",
+      "codeSnippet": "interface UIFactory {\n  createButton(): Button;\n  createCheckbox(): Checkbox;\n}\n\nclass LightFactory implements UIFactory { /* returns LightButton, LightCheckbox */ }\nclass DarkFactory implements UIFactory { /* returns DarkButton, DarkCheckbox */ }\n\nfunction render(uiFactory: UIFactory) {\n  const btn = uiFactory.createButton();\n  const cb = uiFactory.createCheckbox();\n  btn.render(); cb.render();\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Creates families of related products where client code uses abstract factories to obtain matching product objects.",
+          "isCorrect": true,
+          "explanation": "This code shows an interface returning a family of related products (button and checkbox) and concrete factories implementing that interface. Clients call factory methods on the injected factory, keeping them decoupled from concrete product classes. That behavior corresponds to the pattern described in classic design literature."
+        },
+        {
+          "id": "b",
+          "text": "Encapsulates complex object construction in a stepwise builder so callers configure parts then construct final objects.",
+          "isCorrect": false,
+          "explanation": "A Builder separates construction and representation and provides fluent stepwise configuration of a single complex object. The snippet shows factories producing multiple related products together rather than stepwise building a single complex object, so Builder is not the best fit."
+        },
+        {
+          "id": "c",
+          "text": "Provides a single function to create objects based on input parameters with simple conditional logic inside.",
+          "isCorrect": false,
+          "explanation": "A Simple Factory or factory method implemented via conditionals returns different concrete objects from one function. The snippet uses factory interfaces to create families of products, which is more structured than a single conditional factory function."
+        },
+        {
+          "id": "d",
+          "text": "Offers a method per product subclass to be overridden by subclasses to produce varied concrete instances.",
+          "isCorrect": false,
+          "explanation": "This describes the Factory Method pattern where subclasses override a creator method. The snippet uses separate factory implementations to produce families of related objects rather than relying primarily on subclass overrides, so Factory Method is not the closest match."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary design concern in the following code?",
+      "codeSnippet": "function createButton(theme: 'light' | 'dark') {\n  if (theme === 'light') return new LightButton();\n  return new DarkButton();\n}\n\nclass LightButton { render() {} }\nclass DarkButton { render() {} }\n\nconst btn = createButton(getCurrentTheme());\nbtn.render();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This implementation tightly couples client code to concrete product classes through explicit conditionals, hindering addition of new product families.",
+          "isCorrect": true,
+          "explanation": "The explicit conditional and direct 'new' calls mean clients must be changed to add another family. An abstract factory approach would hide these details behind an interface and allow new families without modifying client code, improving extensibility."
+        },
+        {
+          "id": "b",
+          "text": "This implementation mixes product creation with configuration logic, violating separation of concerns and complicating unit testing and reuse.",
+          "isCorrect": false,
+          "explanation": "Mixing creation and configuration can be a problem, but the snippet's core issue is that clients select concrete types directly via conditionals. Moving creation out still helps separation, but the immediate harm is tight coupling and poor extensibility."
+        },
+        {
+          "id": "c",
+          "text": "This implementation risks runtime performance problems from creating many short lived objects instead of reusing instances across requests.",
+          "isCorrect": false,
+          "explanation": "While object churn might matter in extreme cases, the example creates a small number of UI objects. The more relevant design concern is coupling and openness to change, not performance from short lived instances."
+        },
+        {
+          "id": "d",
+          "text": "This implementation forces subclasses to be added for every new product variant, leading to class explosion and higher maintenance costs.",
+          "isCorrect": false,
+          "explanation": "Adding subclasses can be a maintenance issue, but the snippet shows conditional construction of concrete classes rather than a subclassing scheme. The immediate problem is client-side conditionals and concrete dependencies rather than unavoidable class proliferation."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better supports adding new product families without touching client rendering code?",
+      "codeSnippet": "/* Version A */\ninterface WidgetFactory { createButton(): Button; createCheckbox(): Checkbox }\nfunction render(factory: WidgetFactory) {\n  const btn = factory.createButton();\n  const cb = factory.createCheckbox();\n  btn.render(); cb.render();\n}\n\n/* Version B */\nfunction render(theme: string) {\n  const btn = theme === 'light' ? new LightButton() : new DarkButton();\n  const cb = theme === 'light' ? new LightCheckbox() : new DarkCheckbox();\n  btn.render(); cb.render();\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes family creation behind injected factory interfaces across the application modules.",
+          "isCorrect": true,
+          "explanation": "Version A delegates creation to an injected factory interface, so adding a new family requires providing another factory implementation without changing render code. This keeps clients closed to modification but open to extension, aligning with SOLID principles and common pattern guidance."
+        },
+        {
+          "id": "b",
+          "text": "Version B spreads conditional creation logic into clients, requiring edits everywhere the products are created when adding new families.",
+          "isCorrect": false,
+          "explanation": "Version B encodes knowledge of concrete classes and selection logic inside the rendering function. Adding another theme would require changing each place with such conditionals. That scatter of creation logic increases coupling and violates the open closed principle compared to the centralized factory approach."
+        }
+      ]
+    }
+  ]
+}

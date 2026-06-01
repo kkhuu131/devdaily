@@ -1,0 +1,106 @@
+{
+  "id": 67,
+  "conceptName": "Replace Magic Number with Symbolic Constant",
+  "category": "refactoring",
+  "definition": "Substitute unexplained numeric literals in code with well named constants to reveal intent and centralize change.",
+  "ruleOfThumb": "When a number encodes business meaning or appears more than once, give it a descriptive constant and use that instead.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Replace Magic Number with Symbolic Constant",
+    "page": "79",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary maintainability problem in the code below?",
+      "codeSnippet": "const calculateTotal = (items: { price: number }[]) => {\n  const subtotal = items.reduce((s, i) => s + i.price, 0);\n  const tax = subtotal * 0.08;\n  return subtotal + tax;\n};",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code uses a raw numeric literal for a tax rate where a named constant would express meaning.",
+          "isCorrect": true,
+          "explanation": "The literal 0.08 encodes a business rule without a name. Extracting it to a named constant (for example TAX_RATE) documents intent and centralizes any future legislative or policy changes. This clarifies code during reviews and reduces the chance of inconsistent updates across the codebase."
+        },
+        {
+          "id": "b",
+          "text": "The tax calculation multiplies subtotal without validating item prices which could hide upstream data issues.",
+          "isCorrect": false,
+          "explanation": "While validating inputs is important, the immediate maintainability concern here is the unexplained numeric literal. Input validation addresses data quality but does not help readers understand why 0.08 was chosen or make it easy to change the tax value consistently."
+        },
+        {
+          "id": "c",
+          "text": "Floating point rounding is likely to cause money calculation errors unless BigDecimal style library is used.",
+          "isCorrect": false,
+          "explanation": "Floating point precision is indeed a practical concern for monetary values, but the snippet's primary smell is an unnamed numeric literal. Rounding and type decisions are separate issues and should be handled after naming domain constants and choosing appropriate numeric types."
+        },
+        {
+          "id": "d",
+          "text": "The reduce callback uses an object type without defensive checks which may throw if items array contains null.",
+          "isCorrect": false,
+          "explanation": "Null-safety is a valid runtime concern, but it is orthogonal to the cognitive issue shown. The reader first lacks information about the meaning of 0.08; defensive checks can be added independently once domain constants are named."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the fundamental problem in the following snippet that will make future adjustments error prone?",
+      "codeSnippet": "const DISCOUNT = 10;\nfunction applyDiscount(price: number, customerType: string) {\n  if (customerType === \"VIP\") return price * (1 - 0.1);\n  if (price > 1000) return price - 50;\n  return price;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "An unused named constant suggests dead code rather than explaining the real business rules behind the numbers.",
+          "isCorrect": false,
+          "explanation": "The declared DISCOUNT constant is misleading, but the deeper issue is inconsistent raw numbers used for related rules. Removing dead code is useful, however the maintainability hazard stems from scattering business values as literals which encourages inconsistency and mistakes."
+        },
+        {
+          "id": "b",
+          "text": "Magic numeric literals are scattered for discounts and thresholds, preventing consistent updates and clear business intent.",
+          "isCorrect": true,
+          "explanation": "This snippet mixes an unused constant with inline literals 0.1 and 50. The root problem is lack of named, centralized values for discounts and thresholds. Extracting and reusing domain constants makes intent explicit and reduces the chance of divergent updates across code paths."
+        },
+        {
+          "id": "c",
+          "text": "Using different numeric transformations mixes presentation concerns into business logic and makes unit testing harder.",
+          "isCorrect": false,
+          "explanation": "Presentation versus business logic separation can matter, but here the code is pure business logic with numeric rules. The harder maintenance issue is the unnamed, inconsistent numeric values, not testability from presentation mixing."
+        },
+        {
+          "id": "d",
+          "text": "Hardcoded numeric values make configuration deployment dependent rather than allowing runtime tuning from a settings store.",
+          "isCorrect": false,
+          "explanation": "Centralizing configuration can be valuable, but not every business constant needs to be runtime-configurable. The immediate refactoring is to name and centralize the business numbers in code; you can later decide which ones belong in configuration."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for long lived business logic where rates and thresholds may change over time?",
+      "codeSnippet": "// Version A\nexport function calculateCharge(hours: number) {\n  if (hours <= 8) return hours * 20;\n  return 8 * 20 + (hours - 8) * 30;\n}\n\n// Version B\nconst REGULAR_RATE = 20;\nconst OVERTIME_RATE = 30;\nconst REGULAR_HOURS = 8;\nexport function calculateCharge(hours: number) {\n  if (hours <= REGULAR_HOURS) return hours * REGULAR_RATE;\n  return REGULAR_HOURS * REGULAR_RATE + (hours - REGULAR_HOURS) * OVERTIME_RATE;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps numeric literals inline and reduces extra identifiers but hides the domain meaning behind numbers.",
+          "isCorrect": false,
+          "explanation": "Version A is compact but embeds domain semantics in unnamed literals. That leads to duplication and makes it easy to miss updates when business rates change. Over time this increases bug risk and complicates reviews because a reader must infer intent from the numbers instead of reading descriptive names."
+        },
+        {
+          "id": "b",
+          "text": "Version B extracts business numbers into named constants which expresses intent clearly and centralizes future changes.",
+          "isCorrect": true,
+          "explanation": "Version B makes the business rules explicit by naming rates and thresholds. This reduces duplication, clarifies intent during code review, and localizes changes when policy differs between teams or jurisdictions. Fowler recommends this extraction to improve readability and reduce the chance of inconsistent updates across the codebase."
+        }
+      ]
+    }
+  ]
+}

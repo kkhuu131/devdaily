@@ -1,0 +1,106 @@
+{
+  "id": 58,
+  "conceptName": "Visitor Pattern",
+  "category": "design-pattern",
+  "definition": "A way to separate algorithms from the object structures they operate on by letting external operation objects traverse and act on elements via double dispatch.",
+  "ruleOfThumb": "Use when you have many distinct operations to perform on a stable object structure and you want to add operations without modifying element classes.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Visitor",
+    "page": "331-344",
+    "externalUrl": "https://en.wikipedia.org/wiki/Visitor_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the code below. Which statement best describes the design choice shown?",
+      "codeSnippet": "interface Operation { visitCircle(c: Circle): void; visitSquare(s: Square): void }\nabstract class Shape { abstract accept(op: Operation): void }\nclass Circle extends Shape { accept(op: Operation) { op.visitCircle(this); } }\nclass Square extends Shape { accept(op: Operation) { op.visitSquare(this); } }\nclass Render implements Operation { visitCircle(c: Circle) { /*...*/ } visitSquare(s: Square) { /*...*/ } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code encapsulates operations in external objects using element accept calls that enable double dispatch across element types.",
+          "isCorrect": true,
+          "explanation": "This implementation moves algorithms into separate Operation objects and relies on each element's accept method to call the correct visit method on the operation, i.e., classic separation of operations from elements using double dispatch. That enables adding operations by creating new Operation implementations without changing element classes."
+        },
+        {
+          "id": "b",
+          "text": "This design centralizes unrelated algorithms into external operation objects so element classes avoid frequent modification when adding new operations.",
+          "isCorrect": false,
+          "explanation": "While this describes a benefit, it is a restatement rather than naming the specific mechanism. The real trade off is that adding new element types will require changing every Operation interface and implementation, which is the opposite concern for some change scenarios."
+        },
+        {
+          "id": "c",
+          "text": "The code couples traversal logic with element classes, which makes adding new element types require touching many classes.",
+          "isCorrect": false,
+          "explanation": "This points at a real consequence in some designs, but the snippet shows traversal by accept delegating to Operation methods, so the primary coupling is between Operations and element types, not traversal logic embedded in elements."
+        },
+        {
+          "id": "d",
+          "text": "It shows a type switch over element kinds used throughout code, which spreads operation logic across modules.",
+          "isCorrect": false,
+          "explanation": "This describes an alternative anti-pattern. The snippet does not use a type switch; it uses polymorphism via accept and visit methods. A type switch would indeed spread logic, but that is not what this code demonstrates."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this TypeScript shape, which future change will be most costly to implement across the codebase?",
+      "codeSnippet": "interface Operation { visitOrder(o: Order): void; visitCustomer(c: Customer): void }\nabstract class Entity { abstract accept(op: Operation): void }\nclass Order extends Entity { accept(op: Operation) { op.visitOrder(this); } }\nclass Customer extends Entity { accept(op: Operation) { op.visitCustomer(this); } }\nclass ExportCsv implements Operation { visitOrder(o: Order) { /*...*/ } visitCustomer(c: Customer) { /*...*/ } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Adding a new concrete element type will require updating every operation object with a new visit method signature.",
+          "isCorrect": true,
+          "explanation": "When operations are centralized in Operation implementations, introducing a new element class requires extending the Operation interface and updating every existing Operation implementation. This is the classic trade off: easy to add operations, costly to add element types."
+        },
+        {
+          "id": "b",
+          "text": "Adding a new operation object will require modifying all element classes to accept the new operation type explicitly.",
+          "isCorrect": false,
+          "explanation": "This concern is plausible but incorrect here: element classes already expose a generic accept(op: Operation) method, so adding a new Operation implementation typically does not require changes to elements. The costly change is adding element types."
+        },
+        {
+          "id": "c",
+          "text": "Changing traversal order across elements will force modifying every operation implementation to account for traversal variation.",
+          "isCorrect": false,
+          "explanation": "Traversal can be implemented either inside elements or externally. In this example traversal is implicit in accept/visit calls. While traversal changes might require some adjustments, they rarely force changes to every operation implementation in the same way adding a new element type would."
+        },
+        {
+          "id": "d",
+          "text": "The design tightly couples operations to element types which makes unit testing individual operations across types difficult.",
+          "isCorrect": false,
+          "explanation": "This is a reasonable concern but not the primary costly change. Centralizing operations into Operation classes can actually make testing operations easier, because each operation implementation is isolated. The more costly change remains adding new element types."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is better when the domain demands frequent new operations but the element types are stable?",
+      "codeSnippet": "// Version A\ninterface Operation { visitOrder(o: Order): void; visitCustomer(c: Customer): void }\nabstract class Entity { abstract accept(op: Operation): void }\nclass Order extends Entity { accept(op: Operation) { op.visitOrder(this); } }\nclass Customer extends Entity { accept(op: Operation) { op.visitCustomer(this); } }\nclass ExportCsv implements Operation { visitOrder(o: Order) { /*...*/ } visitCustomer(c: Customer) { /*...*/ }\n}\n\n// Version B\nabstract class EntityB { toCsv(): string { throw new Error(\"not implemented\"); } }\nclass OrderB extends EntityB { toCsv(): string { /* order specific export code */ return \"\"; } }\nclass CustomerB extends EntityB { toCsv(): string { /* customer specific export code */ return \"\"; } }\nclass ReportExporter { exportAll(es: EntityB[]) { return es.map(e => e.toCsv()); } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates operations into external operation objects enabling addition of operations without editing entity classes.",
+          "isCorrect": true,
+          "explanation": "Version A centralizes algorithms in discrete Operation implementations and uses accept to dispatch. That makes adding new operations a matter of adding new Operation classes only, without touching the existing Entity hierarchy. This is appropriate when the set of element types is stable but operations change frequently. See Gamma et al. on the trade offs of this pattern."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps export logic inside entity classes which scatters operation code and makes adding operations costly across classes.",
+          "isCorrect": false,
+          "explanation": "Version B places each operation as a method on the element classes, which is fine when new element types are frequent or operations are few. However, when operations are frequently added, this approach requires changes in many classes and scatters algorithmic concerns. This violates separation of concerns and increases churn compared with Version A."
+        }
+      ]
+    }
+  ]
+}

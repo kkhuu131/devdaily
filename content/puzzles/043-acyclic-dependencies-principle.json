@@ -1,0 +1,106 @@
+{
+  "id": 43,
+  "conceptName": "Acyclic Dependencies Principle",
+  "category": "solid",
+  "definition": "A guideline that package/module dependency graph should have no cycles so higher-level components do not depend on lower-level components and vice versa.",
+  "ruleOfThumb": "Arrange packages so dependencies flow in one direction; extract common abstractions to a stable package when needed.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Agile Software Development, Principles, Patterns, and Practices",
+    "chapter": "Package Principles",
+    "page": null,
+    "externalUrl": "https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What problem is most evident in the following module code?",
+      "codeSnippet": "// userService.ts\nimport { authenticate } from \"./authService\";\nexport function getUser(id: string) {\n  if (!authenticate(id)) return null;\n  return { id };\n}\n\n// authService.ts\nimport { getUser } from \"./userService\";\nexport function authenticate(id: string) {\n  const user = getUser(id);\n  return !!user;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code creates a mutual import cycle between modules that causes uncertain initialization and runtime ordering problems.",
+          "isCorrect": true,
+          "explanation": "The two modules import each other directly which creates a cycle in the module graph. At runtime this can produce initialization order problems, undefined values during startup, and surprising behavior when the modules rely on each other's exported bindings. Extracting a shared interface or inverting the dependency can break the cycle and stabilize initialization."
+        },
+        {
+          "id": "b",
+          "text": "This code will cause infinite recursion leading to stack overflow when services call each other without termination.",
+          "isCorrect": false,
+          "explanation": "While mutual calls can cause infinite recursion, the snippet shows imports creating a cycle rather than a recursive call chain. The functions call each other indirectly via imports but not necessarily in an infinite loop. The primary issue is module-level cyclic dependency affecting initialization, not guaranteed runtime recursion."
+        },
+        {
+          "id": "c",
+          "text": "This code exposes an authentication timing attack risk because the user lookup and auth are tightly combined.",
+          "isCorrect": false,
+          "explanation": "Tight coupling of lookup and auth can be a security concern in some contexts, but the code sample more clearly demonstrates a dependency cycle between modules. Security hardening would be a secondary concern after addressing the structural problem of mutual module imports that affect initialization and maintainability."
+        },
+        {
+          "id": "d",
+          "text": "This code violates single responsibility by mixing authentication logic into user retrieval responsibilities within same module boundary.",
+          "isCorrect": false,
+          "explanation": "Mixing responsibilities is a valid observation, but here the more pressing and concrete problem is that the two modules import each other, forming a cycle. That cyclic dependency has stronger immediate consequences for build order and runtime initialization than a SRP violation, which could be addressed later by refactoring after breaking the cycle."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given these inter-package imports, what architectural smell best describes the root issue?",
+      "codeSnippet": "// packages/payment/index.ts\nimport { createInvoice } from \"../invoice\";\nexport function charge() { createInvoice(); }\n\n// packages/invoice/index.ts\nimport { report } from \"../reporting\";\nexport function createInvoice() { report(); }\n\n// packages/reporting/index.ts\nimport { charge } from \"../payment\";\nexport function report() { charge(); }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The package graph forms a cycle across boundaries causing fragile builds and hard to reason modular composition.",
+          "isCorrect": true,
+          "explanation": "The three packages import each other in a cycle, creating an inter-package dependency cycle. That makes builds, testing, and comprehension harder because changes ripple unpredictably. The typical fixes are to extract a stable abstraction or reorganize responsibilities to make dependencies acyclic, ensuring a single direction of dependency flow."
+        },
+        {
+          "id": "b",
+          "text": "The services are too chatty over network which will cause latency unrelated to dependency structure and deployment.",
+          "isCorrect": false,
+          "explanation": "Excessive network chatter is a real operational concern, but the snippet is showing synchronous imports in a mono-repo style rather than remote calls. The structural problem is cyclic package imports, not runtime network behavior, so focusing on network latency would miss the main maintainability issue."
+        },
+        {
+          "id": "c",
+          "text": "This indicates missing abstraction because concrete implementations are shared across packages creating tight coupling and duplicated logic.",
+          "isCorrect": false,
+          "explanation": "Missing abstraction can lead to coupling, and extracting abstractions is often part of the fix. However, the defining smell here is the cycle in the package dependency graph. While abstraction is a possible remedy, the option mixes cause and effect instead of naming the core problem of cyclical dependencies between packages."
+        },
+        {
+          "id": "d",
+          "text": "The problem is an unclear domain model with incorrect aggregates and responsibilities rather than a cross-package dependency issue.",
+          "isCorrect": false,
+          "explanation": "An unclear domain model might cause poor boundaries, but the concrete symptom in the code is cyclic package imports. That symptom can stem from unclear domain boundaries, but calling it primarily a modeling error overlooks the immediate technical hazard of cycles in the dependency graph that complicate builds and refactoring."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better prevents hidden coupling and indirect cycles between feature packages?",
+      "codeSnippet": "// Version A\n// packages/featureA/service.ts\nimport { doB } from \"../featureB/worker\";\nexport function doA() { doB(); }\n\n// packages/featureB/worker.ts\nimport { doA } from \"../featureA/service\";\nexport function doB() { doA(); }\n\n// Version B\n// packages/core/interfaces.ts\nexport interface FeatureApi { doThing(): void }\n\n// packages/featureA/service.ts\nimport { FeatureApi } from \"../core/interfaces\";\nexport function doA(api: FeatureApi) { api.doThing(); }\n\n// packages/featureB/worker.ts\nimport { FeatureApi } from \"../core/interfaces\";\nexport const worker: FeatureApi = { doThing() { /*...*/ } };\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A leaves feature modules mutually importing concrete implementations causing hidden cycles and brittle module evolution.",
+          "isCorrect": false,
+          "explanation": "Version A directly ties Feature A and Feature B to each other's concrete implementations, which creates an explicit cycle and makes it easy for additional indirect cycles to appear as the system grows. This coupling makes refactoring and independent deployment harder and increases the chance of initialization or build-order issues."
+        },
+        {
+          "id": "b",
+          "text": "Version B extracts stable core interfaces used by features preventing indirect cycles and enabling independent evolution.",
+          "isCorrect": true,
+          "explanation": "Version B introduces a small stable core that both features depend on, which breaks the mutual dependency and provides a clear dependency direction. This pattern isolates changeable implementation details behind interfaces and prevents the features from forming cyclic dependencies. It aligns with package-level dependency rules that recommend depending on abstractions to maintain an acyclic graph."
+        }
+      ]
+    }
+  ]
+}

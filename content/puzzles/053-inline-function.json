@@ -1,0 +1,106 @@
+{
+  "id": 53,
+  "conceptName": "Inline Function",
+  "category": "refactoring",
+  "definition": "A refactoring that replaces calls to a small, trivial function with the function's body at each call site, then removes the now-redundant function to reduce indirection.",
+  "ruleOfThumb": "Inline a function when it only delegates trivial work and is used in very few places; keep it when it centralizes behavior shared across callers.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Inline Method",
+    "page": "Ch. 6",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the small method used only inside one call site. What refactoring is most appropriate here?",
+      "codeSnippet": "type Item = { price: number };\nclass Order {\n  constructor(public items: Item[]) {}\n  total() { return this.items.reduce((s, i) => s + i.price, 0); }\n}\nfunction processOrder(order: Order) {\n  const amount = order.total();\n  chargeCustomer(order, amount);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Remove the small method and replace its calls with the method body throughout calling code.",
+          "isCorrect": true,
+          "explanation": "The method here is a single-line delegator and used only in a local context. Inlining removes an extra indirection and makes the data flow explicit at the call site. Fowler recommends inlining methods that add no meaningful abstraction and are not reused. After inlining, verify tests and remove the redundant method to avoid dead code."
+        },
+        {
+          "id": "b",
+          "text": "Extract the reduce logic into a new helper and keep the small method to improve naming and single responsibility.",
+          "isCorrect": false,
+          "explanation": "Extracting to another helper increases indirection for a trivial operation and may scatter logic across modules. This could be appropriate if the reduce logic will be reused in many places or needs its own independent tests, but here the method is already minimal and only used locally. If future reuse emerges then extraction can be reconsidered."
+        },
+        {
+          "id": "c",
+          "text": "Convert the method to a getter and leave calls unchanged to make the access look like a property.",
+          "isCorrect": false,
+          "explanation": "Turning the method into a getter changes its semantic appearance without addressing the indirection problem. If callers benefit from property-like syntax and the operation is conceptually an attribute, a getter can be reasonable. However, it still leaves the extra call and may mislead about cost if the computation is nontrivial."
+        },
+        {
+          "id": "d",
+          "text": "Remove the method and duplicate its body into callers only after measuring duplication frequency and call sites.",
+          "isCorrect": false,
+          "explanation": "This option is a cautious variant that defers action until you confirm duplication costs. It is sensible when the method might be used more widely, but here the method appears local and trivial so immediate inlining is usually acceptable. The measured approach is useful in larger systems where churn and maintenance costs must be evaluated before duplicating logic."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A small formatting utility is used in several places. What should you do next regarding this helper function?",
+      "codeSnippet": "type Item = { priceCents: number; name: string };\nfunction formatPrice(cents: number) { return `$${(cents / 100).toFixed(2)}`; }\nfunction printItem(item: Item) { console.log(item.name + ' ' + formatPrice(item.priceCents)); }\nfunction emailTotal(items: Item[]) { const total = items.reduce((s,i)=>s+i.priceCents,0); return `Total ${formatPrice(total)}`; }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Retain the small formatting function since multiple callers already depend on it across the codebase.",
+          "isCorrect": true,
+          "explanation": "When a tiny helper is referenced from multiple places it centralizes behavior and reduces duplication. In this example the formatting logic appears in at least two call sites; keeping it avoids inconsistent formatting and simplifies future changes like localization. Fowler and other refactoring guides suggest not inlining methods that are shared by multiple callers."
+        },
+        {
+          "id": "b",
+          "text": "Inline the formatting logic into each caller to remove an extra indirection and eliminate the small wrapper function.",
+          "isCorrect": false,
+          "explanation": "Inlining everywhere would remove the small wrapper but increase duplication and make future formatting changes harder. This can be acceptable when the function is tiny and clearly local to a single caller, but with multiple callers the cost of divergence outweighs the benefit of a single function call."
+        },
+        {
+          "id": "c",
+          "text": "Extract the formatting into a localization service and replace calls to centralize currency logic in one module.",
+          "isCorrect": false,
+          "explanation": "Promoting the function into a localization or currency service is a reasonable longer term design when you expect internationalization or complex formatting rules. However, it adds architectural weight and should be done when that future need is real. For now, a shared utility function is simpler and sufficient."
+        },
+        {
+          "id": "d",
+          "text": "Convert the function to an inline arrow expression exported from a utilities file for consistent import and use.",
+          "isCorrect": false,
+          "explanation": "Moving the function to a utilities file is primarily an organizational change and does not address whether the logic should be inlined. It can make imports consistent but also increases the distance from usage. The key trade-off remains duplication versus centralized changeability."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation is preferable for the order total calculation shown below?",
+      "codeSnippet": "// Version A\nfunction processOrderA(order: { items: { price: number }[] }, charge: (id: string, amount: number) => void) {\n  const total = order.items.reduce((s, i) => s + i.price, 0);\n  charge('cust-1', total);\n}\n\n// Version B\nclass Order {\n  constructor(public items: { price: number }[]) {}\n  total() { return this.items.reduce((s, i) => s + i.price, 0); }\n}\nfunction processOrderB(order: Order, charge: (id: string, amount: number) => void) {\n  const total = order.total();\n  charge('cust-1', total);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is preferable for single use calculations because direct code keeps the flow local and clearer.",
+          "isCorrect": true,
+          "explanation": "Version A is better when the calculation exists only for this one caller because it avoids an extra level of indirection and keeps the business intent visible where it is used. Inlining here reduces cognitive load when reading the process flow and prevents a tiny method from obscuring the real behaviour. Fowler advises inlining methods that offer no meaningful abstraction; similarly, Clean Code favors clarity at the call site when a helper is trivially local. If the calculation later needs reuse, it can be extracted at that time."
+        },
+        {
+          "id": "b",
+          "text": "Version B is preferable because always encapsulating calculations in methods ensures uniform access and future extensibility by default.",
+          "isCorrect": false,
+          "explanation": "Version B centralizes the calculation which can be beneficial if the total is reused elsewhere or if the calculation hides important invariants. However, defaulting to extraction for every small operation creates many tiny methods that fragment reading flow and add indirection. Prefer extraction when there is clear reuse or when the extracted method names express a high-level concept; otherwise keep the logic in place for readability. Sources: Fowler on Inline Method and Robert C. Martin on balancing abstraction versus clarity."
+        }
+      ]
+    }
+  ]
+}
