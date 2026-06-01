@@ -1,0 +1,106 @@
+{
+  "id": 30,
+  "conceptName": "Middle Man",
+  "category": "code-smell",
+  "definition": "A type that exposes an API composed mostly of delegating methods that forward work to another object, adding little or no value.",
+  "ruleOfThumb": "If most methods are simple pass-throughs to a collaborator, consider removing the wrapper or moving behavior into the wrapper.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Remove Middle Man",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/RemoveMiddleMan.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this TypeScript class. Which concise observation best describes the likely problem?",
+      "codeSnippet": "class UserService {\n  constructor(private repo: UserRepository) {}\n  getUser(id: string) { return this.repo.findById(id); }\n  saveUser(u: User) { return this.repo.save(u); }\n  deleteUser(id: string) { return this.repo.remove(id); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class mostly forwards calls to a contained object and provides no substantial behavior itself.",
+          "isCorrect": true,
+          "explanation": "The UserService methods do nothing but call the repository. That indicates a wrapper that does not encapsulate meaningful logic. The refactoring guidance is to either move useful behavior into this class or remove it and let callers use the repository directly. Fowler catalogs this as a remove-middle-man situation where the delegating layer adds little value."
+        },
+        {
+          "id": "b",
+          "text": "This class duplicates validation logic across callers and increases maintenance by exposing many passthrough methods unnecessarily.",
+          "isCorrect": false,
+          "explanation": "A developer might think duplicated validation is the issue, but the snippet shows no duplicated checks, only delegation. While duplication can coexist with this smell, the primary concern is the lack of added behavior in the forwarding methods, not scattered validations."
+        },
+        {
+          "id": "c",
+          "text": "This class centralizes protocol translation between subsystems and intentionally simplifies clients by hiding complexity behind adapter methods.",
+          "isCorrect": false,
+          "explanation": "This would be true if the methods transformed data or adapted protocols. Here the methods are direct forwards that do not translate or adapt; they merely call the repository. That distinguishes an adapter-like intent from a pure delegating wrapper."
+        },
+        {
+          "id": "d",
+          "text": "This class enforces access control and is a thin facade providing authorization checks before delegating to the real implementation.",
+          "isCorrect": false,
+          "explanation": "Authorization checks would justify a thin layer, but the snippet shows no such checks. The concern in the code is absence of added responsibilities; a facade for security would be acceptable if the methods contained explicit access logic."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Service code below is under review. Which concern best identifies the root design problem to address?",
+      "codeSnippet": "class ReportService {\n  constructor(private repo: ReportRepo) {}\n  listReports(userId: string) { return this.repo.findByUser(userId); }\n  getReport(id: string) { return this.repo.get(id); }\n  saveReport(r: Report) { return this.repo.save(r); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This component acts as a thin forwarding layer to a repository and introduces no meaningful domain behavior itself.",
+          "isCorrect": true,
+          "explanation": "The ReportService only delegates to ReportRepo without adding orchestration, validation, or translation. That makes it a delegating wrapper that likely should be removed or enriched with domain logic so it justifies its position in the design. Refactoring options include collapsing the layer or moving responsibilities into it."
+        },
+        {
+          "id": "b",
+          "text": "This component creates an unnecessary abstraction level that increases indirection and makes testing and debugging more difficult overall.",
+          "isCorrect": false,
+          "explanation": "Increased indirection is a valid worry, and a delegating layer can complicate debugging. However the primary issue here is lack of added behavior; the increased indirection is a symptom rather than the specific structural smell to fix."
+        },
+        {
+          "id": "c",
+          "text": "This component violates transactional boundaries by not controlling commits and leaving transaction management to external callers unpredictably.",
+          "isCorrect": false,
+          "explanation": "Transaction management is a concrete concern. The snippet does not show transactions, so accusing it of boundary violations is plausible but not supported by the code. The more direct problem remains the wrapper's empty delegation."
+        },
+        {
+          "id": "d",
+          "text": "This component duplicates validation responsibilities across layers and scatters input checks between service and repository code.",
+          "isCorrect": false,
+          "explanation": "Scattered validation can be a maintenance problem, but the snippet does not demonstrate validation at all. The central issue is that the component offers no domain behavior and appears to exist solely to forward calls."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which implementation is the better long term design for domain clarity and why?",
+      "codeSnippet": "// Version A\nclass InvoiceService {\n  constructor(private repo: InvoiceRepo) {}\n  getInvoice(id: string) { return this.repo.get(id); }\n  saveInvoice(inv: Invoice) { return this.repo.save(inv); }\n}\n\n// Version B\nclass InvoiceService {\n  constructor(private repo: InvoiceRepo) {}\n  getInvoiceSummary(customerId: string) {\n    const invoices = this.repo.findByCustomer(customerId);\n    return invoices.map(i => summarizeInvoice(i));\n  }\n  saveInvoice(inv: Invoice) { return this.repo.save(inv); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A acts as a thin forwarding layer that preserves repository interface but adds no domain logic worth keeping.",
+          "isCorrect": false,
+          "explanation": "Version A merely mirrors the repository API without encapsulating any domain behavior. That makes it fragile because clients are one layer removed from the real implementation while gaining no semantic abstractions. Over time this wrapper becomes churn to maintain and confuses ownership of domain responsibilities. Prefer designs where a service encapsulates behavior or remove the superfluous layer."
+        },
+        {
+          "id": "b",
+          "text": "Version B acts as a domain rich service that encapsulates behavior instead of only delegating to persistence.",
+          "isCorrect": true,
+          "explanation": "Version B adds a meaningful operation that composes repository data into a client-focused result, establishing the service as an intent-revealing abstraction. This concentrates domain logic in one place, reduces client coupling to persistence APIs, and improves testability by giving the service responsibilities to own. Fowler recommends removing delegating layers unless they provide added behavior; Clean Code and design principles advise expressing intent through higher level operations rather than exposing low level persistence methods directly."
+        }
+      ]
+    }
+  ]
+}

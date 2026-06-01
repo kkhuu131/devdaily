@@ -1,0 +1,106 @@
+{
+  "id": 66,
+  "conceptName": "Push Down Method",
+  "category": "refactoring",
+  "definition": "Move a method from a superclass into the subclasses that actually use it, removing responsibility from the parent.",
+  "ruleOfThumb": "If a method only uses data or behavior specific to one or more subclasses, relocate it into those subclasses.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Push Down Method",
+    "page": "110",
+    "externalUrl": "https://refactoring.com/catalog/pushDownMethod.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Base class method references a field that only exists in one subclass. What is the primary problem you see?",
+      "codeSnippet": "class Report {\n  title: string;\n  generate() {\n    return this.title + ': ' + this.chartData.join(',');\n  }\n}\n\nclass ChartReport extends Report {\n  chartData = [1, 2, 3];\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This method belongs in the subclass where the referenced fields are defined and used exclusively.",
+          "isCorrect": true,
+          "explanation": "The method is referencing data that is not truly part of the superclass abstraction. Moving the behavior down to the subclass localizes knowledge of subclass data, prevents null or runtime checks in the base, and clarifies responsibilities. Fowler describes this as moving behavior to where the data lives to reduce incorrect coupling between classes."
+        },
+        {
+          "id": "b",
+          "text": "This method should remain in the base class to avoid duplicating logic across possible future subclasses.",
+          "isCorrect": false,
+          "explanation": "Keeping the method in the base class might appear to reduce duplication, but if the method depends on subclass-only fields it creates incorrect coupling and fragile code. A better option is to move the method or refactor so the base no longer accesses subclass-specific data."
+        },
+        {
+          "id": "c",
+          "text": "This method should be made to accept the needed data as parameters to keep the base class independent of subclass fields.",
+          "isCorrect": false,
+          "explanation": "Passing data as parameters can remove the dependency on subclass fields and keep the method in the base. That is a viable refactor in some cases, but it forces callers to know subclass internals and may complicate the API if the data is only relevant to some subclasses."
+        },
+        {
+          "id": "d",
+          "text": "This method should be converted to an abstract method so each subclass provides its own implementation tied to its fields.",
+          "isCorrect": false,
+          "explanation": "Making the method abstract is a reasonable solution when each subclass must provide a distinct implementation. However, if most subclasses share the same logic except for a small piece, extracting and moving only the subclass-specific part is often preferable to avoid duplicating large amounts of common code."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A base method composes a message from both base fields and subclass specific fields. What should you do first?",
+      "codeSnippet": "class Notification {\n  subject = 'Notice';\n  buildMessage() {\n    return this.subject + ' - ' + this.footer + ' ' + this.extraInfo;\n  }\n}\n\nclass EmailNotification extends Notification {\n  footer = 'Regards';\n  extraInfo = 'Contact us';\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The method should be split with shared composition staying in the base and subclass specific parts moved down.",
+          "isCorrect": true,
+          "explanation": "When a method mixes shared behavior and subclass specific details, splitting the method preserves the common behavior in the superclass and moves the variant parts into subclasses. This reduces coupling and keeps common code centralized while allowing subclasses to supply their specific pieces."
+        },
+        {
+          "id": "b",
+          "text": "The method should be moved entirely into the subclass even though it also composes parts shared by multiple subclasses.",
+          "isCorrect": false,
+          "explanation": "Moving the whole method down may solve the immediate coupling but can cause duplication if other subclasses share parts of the logic. Splitting shared and variant parts typically yields a cleaner long term design."
+        },
+        {
+          "id": "c",
+          "text": "The method should remain in the base and accept optional parameters to avoid duplicating small subclass differences.",
+          "isCorrect": false,
+          "explanation": "Using optional parameters can avoid duplication but leaks subclass concerns into the base API and may require callers to supply subclass details. This approach can become awkward if multiple subclasses need different parameters or behavior."
+        },
+        {
+          "id": "d",
+          "text": "The method should be extracted into a helper utility outside the class hierarchy to avoid coupling between base and subclasses.",
+          "isCorrect": false,
+          "explanation": "Extracting to a helper might centralize logic but can harm encapsulation by exposing internal formatting rules outside the hierarchy. Keep helper extraction as an option, but prefer splitting responsibilities within the class hierarchy when behavior is logically tied to subclasses."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two implementations. Which version better supports extending payment types without fragile conditional logic?",
+      "codeSnippet": "// Version A\nclass PaymentProcessor {\n  process(payment: Payment) {\n    const fees = this.calculateFees(payment);\n    // common processing...\n  }\n  calculateFees(payment: Payment) { return 0; }\n}\nclass CreditCardProcessor extends PaymentProcessor {\n  calculateFees(payment: Payment) { return payment.amount * 0.03; }\n}\n\n// Version B\nclass PaymentProcessor {\n  process(payment: Payment) {\n    let fees = 0;\n    if (payment.type === 'credit') {\n      fees = payment.amount * 0.03;\n    } else if (payment.type === 'paypal') {\n      fees = 0.05 * payment.amount + 0.3;\n    }\n    // common processing...\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A places subclass specific calculations inside subclasses where those calculations belong.",
+          "isCorrect": true,
+          "explanation": "Version A uses polymorphism so each subclass provides its own fee calculation. That keeps the base class focused on common workflow and avoids sprawling type checks. This follows the refactoring principle of moving behavior to where the data and variations live, improving extensibility and maintainability. See Fowler on moving behavior to subclasses and Clean Code on favoring polymorphism over conditionals."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes payment variations in the base class with explicit type checks and duplicated conditional logic.",
+          "isCorrect": false,
+          "explanation": "Version B accumulates conditional logic in the base class, which creates a maintenance burden as new payment types are added and increases the chance of duplicated or inconsistent behavior. Centralized conditionals often indicate a refactoring opportunity to use polymorphism or to push variant behavior down into subclasses."
+        }
+      ]
+    }
+  ]
+}

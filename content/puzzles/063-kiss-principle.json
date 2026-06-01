@@ -1,0 +1,106 @@
+{
+  "id": 63,
+  "conceptName": "KISS Principle",
+  "category": "principle",
+  "definition": "Favor the simplest design that accomplishes the required behavior; avoid unnecessary complexity and indirection.",
+  "ruleOfThumb": "If a simpler approach meets requirements and is easier to read, prefer it over additional abstraction.",
+  "citation": {
+    "author": "Andrew Hunt and David Thomas",
+    "bookTitle": "The Pragmatic Programmer",
+    "chapter": "Chapter 3: The Basic Tools",
+    "page": null,
+    "externalUrl": "https://pragprog.com"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the function below, which statement best describes its quality regarding simplicity and clarity?",
+      "codeSnippet": "function applyDiscount(price: number, discount?: number): number {\n  if (!discount) return price;\n  return Math.round((price - price * discount) * 100) / 100;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function is concise and performs a single well-named responsibility without unnecessary branching or hidden side effects.",
+          "isCorrect": true,
+          "explanation": "The function is short, has a clear name and a single purpose. It avoids extra branching and state, so it is easy to read and reason about. Simplicity here reduces bugs and maintenance overhead."
+        },
+        {
+          "id": "b",
+          "text": "This function mixes presentation and calculation code causing tight coupling and making future changes error prone.",
+          "isCorrect": false,
+          "explanation": "While mixing presentation and calculation can be an issue, this snippet performs only a numeric computation and returns a number. The concern is plausible but does not match the actual code structure."
+        },
+        {
+          "id": "c",
+          "text": "This function delegates to many global helpers increasing indirection and making the logic harder to follow quickly.",
+          "isCorrect": false,
+          "explanation": "Delegating to global helpers can obscure flow, but this snippet contains no external helper calls. The objection sounds reasonable but does not fit the given implementation."
+        },
+        {
+          "id": "d",
+          "text": "This function contains duplicated conditional branches which will be difficult to maintain and risk inconsistent behavior later.",
+          "isCorrect": false,
+          "explanation": "Duplicated conditionals are a real maintainability problem, but the snippet has a single conditional guard. The distractor is a believable mistake for a quick reader."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Examine this payment integration. What is the main maintainability concern introduced by this structure?",
+      "codeSnippet": "interface PaymentProvider { process(amount:number): boolean }\n\nclass StripeProvider implements PaymentProvider {\n  process(amount:number) { /* stripe calls */ return true; }\n}\n\nclass PaymentFactory {\n  static create(provider: string): PaymentProvider {\n    if (provider === 'stripe') return new StripeProvider();\n    throw new Error('Unknown provider');\n  }\n}\n\nclass OrderService {\n  constructor(private providerName: string) {}\n  pay(amount:number) {\n    const provider = PaymentFactory.create(this.providerName);\n    return provider.process(amount);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This implementation introduces an extra abstraction interface and factory despite having only one real variant to support.",
+          "isCorrect": true,
+          "explanation": "The code shows premature abstraction: an interface and factory were added while only one concrete provider exists. This adds indirection without tangible benefits and complicates maintenance—simpler code would be clearer until additional providers are needed."
+        },
+        {
+          "id": "b",
+          "text": "This implementation duplicates business rules across methods causing inconsistent behavior and making bug fixes risky and time consuming.",
+          "isCorrect": false,
+          "explanation": "Duplicated business rules are harmful, but this snippet centralizes payment processing through a single provider pathway. The concern is realistic, yet it does not reflect the presented structure."
+        },
+        {
+          "id": "c",
+          "text": "This implementation has a large method with nested conditionals making it hard to read and difficult to test unitwise.",
+          "isCorrect": false,
+          "explanation": "Large methods and deep nesting do impede readability and testing, but the shown methods are small and simple. This distractor describes a plausible maintenance problem that is not present here."
+        },
+        {
+          "id": "d",
+          "text": "This implementation leaks lower level details through the public API which couples callers to internal representation choices.",
+          "isCorrect": false,
+          "explanation": "Leaky abstractions are a legitimate concern, however the OrderService exposes only a pay method and a provider name; it does not expose internal representations. The distractor remains credible but inaccurate for this code."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for long-term readability and testability in a small team codebase?",
+      "codeSnippet": "// Version A: a single function with flags\nfunction saveUser(user:any, validate:boolean, sanitize:boolean, log:boolean) {\n  if (validate) { /* validation */ }\n  if (sanitize) { /* sanitization */ }\n  if (log) { /* logging */ }\n  // save to DB\n}\n\n// Version B: composed functions with clear names\nfunction validateUser(user:any) { /* validation */ }\nfunction sanitizeUser(user:any) { /* sanitization */ }\nfunction logSave(user:any) { /* logging */ }\nfunction saveUserClean(user:any) {\n  validateUser(user);\n  sanitizeUser(user);\n  logSave(user);\n  // save to DB\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes behavior into a multi-flag function and makes the call sites harder to reason about.",
+          "isCorrect": false,
+          "explanation": "Version A reduces the number of functions but introduces a multi-flag API where callers must understand combinations of booleans. That increases cognitive load, encourages conditional complexity, and makes unit testing less focused. For evolving features the flags often multiply and become brittle."
+        },
+        {
+          "id": "b",
+          "text": "Version B organizes code into small focused functions with clear names and straightforward testability.",
+          "isCorrect": true,
+          "explanation": "Version B breaks responsibilities into explicit operations with descriptive names, enabling localized unit tests and clearer call sites. While it introduces more small functions, the design favors readability and composability. This aligns with pragmatic recommendations to prefer simple, explicit structure over packed multi-flag routines."
+        }
+      ]
+    }
+  ]
+}

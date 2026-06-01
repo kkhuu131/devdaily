@@ -1,0 +1,105 @@
+{
+  "id": 74,
+  "conceptName": "Data Class",
+  "category": "code-smell",
+  "definition": "A class that primarily holds fields with trivial accessors and exposes its state, but contains little or no domain behavior to enforce invariants.",
+  "ruleOfThumb": "If most business rules live outside the type and clients manipulate its fields directly, consider adding behavior or encapsulation.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Code Smells",
+    "page": "N/A",
+    "externalUrl": "https://martinfowler.com/bliki/DataClass.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which single observation most clearly indicates a class is primarily a passive holder of values?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "This class contains only public properties with trivial getters and setters and no domain methods enforcing business rules.",
+          "isCorrect": true,
+          "explanation": "The hallmark of this smell is a type that only carries state without meaningful operations. That makes behavior live in callers, which scatters rules and validation. Replace or enrich the type with behavior so the invariants belong to the object that owns the data."
+        },
+        {
+          "id": "b",
+          "text": "This class is immutable and used only for serialization layers without any computed behavior or validation logic inside.",
+          "isCorrect": false,
+          "explanation": "Immutability and DTO roles can be legitimate, but immutability alone does not prove the type models domain behavior. The real concern is whether domain logic is absent and ends up duplicated in many places."
+        },
+        {
+          "id": "c",
+          "text": "This class exposes many writable fields that callers modify directly causing duplicated validation across multiple consumers.",
+          "isCorrect": false,
+          "explanation": "Writable fields are a strong indicator of poor encapsulation and can cause duplicated checks, but the core smell is lack of behavior ownership rather than mutability itself."
+        },
+        {
+          "id": "d",
+          "text": "This class contains rich domain methods and enforces invariants internally rather than delegating responsibilities to external services.",
+          "isCorrect": false,
+          "explanation": "This describes a well-encapsulated entity rather than a passive holder. It is the opposite of the smell, and indicates the object is carrying behavior, which is usually desirable."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the following TypeScript class used across services, what is the most significant maintenance risk?",
+      "codeSnippet": "class OrderDTO {\n  id: string;\n  customerId: string;\n  items: Array<{ sku: string; qty: number }>;\n  total: number;\n  status: string;\n}\n\n// Passed through controllers, services, and repositories",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class represents shared mutable state that easily leads to invariant violations and runtime bugs across service boundaries.",
+          "isCorrect": true,
+          "explanation": "When a simple container is passed everywhere, many places can assume and mutate its state, producing scattered validation and subtle bugs. Encapsulating behavior or limiting mutation points reduces this risk."
+        },
+        {
+          "id": "b",
+          "text": "This class is only a serialization structure tying transport format to internals and preventing clean separation of concerns.",
+          "isCorrect": false,
+          "explanation": "Tying transport to internals is a real concern, but the immediate maintenance hazard is uncontrolled state and duplicated logic, not only the data-transfer coupling."
+        },
+        {
+          "id": "c",
+          "text": "This class exposes many fields that encourage procedural calls and pushing logic into callers instead of keeping logic local.",
+          "isCorrect": false,
+          "explanation": "Pushing logic to callers happens with passive data holders and is a valid worry, but the primary risk to maintainability is the resulting inconsistent invariants across layers."
+        },
+        {
+          "id": "d",
+          "text": "This class will cause database schema duplication when persisted directly and makes versioning of storage schema difficult over time.",
+          "isCorrect": false,
+          "explanation": "Schema coupling can be a symptom when DTOs are persisted directly, but it is a secondary effect compared to the broader problem of scattering domain logic and checks."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Examining two implementations below, which version better preserves business invariants in a maintainable way?",
+      "codeSnippet": "// Version A\nclass InvoiceDTO {\n  id: string;\n  amount: number;\n  dueDate: Date;\n  paid: boolean;\n}\n\n// Version B\nclass Invoice {\n  private id: string;\n  private amount: number;\n  private paid: boolean = false;\n  constructor(id: string, amount: number) { /* validate amount non negative */ }\n  markPaid() { this.paid = true; }\n  getAmount() { return this.amount; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes data and keeps logic out of entities so services can orchestrate domain rules externally.",
+          "isCorrect": false,
+          "explanation": "Version A is tempting for simple serialization, but it forces business rules into multiple services and tests, scattering logic and making invariants hard to enforce consistently. This increases coupling and cognitive load when evolving behavior."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates behavior and enforces invariants within the type across service boundaries and modules.",
+          "isCorrect": true,
+          "explanation": "Version B is preferable because it keeps related behavior and validation with the data it constrains, reducing duplication and accidental misuse. Encapsulation makes intent explicit and simplifies refactoring — a recommendation echoed in object-oriented design guidance such as Fowler and the Gang of Four."
+        }
+      ]
+    }
+  ]
+}

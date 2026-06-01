@@ -1,0 +1,106 @@
+{
+  "id": 51,
+  "conceptName": "Move Method",
+  "category": "refactoring",
+  "definition": "Relocate a method from one class to another when the method uses more of the target class's data than its own, improving encapsulation and cohesion.",
+  "ruleOfThumb": "If a method accesses mostly another object's internals, move it to the class that owns that data.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Move Method",
+    "page": "pp. 88-92",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which symptom in the snippet most strongly indicates this method should be located on the Order class instead of Customer?",
+      "codeSnippet": "class Order {\n  items: { price: number; qty: number }[];\n  constructor(items: any[]) { this.items = items; }\n}\n\nclass Customer {\n  orders: Order[];\n  loyaltyPoints: number;\n  totalOrderAmount(order: Order) { return order.items.reduce((s, i) => s + i.price * i.qty, 0); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The method primarily reads a single other object's internal fields and uses only minimal data from its own class.",
+          "isCorrect": true,
+          "explanation": "The method mostly accesses Order internals (order.items) and does not use Customer state, which is the classic signal that the behavior belongs on Order. Moving it improves encapsulation and reduces coupling to Order's internal structure."
+        },
+        {
+          "id": "b",
+          "text": "The method belongs on its current class because it coordinates multiple collaborators and aggregates data across unrelated domain concepts.",
+          "isCorrect": false,
+          "explanation": "Although coordination can justify a method staying put, this specific method only touches a single Order's items and performs a calculation. It is not orchestrating multiple collaborators, so keeping it on Customer would expose Order internals unnecessarily."
+        },
+        {
+          "id": "c",
+          "text": "The method is duplicate logic found in other classes and should be removed or replaced rather than relocated to another class.",
+          "isCorrect": false,
+          "explanation": "Duplicate logic is a valid concern, but the snippet shows a single instance of a totals calculation on Order items. The primary issue is location relative to data ownership, not duplication. Refactoring by moving is more appropriate here."
+        },
+        {
+          "id": "d",
+          "text": "The method forces frequent access to another class's internals and creates an encapsulation leak across the module boundary.",
+          "isCorrect": false,
+          "explanation": "This option correctly identifies an encapsulation leak, which is related. However it describes the symptom rather than the actionable design change. The best remedy is to relocate the method to the class owning the data so accesses are internal."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review the Invoice code. What is the primary design concern that should guide your refactoring decision?",
+      "codeSnippet": "class Invoice {\n  items: { price: number; qty: number }[];\n  customer: { loyaltyPoints: number };\n  constructor(items: any[], customer: any) { this.items = items; this.customer = customer; }\n  applyCustomerDiscount() {\n    if (this.customer.loyaltyPoints > 100) return this.total() * 0.9;\n    return this.total();\n  }\n  total() { return this.items.reduce((s, i) => s + i.price * i.qty, 0); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This method mixes domain calculation with persistence details and risks scattering business rules across infrastructure code paths.",
+          "isCorrect": false,
+          "explanation": "Mixing domain logic with persistence is a real issue, but the snippet shows business logic driven by customer state on the Invoice. The closer problem is that the logic depends on customer internals, not on persistence concerns."
+        },
+        {
+          "id": "b",
+          "text": "This method violates the open closed principle by requiring changes for new discount rules in several unrelated classes and modules.",
+          "isCorrect": false,
+          "explanation": "Open Closed Principle violations are possible, but the immediate smell here is ownership of discount logic relative to customer data. OCP concerns may follow if discount rules are spread, but moving the method to the owning class is the primary fix."
+        },
+        {
+          "id": "c",
+          "text": "This method predominantly relies on another object's internal state and does not use its own class's fields meaningfully.",
+          "isCorrect": true,
+          "explanation": "The method's decision depends on customer.loyaltyPoints while using Invoice only to call total. That imbalance signals the behavior should reside with the object that owns the relevant state, improving encapsulation and cohesion."
+        },
+        {
+          "id": "d",
+          "text": "This method introduces a long parameter list into the class and therefore should be refactored into a helper or value object.",
+          "isCorrect": false,
+          "explanation": "Long parameter lists are a genuine code smell, but this method has no parameter explosion. The issue is location of behavior relative to data ownership. Moving the method to Customer would be a clearer improvement than extracting helpers here."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which design is preferable for encapsulation and long term maintainability?",
+      "codeSnippet": "// Version A\nclass ShoppingCart {\n  items: { product: Product; qty: number }[];\n  totalWeight() { return this.items.reduce((w, it) => w + it.product.weight * it.qty, 0); }\n}\n\n// Version B\nclass Product {\n  weight: number;\n  weightForQuantity(qty: number) { return this.weight * qty; }\n}\nclass ShoppingCartB {\n  items: { product: Product; qty: number }[];\n  totalWeight() { return this.items.reduce((w, it) => w + it.product.weightForQuantity(it.qty), 0); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps the behavior in the caller which centralizes logic but forces exposing the callee's internal fields widely.",
+          "isCorrect": false,
+          "explanation": "Version A calculates weight using product internals directly. While centralizing logic might seem convenient, it couples ShoppingCart to Product internals and prevents Product from encapsulating how weight scales with quantity. This makes future changes to weight computation error prone."
+        },
+        {
+          "id": "b",
+          "text": "Version B places the behavior in the class that owns the required data improving encapsulation and reducing coupling.",
+          "isCorrect": true,
+          "explanation": "Version B moves the quantity-weight computation into Product, which owns weight. This aligns behavior with data ownership, reduces the need for ShoppingCart to know Product internals, and enables Product to change its calculation without widespread caller changes. This is the classic Move Method refactoring described by Martin Fowler and is recommended to improve cohesion and encapsulation."
+        }
+      ]
+    }
+  ]
+}

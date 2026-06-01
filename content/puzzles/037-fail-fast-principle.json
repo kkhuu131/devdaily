@@ -1,0 +1,106 @@
+{
+  "id": 37,
+  "conceptName": "Fail Fast Principle",
+  "category": "principle",
+  "definition": "A practice of validating inputs and invariant conditions as early as possible and raising errors immediately to prevent further incorrect processing or corrupted state.",
+  "ruleOfThumb": "Validate at boundaries and stop execution on invalid assumptions rather than allowing errors to surface later in deeper logic.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code: A Handbook of Agile Software Craftsmanship",
+    "chapter": "Chapter 7: Error Handling",
+    "page": "137-150",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-code/9780136083238/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given this implementation, which description best matches the error handling approach shown?",
+      "codeSnippet": "function processPayment(payment: Payment) {\n  if (!payment || payment.amount <= 0) {\n    throw new Error('invalid payment');\n  }\n  account.debit(payment.amount);\n  gateway.charge(payment);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A function that validates input immediately and throws before any side effects occur to avoid inconsistent state.",
+          "isCorrect": true,
+          "explanation": "This implementation checks inputs and throws before performing debits or external charges, preventing partial side effects or inconsistent state. That is the essence of failing early to avoid later surprises."
+        },
+        {
+          "id": "b",
+          "text": "A function that logs invalid input and substitutes defaults then continues processing which can mask the original problem.",
+          "isCorrect": false,
+          "explanation": "Logging and substituting defaults would allow processing to continue, which can hide the root cause and create subtle bugs. The snippet instead throws immediately, so this description is not accurate."
+        },
+        {
+          "id": "c",
+          "text": "A function that returns a nullable result on invalid input and defers failure handling to the caller later.",
+          "isCorrect": false,
+          "explanation": "Returning nullable results defers responsibility to callers and can lead to scattered null checks. The shown code throws an exception immediately, so this option is not a match."
+        },
+        {
+          "id": "d",
+          "text": "A function that catches all exceptions and converts them to status codes before any caller can observe the error.",
+          "isCorrect": false,
+          "explanation": "Converting exceptions to status codes centralizes handling but can obscure failures. The snippet shows an early throw rather than a catch-and-convert strategy, so this is not the right description."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the main maintainability risk in this implementation?",
+      "codeSnippet": "async function registerUser(data: any) {\n  const user = await db.insert('users', data);\n  if (!validateUser(user)) {\n    throw new Error('invalid user');\n  }\n  return user;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It performs persistence before input validation which risks leaving partially persisted or inconsistent data after a validation failure.",
+          "isCorrect": true,
+          "explanation": "Persisting before validating means a failed validation can leave records in the database that do not satisfy business rules. That forces compensating actions and makes reasoning about system state harder."
+        },
+        {
+          "id": "b",
+          "text": "It relies on a global error handler to convert failures which may obscure the original cause and complicate debugging.",
+          "isCorrect": false,
+          "explanation": "Relying on a global handler can obscure context, but the core problem here is the timing of validation relative to persistence. The snippet shows persistence first which is the primary concern."
+        },
+        {
+          "id": "c",
+          "text": "It rejects flexible input conventions early which may reduce API ergonomics and force callers into brittle data transformations.",
+          "isCorrect": false,
+          "explanation": "Reducing flexibility can be an issue, but this code specifically persists before validating. The ergonomics of input acceptance are not the central maintainability risk in this snippet."
+        },
+        {
+          "id": "d",
+          "text": "It increases coupling between the persistence layer and validation logic which reduces reuse and makes unit testing harder.",
+          "isCorrect": false,
+          "explanation": "Tight coupling is a plausible concern, yet the more immediate maintainability risk is that persistence happens before validation leading to inconsistent persisted state. Coupling is secondary here."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for preventing incorrect state from being persisted?",
+      "codeSnippet": "// Version A: persistence then validation\nasync function createOrderA(order) {\n  const saved = await db.save('orders', order);\n  if (!isValid(saved)) {\n    await audit.log('invalid order persisted');\n    throw new Error('Invalid order');\n  }\n  return saved;\n}\n\n// Version B: validation then persistence\nasync function createOrderB(order) {\n  if (!isValid(order)) {\n    throw new Error('Invalid order');\n  }\n  return await db.save('orders', order);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A accepts persisted state before validation which can require complex compensating actions and makes debugging of failures harder.",
+          "isCorrect": false,
+          "explanation": "Version A persists first and then validates, which means a failure requires compensating transactions, manual cleanup, or convoluted rollback logic. This increases operational complexity and blurs the error origin, making root cause analysis more difficult."
+        },
+        {
+          "id": "b",
+          "text": "Version B prevents persisted invalid state by validating inputs before any database operations occur.",
+          "isCorrect": true,
+          "explanation": "Version B validates early and stops before executing persistence, so invalid inputs never reach the database. This reduces the need for compensating actions and keeps failure points close to their cause. Many engineering guides advocate failing early to keep system state consistent and simplify reasoning about behavior."
+        }
+      ]
+    }
+  ]
+}

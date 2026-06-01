@@ -1,0 +1,106 @@
+{
+  "id": 33,
+  "conceptName": "Proxy Pattern",
+  "category": "design-pattern",
+  "definition": "An object that provides a surrogate or placeholder for another object to control access, add behavior, or defer expensive operations while preserving the same client interface.",
+  "ruleOfThumb": "Use a lightweight wrapper object to control access, add cross cutting concerns, or defer creation without changing client code.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object Oriented Software",
+    "chapter": "Structural Patterns: Proxy",
+    "page": "208-214",
+    "externalUrl": "https://en.wikipedia.org/wiki/Proxy_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches this code shape where a wrapper forwards calls and can add checks or laziness?",
+      "codeSnippet": "class RealService {\n  doWork(arg: string) { /* expensive work */ }\n}\nclass Wrapper {\n  constructor(private real: RealService) {}\n  doWork(arg: string) { return this.real.doWork(arg); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A wrapper object controls access to a real object and can add lazy initialization or access checks.",
+          "isCorrect": true,
+          "explanation": "This implementation is a wrapper that preserves the same client interface while optionally adding behavior like lazy creation or access control. The key property is substitutionability with the original interface so callers are unaware of the indirection."
+        },
+        {
+          "id": "b",
+          "text": "A service object centralizes business logic and coordinates multiple subsystems to fulfill complex application workflows.",
+          "isCorrect": false,
+          "explanation": "A centralized service typically encapsulates orchestration and domain logic rather than simply forwarding calls. The shown code forwards calls without adding coordination responsibilities, so it is not primarily an orchestration service."
+        },
+        {
+          "id": "c",
+          "text": "An adapter translates between two incompatible interfaces allowing existing code to call a new implementation.",
+          "isCorrect": false,
+          "explanation": "An adapter converts one interface to another when client and implementation disagree on contract. The snippet preserves the same signatures and does not perform translation or mapping, so it does not fit the adapter role."
+        },
+        {
+          "id": "d",
+          "text": "A decorator dynamically wraps an object to extend behavior without changing the original class implementation itself.",
+          "isCorrect": false,
+          "explanation": "A decorator adds responsibilities and can be stacked to extend behavior, but decorators typically focus on augmenting behavior rather than controlling access or lazy instantiation. While similar in shape, the intent differs and this wrapper emphasizes access control semantics."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary maintainability concern with this proxy style implementation?",
+      "codeSnippet": "interface Api { fetch(id: number): Promise<Data>; }\nclass RealApi implements Api { async fetch(id:number){ /* network call */ } }\nclass ApiProxy implements Api {\n  private cache = new Map<number, Data>();\n  async fetch(id:number){\n    if (this.cache.has(id)) return this.cache.get(id)!;\n    const data = await new RealApi().fetch(id);\n    this.cache.set(id, data);\n    return data;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The proxy mixes caching responsibility with remote call creation causing hidden side effects and tight coupling.",
+          "isCorrect": false,
+          "explanation": "This is a valid concern because the proxy both caches and creates the real service, mixing responsibilities which complicates changes. However this answer is less precise than the primary maintainability issue present in the code."
+        },
+        {
+          "id": "b",
+          "text": "The proxy introduces unbounded memory growth because the in memory cache never expires entries or enforces size limits.",
+          "isCorrect": false,
+          "explanation": "An unbounded cache is a real problem in long running processes. It is a concrete resource leak concern here, but it may be an operational detail rather than the core structural maintainability issue caused by how dependencies are wired."
+        },
+        {
+          "id": "c",
+          "text": "The proxy creates a new real service instance per request which prevents efficient reuse and increases resource consumption.",
+          "isCorrect": false,
+          "explanation": "Instantiating the real service inside the fetch method is wasteful and could increase resource use. This is a tangible runtime inefficiency but still secondary to the dependency management issue affecting testability and flexibility."
+        },
+        {
+          "id": "d",
+          "text": "The proxy violates dependency injection practices by directly instantiating implementation instead of receiving it from caller configuration.",
+          "isCorrect": true,
+          "explanation": "Directly creating RealApi inside the proxy ties the proxy to a concrete implementation, hurting testability, reuse, and configuration. Favor injecting the dependency to allow mocking, reuse of existing clients, and easier lifetime management. This structural coupling is the primary maintainability concern."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is a better design for adding logging around an email sender in a large codebase?",
+      "codeSnippet": "// Version A\ninterface EmailSender { send(to:string, body:string): Promise<void> }\nclass SmtpSender implements EmailSender { async send(to:string, body:string){ /* smtp send */ } }\nclass LoggingWrapper implements EmailSender {\n  constructor(private inner: EmailSender) {}\n  async send(to:string, body:string){ console.log('send', to); return this.inner.send(to, body); }\n}\n\n// Version B\nclass SmtpSender2 {\n  async send(to:string, body:string){ /* smtp send */ }\n}\nclass LoggingSubclass extends SmtpSender2 {\n  async send(to:string, body:string){ console.log('send', to); return super.send(to, body); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A uses composition with constructor injection and keeps responsibilities separated and testable.",
+          "isCorrect": true,
+          "explanation": "Version A composes behavior by accepting an EmailSender dependency and forwarding calls with added logging. This approach preserves substitutability, supports multiple wrappers, and enables easy unit testing via mocking. Constructor injection makes it straightforward to configure or replace the wrapped component and to manage lifetimes separately from behavior extension."
+        },
+        {
+          "id": "b",
+          "text": "Version B subclasses the concrete sender and hides dependencies which makes mocking and reuse problematic in tests.",
+          "isCorrect": false,
+          "explanation": "Subclassing a concrete implementation couples the extended behavior to that particular implementation and hides the dependency structure. It prevents applying the logging wrapper to other senders without inheritance, complicates testing because you cannot easily inject a mock, and can break when the concrete base changes. Composition with an interface is generally more flexible."
+        }
+      ]
+    }
+  ]
+}

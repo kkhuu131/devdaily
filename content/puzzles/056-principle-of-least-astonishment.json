@@ -1,0 +1,106 @@
+{
+  "id": 56,
+  "conceptName": "Principle of Least Astonishment",
+  "category": "principle",
+  "definition": "APIs and code should behave in ways that match a reasonable user's expectations, minimizing surprising or counterintuitive results.",
+  "ruleOfThumb": "Make the common case obvious and avoid implicit magic that hides behavior from callers.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Principles",
+    "page": "N/A",
+    "externalUrl": "https://martinfowler.com/bliki/PrincipleOfLeastSurprise.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which aspect of the following snippet is most likely to surprise a developer reading the code?",
+      "codeSnippet": "const prices = [10, 2, 30];\nprices.sort();\nconsole.log(prices); // unexpected ordering for numeric values",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function sorts numeric values using JavaScript default ordering, producing lexicographic results instead of numeric ascending order.",
+          "isCorrect": true,
+          "explanation": "JavaScript's Array.prototype.sort without a comparator converts elements to strings and sorts lexicographically. Developers who expect numeric ascending order will be surprised because 10 comes before 2. This is a classic example where API behavior differs from the caller's mental model. The least surprising change is to add a numeric comparator like (a,b) => a - b or to document that sort expects a comparator for numeric arrays."
+        },
+        {
+          "id": "b",
+          "text": "The function mutates the caller provided array in place, causing unexpected side effects for code that assumes immutability.",
+          "isCorrect": false,
+          "explanation": "Mutating the input array is a legitimate concern and can surprise callers expecting immutable operations. However, Array.prototype.sort is well documented to be in-place; many developers are specifically surprised by the type of comparison used rather than the mutation itself. If immutability is desired, callers should clone the array before sorting."
+        },
+        {
+          "id": "c",
+          "text": "The function throws a generic error without typing, making it hard for callers to distinguish different failure modes programmatically.",
+          "isCorrect": false,
+          "explanation": "Using generic errors can complicate error handling, and improving error types is good practice. In this snippet there is no thrown error at all; the surprising behavior is the sort order. While typed errors are important for robust APIs, they are not the primary astonishment here."
+        },
+        {
+          "id": "d",
+          "text": "The function relies on a global variable for configuration, leading to hidden coupling and surprising behavior across modules at runtime.",
+          "isCorrect": false,
+          "explanation": "Hidden global configuration is a real source of surprises and bugs across systems. In this minimal example there is no global configuration involved; the surprising outcome is the implicit string comparison behavior of sort. That makes lexicographic ordering the closer diagnosis."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the function below, what is the most surprising behavior a caller might encounter?",
+      "codeSnippet": "const users = [{id: 'a', name: 'Alice'}, {id: 'b', name: 'Bob'}];\n\nfunction findUser(id?: string) {\n  if (!id) return users[0];\n  return users.find(u => u.id === id);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function silently returns the first user when called with no id, producing surprising implicit default behavior.",
+          "isCorrect": true,
+          "explanation": "Returning the first user for a missing id is a surprising implicit default that can lead to subtle bugs. Callers passing an undefined or empty id may expect an error or undefined result. To reduce astonishment, functions should either require the id explicitly, return undefined, or provide a clear documented default behavior."
+        },
+        {
+          "id": "b",
+          "text": "The function may return undefined for missing matches, creating a null handling burden for callers expecting a valid user.",
+          "isCorrect": false,
+          "explanation": "Returning undefined when no match is found is a reasonable behavior and common in JavaScript. While it does require null handling by callers, that is not the most surprising aspect here. The surprising part is that missing input leads to a specific default user rather than no result at all."
+        },
+        {
+          "id": "c",
+          "text": "The function performs a linear search on the users array, causing surprising performance problems for large datasets at runtime.",
+          "isCorrect": false,
+          "explanation": "A linear search can become a performance issue for large arrays, and optimization may be warranted. However, given the snippet's intent, the more immediately surprising behavior to a caller is the implicit default return when no id is provided. Performance concerns are secondary here."
+        },
+        {
+          "id": "d",
+          "text": "The function mutates the global users array when filtering, creating surprising side effects across unrelated parts of the program.",
+          "isCorrect": false,
+          "explanation": "Mutating global state is a serious concern and can create surprising interactions. In this snippet there is no mutation of the users array; the function merely reads from it. Thus, mutation is not the root surprise presented by this code."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B below. Which design better avoids surprising callers and why?",
+      "codeSnippet": "// Version A\nfunction createInvoice(items: {qty:number, price:number}[]) {\n  if (items.some(i => i.qty <= 0)) throw new Error('Invalid quantity');\n  return items.reduce((s, i) => s + i.qty * i.price, 0);\n}\n\n// Version B\nfunction createInvoice(items: {qty:number, price:number}[]) {\n  return items.reduce((s, i) => s + Math.max(0, i.qty) * i.price, 0);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A fails fast on invalid quantities and therefore exposes a predictable explicit contract to callers.",
+          "isCorrect": true,
+          "explanation": "Version A validates input and throws on invalid quantities, making its behavior explicit and predictable for callers. Failing fast avoids silently masking data problems and prevents downstream calculations from producing silently incorrect results. This aligns with the expectation that APIs should not silently change caller data without clear documentation. Fowler and other design guides recommend making surprising behaviors explicit so callers can handle errors deliberately."
+        },
+        {
+          "id": "b",
+          "text": "Version B silently normalizes negative quantities to zero and can mask data problems making debugging and auditing surprising.",
+          "isCorrect": false,
+          "explanation": "Version B's silent normalization is tempting because it avoids exceptions, but it hides data integrity issues and can produce downstream business errors that are harder to trace. While forgiving APIs can be appropriate in some contexts, masking invalid input creates surprises when the system state differs from caller expectations. The more maintainable approach is to document forgiveness explicitly or provide an optional tolerant API surface separate from the strict API."
+        }
+      ]
+    }
+  ]
+}

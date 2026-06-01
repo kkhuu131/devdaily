@@ -1,0 +1,106 @@
+{
+  "id": 28,
+  "conceptName": "State Pattern",
+  "category": "design-pattern",
+  "definition": "Encapsulate state-specific behavior into separate objects so an object changes its behavior when its internal state changes.",
+  "ruleOfThumb": "Replace large conditional switches on object state with polymorphic state objects to keep behavior modular and extensible.",
+  "citation": {
+    "author": "Erich Gamma et al.",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "State",
+    "page": "293-301",
+    "externalUrl": "https://refactoring.guru/design-patterns/state"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "In this TypeScript class, what is the primary code smell?",
+      "codeSnippet": "class OrderService {\n  status: 'new' | 'paid' | 'shipped';\n  doAction() {\n    switch (this.status) {\n      case 'new': // create invoice\n        break;\n      case 'paid': // schedule shipping\n        break;\n      case 'shipped': // notify customer\n        break;\n    }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class uses conditional logic to switch behavior based on a status field, scattering behavior across branches.",
+          "isCorrect": true,
+          "explanation": "The code relies on a switch over a status primitive to choose behavior. That spreading of behavior across conditional branches is the smell that the pattern addresses. Moving each branch into a separate state object gives each state responsibility for its behavior and removes the central switch, improving cohesion and making additions safer."
+        },
+        {
+          "id": "b",
+          "text": "This class exposes internal status publicly and forces callers to inspect it before calling behavior methods, breaking encapsulation.",
+          "isCorrect": false,
+          "explanation": "While exposing status can be problematic, the snippet shows behavior chosen internally by the class rather than callers inspecting status. The central issue is the conditional selection of behavior inside the class rather than callers inspecting internals."
+        },
+        {
+          "id": "c",
+          "text": "This class depends on primitive string labels for behavior selection which makes adding new states error prone and fragile.",
+          "isCorrect": false,
+          "explanation": "Relying on string labels is a symptom that can make changes brittle, but the root smell here is the conditional dispatching of behavior. Introducing polymorphic objects addresses both the brittle primitives and the scattered conditional logic."
+        },
+        {
+          "id": "d",
+          "text": "This class centralizes multiple unrelated responsibilities for order lifecycle and side effects creating high coupling and poor cohesion.",
+          "isCorrect": false,
+          "explanation": "High coupling and poor cohesion may occur, but the concrete immediate problem is the switch-based branching that mixes many behaviors. Decomposing behavior by state tends to reduce coupling by localizing responsibilities into focused state objects."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the main issue with this implementation of state handling?",
+      "codeSnippet": "interface IState { handle(ctx: Session): void; }\nclass Connected implements IState { handle(ctx: Session) { ctx.send(); ctx.setState(new Disconnected()); } }\nclass Session { private state: IState; setState(s: IState) { this.state = s; } handle() { this.state.handle(this); } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This implementation exposes the context state through public fields causing external code to depend on internal representation and creating fragile APIs.",
+          "isCorrect": false,
+          "explanation": "The example does not show public fields being read by external code. The more precise problem is that concrete state objects are directly manipulating the context and performing transitions, which creates tight coupling between states and the context implementation."
+        },
+        {
+          "id": "b",
+          "text": "This implementation couples concrete state classes to the context by making state objects mutate context internals and invoke transitions directly.",
+          "isCorrect": true,
+          "explanation": "Here concrete state classes call methods on the context and perform transitions themselves, which couples state implementations to the context's interface and lifecycle. A cleaner approach keeps transition logic clearer and minimizes how much state objects need to know about context internals, improving reuse and testability."
+        },
+        {
+          "id": "c",
+          "text": "This implementation introduces many small classes for each state which increases boilerplate and cognitive overhead without clear benefit.",
+          "isCorrect": false,
+          "explanation": "Many small classes can increase boilerplate, but when states encapsulate distinct behavior the cost is often justified. The shown issue is tighter coupling from states mutating context rather than mere class count. The tradeoff must be measured against extensibility needs."
+        },
+        {
+          "id": "d",
+          "text": "This implementation mixes presentation logic inside state classes causing UI concerns to be tangled with business state transitions and harder testing.",
+          "isCorrect": false,
+          "explanation": "Mixing UI and business logic is a valid concern, but the snippet demonstrates state objects invoking context transitions and mutating the session. The principal problem is coupling between state implementations and the context, not necessarily presentation logic entanglement."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for maintainability and extensibility?",
+      "codeSnippet": "// Version A: centralized switch\nclass ConnectionA {\n  state: 'disconnected' | 'connected' | 'connecting';\n  send(data: string) {\n    switch (this.state) {\n      case 'connected': /* send */ break;\n      default: throw new Error('not ready');\n    }\n  }\n}\n\n// Version B: per-state classes\ninterface ConnState { send(ctx: ConnectionB, data: string): void }\nclass ConnectedState implements ConnState { send(ctx: ConnectionB, data: string) { /* send */ } }\nclass ConnectionB { private state: ConnState; send(data: string) { this.state.send(this, data); } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes state handling in switch statements which will accumulate conditionals and make adding new states harder.",
+          "isCorrect": false,
+          "explanation": "Version A seems simpler initially, but centralizing behavior with switches tends to grow as requirements expand, leading to duplicated transition logic and scattered changes. Adding a new state often requires touching multiple switch sites and risks regressions, which harms maintainability over time."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates each behavior in a dedicated class, reducing conditional complexity and easing future extensions.",
+          "isCorrect": true,
+          "explanation": "Version B isolates per-state behavior into separate classes and routes requests polymorphically. That reduces the proliferation of conditional branches and localizes changes when adding or modifying states. It also enables unit testing of each state in isolation and clearer control over transitions, which aligns with best practices described in GoF and later craftsmanship literature."
+        }
+      ]
+    }
+  ]
+}

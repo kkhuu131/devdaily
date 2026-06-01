@@ -1,0 +1,106 @@
+{
+  "id": 31,
+  "conceptName": "Dependency Injection",
+  "category": "solid",
+  "definition": "A technique where a component receives the objects it depends on from external callers rather than creating them itself, making collaboration explicit and substitutable.",
+  "ruleOfThumb": "Prefer having collaborators provided to a module (constructor or setter) so dependencies are visible, testable, and replaceable.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Inversion of Control Containers and the Dependency Injection pattern",
+    "chapter": "Article",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/articles/injection.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches the pattern used in the following code?",
+      "codeSnippet": "interface PaymentGateway { charge(amount: number): void; }\nclass OrderService {\n  constructor(private paymentGateway: PaymentGateway) {}\n  place(amount: number) {\n    this.paymentGateway.charge(amount);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A class that requests its collaborator via constructor parameter so it can be replaced for testing or runtime.",
+          "isCorrect": true,
+          "explanation": "The class receives its collaborator from outside via the constructor, making the collaborator explicit and easy to substitute in tests or different runtimes."
+        },
+        {
+          "id": "b",
+          "text": "A class that creates its own collaborator internally using new and hides substitution or mocking of that dependency.",
+          "isCorrect": false,
+          "explanation": "Creating collaborators internally ties the class to concrete implementations, making testing and replacement harder; this is a common anti pattern compared to passing collaborators in."
+        },
+        {
+          "id": "c",
+          "text": "A global registry is used at runtime to locate collaborators which makes dependency origins implicit and hard to follow.",
+          "isCorrect": false,
+          "explanation": "A service locator hides where dependencies come from behind a registry API, which obscures explicit collaborator requirements and complicates reasoning about code."
+        },
+        {
+          "id": "d",
+          "text": "A method accepts many optional configuration objects which creates unclear responsibilities and tight coupling in procedure calls.",
+          "isCorrect": false,
+          "explanation": "Passing many optional configurations can indicate unclear responsibilities and procedural coupling, but it is a different design problem than receiving collaborators via constructor parameters."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary design concern in the code below?",
+      "codeSnippet": "class OrderProcessor {\n  constructor(\n    private paymentService: PaymentService,\n    private inventoryService: InventoryService,\n    private emailService: EmailService,\n    private analyticsService: AnalyticsService\n  ) {}\n\n  process(order: Order) {\n    this.paymentService.charge(order);\n    this.inventoryService.reserve(order);\n    this.emailService.sendConfirmation(order);\n    this.analyticsService.trackOrder(order);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class likely violates single responsibility by owning many unrelated collaborators suggesting it does too many business tasks.",
+          "isCorrect": true,
+          "explanation": "Several collaborators handling distinct concerns suggest the class coordinates multiple responsibilities. That often implies a SRP violation and a need to split responsibilities or introduce facades."
+        },
+        {
+          "id": "b",
+          "text": "This class is fine because receiving many collaborators by constructor is normal and keeps externalization and testability straightforward.",
+          "isCorrect": false,
+          "explanation": "While constructor injection preserves testability and explicit requirements, an excessive number of collaborators can indicate the class has grown beyond a single responsibility and should be refactored."
+        },
+        {
+          "id": "c",
+          "text": "This class should use a service locator so it can request dependencies lazily from a global registry at runtime.",
+          "isCorrect": false,
+          "explanation": "Switching to a service locator trades explicitness for runtime lookup and typically increases coupling and reduces clarity, which does not address the core issue of multiple responsibilities."
+        },
+        {
+          "id": "d",
+          "text": "This class must be converted to an aggregate object so all collaborators are combined under a single facade dependency.",
+          "isCorrect": false,
+          "explanation": "Introducing a facade can help group collaborators, but it is a refactoring decision that depends on context; the root concern here is whether the processor is doing too many distinct tasks."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation would you prefer for clarity and testability in a long lived module?",
+      "codeSnippet": "// Version A\nclass ReportBuilder {\n  constructor(\n    private repo: ReportRepository,\n    private emailer: EmailService\n  ) {}\n  build() { /* ... */ }\n}\n\n// Version B\nclass ReportBuilderAlt {\n  constructor(private container: ServiceContainer) {}\n  build() {\n    const repo = this.container.get<ReportRepository>('ReportRepository');\n    const emailer = this.container.get<EmailService>('EmailService');\n    /* ... */\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps required collaborators visible in the constructor signature across the module boundary for clear requirements.",
+          "isCorrect": true,
+          "explanation": "Version A makes collaborator needs explicit at construction time which improves discoverability and makes unit testing straightforward by allowing easy substitution. Hiding resolution behind a container couples code to runtime lookup and hides required collaborators, increasing cognitive load when reasoning about dependencies."
+        },
+        {
+          "id": "b",
+          "text": "Version B hides dependencies by passing the container into classes, coupling implementation to runtime resolution and harming test isolation.",
+          "isCorrect": false,
+          "explanation": "Version B centralizes lookup but shifts responsibility to the container and creates implicit dependencies discovered only at runtime. This reduces static clarity and makes isolated unit testing harder since tests must emulate container behavior rather than inject simple doubles."
+        }
+      ]
+    }
+  ]
+}

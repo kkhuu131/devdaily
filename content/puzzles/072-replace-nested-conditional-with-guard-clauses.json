@@ -1,0 +1,106 @@
+{
+  "id": 72,
+  "conceptName": "Replace Nested Conditional with Guard Clauses",
+  "category": "refactoring",
+  "definition": "A refactoring that replaces deeply nested conditional structures with early exits or guard clauses to flatten control flow, making the primary path clearer and reducing cognitive load.",
+  "ruleOfThumb": "If a function has more than two nested conditional levels or has a prominent happy path buried deep, prefer early returns to surface the main flow.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Decompose Conditional / Replace Nested Conditional",
+    "page": "p. 62",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary maintainability problem in the function below?",
+      "codeSnippet": "function applyDiscount(user: User | null, orderAmount: number) {\n  if (user) {\n    if (user.isActive) {\n      if (user.loyaltyPoints > 100) {\n        if (!user.accountSuspended) {\n          return orderAmount * 0.8;\n        }\n      }\n    }\n  }\n  return orderAmount;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function has a significant performance issue due to repeated heavy calculations inside nested branches without caching.",
+          "isCorrect": false,
+          "explanation": "While repeated heavy work can be a performance issue, the snippet shows simple property checks and a single arithmetic operation. The main problem is structural: nested conditional depth makes the control flow hard to read. Premature optimization here would miss the real maintainability gain from flattening the logic."
+        },
+        {
+          "id": "b",
+          "text": "This function has inadequate input validation because it assumes external callers never pass invalid or malformed values to parameters.",
+          "isCorrect": false,
+          "explanation": "Input validation is important, but the code already checks for a null user and several user properties. The observable pain in this example is the deep nesting of guards, not missing validation logic. Adding validation would not address the core readability issue."
+        },
+        {
+          "id": "c",
+          "text": "This function has a single responsibility violation by combining decision logic and side effect operations within deeply nested conditional blocks.",
+          "isCorrect": false,
+          "explanation": "Single Responsibility concerns can apply to methods doing multiple unrelated tasks. Here the function's purpose is to compute a discounted amount, and it does not perform side effects. The real smell is the nested guard structure that buries the main computation."
+        },
+        {
+          "id": "d",
+          "text": "This function has deeply nested conditional logic that obscures control flow and makes maintenance and reasoning difficult.",
+          "isCorrect": true,
+          "explanation": "Correct. The nested ifs force a reader to track multiple levels before reaching the main action. Rewriting with early returns or guard clauses surfaces the primary path and reduces cognitive load. See Fowler on flattening nested conditionals for clearer control flow."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this payment processing helper, which refactor gives the clearest immediate improvement to readability?",
+      "codeSnippet": "function processPayment(order: Order) {\n  if (order != null) {\n    if (order.customer) {\n      if (order.customer.isVerified) {\n        if (order.total > 0) {\n          chargeCard(order);\n        }\n      }\n    }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Refactor to return early on failing conditions to significantly flatten deeply nested conditional structure altogether.",
+          "isCorrect": true,
+          "explanation": "Returning early for invalid or exceptional conditions immediately reduces nesting and makes the happy path obvious. This change is low cost and provides immediate readability and maintainability benefits, which is ideal for a medium-scope refactor."
+        },
+        {
+          "id": "b",
+          "text": "Refactor to extract each nested branch into separate strategy classes and select behavior at runtime based on order characteristics.",
+          "isCorrect": false,
+          "explanation": "Moving to a Strategy pattern can be useful when branching encapsulates distinct algorithms or when you need runtime composition. In this simple validation flow it introduces unnecessary abstraction and indirection, increasing complexity rather than clarifying the primary execution path."
+        },
+        {
+          "id": "c",
+          "text": "Refactor to consolidate nested conditions into a single complex boolean expression evaluated once at function start.",
+          "isCorrect": false,
+          "explanation": "Combining checks into one boolean may reduce visible nesting but often creates a dense expression that is hard to read and debug. It trades nested structure for cognitive complexity in the condition itself, which can be worse for maintainability."
+        },
+        {
+          "id": "d",
+          "text": "Refactor to add configuration flags to control branches and reduce code duplication across nested conditional blocks.",
+          "isCorrect": false,
+          "explanation": "Introducing configuration flags can obscure intent and create subtle coupling between flags and behavior. It may address duplication but does not directly improve the immediate readability of the control flow. For simple validation, guard clauses are typically preferable."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for a busy multi-developer repository when clarity and ease of future changes are primary concerns?",
+      "codeSnippet": "/* Version A: guard clauses */\nfunction fulfillOrder(order: Order | null) {\n  if (!order) return;\n  if (!order.customer) return;\n  if (!order.isPaid) return;\n  ship(order);\n}\n\n/* Version B: nested conditionals */\nfunction fulfillOrderNested(order: Order | null) {\n  if (order) {\n    if (order.customer) {\n      if (order.isPaid) {\n        ship(order);\n      }\n    }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A presents a flatter and easier to follow control flow for future maintainers working on the codebase.",
+          "isCorrect": true,
+          "explanation": "Version A uses guard clauses to handle invalid or exceptional cases immediately, letting the main behavior stand alone. That flat structure lowers the cognitive overhead for readers and makes adding or removing checks less error prone. In a multi-developer context this reduces merge friction and clarifies intent. Clean Code and Fowler both recommend surfacing the primary path rather than nesting it."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps related checks grouped which may reduce accidental early exits and improve branch locality for complex validation sequences.",
+          "isCorrect": false,
+          "explanation": "While grouping checks can feel cohesive, Version B buries the main action within multiple levels of indentation, increasing the chance future developers will overlook the happy path or introduce errors when modifying a specific branch. The purported benefit of branch locality is outweighed by reduced readability and harder refactoring. Guard clauses are typically a safer choice for simple sequential validations."
+        }
+      ]
+    }
+  ]
+}

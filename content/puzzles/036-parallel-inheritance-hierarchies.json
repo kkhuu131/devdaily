@@ -1,0 +1,105 @@
+{
+  "id": 36,
+  "conceptName": "Parallel Inheritance Hierarchies",
+  "category": "code-smell",
+  "definition": "A situation where two or more class hierarchies evolve side by side so that subclasses in one hierarchy have matching subclasses in the other, causing duplicated structure and coupled changes across the hierarchies.",
+  "ruleOfThumb": "If adding a new subclass forces you to add a matching subclass in another hierarchy, consider collapsing or composing responsibilities to avoid parallel edits.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Dealing with Parallel Hierarchies",
+    "page": "p. 176",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation best describes the structural problem illustrated by duplicated subclass pairs across two related class trees?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "This shows parallel subclass trees where corresponding subclasses mirror each other across two class hierarchies.",
+          "isCorrect": true,
+          "explanation": "Correct. The core symptom is two hierarchies that rise and fall together: matching subclasses in each tree that reflect the same variant structure. That mirroring makes changes error prone and suggests redesign such as consolidation or composition. See Fowler's discussion on collapsing hierarchies and introducing strategy objects to break the coupling."
+        },
+        {
+          "id": "b",
+          "text": "This indicates duplicated behavior in methods that could be resolved by using composition instead of inheritance in some classes.",
+          "isCorrect": false,
+          "explanation": "Plausible but not precise. Duplicated method behavior can appear for many reasons. While composition may be a remedy, the distinguishing feature here is mirrored subclass structures across hierarchies rather than only duplicated method bodies."
+        },
+        {
+          "id": "c",
+          "text": "This suggests an incomplete abstraction where subclasses vary in method sets causing brittle coupling across otherwise similar types.",
+          "isCorrect": false,
+          "explanation": "A thoughtful concern. Incomplete abstraction and varying interfaces create brittleness, but the hallmark of the smell is mirrored subclass topology across two different hierarchies, not merely differing method sets."
+        },
+        {
+          "id": "d",
+          "text": "This indicates excessive public setters across related classes leading to shared mutable state and hidden coupling between types.",
+          "isCorrect": false,
+          "explanation": "Also plausible as a maintenance issue, yet different in nature. Shared mutable state via setters is a coupling problem but does not by itself explain why two separate hierarchies have corresponding subclasses that must be changed together."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the code below, which description best identifies the primary architectural concern present?",
+      "codeSnippet": "abstract class Payment {}\nclass CreditCardPayment extends Payment {}\nclass PaypalPayment extends Payment {}\n\nabstract class Processor {}\nclass CreditCardProcessor extends Processor {}\nclass PaypalProcessor extends Processor {}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "There are corresponding subclass pairs across two class hierarchies that mirror each other and create paired responsibilities.",
+          "isCorrect": true,
+          "explanation": "Correct. The snippet shows two separate hierarchies (Payment and Processor) with matching subclasses for each payment type. This mirroring indicates paired responsibilities that often require parallel edits and suggests refactoring toward composition or a single abstraction with interchangeable strategies."
+        },
+        {
+          "id": "b",
+          "text": "The code violates Liskov Substitution because subclass overrides could change contracts and lead to runtime substitution errors.",
+          "isCorrect": false,
+          "explanation": "A legitimate worry in many inheritance designs, but the example shows mirrored subclass structure rather than contract violations. Liskov problems concern behavioral substitutability, which is not demonstrated here."
+        },
+        {
+          "id": "c",
+          "text": "The classes use primitive type codes and switch statements indicating a need to replace conditionals with polymorphic behavior.",
+          "isCorrect": false,
+          "explanation": "Replacing conditionals with polymorphism is a common refactor, but this snippet does not show primitive codes or switches. The primary symptom is duplicated subclass pairs across two hierarchies rather than conditional proliferation."
+        },
+        {
+          "id": "d",
+          "text": "There is high cohesion within each class but low cohesion across modules producing unclear separation of exporter responsibilities.",
+          "isCorrect": false,
+          "explanation": "Cohesion and module boundaries are important, yet this answer misreads the principal issue. The problem is the parallelism between the two type hierarchies which forces coordinated changes, not mere cohesion differences."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which design is preferable for evolving paired behaviors when new variants are frequently added?",
+      "codeSnippet": "// Version A: two mirrored hierarchies\nabstract class Report {}\nclass SalesReport extends Report {}\nclass InventoryReport extends Report {}\n\nabstract class Exporter {}\nclass SalesExporter extends Exporter {}\nclass InventoryExporter extends Exporter {}\n\n// Version B: single hierarchy with composition\nabstract class ReportV2 { constructor(public exporter: ExporterV2) {} }\nclass SalesReportV2 extends ReportV2 {}\nclass InventoryReportV2 extends ReportV2 {}\n\ninterface ExporterV2 { export(r: ReportV2): string }\nclass CsvExporter implements ExporterV2 { export(r: ReportV2){ return 'csv' } }\nclass JsonExporter implements ExporterV2 { export(r: ReportV2){ return 'json' } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps two mirrored class hierarchies that require parallel edits when adding each new report or exporter variant.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Version A forces paired changes across hierarchies so adding a new report type typically requires a matching exporter class and vice versa. That pattern increases maintenance cost and violates the rule of thumb about avoiding parallel edits. It is the subtle structural antipattern that motivates refactoring to composition."
+        },
+        {
+          "id": "b",
+          "text": "Version B composes behavior by pairing a single report hierarchy with interchangeable exporter strategies to avoid mirrored subclasses.",
+          "isCorrect": true,
+          "explanation": "Correct. Version B separates the varying concerns: the report types form one hierarchy while exporters are independent strategy objects. This breaks the mirror relationship and allows adding new exporters or report variants without coordinated edits. The approach follows composition-over-inheritance guidance and the Strategy pattern from the Gang of Four as recommended by refactoring literature."
+        }
+      ]
+    }
+  ]
+}

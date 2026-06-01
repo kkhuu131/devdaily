@@ -1,0 +1,106 @@
+{
+  "id": 61,
+  "conceptName": "Pull Up Method",
+  "category": "refactoring",
+  "definition": "Move a method that is duplicated in two or more subclasses up into their common superclass so the implementation is defined in one place.",
+  "ruleOfThumb": "If multiple subclasses implement the same method body, move that implementation to the nearest common ancestor and let subclasses inherit it.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Move Method / Pull Up Method",
+    "page": "175",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "You see these two subclasses implementing the same method body. What is the most likely immediate code smell?",
+      "codeSnippet": "class Account {\n  balance: number;\n}\n\nclass CheckingAccount extends Account {\n  calculateFee() {\n    return this.balance * 0.01;\n  }\n}\n\nclass SavingsAccount extends Account {\n  calculateFee() {\n    return this.balance * 0.01;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code duplicates the same method across sibling classes and should be moved to their common superclass.",
+          "isCorrect": true,
+          "explanation": "Correct. When two or more subclasses contain the same method implementation, that duplication indicates the implementation belongs in a shared location. Pulling the implementation up to the common superclass removes duplication and centralizes maintenance. This reduces the risk of inconsistent fixes and clarifies behavior location."
+        },
+        {
+          "id": "b",
+          "text": "The code relies on global state inside each method and should be refactored into a stateless utility function instead.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect here. The methods read instance state (this.balance) not global variables, so extracting a shared utility would obscure object behavior and break encapsulation. Moving the shared instance behavior to a common superclass preserves encapsulation and keeps state access natural."
+        },
+        {
+          "id": "c",
+          "text": "The code mixes unrelated responsibilities in the methods and each class should be split to restore single responsibility.",
+          "isCorrect": false,
+          "explanation": "This is a reasonable concern when a method does multiple unrelated things, but the shown methods are simple calculations tied to account state. The primary issue is duplication rather than multiple responsibilities, so splitting classes would not address the duplication problem."
+        },
+        {
+          "id": "d",
+          "text": "The code introduces a hidden coupling to domain services that suggests the methods should be delegated to a service object.",
+          "isCorrect": false,
+          "explanation": "Delegating to a service is valid when the logic depends on external services or cross-cutting concerns. Here the logic is local to account instances and duplicated across subclasses, so delegating would add indirection without reducing duplication. Pulling the logic up to a shared base class is simpler and clearer."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Two subclasses contain nearly identical implementations. Which refactoring most directly reduces duplication while preserving current behavior?",
+      "codeSnippet": null,
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Move the shared implementation up into the common base class so subclasses inherit it and duplication is eliminated.",
+          "isCorrect": true,
+          "explanation": "This describes the appropriate refactoring: locate the method implementation in the nearest common ancestor and remove the duplicate copies. That preserves current behavior for subclasses while centralizing the implementation so future fixes are applied once."
+        },
+        {
+          "id": "b",
+          "text": "Extract the common code into a private helper in each subclass to reduce visual duplication locally but keep behavior separate.",
+          "isCorrect": false,
+          "explanation": "Extracting a private helper in each subclass reduces repetition of lines but does not eliminate duplication at the design level. You still have multiple copies of the helper and must update each if behavior changes, so this is inferior for true reuse."
+        },
+        {
+          "id": "c",
+          "text": "Create a new shared utility module and replace each duplicate method call with a call to the new module functions.",
+          "isCorrect": false,
+          "explanation": "Moving logic to a utility can cut duplication but often breaks encapsulation if the method needs instance state. If the duplicated code depends on object internals, a base-class solution preserves access patterns and keeps behavior within the domain model."
+        },
+        {
+          "id": "d",
+          "text": "Introduce a template method in the base class calling hooks so subclasses keep most logic while sharing a fixed skeleton.",
+          "isCorrect": false,
+          "explanation": "Template Method is useful when behavior varies in parts but shares a common skeleton. If the entirety of the method is identical, introducing template hooks adds unnecessary complexity. Moving a fully shared implementation to the base class is simpler and clearer."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare these two versions. Which design is the better refactoring for removing duplication while keeping responsibilities clear?",
+      "codeSnippet": "/* Version A */\nclass Account { balance: number }\nclass CheckingAccount extends Account {\n  calculateFee() { return this.balance * 0.01 }\n}\nclass SavingsAccount extends Account {\n  calculateFee() { return this.balance * 0.01 }\n}\n\n/* Version B */\nclass Account {\n  balance: number\n  calculateFee() { return this.balance * 0.01 }\n}\nclass CheckingAccount extends Account {}\nclass SavingsAccount extends Account {}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A preserves per subclass overrides and avoids adding superclass responsibilities that could affect unrelated subclasses.",
+          "isCorrect": false,
+          "explanation": "This objection has merit when subclass behavior truly differs or when a superclass becomes a dumping ground for unrelated logic. However, in the example the method bodies are identical, so keeping duplicates risks inconsistent fixes and extra maintenance. Centralizing the identical logic in the superclass reduces cognitive load and aligns responsibilities."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes the identical method in the base class and eliminates duplication across subclasses.",
+          "isCorrect": true,
+          "explanation": "Version B is preferable here because the implementation is identical in both subclasses. Centralizing the method in the base class removes duplication, makes intent explicit, and simplifies future maintenance. If subclasses later need specialization, the method can be overridden or template hooks introduced. This follows refactoring guidance to move shared behavior to the common ancestor."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 48,
+  "conceptName": "Encapsulate What Varies",
+  "category": "principle",
+  "definition": "A design approach that isolates the parts of a system that are likely to change, by placing them behind stable interfaces so they can vary independently from the rest of the code.",
+  "ruleOfThumb": "Hide variability behind clear interfaces or strategy objects so changes require implementation updates only, not broad edits.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Principles",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which design idea best explains this code's approach to handling multiple output formats?",
+      "codeSnippet": "class ReportRenderer {\n  render(data: any, format: string) {\n    if (format === 'pdf') return this.renderPdf(data);\n    else if (format === 'html') return this.renderHtml(data);\n    else return this.renderText(data);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It isolates the parts that change behind interchangeable strategy objects to vary behavior without modifying the caller code.",
+          "isCorrect": true,
+          "explanation": "This code centralizes the varying behavior (different renderers) in one place but does not yet extract them. The goal of the principle is to move those varying parts behind stable abstractions so the caller does not change when new formats are added."
+        },
+        {
+          "id": "b",
+          "text": "It centralizes formatting logic into a single class to reduce duplication and simplify code comprehension across modules.",
+          "isCorrect": false,
+          "explanation": "While consolidation reduces duplication, the core issue is that the variation is still expressed as conditionals. The principle prefers isolating variation behind abstractions rather than only centralizing logic."
+        },
+        {
+          "id": "c",
+          "text": "It violates single responsibility by mixing rendering and data retrieval responsibilities inside the same class causing tight coupling.",
+          "isCorrect": false,
+          "explanation": "This is a plausible observation, but the snippet shows rendering variation rather than mixed responsibilities. The better diagnosis is that the render variations should be encapsulated to avoid edits when formats change."
+        },
+        {
+          "id": "d",
+          "text": "It applies the open closed principle by adding conditional branches whenever new output formats are added in this module.",
+          "isCorrect": false,
+          "explanation": "The code is not truly open for extension without modification. Adding formats requires editing the method, which contradicts the open closed ideal; the targeted improvement is to encapsulate the varying parts behind abstractions."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary design problem in this PaymentService implementation?",
+      "codeSnippet": "class PaymentService {\n  process(amount: number) {\n    if (config.gateway === 'stripe') {\n      StripeSDK.charge(amount);\n    } else if (config.gateway === 'paypal') {\n      PayPalSDK.pay(amount);\n    } else {\n      throw new Error('Unknown gateway');\n    }\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code keeps variation in gateway selection inside the service rather than isolating it behind interchangeable gateway implementations.",
+          "isCorrect": true,
+          "explanation": "The service embeds the choice of gateway in conditional logic, scattering variability. Encapsulating each gateway behind a common interface and injecting the chosen implementation keeps the service stable when new gateways are added."
+        },
+        {
+          "id": "b",
+          "text": "The code lacks a clear single responsibility because it both reads configuration and performs external payment interactions directly in one class.",
+          "isCorrect": false,
+          "explanation": "This is a reasonable concern, but the more actionable problem is the embedded variation of gateway behavior. Separating configuration concerns helps, but isolating the varying payment implementations is the priority for extensibility."
+        },
+        {
+          "id": "c",
+          "text": "The code breaks the open closed principle because adding a new gateway requires editing conditional branches inside the method directly.",
+          "isCorrect": false,
+          "explanation": "This diagnosis is closely related and true in effect. However, the underlying issue is that the variable behavior is not encapsulated; fixing that encapsulation also addresses the open closed violation."
+        },
+        {
+          "id": "d",
+          "text": "The code couples the service to concrete SDKs which makes unit testing hard and increases test setup complexity and fragility.",
+          "isCorrect": false,
+          "explanation": "Coupling to concrete SDKs is a valid concern and one reason to abstract the gateways. Still, the central design flaw is leaving the variation in the service rather than defining interchangeable gateway interfaces to mock and extend."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Given Version A and Version B implementations below, which is better for long term maintainability when adding new report formats?",
+      "codeSnippet": "// Version A\nclass ReportGenerator {\n  generate(data: any, format: string) {\n    if (format === 'json') return JSON.stringify(data);\n    if (format === 'csv') return toCsv(data);\n    if (format === 'html') return toHtml(data);\n    throw new Error('Unsupported format');\n  }\n}\n\n// Version B\ninterface Renderer { render(data:any): string }\nclass JsonRenderer implements Renderer { render(d:any){ return JSON.stringify(d); } }\nclass CsvRenderer implements Renderer { render(d:any){ return toCsv(d); } }\nclass ReportGeneratorV2 {\n  constructor(private renderer: Renderer) {}\n  generate(data:any) { return this.renderer.render(data); }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A localizes format selection in the generator, which seems simpler but scales poorly with new formats.",
+          "isCorrect": false,
+          "explanation": "Version A keeps all branches in one method which is easy to read initially but forces edits everywhere a format is referenced. It also hinders reuse and testing of individual format logic."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes format variation into interchangeable renderer implementations used consistently across the generator.",
+          "isCorrect": true,
+          "explanation": "Version B isolates the varying behavior behind a renderer interface so new formats require adding a new renderer only. That minimizes changes to existing generator code, improves testability, and follows the Encapsulate What Varies principle for safer extension."
+        }
+      ]
+    }
+  ]
+}

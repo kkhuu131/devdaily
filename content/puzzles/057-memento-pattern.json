@@ -1,0 +1,106 @@
+{
+  "id": 57,
+  "conceptName": "Memento Pattern",
+  "category": "design-pattern",
+  "definition": "A behavioral design pattern that captures and externalizes an object's internal state so that the object can be restored to that state later, without exposing its internal representation to other objects.",
+  "ruleOfThumb": "Provide a limited, opaque snapshot interface and keep restore logic inside the originator to avoid leaking internals.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Memento",
+    "page": "311-321",
+    "externalUrl": "https://en.wikipedia.org/wiki/Memento_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this TypeScript excerpt from a simple text editor. What design idea does this illustrate?",
+      "codeSnippet": "class Editor {\n  private content: string;\n  constructor(text: string) { this.content = text; }\n  save() { return { content: this.content }; }\n  restore(snapshot: { content: string }) { this.content = snapshot.content; }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It captures and externalizes an object's internal state for later restoration without exposing internal structure to clients.",
+          "isCorrect": true,
+          "explanation": "This code shows an originator that produces a snapshot object and later restores from it. The snapshot serves to hold internal state without providing methods to mutate the originator beyond restoration. The pattern helps implement undo without exposing the originator's internals to clients."
+        },
+        {
+          "id": "b",
+          "text": "It encapsulates requests as objects allowing operations to be queued, logged, and undone separately from the originating object.",
+          "isCorrect": false,
+          "explanation": "This describes the Command pattern, where operations are encapsulated as objects that can be executed or undone. The example lacks an executable request object and instead stores raw state, so it is not the Command pattern."
+        },
+        {
+          "id": "c",
+          "text": "It creates independent clones of objects so callers may modify copies without affecting the original object's state or identity.",
+          "isCorrect": false,
+          "explanation": "This describes the Prototype pattern, which focuses on cloning to create new instances. The code saves state snapshots rather than producing clone instances for modification, so Prototype is not the best match."
+        },
+        {
+          "id": "d",
+          "text": "It moves state dependent behavior into state objects so the context changes behavior when its internal state changes.",
+          "isCorrect": false,
+          "explanation": "This describes the State pattern, which encapsulates varying behavior for different states. The example stores and restores state rather than delegating behavior to state objects, so it does not reflect the State pattern."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this caretaker and document snapshot code. What is the primary design concern with this approach?",
+      "codeSnippet": "class Document {\n  private text = '';\n  createMemento() { return { text: this.text }; }\n  restore(m: { text: string }) { this.text = m.text; }\n}\nclass Caretaker {\n  private history: any[] = [];\n  push(doc: Document) { this.history.push(doc.createMemento()); }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code publicly exposes internal state through mementos and directly violates encapsulation and object invariants.",
+          "isCorrect": true,
+          "explanation": "The mementos are plain objects that reveal internal fields. That couples clients to the originator's internal representation and allows external code to read or mutate state, breaking encapsulation and potentially violating invariants. A stricter memento interface or opaque wrapper prevents that leakage."
+        },
+        {
+          "id": "b",
+          "text": "This code retains complete state snapshots in memory and will likely cause excessive memory pressure as history grows over time.",
+          "isCorrect": false,
+          "explanation": "While retaining many full snapshots can cause memory concerns, the more immediate design issue in this snippet is exposure of internal fields. Memory pressure is a real risk but secondary to the encapsulation breach."
+        },
+        {
+          "id": "c",
+          "text": "This code couples snapshot format to JSON like serialization and risks breaking restore logic during refactors or schema changes.",
+          "isCorrect": false,
+          "explanation": "Coupling to a specific serialization format is a plausible problem in some designs, but the provided snippet reveals internal state directly rather than showing serialization as the root cause. The encapsulation leak is clearer here."
+        },
+        {
+          "id": "d",
+          "text": "This code assigns versioning and undo responsibilities to the caretaker, creating a single class that mixes multiple responsibilities.",
+          "isCorrect": false,
+          "explanation": "Putting history management in a caretaker can introduce SRP concerns, but the more concrete design flaw is that the caretaker receives raw state objects that expose internals. SRP is a valid concern but not the primary immediate risk demonstrated."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two editor snapshot designs. Which version better preserves encapsulation and why?",
+      "codeSnippet": "// Version A: public snapshot object\nclass EditorA {\n  private text = '';\n  createSnapshot() { return { text: this.text, cursor: 0 }; }\n  restore(s: any) { this.text = s.text; }\n}\n\n// Version B: opaque snapshot with restoration closure\nclass EditorB {\n  private text = '';\n  createSnapshot() {\n    const state = { text: this.text };\n    return { restore: (target: EditorB) => { target.text = state.text; } };\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A stores a public snapshot object and exposes internal fields making the design brittle under refactor.",
+          "isCorrect": false,
+          "explanation": "Version A hands out a plain object containing internal fields. That approach exposes the originator's representation and lets external code depend on or mutate those fields. The result is brittle code that can break when internal structure changes, increasing coupling between originator and clients."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps snapshots opaque and preserves encapsulation across saves and restores.",
+          "isCorrect": true,
+          "explanation": "Version B returns an opaque token with a restore capability rather than exposing fields. The originator controls how state is captured and how it is reapplied, preventing clients from reading or altering internals. This design reduces coupling and protects invariants while still enabling restoration of prior state. Patterns discussions of capturing internal state privately appear in classic design literature and encourage keeping mementos opaque."
+        }
+      ]
+    }
+  ]
+}

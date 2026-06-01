@@ -1,0 +1,106 @@
+{
+  "id": 44,
+  "conceptName": "Facade Pattern",
+  "category": "design-pattern",
+  "definition": "Provide a unified, higher-level interface that makes a subsystem easier to use by encapsulating interactions between several classes.",
+  "ruleOfThumb": "Offer a simple façade to common workflows while keeping subsystem classes available for advanced use when necessary.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Façade",
+    "page": "185",
+    "externalUrl": "https://en.wikipedia.org/wiki/Facade_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the code below, what is the primary intent of the class OrderOrchestrator?",
+      "codeSnippet": "class Inventory { check(itemId: string) { /* ... */ } }\nclass Pricing { calculate(itemId: string) { /* ... */ } }\nclass Shipping { schedule(itemId: string) { /* ... */ } }\n\nclass OrderOrchestrator {\n  constructor(private inv: Inventory, private price: Pricing, private ship: Shipping) {}\n  placeOrder(itemId: string) {\n    this.inv.check(itemId);\n    this.price.calculate(itemId);\n    this.ship.schedule(itemId);\n  }\n}\n\nconst orchestrator = new OrderOrchestrator(new Inventory(), new Pricing(), new Shipping());\norchestrator.placeOrder('item-123');",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It provides a single simplified interface that coordinates multiple subsystem classes for client usage in the application.",
+          "isCorrect": true,
+          "explanation": "This class centralizes coordination of Inventory, Pricing, and Shipping into one object that clients call. That is the classic intent described in GoF and helps reduce client-side coupling to many classes while preserving subsystem independence."
+        },
+        {
+          "id": "b",
+          "text": "It isolates unrelated responsibilities into many small classes to encourage maximum code reuse across modules of the system.",
+          "isCorrect": false,
+          "explanation": "This option confuses decomposition with orchestration. The snippet shows a coordinating class that forwards calls rather than splitting responsibilities into many independent modules. Decomposition aims at single responsibility rather than client simplification."
+        },
+        {
+          "id": "c",
+          "text": "It ensures only one instance of each subsystem exists across the system using a global access mechanism for convenience.",
+          "isCorrect": false,
+          "explanation": "This describes a singleton or global access concern, which the code does not implement. The orchestrator composes subsystem instances, it does not enforce global singletons or provide a global access point."
+        },
+        {
+          "id": "d",
+          "text": "It enforces strict inheritance hierarchies so clients extend a common base to access multiple subsystems directly from subclasses.",
+          "isCorrect": false,
+          "explanation": "This option describes an inheritance-based reuse strategy. The sample shows composition and delegation to subsystem objects, not subclassing to gain access to subsystems. Composition is favored here for loose coupling."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this Gateway class that wraps several services. What is the most worrisome long term design problem here?",
+      "codeSnippet": "class InventoryService { reserve(itemId: string) {}\n  release(itemId: string) {}\n}\nclass BillingService { charge(orderId: string) {}\n}\nclass ShippingService { createShipment(orderId: string) {}\n}\n\nclass OrderGateway {\n  constructor(private inv: InventoryService, private bill: BillingService, private ship: ShippingService) {}\n  placeOrder(itemId: string) { this.inv.reserve(itemId); this.bill.charge('o1'); this.ship.createShipment('o1'); }\n  cancelOrder(itemId: string) { this.inv.release(itemId); }\n  // more methods delegating to many services\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class centralizes too many responsibilities and risks becoming a maintenance bottleneck with high coupling to subsystems.",
+          "isCorrect": true,
+          "explanation": "A gateway that keeps growing can become a god object that knows too much about many subsystems, which increases coupling and maintenance cost. Fowler and others warn that facades should not accrete unrelated responsibilities; prefer smaller focused gateways or delegation to keep cohesion high."
+        },
+        {
+          "id": "b",
+          "text": "This class hides subsystem complexity so much that clients may lack access to necessary specialized operations and flexibility later on.",
+          "isCorrect": false,
+          "explanation": "Hiding too much can indeed reduce flexibility, which is a legitimate concern. However the immediate symptom in this snippet is accumulation of responsibilities and coupling; lack of specialized access is secondary and often solved by exposing subsystems separately when needed."
+        },
+        {
+          "id": "c",
+          "text": "This class duplicates logic from subsystems and will cause inconsistent behavior when subsystem implementations change independently over time.",
+          "isCorrect": false,
+          "explanation": "Duplication is a valid worry, but the code shows delegation rather than copied logic. The bigger structural issue is centralization of coordination that may lead to a large, brittle gateway."
+        },
+        {
+          "id": "d",
+          "text": "This class causes tight coupling to concrete subsystem types making it difficult to test and replace subsystems safely in isolation.",
+          "isCorrect": false,
+          "explanation": "Tight coupling to concrete types is a practical concern and can be mitigated by coding to interfaces and using dependency injection. The snippet already injects subsystem instances, so coupling is present but primarily as a symptom of centralization rather than the root design smell."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You must design the public SDK surface for third parties. Which version is the better choice for long term maintainability and client ergonomics?",
+      "codeSnippet": "// Version A: one monolithic gateway\nclass ApiGateway {\n  createOrder(data) { /* calls inventory, billing, shipping, notifications */ }\n  cancelOrder(id) { /* calls inventory, billing, shipping */ }\n  refundOrder(id) { /* billing */ }\n  trackShipment(id) { /* shipping */ }\n}\n\n// Version B: small focused gateways\nclass OrdersClient { createOrder(data) { /* calls order flow */ } cancelOrder(id) { /* ... */ } }\nclass BillingClient { refund(id) { /* ... */ } }\nclass ShippingClient { track(id) { /* ... */ } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A uses a single monolithic gateway class exposing all subsystem operations through one public surface.",
+          "isCorrect": false,
+          "explanation": "A single monolithic gateway simplifies discovery initially but tends to grow into a large, low-cohesion API for SDK consumers. It couples unrelated concerns, makes semantic versioning noisy, and forces consumers to depend on a broad surface when they only need a small part. For public SDKs this harms stability and discoverability."
+        },
+        {
+          "id": "b",
+          "text": "Version B uses small focused gateway classes per domain that keep responsibilities separated and improve client ergonomics.",
+          "isCorrect": true,
+          "explanation": "Choosing multiple small, domain-focused clients gives better cohesion, smaller upgrade surface, and clearer reasoning about responsibilities. It supports independent evolution and easier mocking for tests. This aligns with pragmatic API design guidance from GoF and Fowler about keeping abstractions focused and minimizing accidental coupling in public interfaces."
+        }
+      ]
+    }
+  ]
+}

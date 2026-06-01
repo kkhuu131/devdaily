@@ -1,0 +1,106 @@
+{
+  "id": 40,
+  "conceptName": "Speculative Generality",
+  "category": "code-smell",
+  "definition": "A design smell where developers add abstractions, hooks, or extra API surface intended for imagined future needs, increasing complexity without current value.",
+  "ruleOfThumb": "Prefer YAGNI: do not add generality or extension points until a concrete, tested need appears.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Code Smells",
+    "page": "n/a",
+    "externalUrl": "https://martinfowler.com/bliki/SpeculativeGenerality.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation best describes the primary maintainability problem shown by an unused abstraction or empty hook in production code?",
+      "codeSnippet": null,
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code introduces unused abstraction layers that exist only for imagined future requirements and add needless complexity.",
+          "isCorrect": true,
+          "explanation": "This is the core smell: abstraction added for hypothetical needs increases cognitive load and maintenance surface without delivering value. Such code rarely remains unused forever and often requires work to support or remove. Fowler highlights that speculative generality is a common cost of overengineering. Address it by removing the abstraction or deferring until a real use case arrives."
+        },
+        {
+          "id": "b",
+          "text": "The module exposes too many responsibilities and likely violates single responsibility making testing and maintenance harder.",
+          "isCorrect": false,
+          "explanation": "This is a plausible concern and often co-occurs with excess abstraction, but it points at multiple responsibilities rather than unnecessary future-facing hooks. The fix for SRP violations is decomposition, while speculative extension points are usually removed or postponed. Consider whether responsibilities are truly mixed or whether an abstraction was added prematurely."
+        },
+        {
+          "id": "c",
+          "text": "The naming conventions are inconsistent across modules which may lead to integration mistakes and developer confusion later.",
+          "isCorrect": false,
+          "explanation": "Inconsistent naming is a real maintainability issue, but it is a different class of problem than unused abstractions. Naming fixes are localized and low-risk. Unused hooks affect architecture and API surface and often require broader design decisions, so the symptoms and remedies differ."
+        },
+        {
+          "id": "d",
+          "text": "The code performs premature optimization by optimizing for performance without measurable requirements or profiling evidence expected later.",
+          "isCorrect": false,
+          "explanation": "Premature optimization is a separate anti-pattern focused on performance assumptions. While both premature optimization and speculative extension are forms of acting on future concerns, the signs and remedies differ: optimize only with evidence, whereas remove or defer abstractions until real needs appear."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review the gateway interface and concrete implementation. What is the most likely maintainability problem this design signals?",
+      "codeSnippet": "interface PaymentGateway {\n  initiate(amount: number): Promise<string>;\n  refund(id: string): Promise<boolean>;\n  voidTransaction(id: string): Promise<boolean>;\n  reconcile(batchId: string): Promise<void>;\n}\nclass StripeGateway implements PaymentGateway {\n  async initiate(amount:number){ return \"tx_123\"; }\n  async refund(id:string){ throw new Error(\"not implemented\"); }\n  async voidTransaction(id:string){ throw new Error(\"not implemented\"); }\n  async reconcile(batchId:string){ /* not needed */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The interface defines multiple operations that are unimplemented by concrete classes and likely reflect unnecessary generalization.",
+          "isCorrect": true,
+          "explanation": "The snippet shows an interface with several methods that concrete classes do not implement, which usually indicates the abstraction was designed for hypothetical scenarios. That extra API surface forces implementations to stub or throw and complicates client usage. The pragmatic approach is to pare the interface to current needs and introduce new operations when demanded."
+        },
+        {
+          "id": "b",
+          "text": "The implementation throws runtime errors indicating incomplete work and risking failures in critical runtime paths if invoked in production.",
+          "isCorrect": false,
+          "explanation": "Throwing errors in unimplemented methods is dangerous and should be addressed, but this diagnosis focuses on symptom (runtime failure) rather than root cause. Removing or narrowing the interface resolves both the runtime risk and the underlying design issue. Fixing only the throws leaves unnecessary surface area in place."
+        },
+        {
+          "id": "c",
+          "text": "The code relies on Exceptions for unimplemented methods which will obscure the real error and complicate debugging in upstream callers.",
+          "isCorrect": false,
+          "explanation": "Using exceptions for stubs can indeed obscure failures, but it is a consequence rather than the primary design smell. The better remedy is to avoid forcing methods that are not required, so implementations cannot accidentally be left throwing. That addresses both clarity and reliability."
+        },
+        {
+          "id": "d",
+          "text": "The class names and interface structure seem poorly documented which may confuse future integrators and onboarders of the API.",
+          "isCorrect": false,
+          "explanation": "Documentation shortfalls are real and worth improving, but they do not explain why methods are unimplemented. The core issue is the mismatch between the abstraction and actual responsibilities. Documentation alone will not remove unused operations or reduce the burden on implementers."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two versions. Which design is preferable for maintainability given current requirements?",
+      "codeSnippet": "// Version A: Concrete service implementing only used behavior\nclass OrderService {\n  createOrder(data:any){ /* validate, persist, publish event */ }\n}\n\n// Version B: Abstract service with many optional hooks for future extension\nabstract class AbstractOrderService {\n  abstract createOrder(data:any): void;\n  beforeCreate?(data:any): void;\n  afterCreate?(data:any): void;\n  validate?(data:any): boolean;\n}\nclass ProdOrderService extends AbstractOrderService {\n  createOrder(data:any){ /* does everything in one place */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A implements only the required behavior and maintains a minimal public surface for easier maintenance.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable because it keeps the design focused on current, tested responsibilities and avoids expanding the API surface with unused extension points. Unnecessary hooks raise the cost of change, complicate implementations, and become contract baggage. Fowler and other craft authors recommend designing for present needs and adding generality when clear use cases and tests justify it."
+        },
+        {
+          "id": "b",
+          "text": "Version B introduces many unused hooks and expands the public surface which increases maintenance and integration costs over time.",
+          "isCorrect": false,
+          "explanation": "This critique is accurate about Version B, but choosing it would be the incorrect design decision given current requirements. The extra hooks appear to be speculative and will likely need ongoing support or removal. Rather than preemptive extension, prefer the simpler implementation and evolve the design when new, concrete needs arise. Clean Code and the Pragmatic Programmer both warn against premature abstraction for imagined futures."
+        }
+      ]
+    }
+  ]
+}

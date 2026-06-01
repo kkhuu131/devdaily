@@ -1,0 +1,106 @@
+{
+  "id": 38,
+  "conceptName": "Inappropriate Intimacy",
+  "category": "code-smell",
+  "definition": "A code smell where one class relies on the internal implementation details of another, creating tight coupling and breaking encapsulation.",
+  "ruleOfThumb": "Prefer telling an object what to do via its public behavior rather than reaching into its internal state.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Moving Features Between Objects",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the checkout code. What is the most obvious structural problem?",
+      "codeSnippet": "class ShoppingCart {\n  items: string[] = [];\n  add(item: string) { this.items.push(item); }\n}\n\nclass CheckoutService {\n  finalize(cart: ShoppingCart) {\n    while (cart.items.length) {\n      cart.items.pop();\n    }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code exhibits direct modification of another object's internal items array across class boundaries and modules.",
+          "isCorrect": true,
+          "explanation": "CheckoutService reaches into ShoppingCart.items and mutates it directly. That couples CheckoutService to the cart's internal structure and makes future internal changes to ShoppingCart risky. A better approach is to add an intent-revealing method on ShoppingCart (for example clear or removeAll) and let the cart manage its own state."
+        },
+        {
+          "id": "b",
+          "text": "This code concentrates unrelated responsibilities in CheckoutService making it feel like a large god object that needs splitting.",
+          "isCorrect": false,
+          "explanation": "While large classes or services can be problematic, the snippet shows CheckoutService performing a very narrow action: it directly mutates the cart's array. The primary issue is coupling to internal representation rather than an obvious responsibility spread. Addressing encapsulation will often also reduce responsibilities, but responsibility distribution is not the first smell here."
+        },
+        {
+          "id": "c",
+          "text": "This code relies on array mutation which may cause concurrency and ordering bugs when multiple requests manipulate the same cart.",
+          "isCorrect": false,
+          "explanation": "Mutating shared collections can introduce concurrency issues, especially in multi-threaded or async contexts. That is a real risk, but it stems from the deeper problem that the service manipulates the cart internals directly. Encapsulating mutations within ShoppingCart lets you add synchronization or immutability strategies in one place."
+        },
+        {
+          "id": "d",
+          "text": "This code uses mutable shared state which can hinder testability by making unit tests sensitive to operation ordering.",
+          "isCorrect": false,
+          "explanation": "Mutable shared state does affect testability, but the immediate structural smell is that one object performs operations on another object's internal array. Improving encapsulation reduces the surface for ordering-related bugs and simplifies testing by centralizing state changes inside the owning object."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review the order label logic. Which concern describes the main design smell present?",
+      "codeSnippet": "class Customer { address: { street: string; city: string } }\nclass Order { customer: Customer; items: string[] }\n\nclass OrderProcessor {\n  printShippingLabel(order: Order) {\n    const addr = order.customer.address;\n    return `${addr.street}, ${addr.city}`;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code duplicates validation logic between classes causing potential divergence when business rules change in the address model.",
+          "isCorrect": false,
+          "explanation": "Duplicated validation is a real maintainability concern, but the snippet does not show duplicate checks. The core issue is that OrderProcessor reaches into the Customer's nested address structure instead of asking Customer or Order for the formatted label. Moving address-related logic to a single place avoids both duplication and tight coupling."
+        },
+        {
+          "id": "b",
+          "text": "This code creates tight coupling by directly accessing multiple nested fields of Customer from OrderProcessor across boundaries.",
+          "isCorrect": true,
+          "explanation": "OrderProcessor depends on the shape of Customer.address by extracting street and city itself. That couples OrderProcessor to Customer's data layout. A cleaner design is to provide a Customer or Order method that returns a shipping address string or a dedicated value object, preserving encapsulation and hiding internal structure."
+        },
+        {
+          "id": "c",
+          "text": "This code leaks persistence concerns into domain class usage by passing entities around instead of mapping DTOs.",
+          "isCorrect": false,
+          "explanation": "Leaking persistence concerns can be a problem, but the example only shows direct field access on a domain object. Whether these are persisted entities is not shown. The more precise smell is reliance on another object's internal structure rather than separating persistence from domain logic."
+        },
+        {
+          "id": "d",
+          "text": "This code lacks defensive copying leading to accidental external mutations when objects are shared between services and modules.",
+          "isCorrect": false,
+          "explanation": "Defensive copying is useful when shared mutable state is being passed around. The snippet shows reading nested fields without copying, but the primary maintainability problem is coupling to the nested structure. Encapsulation or value objects are better first steps than defensive copying in this situation."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two versions of payment code are shown. Which design is preferable and why?",
+      "codeSnippet": "// Version A\nclass AccountA { balance: number }\nclass PaymentProcessorA {\n  charge(a: AccountA, amount: number) {\n    a.balance -= amount;\n  }\n}\n\n// Version B\nclass AccountB {\n  private balance: number;\n  debit(amount: number) { this.balance -= amount; }\n}\nclass PaymentProcessorB {\n  charge(a: AccountB, amount: number) { a.debit(amount); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A directly mutates Account balance exposing invariants to callers and risking duplicated business rules across modules.",
+          "isCorrect": false,
+          "explanation": "Version A allows external code to manipulate balance directly. That spreads the responsibility for maintaining invariants across callers and increases the chance of inconsistent updates and duplicated checks. Refactoring toward encapsulation centralizes rules, making it easier to validate and evolve business logic—this aligns with Fowler's guidance to move features between objects when responsibilities are misplaced."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps account balance mutation inside the Account class through a debit method.",
+          "isCorrect": true,
+          "explanation": "Version B preserves encapsulation by centralizing mutation and related rules inside Account. This keeps invariants local, reduces duplication, and makes changes to charging behavior straightforward. Choosing this design follows object-oriented principles and common refactorings that move behavior to the data it operates on, improving cohesion and easing maintenance. See Fowler's discussion on moving features between objects and encapsulation for guidance."
+        }
+      ]
+    }
+  ]
+}

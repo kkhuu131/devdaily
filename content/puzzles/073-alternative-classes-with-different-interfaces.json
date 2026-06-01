@@ -1,0 +1,106 @@
+{
+  "id": 73,
+  "conceptName": "Alternative Classes with Different Interfaces",
+  "category": "code-smell",
+  "definition": "A situation where two or more classes have the same responsibility but expose different public interfaces, preventing easy substitution and leading to duplicated adapters or conditional logic in clients.",
+  "ruleOfThumb": "If multiple classes do the same job for callers, give them a uniform interface or add a clear adapter so callers can treat them interchangeably.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Alternative Classes with Different Interfaces",
+    "page": "201",
+    "externalUrl": "https://martinfowler.com/bliki/AlternativeClassesWithDifferentInterfaces.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at these repository implementations. What is the most obvious structural problem visible here?",
+      "codeSnippet": "interface Order { id: string }\n\nclass SqlOrderRepository {\n  fetchOrderById(id: string): Order | null { /* SQL */ return null }\n}\n\nclass InMemoryOrderRepository {\n  getOrder(id: string): Order | null { /* in-memory */ return null }\n}\n\n// Callers must know which method name to use depending on implementation",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Two classes expose different public method names across the codebase and share the same responsibility.",
+          "isCorrect": true,
+          "explanation": "This is the classic alternative-classes-with-different-interfaces smell: two implementations do the same job but present different APIs to callers. That forces either conditional code, duplicated adapters, or client awareness of concrete types. Refactoring options include introducing a common interface or adding small adapter classes so callers can be written against a stable abstraction."
+        },
+        {
+          "id": "b",
+          "text": "Two classes duplicate state and logic with no shared abstraction which raises the risk of inconsistent behavior.",
+          "isCorrect": false,
+          "explanation": "While duplicated logic is a real concern, the snippet highlights inconsistent public method names rather than duplicated internal algorithms. Duplicated behavior can coexist with a single interface; here the primary harm is the lack of substitutability at the API level. Addressing only internal duplication would not fix the client-side coupling to concrete method names."
+        },
+        {
+          "id": "c",
+          "text": "Two classes have unrelated concerns mixed in the implementation making them poor candidates for single responsibility.",
+          "isCorrect": false,
+          "explanation": "Mixing concerns is a legitimate smell but the code shows two repositories handling the same concept of Order. The problem is not extra responsibilities inside the classes but inconsistent public APIs for the same responsibility. Splitting responsibilities would not remove the need to unify their interfaces for callers."
+        },
+        {
+          "id": "d",
+          "text": "Two classes differ in method names due to legacy API mapping and are intentionally kept separate for external compatibility.",
+          "isCorrect": false,
+          "explanation": "Intentional legacy constraints can justify different interfaces, and that is a plausible explanation. However the snippet and prompt ask for the structural problem, not the historical reason. Even if due to legacy APIs, the long-term maintainable solution is to adapt or wrap them so internal callers are not burdened by multiple method names."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which of the following best describes why having these two gateway classes is problematic for the system design?",
+      "codeSnippet": "interface PaymentResult { success: boolean }\n\nclass StripeGateway {\n  chargeCents(amount: number): Promise<PaymentResult> { return Promise.resolve({ success: true }) }\n}\n\nclass PaypalGateway {\n  processPayment(cents: number): Promise<PaymentResult> { return Promise.resolve({ success: true }) }\n}\n\n// Different callers must adapt to each provider's method names and signatures",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code creates two implementations with incompatible public methods preventing easy substitution by callers across the codebase.",
+          "isCorrect": true,
+          "explanation": "The key issue is incompatible public APIs for equivalent responsibilities. That prevents callers from depending on a single abstraction and forces adapters, conditional logic, or awareness of concrete implementations. A stable interface or small adapter objects lets callers remain agnostic of provider details and simplifies testing and maintenance. Fowler recommends unifying interfaces or adding adapter layers when classes play the same role."
+        },
+        {
+          "id": "b",
+          "text": "This code creates duplicated validation and transformation logic inside each class increasing the chance of inconsistent data handling.",
+          "isCorrect": false,
+          "explanation": "Duplicated validation is a real maintenance cost, but the snippet emphasizes different method names rather than repeated internal validation. Even if validation were duplicated, the more structural problem for callers is the lack of a common API that allows substitution without extra glue code."
+        },
+        {
+          "id": "c",
+          "text": "This code creates tightly coupled pairs between implementation and client code which will block independent testing of implementations.",
+          "isCorrect": false,
+          "explanation": "Tight coupling to concrete implementations does hinder testing, but the direct reason in this example is that each gateway exposes a different interface. Introducing an interface or adapter solves both substitutability and testability, so tight coupling is a symptom rather than the most precise root cause here."
+        },
+        {
+          "id": "d",
+          "text": "This code creates accidental differences in return types and semantics that will cause subtle runtime bugs when substituting implementations.",
+          "isCorrect": false,
+          "explanation": "Accidental semantic differences are a danger, but the snippet shows identical return types. The immediate design failure is mismatched method names and signatures which force special-case handling in callers. Ensuring a shared interface reduces the surface for accidental semantic divergence."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two design variants are proposed for integrating multiple payment providers. Which version should you prefer and why?",
+      "codeSnippet": "// Version A\ninterface PaymentGateway { charge(cents: number): Promise<boolean> }\nclass StripeGateway implements PaymentGateway {\n  async charge(cents: number) { /* map to Stripe API */ return true }\n}\nclass PaypalGateway implements PaymentGateway {\n  async charge(cents: number) { /* map to Paypal API */ return true }\n}\n\n// Version B\nclass StripeProvider {\n  async stripeCharge(amountInCents: number) { return true }\n}\nclass PaypalProvider {\n  async paypalProcess(cents: number) { return true }\n}\n\n// Callers in Version B must call provider specific methods directly",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A exposes a single consistent interface to all callers in the service boundary.",
+          "isCorrect": true,
+          "explanation": "Version A unifies different implementations behind a common abstraction so callers can be written against PaymentGateway. This reduces conditional logic, makes testing easier by mocking a single interface, and prevents client code from depending on provider-specific APIs. It follows the Adapter pattern when mapping provider APIs to the uniform interface and aligns with Fowler's guidance to unify alternative classes with different interfaces."
+        },
+        {
+          "id": "b",
+          "text": "Version B exposes provider specific methods directly to callers to preserve each provider feature surface.",
+          "isCorrect": false,
+          "explanation": "Exposing provider-specific methods preserves feature surfaces but couples callers to concrete providers, scattering provider-specific logic across the codebase and complicating substitution and testing. Even when a provider has unique features, the recommended approach is to expose a common interface for shared behaviors and provide optional extension points or explicit adapters for provider-only capabilities. This keeps the service boundary stable while still allowing provider-specific functionality where truly needed."
+        }
+      ]
+    }
+  ]
+}

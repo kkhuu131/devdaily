@@ -1,0 +1,106 @@
+{
+  "id": 27,
+  "conceptName": "Message Chains",
+  "category": "code-smell",
+  "definition": "A client repeatedly navigates through a series of object references to reach a nested value, coupling callers to the object graph.",
+  "ruleOfThumb": "Tell the nearest domain object what you want via a single method instead of traversing many getters from the caller.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Message Chains",
+    "page": null,
+    "externalUrl": "https://refactoring.com/catalog/messageChain.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What primary problem does the code below reveal?",
+      "codeSnippet": "class OrderService {\n  getZip(orderId: string) {\n    const order = this.repo.findOrder(orderId);\n    const customer = order.getCustomer();\n    const address = customer.getAddress();\n    return address.getPostalCode();\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code couples the caller to multiple object internals by repeatedly traversing chained accessors at runtime.",
+          "isCorrect": true,
+          "explanation": "The code shows a caller that depends on the shape of several objects in sequence. That tight coupling makes refactoring difficult because any change to the intermediate objects affects all callers. The usual fix is to add a focused method on a nearer domain object so callers express intent rather than navigation."
+        },
+        {
+          "id": "b",
+          "text": "This code creates brittle tests because tests must mock or build many nested objects to reach deep fields in assertions.",
+          "isCorrect": false,
+          "explanation": "Building or mocking deep object graphs increases test fragility and setup cost. While this is a real concern, it is a symptom of callers relying on multi-step navigation rather than the primary design issue of coupling to object structure."
+        },
+        {
+          "id": "c",
+          "text": "This code improves reuse by exposing raw nested fields which hides the domain intent from caller code reading this usage pattern.",
+          "isCorrect": false,
+          "explanation": "Exposing low level fields can sometimes enable reuse, but here the problem is that caller intent is obscured by navigation. The option names a plausible consequence, yet it confuses reuse with the core coupling issue that leads to fragile dependencies."
+        },
+        {
+          "id": "d",
+          "text": "This code better separates concerns because each object owns its own getters and consumers navigate accordingly across the graph.",
+          "isCorrect": false,
+          "explanation": "Saying each object owning getters separates concerns is a common justification, but it misses that consumers now must know navigation details. That knowledge leads to coupling and maintenance pain even if individual objects appear well encapsulated."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given a service repeatedly calling api.getUser().getProfile().getCurrency(), what is the most sustainable long term fix?",
+      "codeSnippet": "class BillingService {\n  charge(userId: string) {\n    const user = this.api.getUser(userId);\n    const currency = user.getProfile().getCurrency();\n    // use currency to format charge\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add a convenience method on the root domain object to return the needed field directly to callers without traversal.",
+          "isCorrect": false,
+          "explanation": "Adding convenience methods can reduce repetition, but scattering many convenience methods can bloat the API. It may be useful short term, but without putting intent on a clear domain method this can become inconsistent over time."
+        },
+        {
+          "id": "b",
+          "text": "Flatten the data into a DTO at the service boundary so callers operate on a simple shaped object without deep navigation.",
+          "isCorrect": false,
+          "explanation": "DTOs reduce caller navigation and are reasonable at service boundaries, but overusing DTOs can duplicate domain logic and leak representation. This is a valid tactic in integration layers but not always the best domain design fix."
+        },
+        {
+          "id": "c",
+          "text": "Add an explicit domain query on the aggregate root that hides traversal details from callers and exposes the intended value.",
+          "isCorrect": true,
+          "explanation": "Exposing a purpose-driven method on the aggregate root centralizes traversal and communicates intent to callers. This reduces coupling to internal structure and keeps the public API stable while allowing internal reorganization without widespread changes."
+        },
+        {
+          "id": "d",
+          "text": "Accept the chaining and document it as an explicit API decision to avoid refactoring costs in the short term and move on.",
+          "isCorrect": false,
+          "explanation": "Documenting the behavior is pragmatic for short term stability, but it leaves the system fragile to structural changes. This option acknowledges a real trade off but is not the most sustainable long term strategy when intent is unclear."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better design choice for hiding deep traversal from callers?",
+      "codeSnippet": "// Version A: caller navigates through objects\nfunction formatCustomerZip(customerRepo: CustomerRepo, id: string) {\n  const customer = customerRepo.find(id);\n  return customer.getAddress().getPostalCode();\n}\n\n// Version B: domain exposes focused intent method\nfunction formatCustomerZipV2(customerRepo: CustomerRepo, id: string) {\n  const customer = customerRepo.find(id);\n  return customer.postalCode();\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A exposes deep navigation through multiple objects which leaves callers dependent on the internal object structure details.",
+          "isCorrect": false,
+          "explanation": "Version A requires callers to know the shape of the object graph, making many callers sensitive to internal changes. That coupling increases the blast radius of refactors. It can be acceptable in small, stable modules but usually harms long term maintainability."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates traversal in a single domain method that centralizes intent for callers and hides object graph details.",
+          "isCorrect": true,
+          "explanation": "Version B puts the responsibility for traversal and intent expression into the domain model. This reduces caller coupling and clarifies intent. Fowler specifically recommends replacing chains with a method on the nearer object. Centralizing traversal makes refactoring safer and keeps the public API meaningful."
+        }
+      ]
+    }
+  ]
+}

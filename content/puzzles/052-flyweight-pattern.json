@@ -1,0 +1,106 @@
+{
+  "id": 52,
+  "conceptName": "Flyweight Pattern",
+  "category": "design-pattern",
+  "definition": "A structural approach that shares immutable intrinsic state between many fine-grained objects and keeps per-use extrinsic state external to reduce memory and allocation overhead.",
+  "ruleOfThumb": "When you have a large number of similar objects with repeating heavy state, share the intrinsic parts and supply varying extrinsic data at use time.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Flyweight",
+    "page": "195",
+    "externalUrl": "https://en.wikipedia.org/wiki/Flyweight_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the rendering code below. Which description best explains the memory optimization being applied?",
+      "codeSnippet": "class ParticleIntrinsic {\n  constructor(public color: string, public textureId: number) {}\n}\nclass Particle {\n  constructor(private intrinsic: ParticleIntrinsic, private x: number, private y: number) {}\n  draw(ctx: CanvasRenderingContext2D) { /* use intrinsic and extrinsic data */ }\n}\nclass IntrinsicFactory {\n  private cache = new Map<string, ParticleIntrinsic>();\n  get(key: string) { if (!this.cache.has(key)) this.cache.set(key, new ParticleIntrinsic(key, 0)); return this.cache.get(key)!; }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Share immutable intrinsic state among many lightweight objects and pass varying external state at call time.",
+          "isCorrect": true,
+          "explanation": "This is a classic separation of intrinsic and extrinsic state: the factory caches shared immutable data while per-instance positional or contextual values are supplied at use time. The approach minimizes memory for many fine-grained objects by avoiding duplicated heavy state."
+        },
+        {
+          "id": "b",
+          "text": "Create single global instance and mutate its fields for each use to reduce memory and initialization overhead.",
+          "isCorrect": false,
+          "explanation": "Mutating a single global instance is object reuse but introduces shared mutable state and concurrency hazards; that is not what the example shows, which uses cached immutable objects rather than a single mutable global."
+        },
+        {
+          "id": "c",
+          "text": "Pool large objects and reuse instances by resetting internal mutable state between uses for performance management.",
+          "isCorrect": false,
+          "explanation": "An object pool reuses mutable instances by resetting them between uses, which requires careful lifecycle management. The snippet uses cached immutable intrinsic objects plus per-call extrinsic data, not a mutable pool strategy."
+        },
+        {
+          "id": "d",
+          "text": "Serialize object prototypes and clone them on demand to avoid repetitive construction and heavy allocation work.",
+          "isCorrect": false,
+          "explanation": "Cloning prototypes reduces construction overhead but still duplicates state across clones. The shown factory returns shared immutable instances to avoid duplication, which is different from cloning separate objects each time."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "The ColorFactory below returns shared Color objects. What is the most accurate diagnosis of this design choice?",
+      "codeSnippet": "class Color { constructor(public r:number, public g:number, public b:number) {} }\nclass ColorFactory {\n  private cache = new Map<string, Color>();\n  getColor(name: string) {\n    if (!this.cache.has(name)) this.cache.set(name, new Color(0,0,0));\n    return this.cache.get(name)!;\n  }\n}\n// Usage: many Pixels reuse Color instances from factory\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code implements object caching of shared immutable attributes to minimize memory used by many small objects.",
+          "isCorrect": true,
+          "explanation": "The factory caches and returns shared Color instances so many Pixels can reference the same immutable color data. That reduces per-object memory footprint. This aligns with the idea of sharing intrinsic state rather than duplicating value objects."
+        },
+        {
+          "id": "b",
+          "text": "This code implements a global singleton registry that centralizes state and risks hidden coupling and concurrency issues.",
+          "isCorrect": false,
+          "explanation": "A singleton registry is conceptually different because it centralizes mutable shared state and tends to create coupling. The factory here is a controlled cache of immutable values intended for sharing, not a general mutable singleton registry."
+        },
+        {
+          "id": "c",
+          "text": "This code is an instance pool that reuses mutable objects and requires careful resetting to avoid leaking prior state.",
+          "isCorrect": false,
+          "explanation": "An instance pool typically manages reusable, mutable instances that must be reset. The ColorFactory returns shared immutable Color objects, so there is no per-use resetting concern and it is not a pooling mechanism in that sense."
+        },
+        {
+          "id": "d",
+          "text": "This code is mere memoization of factory results and mainly optimizes creation time rather than conserving memory.",
+          "isCorrect": false,
+          "explanation": "Memoization can optimize creation time, but when the cached values are referenced by many objects, the primary benefit here is memory reduction through shared instances. The design intentionally reduces memory footprint, not just creation time."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better balances memory and correctness when thousands of similar UI icons are created and positioned?",
+      "codeSnippet": "// Version A\nclass IconA {\n  constructor(public imageData: Uint8Array, public x:number, public y:number) {}\n}\n// Version B\nclass IconIntrinsic { constructor(public imageData: Uint8Array) {} }\nclass IconFactory { private cache = new Map<string, IconIntrinsic>(); get(key:string){ if(!this.cache.has(key)) this.cache.set(key, new IconIntrinsic(new Uint8Array(0))); return this.cache.get(key)!; } }\nclass IconB { constructor(private intrinsic: IconIntrinsic, public x:number, public y:number) {}\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A duplicates identical heavy image data inside each object and creates unnecessary memory pressure and GC overhead at scale.",
+          "isCorrect": false,
+          "explanation": "Version A embeds the full image payload in every icon instance, which multiplies memory usage and increases garbage collection churn when many icons exist. Sharing immutable image data is preferable when identical content repeats across many instances. See GoF Flyweight discussion and memory-share tradeoffs."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes immutable heavy state in shared instances and passes varying data per call.",
+          "isCorrect": true,
+          "explanation": "Version B separates intrinsic image data into shared instances and keeps position as extrinsic per-object state. That choice minimizes memory while preserving correctness because mutable per-icon data remains external. This mirrors the shared-state technique described by Gamma et al. and discussed in refactorings about reducing object bloat."
+        }
+      ]
+    }
+  ]
+}

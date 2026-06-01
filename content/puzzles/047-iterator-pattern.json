@@ -1,0 +1,106 @@
+{
+  "id": 47,
+  "conceptName": "Iterator Pattern",
+  "category": "design-pattern",
+  "definition": "A design pattern that encapsulates traversal of a collection by providing an external object that iterates over elements without exposing the collection's internal structure.",
+  "ruleOfThumb": "Move traversal responsibilities into a dedicated object when you need multiple independent traversals or want to hide iteration details from clients.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Iterator",
+    "page": "pp. 257-263",
+    "externalUrl": "https://en.wikipedia.org/wiki/Iterator_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches the intent of the pattern exemplified in the code below?",
+      "codeSnippet": "class ItemCollection {\n  private items: string[] = [];\n  add(item: string) { this.items.push(item); }\n  createIterator() { return new ItemIterator(this.items); }\n}\n\nclass ItemIterator {\n  private index = 0;\n  constructor(private items: string[]) {}\n  hasNext() { return this.index < this.items.length; }\n  next() { return this.items[this.index++]; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A separate object that provides sequential access to collection elements without exposing internal representation.",
+          "isCorrect": true,
+          "explanation": "This code creates a distinct iterator object (ItemIterator) that handles traversal, keeping the collection's internals encapsulated. The collection delegates traversal to the iterator, allowing clients to walk elements without manipulating the underlying array directly. This separation is the core intent of the pattern the code demonstrates."
+        },
+        {
+          "id": "b",
+          "text": "A single class that mixes traversal methods into the collection itself causing tight coupling of concerns.",
+          "isCorrect": false,
+          "explanation": "This description fits designs where traversal methods are implemented on the collection class itself. That is not the case here because traversal is delegated to ItemIterator rather than implemented directly on ItemCollection."
+        },
+        {
+          "id": "c",
+          "text": "A family of related traversal implementations created to vary the traversal algorithm independently of collection type.",
+          "isCorrect": false,
+          "explanation": "This option describes a variant that emphasizes interchangeable traversal algorithms across collections. While you could implement that, the example shows a single iterator implementation, not a pluggable family of traversal strategies."
+        },
+        {
+          "id": "d",
+          "text": "An object that exposes elements via index access and requires callers to manage traversal position manually.",
+          "isCorrect": false,
+          "explanation": "This describes an API that hands raw indexed access to callers who must manage indexes themselves. The example hides indexes inside ItemIterator, so callers do not manage traversal state directly."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this repository API. What is the primary design problem with how traversal is implemented?",
+      "codeSnippet": "class OrderRepository {\n  private orders: Order[] = [];\n  private cursor = 0;\n\n  add(order: Order) { this.orders.push(order); }\n  nextOrder() { return this.orders[this.cursor++]; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The collection stores traversal state internally so it cannot support multiple independent traversals concurrently correctly.",
+          "isCorrect": true,
+          "explanation": "Keeping cursor state on the repository prevents having two clients iterate independently at the same time. A proper traversal object encapsulates position per traversal, avoiding shared mutable state and enabling reentrancy and safer concurrent use."
+        },
+        {
+          "id": "b",
+          "text": "The next method eagerly reads all items and returns a snapshot causing extra memory allocation for large collections.",
+          "isCorrect": false,
+          "explanation": "This concern would apply if nextOrder produced full snapshots or copied the collection. In this example nextOrder advances a cursor and returns a single element, so eager copying is not the problem."
+        },
+        {
+          "id": "c",
+          "text": "The collection exposes mutable internal array allowing external code to change structure and break traversal invariants unexpectedly.",
+          "isCorrect": false,
+          "explanation": "Exposing the internal array is a valid concern, but the snippet shows a private array and a cursor-based accessor. The direct issue here is the shared traversal cursor rather than external mutation of the array."
+        },
+        {
+          "id": "d",
+          "text": "The method mixes business logic and traversal responsibilities making reuse and testing of traversal mechanisms more difficult overall.",
+          "isCorrect": false,
+          "explanation": "Mixing responsibilities is a real smell, but the more specific problem is the single traversal cursor embedded on the repository. Separating traversal into its own abstraction would directly address both concerns."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better design for supporting multiple independent traversals and separation of concerns?",
+      "codeSnippet": "/* Version A */\nclass Customers {\n  constructor(private customers: Customer[]) {}\n  createTraversal() { return new CustomersTraversal(this.customers); }\n}\nclass CustomersTraversal {\n  private i = 0;\n  constructor(private list: Customer[]) {}\n  hasNext() { return this.i < this.list.length; }\n  next() { return this.list[this.i++]; }\n}\n\n/* Version B */\nclass CustomersV2 {\n  private index = 0;\n  constructor(private customers: Customer[]) {}\n  hasNext() { return this.index < this.customers.length; }\n  next() { return this.customers[this.index++]; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A separates traversal into independent traversal objects that do not share mutable state.",
+          "isCorrect": true,
+          "explanation": "Version A returns a new traversal object per client, so each traversal keeps its own position and lifecycle. This allows nested or concurrent traversals and better encapsulation of iteration logic. It also makes testing traversal behavior easier and avoids hidden, shared mutable cursor state on the collection object."
+        },
+        {
+          "id": "b",
+          "text": "Version B embeds traversal pointer in the collection preventing nested traversals and causing unpredictable concurrent behavior.",
+          "isCorrect": false,
+          "explanation": "Version B centralizes the cursor on the collection instance, which blocks multiple simultaneous traversals and introduces subtle bugs when consumers assume independent iteration. While simpler for single-use cases, it couples traversal state to the collection and reduces reusability and safety in concurrent or nested scenarios."
+        }
+      ]
+    }
+  ]
+}

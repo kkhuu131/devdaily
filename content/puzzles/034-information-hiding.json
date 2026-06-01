@@ -1,0 +1,106 @@
+{
+  "id": 34,
+  "conceptName": "Information Hiding",
+  "category": "solid",
+  "definition": "Design practice of keeping module internals private so other modules depend only on published abstractions, not on implementation details.",
+  "ruleOfThumb": "Export intent, not representation; hide storage and protocols behind a minimal, well named API.",
+  "citation": {
+    "author": "David L. Parnas",
+    "bookTitle": "On the Criteria to Be Used in Decomposing Systems into Modules",
+    "chapter": "Modularization and Encapsulation",
+    "page": null,
+    "externalUrl": "https://dl.acm.org/doi/10.1145/362.362068"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this TypeScript class used widely across the codebase. What is the most immediate design problem shown here?",
+      "codeSnippet": "// account.ts\nexport class Account {\n  public id: string;\n  public balance: number;\n  public overdraftLimit: number;\n  constructor(id: string, bal: number, limit: number) {\n    this.id = id;\n    this.balance = bal;\n    this.overdraftLimit = limit;\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class exposes multiple public properties representing internal state across its interface to external modules and services.",
+          "isCorrect": true,
+          "explanation": "The class exposes raw state via public fields so callers read and write internals directly. That exposure creates coupling and makes later changes to representation or invariants risky. Prefer methods that express intent or make internals private with controlled accessors."
+        },
+        {
+          "id": "b",
+          "text": "This class functions as a dumb data container by exposing raw fields without behaviors for validation and enforcement.",
+          "isCorrect": false,
+          "explanation": "Calling it a data container is a reasonable interpretation because it lacks encapsulated behavior. However the more precise immediate problem is the public exposure of internal state, which lets callers depend on representation rather than on behavior."
+        },
+        {
+          "id": "c",
+          "text": "This class leaks implementation choices by making storage details publicly accessible which complicates future refactor and replacement.",
+          "isCorrect": false,
+          "explanation": "This option highlights the future risk of leaking implementation. It is correct about the risk, but it frames the symptom at the refactor level rather than the direct smell of exposing internal state through public fields."
+        },
+        {
+          "id": "d",
+          "text": "This class tightly couples callers by requiring them to inspect and manipulate internal fields rather than using intent focused methods.",
+          "isCorrect": false,
+          "explanation": "Tight coupling with callers is a valid concern when fields are public. It is a plausible distractor because such coupling occurs, but the core observation remains the class exposing its internals directly rather than offering intent driven operations."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this repository module. What concern best describes the primary design issue it demonstrates?",
+      "codeSnippet": "// userRepo.ts\ntype User = { id: string; name: string };\nconst users: User[] = [];\nexport function addUser(u: User) {\n  users.push(u);\n}\nexport function findUser(id: string) {\n  return users.find(u => u.id === id);\n}\nexport function getAllUsers() {\n  return users;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This module exposes internal collection references directly causing external code to mutate repository state unpredictably and create subtle bugs.",
+          "isCorrect": false,
+          "explanation": "Returning the internal array reference allows callers to mutate repository state without the repository's knowledge. That unpredictability can cause subtle bugs, but this option emphasizes the symptom rather than the concise structural observation that getAllUsers returns the raw internal array."
+        },
+        {
+          "id": "b",
+          "text": "This module couples storage representation to its callers by returning the raw array instead of providing intent driven access methods.",
+          "isCorrect": false,
+          "explanation": "This is a plausible and specific concern: callers become dependent on the array representation. It correctly identifies coupling to representation, but the most direct description is that the function returns a direct reference to the internal array."
+        },
+        {
+          "id": "c",
+          "text": "This module returns a direct reference to its internal user array through the getAllUsers function.",
+          "isCorrect": true,
+          "explanation": "This is the most immediate, accurate observation: getAllUsers returns the internal array reference. That single fact explains the risks such as external mutation, representation coupling, and fragile refactoring. Fixes include returning a copy or providing controlled iterators."
+        },
+        {
+          "id": "d",
+          "text": "This module violates separation of concerns by mixing storage mechanics with domain logic inside the same file.",
+          "isCorrect": false,
+          "explanation": "Mixing storage and domain logic could be a real issue in some modules, but this snippet shows primarily the exposure of the internal array. The separation concern is a plausible distractor yet not the most focused diagnosis here."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two versions of a cache are shown. Which version is preferable for a large, evolving codebase and why?",
+      "codeSnippet": "// Version A\nexport const cache: Map<string, any> = new Map();\nexport function read(key: string) { return cache.get(key); }\nexport function write(key: string, value: any) { cache.set(key, value); }\n\n// Version B\nclass CacheStore {\n  private cache = new Map<string, any>();\n  read(key: string) { return this.cache.get(key); }\n  write(key: string, value: any) { this.cache.set(key, value); }\n}\nexport const globalCache = new CacheStore();\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A exports the Map directly and therefore spreads internal structure across modules hindering controlled evolution.",
+          "isCorrect": false,
+          "explanation": "Version A makes the Map directly visible and mutable to any importer, which couples callers to the representation and hampers controlled changes. For example, adding eviction policies or changing the storage type would require updating every dependent caller, increasing ripple effects."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates the cache behind a concise, private API with clearly named read and write methods.",
+          "isCorrect": true,
+          "explanation": "Version B wraps the Map and only exposes intent focused methods, keeping the representation private. That encapsulation reduces coupling and localizes future changes to the store implementation. This follows Parnas ideas about hiding decisions and Robert Martin recommendations about publishing intent, improving maintainability and refactor safety."
+        }
+      ]
+    }
+  ]
+}
