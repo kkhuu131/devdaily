@@ -1,0 +1,106 @@
+{
+  "id": 70,
+  "conceptName": "Null Object Pattern",
+  "category": "design-pattern",
+  "definition": "Provide an object with neutral behavior in place of null to simplify client code and avoid repeated presence checks.",
+  "ruleOfThumb": "Use a do nothing implementation when clients expect an object and you want to avoid conditional checks, but do not hide configuration errors.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Null Object",
+    "page": "233",
+    "externalUrl": "https://refactoring.guru/design-patterns/null-object"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this logger usage. Which observation best describes the design shown?",
+      "codeSnippet": "interface Logger { log(msg: string): void }\nclass NoOpLogger implements Logger { log(msg: string) { /* no op */ } }\nfunction doAction(logger?: Logger) {\n  const active = logger ?? new NoOpLogger();\n  active.log('start');\n  // ...\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This replaces conditional caller checks with a do nothing implementation that avoids scattered null checks.",
+          "isCorrect": true,
+          "explanation": "The code provides a do nothing implementation to eliminate repeated presence checks. This is the classic approach of supplying an inert object that implements the same interface so callers can always invoke methods without guarding for null. It reduces branching at call sites but introduces an additional type to maintain."
+        },
+        {
+          "id": "b",
+          "text": "This masks configuration errors by providing a silent implementation that may hide missing real implementations at runtime.",
+          "isCorrect": false,
+          "explanation": "A frequent concern is that a silent fallback will hide a misconfigured dependency. If the system expects a functional logger but receives the inert one, problems may go unnoticed until a later failure or a test reveals missing behavior. Logging or alerts on fallback construction can mitigate this risk."
+        },
+        {
+          "id": "c",
+          "text": "This forces callers to rely on behavior rather than presence checks which may obscure explicit failure signals in flow.",
+          "isCorrect": false,
+          "explanation": "Replacing presence checks with behavior can reduce explicit failure visibility. Callers no longer see an obvious null and may miss the difference between successful behavior and inert behavior, which can make troubleshooting semantic failures harder unless the fallback is clearly documented or monitored."
+        },
+        {
+          "id": "d",
+          "text": "This creates an extra type to maintain which increases surface area and may complicate dependency injection configuration.",
+          "isCorrect": false,
+          "explanation": "Introducing a dedicated inert implementation adds to the type surface area and the DI configuration. Teams must decide whether to supply the inert instance from composition root or allow callers to construct it, balancing simplicity against central management and testability concerns."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A payment platform returns a default processor when none is registered. Which is the primary design concern here?",
+      "codeSnippet": "interface PaymentProcessor { process(amount: number): boolean }\nclass NullProcessor implements PaymentProcessor { process() { return false } }\nconst processors: Record<string, PaymentProcessor|undefined> = {}\nfunction getProcessor(type: string) {\n  return processors[type] ?? new NullProcessor();\n}\nfunction bill(type: string, amount: number) {\n  const p = getProcessor(type);\n  p.process(amount);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This default implementation hides configuration errors and prevents immediate failure detection during integration and deployment testing cycles.",
+          "isCorrect": true,
+          "explanation": "Supplying a silent default can prevent the system from failing fast when a processor is missing, allowing deployments to proceed with missing wiring unnoticed. The trade off is reduced guarding code at call sites in exchange for potentially delayed discovery of misconfiguration. Consider explicit logging, metrics, or failing fast in environments where wiring errors are critical."
+        },
+        {
+          "id": "b",
+          "text": "This introduces hidden behavior that can make debugging harder because callers assume side effects without explicit failure reporting.",
+          "isCorrect": false,
+          "explanation": "A legitimate worry is that callers will assume work happened when the default does nothing, which complicates debugging. However this is a symptom of the same core issue as configuration hiding. Instrumentation and tests can reduce the risk if a default implementation is necessary for graceful degradation."
+        },
+        {
+          "id": "c",
+          "text": "This increases object allocations and test doubles complexity because every flow needs a lightweight default implementation to exist.",
+          "isCorrect": false,
+          "explanation": "Per-instance defaults can add allocations and make unit tests need more doubles, but this is mainly a performance and test ergonomics concern. It is solvable by using a shared singleton default or a factory, and it is usually less important than the semantic issue of hide versus surface configuration problems."
+        },
+        {
+          "id": "d",
+          "text": "This can violate expected contracts when callers rely on explicit errors instead of benign returns from the provided default object.",
+          "isCorrect": false,
+          "explanation": "If callers expect an exception or explicit error on missing processors, a benign default return value can change program semantics. That contract mismatch is important and should be addressed either by documenting the fallback behavior or by choosing an alternative strategy that matches the required failure semantics."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two design variants for providing a notifier to services. Which version better preserves wiring visibility and testability?",
+      "codeSnippet": "// Version A\ninterface Notifier { notify(payload: any): void }\nclass NoOpNotifier implements Notifier { notify() {} }\nclass EmailServiceA {\n  constructor(private notifier?: Notifier) {\n    this.notifier = notifier ?? new NoOpNotifier();\n  }\n  send(payload: any) { this.notifier.notify(payload); }\n}\n\n// Version B\nclass EmailServiceB {\n  constructor(private notifier: Notifier) {}\n  send(payload: any) { this.notifier.notify(payload); }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A embeds a fallback by creating a new no op instance in constructor which can hide wiring mistakes.",
+          "isCorrect": false,
+          "explanation": "Version A constructs a fallback internally which prevents the application from failing when a dependency is not wired. That behavior can obscure configuration bugs and makes it harder to detect missing or incorrect bindings. It also scatters knowledge of the fallback and reduces control from the composition root, harming observability and central management."
+        },
+        {
+          "id": "b",
+          "text": "Version B surfaces wiring problems by requiring the dependency to be supplied and keeps behavior explicit and testable.",
+          "isCorrect": true,
+          "explanation": "Version B forces the composition root or caller to provide an implementation, which makes wiring mistakes fail early and be observable. This improves testability because tests can inject spies or controlled doubles, and it centralizes responsibility for defaulting behavior. When a benign fallback is needed, prefer supplying a shared inert instance from the composition root rather than hiding it inside service constructors. This aligns with dependency injection and the principle of explicit dependencies."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 57,
+  "conceptName": "Principle of Least Astonishment",
+  "category": "principle",
+  "definition": "Design so that components behave in a way users or developers reasonably expect, minimizing surprising side effects and ambiguous APIs.",
+  "ruleOfThumb": "Prefer clear, explicit behavior over clever or implicit shortcuts that could surprise callers.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Principles",
+    "page": "xx",
+    "externalUrl": "https://martinfowler.com/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the snippet. What is the most surprising behavior a caller will encounter?",
+      "codeSnippet": "const prices = [10, 2, 30];\nfunction sortPrices(prices: number[]) {\n  prices.sort((a, b) => a - b);\n  return prices;\n}\nconst sorted = sortPrices(prices);\n// caller's prices is now mutated",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function mutates and returns the caller's array instead of producing a new independent array.",
+          "isCorrect": true,
+          "explanation": "Array.prototype.sort mutates the array in place. Callers often expect utilities named like sortPrices to return a new sorted copy if they pass in their own array. The surprising mutation can cause bugs when other code relies on the original order. A safe fix is to clone before sorting or document mutation explicitly."
+        },
+        {
+          "id": "b",
+          "text": "This function relies on Array.prototype.sort default behavior and produces incorrect numeric ordering for numeric prices.",
+          "isCorrect": false,
+          "explanation": "This is a plausible concern because Array.prototype.sort without a comparator will coerce to strings. In this snippet a numeric comparator is provided, so numeric ordering is handled correctly. The real surprise is the in-place mutation, not incorrect ordering."
+        },
+        {
+          "id": "c",
+          "text": "This function exposes the caller's internal array reference which breaks encapsulation and allows external mutations.",
+          "isCorrect": false,
+          "explanation": "Breaking encapsulation is a real issue and closely related to the real surprise here. However the most precise observation is that the function mutates the passed-in array. Exposing the reference is a mechanism by which mutation happens, but the direct problem for callers is unexpected state change."
+        },
+        {
+          "id": "d",
+          "text": "This function has no explicit documentation indicating its mutation behavior, creating an ambiguous API contract for callers.",
+          "isCorrect": false,
+          "explanation": "Lack of documentation is a legitimate concern and makes the surprise worse. Still, the concrete surprising behavior is the in-place mutation. Improving documentation helps but the safer change is to avoid mutating the caller's array or to make mutation explicit in the API design."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which design problem is the clearest violation of expected behavior in this service method?",
+      "codeSnippet": "class OrderService {\n  save(order: Order): void {\n    repository.save(order);\n    email.sendConfirmation(order);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The save method performs both synchronous persistence and immediate notification causing possible blocking in request processing.",
+          "isCorrect": false,
+          "explanation": "Immediate notification inside a hot path can cause latency problems, which is a valid operational concern. The stronger design issue with least astonishment is mixing responsibilities so that persistence unexpectedly triggers external side effects. Offloading notifications or separating concerns reduces surprising behavior for callers."
+        },
+        {
+          "id": "b",
+          "text": "The save method returns void which prevents callers from observing success or handling persistence errors appropriately after invocation.",
+          "isCorrect": false,
+          "explanation": "Not returning a result can hinder error handling and observability, but the more surprising design problem is that saving also sends email. Callers invoking save may not expect outbound communication, which hides important side effects regardless of the return type."
+        },
+        {
+          "id": "c",
+          "text": "The save method mixes persistence and external notification responsibilities creating a surprising implicit side effect in a single operation.",
+          "isCorrect": true,
+          "explanation": "Mixing responsibilities violates single responsibility and leads to surprising side effects: callers that think they are only persisting data now indirectly trigger external systems. To reduce astonishment, separate persistence from notification or make side effects explicit in the API."
+        },
+        {
+          "id": "d",
+          "text": "The save method depends on global mutable state which makes unit testing difficult and introduces hidden ordering dependencies.",
+          "isCorrect": false,
+          "explanation": "Global mutable state is a legitimate design flaw impacting testability and ordering. In this snippet the surprising behavior emphasized by least astonishment is the implicit external notification. Addressing testability is valuable but does not directly target the surprising side effect of mixing notification with save."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better avoids surprising callers when a user has no stored preferences?",
+      "codeSnippet": "// Version A\nfunction getPreferences(userId: string): Preferences | null {\n  const prefs = store.lookup(userId);\n  return prefs || null;\n}\n\n// Version B\ntype PrefResult = { found: true; prefs: Preferences } | { found: false };\nfunction getPreferencesV2(userId: string): PrefResult {\n  const prefs = store.lookup(userId);\n  return prefs ? { found: true, prefs } : { found: false };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A returns null for missing preferences which conflates absent and empty values and hides intent.",
+          "isCorrect": false,
+          "explanation": "Returning null is a common pattern but it conflates multiple states: missing, intentionally empty, or default values. Callers must check for null and still cannot distinguish absence from an empty preference object. That ambiguity leads to subtle bugs and surprising behavior when consumers make assumptions about presence."
+        },
+        {
+          "id": "b",
+          "text": "Version B returns a discriminated union explicitly indicating presence or absence of preferences.",
+          "isCorrect": true,
+          "explanation": "Version B makes the outcome explicit via a discriminated union so callers cannot be surprised about whether preferences exist. This design avoids ambiguous return values and forces handling of both cases. Clear, explicit return shapes reduce astonishment and simplify downstream logic. See Clean Code and Fowler on making contracts explicit for predictable APIs."
+        }
+      ]
+    }
+  ]
+}

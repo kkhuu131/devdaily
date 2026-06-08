@@ -1,0 +1,105 @@
+{
+  "id": 67,
+  "conceptName": "DRY Principle",
+  "category": "principle",
+  "definition": "A design guideline advising that every piece of knowledge or logic in a system should have a single authoritative representation to avoid duplication and the problems that follow when changes must be applied in multiple places.",
+  "ruleOfThumb": "If you find the same logic, string, or structure repeated, extract a single source of truth and reuse it.",
+  "citation": {
+    "author": "Andrew Hunt and David Thomas",
+    "bookTitle": "The Pragmatic Programmer",
+    "chapter": "Avoiding Duplication and Orthogonality",
+    "page": "p. 45",
+    "externalUrl": "https://pragprog.com/titles/tpp20/the-pragmatic-programmer-20th-anniversary-edition/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best describes the primary issue in a codebase where identical business logic appears in several modules?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "The same critical business logic is duplicated across multiple modules with no single shared implementation for maintenance.",
+          "isCorrect": true,
+          "explanation": "This is the classic symptom: the same logic appears in multiple places with no canonical implementation, causing higher maintenance cost and inconsistent bug fixes. DRY encourages creating one authoritative implementation to avoid divergence. See The Pragmatic Programmer on duplication and Fowler on \"Don't Repeat Yourself\" consequences."
+        },
+        {
+          "id": "b",
+          "text": "The functions expose too many implementation details and create coupling preventing straightforward testing and isolated unit tests.",
+          "isCorrect": false,
+          "explanation": "This is a plausible concern but it names coupling and testability rather than duplicated knowledge. While excessive detail exposure can be a problem, the core issue in the scenario is not coupling but repeated logic without a shared source. Refactoring toward a single implementation often reduces coupling incidentally."
+        },
+        {
+          "id": "c",
+          "text": "The code performs excessive object allocations in tight loops that will likely cause memory pressure under load.",
+          "isCorrect": false,
+          "explanation": "High allocation and memory pressure are real performance issues, but they are a different class of problem from duplicated business logic. Duplicated code can be refactored to reduce allocations, yet the immediate symptom described is repetition rather than allocation overhead."
+        },
+        {
+          "id": "d",
+          "text": "The module mixes business rules and formatting logic which will complicate future changes and result in brittle code.",
+          "isCorrect": false,
+          "explanation": "Mixing responsibilities is an important design smell, but this option points to separation of concerns rather than repeated knowledge. Repetition can exist even when responsibilities are separated; the correct diagnosis for identical logic in many places is missing a single source of truth."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the code below, which description most accurately identifies the maintainability concern?",
+      "codeSnippet": "function sendCustomerInvoice(customer: Customer, items: Item[]) {\n  const lines = [\n    'Invoice',\n    'Customer: ' + customer.name,\n    ...items.map(i => `${i.name}: ${i.price}`)\n  ]\n  const body = formatLines(lines)\n  sendEmail(customer.email, body)\n}\n\nfunction sendAdminInvoice(adminEmail: string, customer: Customer, items: Item[]) {\n  const lines = [\n    'Invoice',\n    'Customer: ' + customer.name,\n    ...items.map(i => `${i.name}: ${i.price}`)\n  ]\n  const body = formatLines(lines)\n  sendEmail(adminEmail, body)\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The invoice formatting logic is duplicated between customer and admin flows with no shared helper.",
+          "isCorrect": true,
+          "explanation": "Both functions build the same lines array and call formatLines independently. The duplication of the formatting logic is the maintainability concern because any change requires edits in both places. Extracting a single formatter reduces risk of divergence and simplifies testing."
+        },
+        {
+          "id": "b",
+          "text": "The duplication is acceptable because the two recipients require slightly different line ordering and minor contextual annotations.",
+          "isCorrect": false,
+          "explanation": "This is a plausible justification but the snippet shows identical line construction for both flows. If differences existed, separate implementations might be warranted, but as shown the duplication is needless and should be consolidated to one implementation."
+        },
+        {
+          "id": "c",
+          "text": "The code should instead inline formatting into the email service to centralize all presentation responsibilities there.",
+          "isCorrect": false,
+          "explanation": "Centralizing presentation in a single email service is a valid alternative, but inlining formatting into the email service can mix concerns and reduce reusability. A focused shared formatter keeps presentation separate from delivery, which is often preferable."
+        },
+        {
+          "id": "d",
+          "text": "The duplication increases cognitive load but is not the primary problem compared to missing tests for the formatting behavior.",
+          "isCorrect": false,
+          "explanation": "Missing tests are a real issue, and tests would help catch regressions, but duplication itself is the root structural problem here. Extracting shared logic makes it easier to test one implementation and therefore addresses both duplication and test coverage."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for maintainable, testable invoice formatting and why?",
+      "codeSnippet": "// Version A\nfunction formatInvoice(customer: Customer, items: Item[]) {\n  return [\n    'Invoice',\n    'Customer: ' + customer.name,\n    ...items.map(i => `${i.name}: ${i.price}`)\n  ].join('\\n')\n}\n\nfunction sendCustomerInvoice(customer: Customer, items: Item[]) {\n  sendEmail(customer.email, formatInvoice(customer, items))\n}\n\nfunction sendAdminInvoice(adminEmail: string, customer: Customer, items: Item[]) {\n  sendEmail(adminEmail, formatInvoice(customer, items))\n}\n\n// Version B\nclass BaseEmailSender {\n  protected buildLines(customer: Customer, items: Item[]) {\n    return [\n      'Invoice',\n      'Customer: ' + customer.name,\n      ...items.map(i => `${i.name}: ${i.price}`)\n    ]\n  }\n}\n\nclass CustomerSender extends BaseEmailSender {\n  send(customer: Customer, items: Item[]) {\n    sendEmail(customer.email, this.buildLines(customer, items).join('\\n'))\n  }\n}\n\nclass AdminSender extends BaseEmailSender {\n  send(adminEmail: string, customer: Customer, items: Item[]) {\n    sendEmail(adminEmail, this.buildLines(customer, items).join('\\n'))\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes formatting into a single pure helper function used by both senders.",
+          "isCorrect": true,
+          "explanation": "Version A extracts the formatting into an explicit pure function which becomes the single source of truth for presentation. This favors composition over inheritance, keeps formatting testable in isolation, and avoids the fragile coupling and hidden dependency surface that inheritance can introduce. Fowler and the Pragmatic Programmer both recommend extracting shared behavior into clear, testable abstractions rather than hiding it behind class hierarchies."
+        },
+        {
+          "id": "b",
+          "text": "Version B shares formatting via a base class which couples formatting to inheritance and increases structural fragility.",
+          "isCorrect": false,
+          "explanation": "Version B uses inheritance to share behavior which ties formatting to the class hierarchy. That creates a hidden coupling where subclasses depend on protected behavior and changes ripple through inheritance. Inheritance for code reuse often leads to brittle designs compared to explicit composition or a shared utility. See \"Refactoring\" patterns and SOLID discussions on favoring composition over inheritance."
+        }
+      ]
+    }
+  ]
+}

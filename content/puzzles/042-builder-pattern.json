@@ -1,0 +1,106 @@
+{
+  "id": 42,
+  "conceptName": "Builder Pattern",
+  "category": "design-pattern",
+  "definition": "Separates the construction of a complex object from its representation so the same construction process can create different representations.",
+  "ruleOfThumb": "Use when an object requires complex assembly or many optional parameters and you want to enforce construction order and immutability.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Builder",
+    "page": null,
+    "externalUrl": "https://en.wikipedia.org/wiki/Builder_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches the intent of the following TypeScript snippet?",
+      "codeSnippet": "class Report {\n  constructor(private title?: string, private footer?: string) {}\n}\nclass ReportBuilder {\n  private title?: string;\n  private footer?: string;\n  setTitle(t: string) { this.title = t; return this; }\n  setFooter(f: string) { this.footer = f; return this; }\n  build() { return new Report(this.title, this.footer); }\n}\nconst r = new ReportBuilder().setTitle(\"Q1\").setFooter(\"end\").build();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code creates a separate construction helper with fluent setters and a final build method for instantiation.",
+          "isCorrect": true,
+          "explanation": "This is the canonical case where construction is delegated to a separate helper offering fluent configuration and a build step. That helper enforces construction sequencing and can return immutable products. In design pattern terms this is the Builder approach described by Gamma et al., useful when many optional parts need composing."
+        },
+        {
+          "id": "b",
+          "text": "This code is simply a factory that returns preconfigured instances without supporting incremental configuration or method chaining.",
+          "isCorrect": false,
+          "explanation": "A factory hides creation but typically exposes single creation methods rather than fluent incremental setters. The snippet shows stepwise configuration via setters and a build call, which differs from a straightforward factory which would usually take all parameters at once."
+        },
+        {
+          "id": "c",
+          "text": "This code represents the telescoping constructor anti pattern using many overloaded constructors for optional parameters and permutations.",
+          "isCorrect": false,
+          "explanation": "The telescoping constructor pattern uses multiple overloaded constructors to handle optional parameters, leading to many signatures. The snippet, however, avoids that by using fluent setters and a build method to compose optional parts, addressing the telescoping problem instead of causing it."
+        },
+        {
+          "id": "d",
+          "text": "This code implements an abstract factory that chooses concrete families based on runtime parameters and hides creation details.",
+          "isCorrect": false,
+          "explanation": "Abstract Factory provides families of related products and encapsulates their creation. The snippet focuses on configuring a single product via a fluent configurator and a build step rather than selecting among product families, so Abstract Factory is not the best match."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given an object that exposes many setters and is mutated before use, what is the primary drawback compared to using a separate construction helper?",
+      "codeSnippet": "class Config {\n  optionA?: string;\n  optionB?: number;\n  setOptionA(a: string) { this.optionA = a; return this; }\n  setOptionB(b: number) { this.optionB = b; return this; }\n}\nconst c = new Config();\nc.setOptionA('x');\nc.setOptionB(5);\n// pass c around and use later",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This approach allows mutation leading to partially initialized objects and makes enforcing construction invariants difficult at compile time.",
+          "isCorrect": true,
+          "explanation": "Mutable setters on the object itself allow it to be observed in intermediate, invalid states and make it hard to guarantee required fields are set. A separate builder can validate and produce a fully initialized immutable instance, improving correctness and reducing temporal coupling."
+        },
+        {
+          "id": "b",
+          "text": "This approach primarily causes excessive object creation and performance overhead because each setter returns a new immutable copy unnecessarily.",
+          "isCorrect": false,
+          "explanation": "Returning new immutable copies per setter can produce overhead, but the shown example mutates in place and does not create copies. The main concern with in-place setters is unsafe partial state rather than copy-related performance in this example."
+        },
+        {
+          "id": "c",
+          "text": "This approach mostly complicates dependency injection as setter mutation prevents simple constructor injection and makes wiring less declarative.",
+          "isCorrect": false,
+          "explanation": "Setter-based mutation can complicate DI because constructor injection gives clearer dependencies, but the central problem is the object's transient invalid state and hidden construction order. A builder can make dependencies explicit and enforce required data earlier."
+        },
+        {
+          "id": "d",
+          "text": "This approach generally increases API surface area and breaks encapsulation because internal state is exposed through many setters.",
+          "isCorrect": false,
+          "explanation": "Many setters do enlarge the API and can expose internals, but that is a secondary issue. The more direct risk is allowing observers or consumers to see and interact with the object before it is fully formed, causing logic and validation problems."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is a better design when you need to ensure a fully formed immutable product and keep construction logic encapsulated?",
+      "codeSnippet": "// Version A\nclass Email {\n  constructor(public readonly to: string, public readonly subject?: string) {}\n}\nclass EmailBuilder {\n  private to = \"\";\n  private subject?: string;\n  setTo(t: string) { this.to = t; return this; }\n  setSubject(s: string) { this.subject = s; return this; }\n  build() { return new Email(this.to, this.subject); }\n}\n\n// Version B\nclass MutableEmail {\n  to = \"\";\n  subject?: string;\n  setTo(t: string) { this.to = t; return this; }\n  setSubject(s: string) { this.subject = s; return this; }\n}\nconst e = new MutableEmail();\ne.setTo(\"a@b.com\");\ne.setSubject(\"hi\");",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates construction into a separate fluent helper and returns a fully formed immutable instance.",
+          "isCorrect": true,
+          "explanation": "Version A encapsulates assembly in a separate helper and produces an immutable product, preventing partially built objects from escaping and centralizing validation. This supports safer APIs and clearer invariants, which is why the Builder approach is preferred in these situations (see Gamma et al.)."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps configuration methods on the product so clients can incrementally mutate and reuse a single instance.",
+          "isCorrect": false,
+          "explanation": "Keeping setters on the product promotes reuse but allows clients to observe and use partially constructed instances and scatters validation across callers. That leads to temporal coupling and harder to maintain invariants. The separate construction helper avoids these pitfalls by validating before exposing the final object."
+        }
+      ]
+    }
+  ]
+}

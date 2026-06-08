@@ -1,0 +1,106 @@
+{
+  "id": 54,
+  "conceptName": "Iterator Pattern",
+  "category": "design-pattern",
+  "definition": "Encapsulates traversal of a collection by providing a separate object that exposes a uniform interface for stepping through elements.",
+  "ruleOfThumb": "Use when you need multiple independent traversals or to hide collection internals while providing a standard traversal API.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Iterator",
+    "page": "257",
+    "externalUrl": "https://refactoring.guru/design-patterns/iterator"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best describes the structural intent of the following TypeScript code?",
+      "codeSnippet": "class Menu {\n  private items: string[] = [];\n  add(item: string) { this.items.push(item); }\n  createIterator() { return new MenuIterator(this.items); }\n}\n\nclass MenuIterator {\n  private index = 0;\n  constructor(private items: string[]) {}\n  hasNext() { return this.index < this.items.length; }\n  next() { return this.items[this.index++]; }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It separates traversal responsibility into a distinct object that exposes hasNext and next methods over the collection.",
+          "isCorrect": true,
+          "explanation": "This code moves traversal concerns out of the collection and into a dedicated iterator object. That separation lets traversal algorithms vary independently of the collection implementation and allows multiple iterator instances to exist for the same collection without sharing traversal state."
+        },
+        {
+          "id": "b",
+          "text": "It tightly couples iteration logic into the collection class and prevents reuse of traversal logic across different collection types.",
+          "isCorrect": false,
+          "explanation": "This is a plausible misreading but incorrect here: traversal is not inside Menu itself, it is handled by MenuIterator. The pattern intentionally avoids coupling the traversal logic to the collection class so it can be reused across different collections."
+        },
+        {
+          "id": "c",
+          "text": "It uses an internal index with direct array access which will break if the collection changes during concurrent modification.",
+          "isCorrect": false,
+          "explanation": "While concurrent modification is a real concern, this snippet demonstrates a separate iterator object holding its own index. The issue described applies when traversal state is shared or when the iterator does not defensively handle modifications, which is a secondary concern here."
+        },
+        {
+          "id": "d",
+          "text": "It relies on exposing internal array references from the class which could allow external code to mutate internal state unexpectedly.",
+          "isCorrect": false,
+          "explanation": "The code passes the internal array reference into the iterator constructor, which can be a risk, but the core structural intent shown is separation of traversal responsibility, not unsafe exposure. Defensive copying or read-only views are orthogonal implementation choices."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this collection implementation, what is the primary design limitation introduced by keeping traversal logic as shown?",
+      "codeSnippet": "class NumberCollection {\n  private numbers: number[] = [];\n  add(n: number) { this.numbers.push(n); }\n  // Traversal state is stored on the collection itself\n  private cursor = 0;\n  hasNext() { return this.cursor < this.numbers.length; }\n  next() { return this.numbers[this.cursor++]; }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This design keeps traversal state inside the collection object which prevents creating multiple independent iterators simultaneously.",
+          "isCorrect": true,
+          "explanation": "Embedding the cursor in the collection couples traversal state to the collection instance. That prevents more than one independent traversal at a time because each traversal would overwrite the single cursor. The recommended alternative is to move traversal state into separate iterator objects."
+        },
+        {
+          "id": "b",
+          "text": "This design intentionally hides collection internals to provide immutable snapshots for safe concurrent access across threads.",
+          "isCorrect": false,
+          "explanation": "Hiding internals and providing immutable snapshots is a different technique often used for thread safety. The shown code actually keeps mutable traversal state on the collection rather than producing immutable snapshots, so this concern does not match the snippet."
+        },
+        {
+          "id": "c",
+          "text": "This design optimizes for minimal memory by streaming items directly from storage without keeping traversal state in memory.",
+          "isCorrect": false,
+          "explanation": "Streaming to minimize memory usage typically avoids storing traversal state in memory. Here the snippet explicitly stores a cursor on the collection, which contradicts the streaming claim. The real issue is shared traversal state rather than memory optimization."
+        },
+        {
+          "id": "d",
+          "text": "This design focuses on exposing internal arrays for performance allowing direct indexing by external callers to avoid overhead.",
+          "isCorrect": false,
+          "explanation": "Exposing internal arrays for performance is a separate tradeoff. The snippet does not expose the array to callers; it only exposes iteration methods that rely on an internal cursor. The primary limitation is the single shared cursor, not direct external indexing."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation would you choose for a public collection API that must support multiple concurrent traversals and strong encapsulation?",
+      "codeSnippet": "// Version A: iterator objects returned by the collection\nclass ListA {\n  private items: number[] = [];\n  add(i: number) { this.items.push(i); }\n  iterator() { return new ListAIterator(this.items); }\n}\nclass ListAIterator {\n  private index = 0;\n  constructor(private items: number[]) {}\n  hasNext() { return this.index < this.items.length; }\n  next() { return this.items[this.index++]; }\n}\n\n// Version B: traversal state stored on the collection instance\nclass ListB {\n  private items: number[] = [];\n  private cursor = 0;\n  add(i: number) { this.items.push(i); }\n  hasNext() { return this.cursor < this.items.length; }\n  next() { return this.items[this.cursor++]; }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A provides separate iterator objects that allow multiple independent traversals without sharing traversal state.",
+          "isCorrect": true,
+          "explanation": "Version A encapsulates traversal state inside iterator instances, so multiple callers can obtain iterators and traverse concurrently without interfering with each other. This approach preserves encapsulation of the collection and avoids coupling traversal state to the collection itself, which is important for public APIs and concurrent usage."
+        },
+        {
+          "id": "b",
+          "text": "Version B stores traversal index inside the collection which prevents independent traversals and couples traversal state to the collection.",
+          "isCorrect": false,
+          "explanation": "Version B embeds a single cursor on the collection, so any concurrent traversal attempts will collide by mutating the same cursor. That design couples traversal lifecycle to the collection instance and makes it hard to support reentrancy, nested loops, or concurrent consumers. In library design you typically want iterator instances to own traversal state to avoid these structural limitations."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 59,
+  "conceptName": "Mediator Pattern",
+  "category": "design-pattern",
+  "definition": "Introduce an intermediary object that encapsulates how a set of objects interact so that objects do not refer to each other directly.",
+  "ruleOfThumb": "When many objects interact in complex ways and coupling makes changes expensive, centralize interaction logic in a coordination object.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Mediator",
+    "page": "185-195",
+    "externalUrl": "https://refactoring.guru/design-patterns/mediator"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What best describes the communication structure in this code snippet?",
+      "codeSnippet": "class ChatRoom {\n  private participants: { [name: string]: Participant } = {};\n  register(p: Participant) { this.participants[p.name] = p; p.room = this; }\n  send(sender: string, message: string) {\n    Object.values(this.participants).forEach(p => { if (p.name !== sender) p.receive(message); });\n  }\n}\n\nclass Participant {\n  constructor(public name: string, public room?: ChatRoom) {}\n  send(message: string) { this.room?.send(this.name, message); }\n  receive(message: string) { console.log(this.name, message); }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code shows components interacting indirectly through a single coordinating object centralizing messaging logic.",
+          "isCorrect": true,
+          "explanation": "Correct. The ChatRoom acts as a central coordinator that routes messages between Participant instances, decoupling peers. This centralization is precisely the case where an intermediary object handles interaction logic so participants only know the coordinator, not each other."
+        },
+        {
+          "id": "b",
+          "text": "This code shows components directly invoking each others methods which causes tight coupling and brittle dependencies.",
+          "isCorrect": false,
+          "explanation": "Incorrect. While direct invocation would cause tight coupling, the snippet shows participants calling a ChatRoom send method instead of directly invoking peer methods. The coupling is between participants and the room, not between peers directly."
+        },
+        {
+          "id": "c",
+          "text": "This code shows a simple event bus where senders publish messages and subscribers react with loose runtime coupling.",
+          "isCorrect": false,
+          "explanation": "Incorrect. An event bus typically has anonymous publish/subscribe semantics and many subscribers unaware of sender intent. The snippet has an explicit registry of participants and explicit routing via a ChatRoom instance rather than anonymous event topics."
+        },
+        {
+          "id": "d",
+          "text": "This code shows a factory creating components and wiring dependencies at startup instead of runtime coordination between instances.",
+          "isCorrect": false,
+          "explanation": "Incorrect. A factory pattern would focus on construction and wiring; here the important behavior is runtime message routing through a single object. The ChatRoom mediates interactions, not construction."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this hub implementation, what is the most significant design concern a maintainer should watch for?",
+      "codeSnippet": "class Hub {\n  private clients: Record<string, Function[]> = {};\n  register(type: string, handler: Function) { this.clients[type] = this.clients[type] || []; this.clients[type].push(handler); }\n  send(msg: { type: string; payload: any }) {\n    if (msg.type === 'A') this.clients['A']?.forEach(h => h(msg.payload));\n    else if (msg.type === 'B') this.clients['B']?.forEach(h => h(msg.payload));\n    else if (msg.type === 'C') this.clients['C']?.forEach(h => h(msg.payload));\n    else this.clients['default']?.forEach(h => h(msg.payload));\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This situation suggests the hub is becoming a god object by accumulating routing and policy logic that should be delegated.",
+          "isCorrect": true,
+          "explanation": "Correct. The send method holds multiple conditionals and routing decisions, which indicates the hub is collecting responsibilities beyond simple message dispatch. Over time this leads to a god object that is hard to change and test."
+        },
+        {
+          "id": "b",
+          "text": "This situation suggests components still depend on hub internals and thus are tightly coupled to hub implementation details.",
+          "isCorrect": false,
+          "explanation": "Plausible but not the primary concern. While components depend on the hub, the main maintenance risk in this snippet is the hub itself growing complex. Tight coupling to hub internals is secondary and can be addressed by a clearer hub interface."
+        },
+        {
+          "id": "c",
+          "text": "This situation suggests performance problems from broadcasting to many recipients without filters or backpressure under high throughput.",
+          "isCorrect": false,
+          "explanation": "Plausible operational concern. However the code shows routing logic by message type, not explicit performance controls. Performance issues could arise later, but the primary design smell visible here is centralized complexity rather than immediate throughput problems."
+        },
+        {
+          "id": "d",
+          "text": "This situation suggests insufficient testability because routing conditions live in single method making unit testing complex and brittle.",
+          "isCorrect": false,
+          "explanation": "Plausible as well. The single send method mixes many routes which makes isolated unit tests harder. That is a symptom of the god object concern, but not the root design critique which is accumulation of responsibilities."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better isolates coordination and reduces coupling between services?",
+      "codeSnippet": "// Version A\nclass OrderService {\n  constructor(private shippingService: ShippingService) {}\n  paymentReceived(payment: any) { this.shippingService.ship(payment.order); }\n}\n\n// Version B\nclass Coordinator {\n  constructor(private shippingService: ShippingService) {}\n  notifyPayment(payment: any) { this.shippingService.ship(payment.order); }\n}\nclass OrderServiceV2 {\n  constructor(private coordinator: Coordinator) {}\n  paymentReceived(payment: any) { this.coordinator.notifyPayment(payment); }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A scatters coordination across participants causing duplicated routing logic and making future changes error prone.",
+          "isCorrect": false,
+          "explanation": "Incorrect choice. Version A has OrderService talking directly to ShippingService which couples services. This scatters coordination and duplicates logic when more interactions are added, increasing risk when requirements change."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes interactions in a coordinator reducing peer coupling and making change impact easier to reason about.",
+          "isCorrect": true,
+          "explanation": "Correct choice. Version B encapsulates the interaction in a dedicated coordinator object so services only depend on the coordinator interface. That localizes routing and policy changes and simplifies testing and maintenance. This aligns with the intent described in classic pattern literature where an intermediary object centralizes complex interaction logic to reduce coupling between colleagues."
+        }
+      ]
+    }
+  ]
+}

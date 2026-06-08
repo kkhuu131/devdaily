@@ -1,0 +1,106 @@
+{
+  "id": 34,
+  "conceptName": "Introduce Parameter Object",
+  "category": "refactoring",
+  "definition": "When a function or method has a long parameter list of related data, replace the parameters with a single object that groups them into a cohesive unit.",
+  "ruleOfThumb": "If a method has more than three parameters or several parameters often change together, prefer bundling them into a single parameter object.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Introduce Parameter Object",
+    "page": "n/a",
+    "externalUrl": "https://martinfowler.com/bliki/IntroduceParameterObject.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Inspect this function signature. Which observation best describes the primary code smell visible in the signature?",
+      "codeSnippet": "function calculateOrderTotal(price: number, tax: number, discount: number, shipping: number, currency: string) {\n  // compute total\n  return (price + tax - discount) + shipping;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function accepts many closely related parameters that belong together in a single cohesive structure.",
+          "isCorrect": true,
+          "explanation": "Grouping several related numeric and configuration parameters into one object reduces call-site noise and centralizes validation. This refactor makes intent clearer and simplifies changes when you need to add or remove related fields. See Fowler's examples on grouping parameters into a single conceptual entity."
+        },
+        {
+          "id": "b",
+          "text": "This function mixes multiple responsibilities and should be split into smaller functions to reduce cognitive load.",
+          "isCorrect": false,
+          "explanation": "Splitting responsibilities is a valid concern, but the body here is simple arithmetic. The real problem is the parameter list, not multiple responsibilities. Developers sometimes conflate long parameter lists with responsibility bloat, but they are distinct design issues."
+        },
+        {
+          "id": "c",
+          "text": "This function exposes primitive parameters rather than domain objects risking duplicated validation and inconsistent state across callers.",
+          "isCorrect": false,
+          "explanation": "Using domain objects can be appropriate, and primitives may cause duplicated checks. However the immediate smell is the number and cohesion of parameters. Converting to a small domain type or DTO would address that, but the diagnosis should focus on grouping related parameters."
+        },
+        {
+          "id": "d",
+          "text": "This function has unclear parameter naming suggesting insufficient documentation or naming improvements rather than changing the signature.",
+          "isCorrect": false,
+          "explanation": "Improving names and docs can help, but the parameters are reasonably named. The maintainability cost comes from many parameters that travel together. Renaming will not reduce call-site arity or centralize validation the way grouping into a single object would."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this API for updating a user profile, which refactor would most improve the signature and caller ergonomics?",
+      "codeSnippet": "function updateUserProfile(userId: string, firstName?: string, lastName?: string, email?: string, isAdmin?: boolean, receiveNewsletter?: boolean) {\n  // update logic\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Combine related parameters into a single configuration object parameter to simplify the function signature and centralize related data.",
+          "isCorrect": true,
+          "explanation": "Wrapping optional and related fields into one object parameter reduces positional confusion and makes extensions easier. The parameter object also provides a single place for validation and defaults, improving maintainability. Fowler documents this as the standard approach for related parameter lists."
+        },
+        {
+          "id": "b",
+          "text": "Turn boolean flags into separate functions representing distinct behaviors to remove conditionals and clarify individual responsibilities.",
+          "isCorrect": false,
+          "explanation": "Extracting separate methods for distinct behaviors can be valid, especially when flags change behavior radically. Here the flags represent optional fields on the same operation, so splitting into methods would fragment the API and duplicate update logic unnecessarily."
+        },
+        {
+          "id": "c",
+          "text": "Introduce default parameters and optional arguments to keep the current signature while providing backward compatible flexibility to callers.",
+          "isCorrect": false,
+          "explanation": "Default and optional parameters preserve the existing signature but do not address the cognitive cost of many related parameters. They also make it hard for callers to remember parameter order and hurt discoverability compared with a single named object."
+        },
+        {
+          "id": "d",
+          "text": "Create a generic options map with string keys to avoid frequent signature changes when new optional flags are required.",
+          "isCorrect": false,
+          "explanation": "An untyped options map is flexible but loses type safety and discoverability. In TypeScript a typed parameter object gives the same flexibility with clear contracts, making an untyped map a risky substitute for proper grouping."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better prepares the API for adding fields, validation, and defaults while keeping callers stable?",
+      "codeSnippet": "// Version A\nfunction createInvoice(customerId: string, items: Item[], issueDate: string, dueDate: string, currency: string, taxRate: number) {\n  // validate and create invoice\n}\n\n// Version B\ninterface InvoiceParams { customerId: string; items: Item[]; issueDate: string; dueDate: string; currency: string; taxRate: number }\nfunction createInvoice(params: InvoiceParams) {\n  // validate and create invoice\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps a flat positional parameter list which keeps call sites explicit but increases fragility when adding fields.",
+          "isCorrect": false,
+          "explanation": "Version A exposes every field positionally, making additions or reorderings breaking changes. Callers must pass multiple values in order, and validation tends to be duplicated or scattered. While explicit, this approach becomes brittle as requirements evolve and makes defaulting and optional fields awkward."
+        },
+        {
+          "id": "b",
+          "text": "Version B accepts one structured parameter which consolidates related inputs and centralizes validation in a single place.",
+          "isCorrect": true,
+          "explanation": "Version B groups related inputs into a single typed parameter object, making it straightforward to add optional fields, supply defaults, and perform centralized validation. This eases evolution of the API and reduces churn at call sites. Fowler recommends this pattern for precisely these maintenance advantages."
+        }
+      ]
+    }
+  ]
+}

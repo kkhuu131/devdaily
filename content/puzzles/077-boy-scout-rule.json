@@ -1,0 +1,106 @@
+{
+  "id": 77,
+  "conceptName": "Boy Scout Rule",
+  "category": "principle",
+  "definition": "A practice of leaving code a little cleaner than you found it whenever you touch it, through small incremental improvements.",
+  "ruleOfThumb": "When you modify a file, make a small cleanup so future readers encounter slightly better code than before.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code",
+    "chapter": "Practical Refactoring and Cleanliness",
+    "page": "n/a",
+    "externalUrl": "https://blog.cleancoder.com/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "You find this change in a pull request. Which statement best characterizes the developer's intent?",
+      "codeSnippet": "// file: billing.ts\nfunction calculatePrice(raw: number) {\n  // renamed variable and removed obsolete comment\n  const basePrice = raw;\n  const finalPrice = Math.round(basePrice * 1.2);\n  return finalPrice;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A developer performs a small localized cleanup during a code change which results in a cleaner file state.",
+          "isCorrect": true,
+          "explanation": "This is a minimal, local improvement made while touching the code. The change renames for clarity and removes noise without altering behavior. This pattern aligns with the idea of making small, safe improvements whenever you work in a file to reduce future maintenance friction."
+        },
+        {
+          "id": "b",
+          "text": "A developer performs a widespread refactor touching many modules without tests which risks regressions across the system.",
+          "isCorrect": false,
+          "explanation": "This option describes a large systemic refactor without tests. The snippet shows a tiny local change, not a broad refactor. Confusing the two can cause reviewers to over-penalize useful small cleanups or miss real risky changes."
+        },
+        {
+          "id": "c",
+          "text": "A developer adds significant new feature code but avoids touching existing implementation to reduce immediate merge conflicts.",
+          "isCorrect": false,
+          "explanation": "This suggests adding a feature while leaving old code untouched. The snippet demonstrates a rename and comment removal only, not feature expansion. Mistaking small cleanups for feature work leads to unnecessary scope creep in reviews and planning."
+        },
+        {
+          "id": "d",
+          "text": "A developer leaves code unchanged except for a comment to avoid introducing any risk during a critical hotfix.",
+          "isCorrect": false,
+          "explanation": "This describes minimal risk avoidance by only touching comments. The actual change modifies identifiers and removes obsolete comments for clarity. Overly conservative approaches can accumulate technical debt instead of improving code quality incrementally."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A commit renames a parameter and simultaneously adjusts business logic in the same file. What is the primary concern?",
+      "codeSnippet": "// file: shipping.ts\nfunction estimatedDelivery(days: number) {\n  // renamed param and changed business rule from 3 to 2 days\n  if (days < 2) return 'soon';\n  return 'standard';\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This commit mixes a small cleanup with a behavioral change and decreases commit clarity for reviewers and tools.",
+          "isCorrect": true,
+          "explanation": "Mixing refactor-like edits with behavior changes makes it harder to isolate what caused a regression or to review intent. The safer approach is small cleanup commits separate from behavioral changes, or very small combined edits with clear tests and notes."
+        },
+        {
+          "id": "b",
+          "text": "This commit demonstrates good code hygiene because cleaning while changing encourages continuous incremental improvements across the codebase.",
+          "isCorrect": false,
+          "explanation": "While continuous small improvements are desirable, when a commit also changes behavior the combination reduces traceability. The positive view misses the practical review and rollback costs of combining unrelated change types without clear separation."
+        },
+        {
+          "id": "c",
+          "text": "This commit strictly violates single responsibility because it alters external API contract and internal formatting within the same change.",
+          "isCorrect": false,
+          "explanation": "Single responsibility concerns often apply at a different design level. The real issue here is commingling refactor and behavior change, not necessarily an SRP violation. Treating them as the same can misdirect remediation efforts."
+        },
+        {
+          "id": "d",
+          "text": "This commit likely fails because the small cleanup indicates missing tests that would have prevented accidental behavioral regressions.",
+          "isCorrect": false,
+          "explanation": "Missing tests are a valid concern, but the snippet alone shows a combined change problem regardless of test coverage. Blaming tests alone overlooks the reduced reviewability and increased cognitive load when different change types are mixed."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better follows a sustainable practice of keeping the codebase maintainable as teams iterate?",
+      "codeSnippet": "// Version A\nfunction calculateTotal(items: Item[]) {\n  // small rename and clarified comment\n  const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);\n  return subtotal * (1 - getDiscount());\n}\n\n// Version B\nfunction total(items: Item[]) {\n  // large inline refactor and formatting changes across logic\n  let s = 0;\n  for (const i of items) { s += i.price * i.qty; }\n  return s * (1 - getDiscount());\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps changes small and incremental across commits to maintain continuous codebase improvement.",
+          "isCorrect": true,
+          "explanation": "Version A demonstrates a focused, minimal improvement: clearer names and a tiny tidy-up without altering behavior. That aligns with the practice of making small, safe improvements whenever you touch code. Over time these low-risk increments raise overall quality and make reviews manageable."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes many unrelated cleanups into one large refactor that obscures blame and hinders straightforward reverts.",
+          "isCorrect": false,
+          "explanation": "Version B bundles more extensive formatting and refactor-style edits. Large monolithic cleanups can make it hard to identify the cause of regressions, complicate code review, and increase the cost of rollbacks. In practice, prefer incremental changes with clear intent and tests."
+        }
+      ]
+    }
+  ]
+}

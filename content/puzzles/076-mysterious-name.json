@@ -1,0 +1,106 @@
+{
+  "id": 76,
+  "conceptName": "Mysterious Name",
+  "category": "code-smell",
+  "definition": "A code smell where identifiers (variables, functions, classes) do not reveal intent, forcing readers to inspect implementation to understand behavior.",
+  "ruleOfThumb": "Prefer names that express the business intent or role rather than implementation details or terse abbreviations.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code",
+    "chapter": "Meaningful Names",
+    "page": "17",
+    "externalUrl": "https://www.informit.com/store/clean-code-a-handbook-of-agile-software-craftsmanship-9780132350884"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the following TypeScript function. What is the most obvious problem you would point out first?",
+      "codeSnippet": "function process(o, u) {\n  const q = o.q;\n  const x = q.map(t => t.v);\n  const r = x.reduce((a, b) => a + b, 0);\n  if (r > 100) {\n    u.notify(r);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function bodies are tightly coupled and likely to cause cascading changes when any small behavior needs modification.",
+          "isCorrect": false,
+          "explanation": "This is a plausible architectural concern because short names can hide coupling. However the immediate, most visible issue is that the identifiers give no clue about domain meaning, which makes any coupling hard to evaluate without first understanding intent. Renaming intent-revealing identifiers usually clarifies whether refactoring or decoupling is required."
+        },
+        {
+          "id": "b",
+          "text": "The code exposes implementation detail through identifiers which will complicate future API changes and refactoring efforts.",
+          "isCorrect": false,
+          "explanation": "Exposing implementation details via names is a real problem and can make APIs brittle. In this snippet the more direct problem is the names themselves are opaque, making it impossible to know which details are being exposed. Fixing names often reveals whether this is an API leak or just a localized readability issue."
+        },
+        {
+          "id": "c",
+          "text": "The variable and function names fail to communicate the code purpose and make intentions unclear to readers.",
+          "isCorrect": true,
+          "explanation": "The primary smell here is unreadable identifiers. The names provide no domain information so readers must inspect implementation to infer intent. Renaming to express business concepts is the first step to reduce cognitive load and enable safer refactoring."
+        },
+        {
+          "id": "d",
+          "text": "The module boundaries are unclear and this naming will confuse new contributors about responsibilities and data flow.",
+          "isCorrect": false,
+          "explanation": "Unclear module boundaries are a valid maintenance risk, and poor names contribute to that confusion. Still, the most immediate, fixable issue in the snippet is that the identifiers themselves are non descriptive. Improving names often makes module responsibilities obvious without structural moves."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which naming problem best describes this API example and its likely long term maintenance consequence?",
+      "codeSnippet": "class ReportService {\n  fetch(rq) {\n    const ds = this.loader.load(rq);\n    return this.format(ds);\n  }\n\n  format(d) {\n    return d.map(x => x.v);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The naming exposes implementation detail instead of describing business intent making the API brittle for future change.",
+          "isCorrect": false,
+          "explanation": "This is a plausible interpretation because names like ds and format suggest data structure focus. The more precise issue is that the API names reveal internal data shapes rather than the business action expected by callers. Adjusting names to reflect use cases will guide clearer API design."
+        },
+        {
+          "id": "b",
+          "text": "The naming documents data structure details instead of describing the business action visible to the caller.",
+          "isCorrect": true,
+          "explanation": "Here identifiers emphasize intermediate data and structural artifacts rather than the report business action. That makes the service harder to read and evolve because callers and maintainers must know internal representations. Renaming to reflect business behaviour leads to clearer contracts and fewer downstream surprises."
+        },
+        {
+          "id": "c",
+          "text": "The naming is inconsistent across the module causing confusion about which method to call for similar business tasks.",
+          "isCorrect": false,
+          "explanation": "Inconsistent names would indeed cause confusion, and inconsistent naming is something to watch for. In this example however the names are consistently data centric; the core problem is semantic misfocus on low level data rather than inconsistent verb choices. Consistency alone would not make intent clear here."
+        },
+        {
+          "id": "d",
+          "text": "The naming uses abbreviations and cryptic identifiers that require readers to inspect implementation to infer the intent.",
+          "isCorrect": false,
+          "explanation": "Abbreviations and cryptic identifiers are a real readability hazard, and these names are terse. The deeper problem is conceptual: the API describes data flow instead of the business operation. Renaming to full, intent revealing identifiers resolves both abbreviation and intent issues."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which version is preferable for long term clarity and why?",
+      "codeSnippet": "/* Version A */\nfunction calc(o) {\n  const a = o.items.map(i => i.p);\n  return a.reduce((s, v) => s + v, 0);\n}\n\n/* Version B */\nfunction calculateInvoiceTotal(order) {\n  const prices = order.items.map(item => item.price);\n  return prices.reduce((sum, value) => sum + value, 0);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A preserves short helper names but sacrifices domain clarity and increases cognitive load across modules.",
+          "isCorrect": false,
+          "explanation": "Version A favors terseness which can be tempting for brief helpers, but it obscures domain meaning. For teams, short non descriptive identifiers raise the cost of reasoning across modules and slow onboarding. The tradeoff rarely justifies the loss of explicit domain terms."
+        },
+        {
+          "id": "b",
+          "text": "Version B uses explicit domain names that improve clarity and maintainability across module boundaries.",
+          "isCorrect": true,
+          "explanation": "Version B intentionally names the function and variables to reflect the domain concept, making the code self documenting and easier for others to use. This approach aligns with naming guidance from Clean Code and Fowler because it makes intent explicit, reduces the need to read implementation, and supports safer evolution of interfaces."
+        }
+      ]
+    }
+  ]
+}

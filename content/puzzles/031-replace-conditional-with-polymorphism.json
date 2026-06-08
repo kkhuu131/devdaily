@@ -1,0 +1,106 @@
+{
+  "id": 31,
+  "conceptName": "Replace Conditional with Polymorphism",
+  "category": "refactoring",
+  "definition": "Move branches that switch on type into a class hierarchy so each type implements its behavior instead of a central conditional.",
+  "ruleOfThumb": "If many conditionals branch on the same type field, consider moving that behavior into subclasses with overridden methods.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Conditional with Polymorphism",
+    "page": "pp. 92-95",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary design problem in this function?",
+      "codeSnippet": "function calculatePrice(product: any) {\n  if (product.type === 'standard') return product.basePrice;\n  if (product.type === 'luxury') return product.basePrice * 1.2 + 50;\n  if (product.type === 'discount') return product.basePrice * 0.8;\n  return product.basePrice;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code is hard to extend because adding a new product type requires editing the central price conditional.",
+          "isCorrect": true,
+          "explanation": "The conditional centralizes all type-specific behavior. Adding a new product type forces modification of the function, which violates the open closed principle. Refactoring to move pricing into type-specific classes or handlers isolates changes and avoids modifying existing branching logic. See Fowler for the pattern and examples."
+        },
+        {
+          "id": "b",
+          "text": "This code centralizes pricing decisions in a single function making it easier to reason about pricing rules.",
+          "isCorrect": false,
+          "explanation": "While a single location can aid understanding initially, this centralization couples all type logic together. As variants grow this becomes a maintenance burden. The real issue is not just centralization for readability but the brittle coupling of type to behavior that hinders extension."
+        },
+        {
+          "id": "c",
+          "text": "This code violates single responsibility because price calculation and type dispatch are mixed in the same function.",
+          "isCorrect": false,
+          "explanation": "This is a reasonable observation but not the most precise diagnosis. The single responsibility concern overlaps with the branching problem, yet the key refactor is to separate type-specific behavior into polymorphic units rather than just splitting responsibilities inside the same procedural function."
+        },
+        {
+          "id": "d",
+          "text": "This code risks duplicated behavior if different callers need type specific logic and copy the conditional elsewhere.",
+          "isCorrect": false,
+          "explanation": "Duplication is a likely downstream problem, and avoiding duplicated conditionals is one motivation for refactoring. However the immediate smell is the centralized type switch itself; duplication may follow but is not the primary design defect to address first."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this order processing snippet, which refactoring most directly reduces conditional branching and aids extensibility?",
+      "codeSnippet": "class OrderProcessor {\n  process(order: any) {\n    switch (order.kind) {\n      case 'online': return this.handleOnline(order);\n      case 'instore': return this.handleInStore(order);\n      case 'wholesale': return this.handleWholesale(order);\n    }\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Create subclasses for each order type and move branch logic into overridden process methods on those subclasses.",
+          "isCorrect": true,
+          "explanation": "Turning the kind branches into subclasses moves behavior next to the data it operates on, eliminating the central switch. This keeps extension local to new subclasses and avoids modifying existing branching code, matching the intent of the pattern discussed by Fowler."
+        },
+        {
+          "id": "b",
+          "text": "Introduce strategy objects passed into the processor to encapsulate each branch and inject them at runtime.",
+          "isCorrect": false,
+          "explanation": "Using strategy objects is a valid alternative that encapsulates behavior, but it separates behavior from the domain objects. That can be appropriate when behavior must vary independently of type, however it adds indirection and does not bind behavior to the order subtype as tightly as subclassing does."
+        },
+        {
+          "id": "c",
+          "text": "Replace the switch with a registry map of handler functions keyed by type and leave callers unchanged.",
+          "isCorrect": false,
+          "explanation": "A registry reduces conditional branching in the processor but keeps the type-to-behavior mapping external and procedural. This can help but it still centralizes dispatch logic and can make it harder to maintain invariants tied to specific order types."
+        },
+        {
+          "id": "d",
+          "text": "Extract each branch to its own helper function while keeping the centralized switch as the dispatcher.",
+          "isCorrect": false,
+          "explanation": "Extracting helpers improves readability but preserves the central conditional dispatcher. That leaves the system brittle to new kinds and means the switch must still be edited for each new type, so extensibility gains are limited compared with moving behavior into subclasses."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which design is preferable for evolving payment behaviors when adding new payment types?",
+      "codeSnippet": "// Version A\nclass PaymentProcessor {\n  process(payment: any) {\n    switch (payment.type) {\n      case 'card': return this.processCard(payment);\n      case 'paypal': return this.processPaypal(payment);\n    }\n  }\n}\n\n// Version B\nabstract class Payment {\n  abstract process(): any;\n}\nclass CardPayment extends Payment { process() { /* card logic */ } }\nclass PaypalPayment extends Payment { process() { /* paypal logic */ } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes type checks in a single processor class using a long switch statement for each type.",
+          "isCorrect": false,
+          "explanation": "Version A keeps dispatch logic in one place which can seem simpler at first, but it couples the processor to all payment types. Adding a new payment requires modifying the switch and the processor, increasing risk of regressions. Over time this pattern tends to grow complex and fragile compared with distributing behavior."
+        },
+        {
+          "id": "b",
+          "text": "Version B puts type specific behavior into subclasses by giving each type its own process implementation.",
+          "isCorrect": true,
+          "explanation": "Version B encapsulates behavior with the data it operates on, so adding a new payment type means adding a new subclass without modifying existing dispatching code. This adheres to the open closed principle and simplifies testing of each payment behavior in isolation. Fowler recommends this approach for replacing long conditionals that switch on type."
+        }
+      ]
+    }
+  ]
+}

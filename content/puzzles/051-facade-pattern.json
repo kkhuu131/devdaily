@@ -1,0 +1,106 @@
+{
+  "id": 51,
+  "conceptName": "Facade Pattern",
+  "category": "design-pattern",
+  "definition": "An object that provides a simplified interface to a set of interfaces in a subsystem, reducing client coupling to complex internals.",
+  "ruleOfThumb": "When clients repeatedly call multiple subsystem objects to complete tasks, introduce a single higher-level interface to encapsulate the orchestration.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Facade",
+    "page": "185",
+    "externalUrl": "https://refactoring.guru/design-patterns/facade"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the code below, what best describes the role of ApiGateway in relation to the subsystem services?",
+      "codeSnippet": "class UserService { getUser(id: number) { /* ... */ } }\nclass PaymentService { charge(amount: number) { /* ... */ } }\nclass NotificationService { notify(userId: number, msg: string) { /* ... */ } }\n\nclass ApiGateway {\n  createOrder(userId: number, amount: number) {\n    const user = new UserService().getUser(userId);\n    new PaymentService().charge(amount);\n    new NotificationService().notify(userId, 'order created');\n  }\n}\n\nconst client = new ApiGateway();\nclient.createOrder(42, 199.99);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A single class consolidates multiple subsystem calls into a simpler public interface for client usage.",
+          "isCorrect": true,
+          "explanation": "The ApiGateway centralizes the orchestration of several subsystem services behind one method. That reduces the number of direct subsystem dependencies clients must manage and hides orchestration details. This is a classic intent for providing a higher level integration point so clients remain stable while internals evolve."
+        },
+        {
+          "id": "b",
+          "text": "A single class centralizes many responsibilities and can obscure subsystem boundaries and complicate future changes.",
+          "isCorrect": false,
+          "explanation": "While centralizing calls can obscure internal boundaries, the key observation is whether the class intentionally provides a simplified integration point. The risk described is valid in poorly designed implementations, but it does not describe the primary structural role shown, which is deliberate consolidation for client simplicity."
+        },
+        {
+          "id": "c",
+          "text": "A single class hides essential error details and may make diagnosing subsystem failures significantly more difficult in production.",
+          "isCorrect": false,
+          "explanation": "Hiding error details can occur if the gateway swallows exceptions or returns coarse results, but that is an implementation choice rather than the structural role. Proper design can expose sufficient diagnostics while still presenting a simplified interface, so this concern is plausible but not the defining pattern."
+        },
+        {
+          "id": "d",
+          "text": "A single class creates a stable integration point that helps decouple clients from evolving subsystem implementations across releases.",
+          "isCorrect": false,
+          "explanation": "Providing a stable integration point is a benefit of the consolidation shown, and this statement is accurate as a consequence. However, the best single-sentence description of the class in this code is that it intentionally consolidates multiple subsystem calls into a simpler client-facing operation, which more directly captures the role."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "An OrderService coordinates inventory, payment, and shipping subsystems. Which description most accurately identifies the design role of that service?",
+      "codeSnippet": "class Inventory { reserve(itemId: string) { /* ... */ } }\nclass Payment { charge(card: string, amount: number) { /* ... */ } }\nclass Shipping { schedule(address: string) { /* ... */ } }\n\nclass OrderService {\n  placeOrder(order) {\n    new Inventory().reserve(order.itemId);\n    new Payment().charge(order.card, order.total);\n    new Shipping().schedule(order.address);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class provides a simplified unified interface to multiple subsystems to reduce client coupling and orchestration complexity.",
+          "isCorrect": true,
+          "explanation": "OrderService encapsulates the sequence of calls across several subsystems and exposes a single operation to clients. This reduces the coordination burden on callers and localizes changes to orchestration logic. Treating this object as a dedicated integration facade helps maintain separation between clients and subsystem APIs."
+        },
+        {
+          "id": "b",
+          "text": "This class centralizes transaction logic and resource locking and acts like a transactional script that mixes domain and integration concerns.",
+          "isCorrect": false,
+          "explanation": "Centralizing transaction handling is a real possibility, and if OrderService mixes domain rules with low level transaction control then it becomes a different smell. However, the snippet primarily shows orchestration of subsystem calls rather than explicit transaction management, so calling it transactional script is a plausible but less accurate identification."
+        },
+        {
+          "id": "c",
+          "text": "This class is an anti pattern because it duplicates application logic and will make unit testing of subsystems impractical.",
+          "isCorrect": false,
+          "explanation": "If the service duplicated core business rules it would be an anti pattern, but the snippet shows delegation and orchestration rather than duplication of business logic. Unit testing can be addressed by injecting mocks; therefore the statement is a caution rather than the most precise description of the shown design."
+        },
+        {
+          "id": "d",
+          "text": "This class acts as a protocol translator that adapts subsystem interfaces to client expectations rather than purely simplifying orchestration.",
+          "isCorrect": false,
+          "explanation": "Adapting protocols is a distinct intent where interfaces differ between client and subsystem. The code shows sequential orchestration without protocol translation work. Hence the translator description is a reasonable misinterpretation but does not match the primary coordination role visible in the example."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Version A and Version B below implement the same billing flow. Which version better supports maintainability and why?",
+      "codeSnippet": "/* Version A */\nclass TaxCalculator { calculate(amount:number){ /* ... */ } }\nclass InvoiceGenerator { generate(details){ /* ... */ } }\nclass PaymentProcessor { process(card, amount){ /* ... */ } }\n\nclass BillingFacade {\n  charge(card, amount){\n    const tax = new TaxCalculator().calculate(amount);\n    new PaymentProcessor().process(card, amount + tax);\n    new InvoiceGenerator().generate({card, amount, tax});\n  }\n}\n\n/* Version B */\nfunction billCustomerDirectly(card, amount){\n  const tax = new TaxCalculator().calculate(amount);\n  new PaymentProcessor().process(card, amount + tax);\n  new InvoiceGenerator().generate({card, amount, tax});\n}\n\n// Clients: new BillingFacade().charge(...) vs billCustomerDirectly(...)",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes integration responsibilities into one collaborator reducing client coupling and easing future change.",
+          "isCorrect": true,
+          "explanation": "Version A encapsulates orchestration inside a dedicated collaborator so clients call a single, stable API. This isolates sequencing and error handling in one place and enables changing internals without touching callers. The approach improves testability, enforces a single integration contract, and supports adding cross-cutting concerns like retries or logging centrally."
+        },
+        {
+          "id": "b",
+          "text": "Version B scatters orchestration logic into ad hoc functions and increases coupling by exposing raw subsystem call sequences to every caller.",
+          "isCorrect": false,
+          "explanation": "Version B duplicates the call sequence in a free function, which risks spreading orchestration logic across the codebase. This makes callers responsible for coordination and harder to change. While simple for single-use cases, it scales poorly and complicates concerns like error propagation, retries, and transaction boundaries when multiple clients must replicate the same sequence."
+        }
+      ]
+    }
+  ]
+}

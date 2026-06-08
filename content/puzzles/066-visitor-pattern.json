@@ -1,0 +1,106 @@
+{
+  "id": 66,
+  "conceptName": "Visitor Pattern",
+  "category": "design-pattern",
+  "definition": "A way to separate operations from an object structure so new operations can be defined without changing the objects themselves.",
+  "ruleOfThumb": "Use when you have a stable class hierarchy and need to add many unrelated operations over those classes without modifying them.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Visitor",
+    "page": "331",
+    "externalUrl": "https://en.wikipedia.org/wiki/Visitor_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given these type definitions, which statement best describes the design intent shown?",
+      "codeSnippet": "interface Element { accept(v: Visitor): void }\ninterface Visitor { visitA(a: A): void; visitB(b: B): void }\nclass A implements Element { accept(v: Visitor) { v.visitA(this) } }\nclass B implements Element { accept(v: Visitor) { v.visitB(this) } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It places operation implementations separate from element types enabling adding new operations without altering element classes.",
+          "isCorrect": true,
+          "explanation": "This structure moves operations out of the element classes and delegates them to a separate visitor-like collaborator. That lets you add new operations by adding new visitor implementations rather than modifying every element class. This is the core tradeoff of separating algorithms from data structures."
+        },
+        {
+          "id": "b",
+          "text": "It centralizes behavior inside element classes so each concrete element implements all operations directly and independently.",
+          "isCorrect": false,
+          "explanation": "This describes the opposite design where each element owns its operations. While simple for few operations, it becomes costly when many unrelated operations are required because it forces changes to every concrete element class."
+        },
+        {
+          "id": "c",
+          "text": "It turns operations into independent command objects that carry state and expose a single execute method invoked by clients.",
+          "isCorrect": false,
+          "explanation": "This conflates the shown structure with a command-style design. Command objects typically encapsulate a single action and its state and are invoked uniformly. The snippet instead routes element-specific calls back to visitor methods, which is a different coordination model."
+        },
+        {
+          "id": "d",
+          "text": "It defines a template algorithm inside a base element class and lets subclasses override steps to vary specific behavior.",
+          "isCorrect": false,
+          "explanation": "This describes a template method approach where the base class controls the algorithm and subclasses override primitives. The snippet delegates behavior to an external object rather than relying on subclass overrides, so the template method does not apply here."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which statement best identifies the primary design problem with this renderer implementation?",
+      "codeSnippet": "interface Node {}\nclass TextNode implements Node { constructor(public text: string) {} }\nclass ElementNode implements Node { constructor(public tag: string, public children: Node[]) {} }\nclass Renderer {\n  render(n: Node): string {\n    if (n instanceof TextNode) return n.text\n    if (n instanceof ElementNode) return `<${n.tag}>` + n.children.map(c => this.render(c)).join('') + `</${n.tag}>`\n    return ''\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The renderer uses explicit type checks which couples it to node subclasses and makes adding node types costly and error prone.",
+          "isCorrect": true,
+          "explanation": "The instanceof chain centralizes knowledge of node concrete types in the renderer. Adding a new node subclass requires updating every consumer that switches on type, which violates the open closed principle for operations. A double-dispatch or accept-style solution moves dispatch into nodes or separates operations into handlers."
+        },
+        {
+          "id": "b",
+          "text": "The renderer should be a stateless pure function without recursion to avoid stack depth problems when serializing very deep trees.",
+          "isCorrect": false,
+          "explanation": "Recursion depth is a practical concern for very deep trees, but the snippet's primary design smell is coupling via type tests. Converting to iterative traversal addresses recursion but does not solve the extensibility problem for operations across node types."
+        },
+        {
+          "id": "c",
+          "text": "The renderer should map runtime type names to handler functions to remove conditional statements and simplify addition of new operations.",
+          "isCorrect": false,
+          "explanation": "A handler map can reduce conditionals but still requires registering handlers for each concrete type and does not delegate dispatch to the objects themselves. This preserves coupling between operation code and node types, so it is only a partial mitigation."
+        },
+        {
+          "id": "d",
+          "text": "The renderer should move all rendering logic into node classes so each node knows how to serialize itself without external switching.",
+          "isCorrect": false,
+          "explanation": "Moving rendering into nodes avoids external type checks, but it mixes rendering concerns into domain objects and can violate single responsibility. Extracting operations into separate collaborators while leaving node types stable is often a cleaner tradeoff when many operations are required."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which design is preferable for frequently adding many different operations over a stable class hierarchy?",
+      "codeSnippet": "// Version A: put operations as methods on node classes\nabstract class NodeA {\n  abstract render(): string\n  abstract validate(): boolean\n}\nclass TextNodeA extends NodeA { constructor(public text: string) { super() } render() { return this.text } validate() { return this.text.length > 0 } }\n\n// Version B: extract operations into operation objects with accept\ninterface OperationB { visitText(n: TextNodeB): any; visitElement(n: ElementNodeB): any }\nclass TextNodeB { constructor(public text: string) {} accept(op: OperationB) { return op.visitText(this) } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps operations inside node classes which will require widespread modifications when adding each new operation to the system.",
+          "isCorrect": false,
+          "explanation": "Version A scatters operation code into every concrete node. When operations multiply, maintaining and evolving node classes becomes expensive because each new operation forces edits across the hierarchy. This violates separation of concerns and increases churn for what should be orthogonal behaviors."
+        },
+        {
+          "id": "b",
+          "text": "Version B extracts operations into separate operation objects allowing new operations to be added without changing node classes.",
+          "isCorrect": true,
+          "explanation": "Version B centralizes operations in visitor-like objects and keeps the node hierarchy stable. This is advantageous when the set of nodes is stable but operations grow over time. The tradeoff is that adding new node types requires touching all operation objects, so this design is best when the class hierarchy is stable. See Fowler and Gamma et al. for tradeoffs and practical guidance."
+        }
+      ]
+    }
+  ]
+}

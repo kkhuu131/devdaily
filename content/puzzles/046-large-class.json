@@ -1,0 +1,106 @@
+{
+  "id": 46,
+  "conceptName": "Large Class",
+  "category": "code-smell",
+  "definition": "A class that accumulates many methods and fields and takes on multiple responsibilities, reducing cohesion and making maintenance difficult.",
+  "ruleOfThumb": "Keep classes focused on a single responsibility; split broad classes into smaller, cohesive collaborators that are easier to test and change.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Large Class",
+    "page": "n/a",
+    "externalUrl": "https://refactoring.com/catalog/largeClass.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which single observation best describes the primary maintainability problem in the class below?",
+      "codeSnippet": "class CustomerService {\n  constructor(repo, mailer, pdfGen) {}\n  createCustomer(data) { /* validate, save, send welcome email, generate pdf */ }\n  updateProfile(id, data) { /* validate, save, log */ }\n  chargeCard(id, token) { /* call payment gateway and update records */ }\n  exportCustomerReport(id) { /* compile data and render pdf */ }\n  private helperFormatAddress(addr) { /* formatting logic here */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class groups unrelated responsibilities and lacks focused cohesion across its many methods and fields.",
+          "isCorrect": true,
+          "explanation": "This class mixes persistence, notification, reporting, and payment logic in one place. That low cohesion makes reasoning, testing, and changing behavior risky. A refactor that extracts responsibilities into smaller collaborators will improve clarity and allow independent testing and reuse."
+        },
+        {
+          "id": "b",
+          "text": "The class violates encapsulation by exposing state and letting external modules mutate internals through public fields.",
+          "isCorrect": false,
+          "explanation": "While encapsulation issues are serious, the snippet shows behavior consolidation rather than public mutable fields. The primary smell is responsibility bloat rather than missing accessors or leaked state."
+        },
+        {
+          "id": "c",
+          "text": "The class appears to be a premature optimization that inlines external services and prioritizes speed over clarity.",
+          "isCorrect": false,
+          "explanation": "Premature optimization is a plausible concern, but the main maintenance cost here comes from mixing multiple concerns. Splitting responsibilities will both improve clarity and make performance hotspots easier to address locally."
+        },
+        {
+          "id": "d",
+          "text": "The class simply needs more documentation and clearer method names to make the many methods understandable to new developers.",
+          "isCorrect": false,
+          "explanation": "Documentation helps, but it does not solve the structural problem of multiple responsibilities. The maintenance burden comes from coupling different concerns, which documentation alone cannot decouple or simplify for testing."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this processor class, what is the most focused maintainability risk introduced by its current structure?",
+      "codeSnippet": "class OrderProcessor {\n  process(order) { /* validate, apply discounts, save, charge, send invoice */ }\n  validate(order) { /* rules */ }\n  calculateDiscounts(order) { /* complex rules */ }\n  save(order) { /* persistence */ }\n  chargePayment(order) { /* gateway call */ }\n  notifyCustomer(order) { /* email */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class mixes distinct responsibilities such as domain logic, persistence, and notification into a single maintainable unit.",
+          "isCorrect": true,
+          "explanation": "This observation targets cohesion directly. The class handles domain rules, infrastructure, and communication, which couples concerns and increases the blast radius of any change. Extracting validators, repositories, and notification services clarifies boundaries and reduces coupling."
+        },
+        {
+          "id": "b",
+          "text": "The class causes fragile tests because it depends on concrete infrastructure instead of using injected abstractions per concern.",
+          "isCorrect": false,
+          "explanation": "Direct dependency on concrete infrastructure is a valid testability issue, but the snippet highlights mixed responsibilities as the root cause. Even with abstractions, keeping orchestration separate from domain rules yields clearer tests and smaller mocks."
+        },
+        {
+          "id": "c",
+          "text": "The class creates a wide change surface so that small requirement changes force edits across many unrelated methods and modules.",
+          "isCorrect": false,
+          "explanation": "A wide change surface is a real symptom of this structure and closely related to the correct answer. However, the underlying problem is responsibility mixing rather than only the symptom of spreading changes."
+        },
+        {
+          "id": "d",
+          "text": "The class likely misuses inheritance which duplicates behaviour across subclasses and makes substitutability unsafe for callers.",
+          "isCorrect": false,
+          "explanation": "Inheritance issues are important but not evident from the snippet. There is no subclassing shown; the immediate concern is centralizing varied responsibilities in one class rather than inheritance misuse."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version would you choose for a codebase that values clear boundaries and low-cost testing?",
+      "codeSnippet": "// Version A\nclass OrderService {\n  create(order) { /* validate, save, charge, email receipt, update inventory */ }\n  cancel(orderId) { /* reverse payment, restock, notify */ }\n}\n\n// Version B\nclass OrderValidator { validate(o) {} }\nclass PaymentService { charge(c,a) {} }\nclass OrderRepository { save(o) {} }\nclass OrderOrchestrator { constructor(v,p,r) {} create(o) { /* coordinate components */ } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version B separates responsibilities into focused services and reduces the scope of each class to a single concern.",
+          "isCorrect": true,
+          "explanation": "Version B decomposes a monolith into collaborators with narrower responsibilities. This improves cohesion and makes unit testing deterministic and inexpensive because each service can be tested in isolation. It also clarifies ownership and eases future changes."
+        },
+        {
+          "id": "b",
+          "text": "Version A centralizes function into one facade class that prevents reuse and entwines unrelated domain logic with infrastructure.",
+          "isCorrect": false,
+          "explanation": "While Version A offers a single entry point and might seem simpler initially, it couples multiple concerns and increases risk when changing behavior. That coupling makes targeted reuse and isolated testing harder, which is why splitting into collaborators is preferred for maintainable systems."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 30,
+  "conceptName": "Stable Dependencies Principle",
+  "category": "solid",
+  "definition": "A design guideline stating that packages should only depend on packages that are more stable (harder to change) than themselves, directing dependency flow toward stable, well-established modules to reduce ripple effects from change.",
+  "ruleOfThumb": "Depend on things that change less than you do; keep unstable implementation details at the leaves and stable abstractions nearer the center.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Agile Software Development, Principles, Patterns, and Practices",
+    "chapter": "Package Principles",
+    "page": "297-305",
+    "externalUrl": "https://www.objectmentor.com/resources/articles/Principles_of_Package_Design.pdf"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best describes the primary design concern illustrated by package dependency direction in a layered system?",
+      "codeSnippet": null,
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It states that a package should only depend on packages that are more resistant to change than itself.",
+          "isCorrect": true,
+          "explanation": "This captures the core idea: dependencies should point toward stability so changes in unstable packages do not force changes in otherwise stable packages. Keeping dependency flow toward more stable packages lowers ripple effect when implementation details change."
+        },
+        {
+          "id": "b",
+          "text": "It states that a package should expose abstract interfaces so more stable code can depend on its abstractions.",
+          "isCorrect": false,
+          "explanation": "This describes the Stable Abstractions concern which emphasizes placing abstractions in stable packages, but it is not the same as insisting that dependencies must point toward more stable packages. Both are related but distinct package principles."
+        },
+        {
+          "id": "c",
+          "text": "It describes that cycles between packages must be eliminated to ensure dependencies do not create rigid change deserts.",
+          "isCorrect": false,
+          "explanation": "Eliminating cycles is a real package design worry because cycles increase fragility, but the pictured concern is about dependency direction relative to stability, not only about removing cycles."
+        },
+        {
+          "id": "d",
+          "text": "It prescribes that high level modules must not depend on low level modules and should rely on indirection layers instead.",
+          "isCorrect": false,
+          "explanation": "This conveys a layering idea and the Dependency Inversion direction, which overlaps with stability concerns. However the specific focus here is on depending toward more stable packages rather than solely on inverting dependencies."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Look at this minimal package layout and imports. What is the primary maintainability risk shown?",
+      "codeSnippet": "// packages/billing/src/index.ts\nimport { processPayment } from '../../gateway/src';\nexport function bill() {\n  return processPayment(100);\n}\n\n// packages/gateway/src/index.ts\nexport function processPayment(amount: number) {\n  /* calls external API */\n  return true;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This situation indicates that the core billing package depends on a volatile external gateway package and will be fragile on gateway changes.",
+          "isCorrect": true,
+          "explanation": "The billing package depending directly on a volatile gateway means changes in the gateway can force changes in billing. The Stable Dependencies idea advises depending on more stable abstractions so the core remains insulated from implementation churn."
+        },
+        {
+          "id": "b",
+          "text": "This situation indicates that the system suffers from cyclic package imports that prevent independent deployment and increase integration complexity.",
+          "isCorrect": false,
+          "explanation": "Cyclic imports are harmful but the snippet shows a one-way dependency from billing to gateway rather than a cycle. The main issue is dependency direction toward an unstable package, not a cycle."
+        },
+        {
+          "id": "c",
+          "text": "This situation indicates that abstractions are placed in unstable packages so consumers cannot rely on stable interfaces for extension purposes.",
+          "isCorrect": false,
+          "explanation": "Placing abstractions inside unstable packages can cause problems, and it is a plausible concern here; however the concrete risk in the code is that core logic depends directly on a volatile implementation, not necessarily misplaced abstractions."
+        },
+        {
+          "id": "d",
+          "text": "This situation indicates that packaging boundaries are too fine grained causing many small packages which complicate understanding and versioning.",
+          "isCorrect": false,
+          "explanation": "Too-fine-grained packages can complicate versioning, but the snippet shows a dependency direction problem rather than an excessive number of packages. The key maintainability risk is coupling core to an unstable implementation."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which design better minimizes ripple changes when infrastructure implementations evolve?",
+      "codeSnippet": "// Version A: domain depends on stable contracts\n// packages/contracts/src/payment.ts\nexport interface PaymentPort { charge(amount: number): Promise<boolean>; }\n// packages/domain/src/billing.ts\nimport { PaymentPort } from '../../contracts/src/payment';\nexport async function bill(port: PaymentPort) { return port.charge(100); }\n// packages/gateway/src/gateway.ts\nimport { PaymentPort } from '../contracts/src/payment';\nexport class StripeGateway implements PaymentPort { async charge(a: number) { return true; } }\n\n// Version B: domain depends on gateway directly\n// packages/domain/src/billing.ts\nimport { StripeGateway } from '../../gateway/src/gateway';\nexport async function bill() { const g = new StripeGateway(); return g.charge(100); }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A directs domain dependencies toward a stable abstraction package that infrastructure modules implement.",
+          "isCorrect": true,
+          "explanation": "Version A has the domain depend on a small, stable contracts package while gateways implement that contract. That direction reduces churn in the domain when gateways change. It aligns with the principle that packages should depend on things that are more stable than themselves."
+        },
+        {
+          "id": "b",
+          "text": "Version B couples the domain directly to a concrete gateway implementation so domain changes will ripple when gateways evolve.",
+          "isCorrect": false,
+          "explanation": "Version B ties domain code directly to a concrete implementation, increasing coupling and forcing domain changes or churn whenever the gateway evolves. This violates the design goal of directing dependencies toward more stable elements and increases maintenance cost."
+        }
+      ]
+    }
+  ]
+}

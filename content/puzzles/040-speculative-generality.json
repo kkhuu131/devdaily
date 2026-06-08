@@ -1,0 +1,105 @@
+{
+  "id": 40,
+  "conceptName": "Speculative Generality",
+  "category": "code-smell",
+  "definition": "Introducing abstractions, hooks, or generalized interfaces to anticipate future needs that are unlikely or not yet validated, increasing complexity and maintenance cost.",
+  "ruleOfThumb": "Prefer adding abstraction when a real need appears; keep public surfaces minimal and match current requirements.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Speculative Generality",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/SpeculativeGenerality.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which short description best identifies the primary problem in this code smell scenario?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "This code introduces extra abstraction intended for future features that are not currently required by the system.",
+          "isCorrect": true,
+          "explanation": "This is the smell: creating abstractions or hooks for assumed future requirements that never materialize. The cost is added mental overhead and harder change. Fowler warns that anticipatory generality often outlives its usefulness and obscures current intent."
+        },
+        {
+          "id": "b",
+          "text": "This code is over-optimized for runtime performance and sacrifices readability and flexibility needed for future maintenance.",
+          "isCorrect": false,
+          "explanation": "Performance-driven over-optimization is a real concern but different: it prioritizes speed at clarity cost. The smell in question focuses on unneeded extensibility rather than performance tradeoffs."
+        },
+        {
+          "id": "c",
+          "text": "This code tightly couples unrelated modules through global state, making isolated testing and independent evolution difficult.",
+          "isCorrect": false,
+          "explanation": "Tight coupling via shared state is an important issue, but it stems from design entanglement. The targeted smell is about adding unused abstraction points, not coupling between modules."
+        },
+        {
+          "id": "d",
+          "text": "This code duplicates logic across classes instead of reusing components, increasing maintenance burden and bug risk.",
+          "isCorrect": false,
+          "explanation": "Duplication increases maintenance effort and invites bugs. While related to design quality, duplication differs from creating unnecessary hooks or generic interfaces for speculative features."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review the interface and implementation below. What is the most likely problem with this design?",
+      "codeSnippet": "export interface PaymentProcessor {\n  charge(amount: number): Promise<void>;\n  refund?(id: string): Promise<void>;\n  schedule?(date: Date): Promise<void>;\n  reconcile?(): Promise<void>;\n}\n\nclass StripeProcessor implements PaymentProcessor {\n  async charge(amount: number) { /* real implementation */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The interface declares many optional operations anticipating future needs that current implementations do not require.",
+          "isCorrect": true,
+          "explanation": "This interface surface suggests planned features that most implementations do not use. That leads to awkward contracts and confusion for implementors. Fowler and other design guides advise keeping abstractions focused and evolving the interface when real needs appear."
+        },
+        {
+          "id": "b",
+          "text": "The interface is violating encapsulation by exposing internal reconciliation details that should remain hidden inside providers.",
+          "isCorrect": false,
+          "explanation": "Exposing internal details can be problematic, but optionality here indicates planned capabilities rather than leakage of internal state. The primary issue is premature expansion of the contract rather than encapsulation breach."
+        },
+        {
+          "id": "c",
+          "text": "The interface lacks type safety because methods are declared optional which leads to runtime errors when called without checking.",
+          "isCorrect": false,
+          "explanation": "Optional methods can cause runtime checks to be necessary, yet TypeScript models optional capabilities intentionally. The bigger architectural risk is that the interface anticipates many features, not only type safety concerns."
+        },
+        {
+          "id": "d",
+          "text": "The interface prevents dependency inversion because concrete processors must depend on a high level abstraction with unrelated responsibilities.",
+          "isCorrect": false,
+          "explanation": "Dependency inversion aims to depend on abstractions, but the problem here is the abstraction being too broad for current needs. This option correctly notes poor abstraction boundaries but misattributes it as a dependency inversion violation."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better avoids unnecessary future-facing abstraction while keeping the code easy to evolve?",
+      "codeSnippet": "// Version A\nclass OrderService {\n  placeOrder(order: Order) { /* place order implementation */ }\n}\n\n// Version B\nabstract class OrderServiceBase {\n  placeOrder(order: Order) { /* default implementation */ }\n  validate?(order: Order) { throw new Error('not implemented'); }\n  notify?(order: Order) { /* placeholder for future notifications */ }\n}\n\nclass ConcreteOrderService extends OrderServiceBase {\n  placeOrder(order: Order) { /* real implementation */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps the public surface small and matches current requirements without extra extension points.",
+          "isCorrect": true,
+          "explanation": "Version A presents a focused API that implements current behavior directly. Avoiding extra hooks reduces cognitive load and accidental complexity. If future needs arise, you can introduce extension points where they are actually required. References: Martin Fowler on speculative generality and Uncle Bob on YAGNI."
+        },
+        {
+          "id": "b",
+          "text": "Version B exposes multiple protected hooks and abstract methods for hypothetical future features that are not currently needed.",
+          "isCorrect": false,
+          "explanation": "Version B anticipates unknown requirements by adding optional hooks and abstract points. That increases maintenance surface and forces implementors to consider unneeded behavior. Such preemptive extensibility can hide current intent and make refactoring harder, which Fowler categorizes as a common code smell."
+        }
+      ]
+    }
+  ]
+}

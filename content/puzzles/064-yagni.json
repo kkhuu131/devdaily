@@ -1,0 +1,105 @@
+{
+  "id": 64,
+  "conceptName": "YAGNI",
+  "category": "principle",
+  "definition": "A development guideline advising against implementing functionality until it is actually needed by concrete requirements.",
+  "ruleOfThumb": "Implement the simplest thing that could possibly work for current requirements; defer extensibility until it is required.",
+  "citation": {
+    "author": "Andrew Hunt and David Thomas",
+    "bookTitle": "The Pragmatic Programmer",
+    "chapter": "Avoiding Premature Generality",
+    "page": "87",
+    "externalUrl": "https://pragprog.com/titles/tpp20/the-pragmatic-programmer-20th-anniversary-edition/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "A team adds an elaborate permissions engine before any roles or complexity exist. What best describes that decision?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "They implemented functionality before it was necessary based on speculative future requirements rather than current business needs.",
+          "isCorrect": true,
+          "explanation": "This is implementing for hypothetical future needs rather than present requirements. That creates needless complexity and maintenance burden when the functionality may never be required."
+        },
+        {
+          "id": "b",
+          "text": "They made a defensive design choice that responsibly anticipates foreseeable changes and reduces future integration costs.",
+          "isCorrect": false,
+          "explanation": "While anticipating change can sometimes be appropriate, in this scenario there is no evidence of imminent need so the complexity is premature and costly."
+        },
+        {
+          "id": "c",
+          "text": "They duplicated existing logic into a separate module to increase modularity and promote decoupled responsibilities.",
+          "isCorrect": false,
+          "explanation": "Duplicating logic into a new module can be a refactor for clarity, but the core issue here is adding unused capability rather than improving present modularity."
+        },
+        {
+          "id": "d",
+          "text": "They followed a compliance driven requirement to add audit hooks now for upcoming regulatory deadlines.",
+          "isCorrect": false,
+          "explanation": "If compliance drove the change it would be justified, but the scenario states there is no current need, so regulatory justification is not present and complexity is premature."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review the code change below. What is the primary problem introduced by this change?",
+      "codeSnippet": "type Order = { id: string; total: number }\n\nclass OrderService {\n  private telemetryClient?: any\n\n  create(order: Order) {\n    // TODO: wire telemetry when analytics product is finalized\n    this.telemetryClient?.track('order_created', order)\n    return persist(order)\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The change introduces premature abstraction coupling the module to hypothetical analytics that are not yet required by product behavior.",
+          "isCorrect": true,
+          "explanation": "Adding hooks and optional dependencies for analytics before a concrete need introduces coupling and test surface area without delivering current value."
+        },
+        {
+          "id": "b",
+          "text": "The change creates hidden operational cost and testing burden by adding an unused external dependency interface now.",
+          "isCorrect": false,
+          "explanation": "This is a real concern, but it describes a symptom of premature abstraction; the root problem is the speculative addition rather than just operational cost."
+        },
+        {
+          "id": "c",
+          "text": "The change improves forward compatibility by preparing pluggable hooks to avoid larger future refactors across services.",
+          "isCorrect": false,
+          "explanation": "Preparing pluggable hooks can help future changes, but without a current requirement it risks wasted effort and complicates the current codebase unnecessarily."
+        },
+        {
+          "id": "d",
+          "text": "The change addresses a compliance requirement by adding auditing stubs to capture events for future reporting needs.",
+          "isCorrect": false,
+          "explanation": "If compliance required these hooks then they would be warranted; in the given snippet the comments indicate speculation rather than a compliance driver, making the change premature."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two implementations were proposed. Which version aligns better with current needs and why?",
+      "codeSnippet": "type Order = { id: string; total: number; items?: any[] }\n\n// Version A: plugin pipeline prepared now\ninterface Formatter { format(o: Order): string }\nclass PluginFormatter implements Formatter {\n  plugins: ((s: string) => string)[] = []\n  format(o: Order) { return this.plugins.reduce((s, p) => p(s), JSON.stringify(o)) }\n}\n\n// Version B: minimal serializer for current requirements\nfunction serializeOrder(o: Order): string {\n  return JSON.stringify({ id: o.id, total: o.total })\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A prevents future refactors by implementing an extensible plugin architecture at implementation time.",
+          "isCorrect": false,
+          "explanation": "Although extensibility can reduce some future refactors, introducing a plugin pipeline now adds complexity and maintenance cost for a capability that may never be needed. The simpler implementation better serves current requirements and keeps options open for refactoring when real need appears."
+        },
+        {
+          "id": "b",
+          "text": "Version B provides the minimal, required implementation without speculative extensibility and lower immediate complexity.",
+          "isCorrect": true,
+          "explanation": "Version B follows the principle of implementing the simplest thing that works for current requirements. It minimizes code surface, test burden, and cognitive load. If extensibility becomes necessary later, a targeted refactor to introduce a plugin system will be cheaper and informed by real requirements rather than speculation. See Pragmatic Programmer and XP guidance on avoiding premature generality."
+        }
+      ]
+    }
+  ]
+}

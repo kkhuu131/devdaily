@@ -1,0 +1,106 @@
+{
+  "id": 65,
+  "conceptName": "KISS Principle",
+  "category": "principle",
+  "definition": "Favor simple, straightforward designs and implementations so code is easy to read, test, and change. Avoid unnecessary complexity.",
+  "ruleOfThumb": "If a feature requires complex branching or many flags to explain its behavior, consider splitting or simplifying it.",
+  "citation": {
+    "author": "Andrew Hunt and David Thomas",
+    "bookTitle": "The Pragmatic Programmer",
+    "chapter": "Pragmatic Philosophy",
+    "page": "21",
+    "externalUrl": "https://pragprog.com"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the function below. What single issue best explains why it will be difficult for future engineers to maintain?",
+      "codeSnippet": "function processOrder(order) {\n  if (!order) return null;\n  if (order.type === 'A') {\n    if (order.priority > 5) return handleHighPriority(order);\n    return handleTypeA(order);\n  } else if (order.type === 'B') {\n    if (order.items.length === 0) throw new Error('No items');\n    return processTypeB(order);\n  } else {\n    return fallbackHandler(order);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function contains deeply nested branching that increases cognitive load for anyone reading the code.",
+          "isCorrect": true,
+          "explanation": "Nested branching forces readers to hold many conditional states in mind at once. This increases the effort required to understand and modify behavior safely. Simplifying control flow into smaller, focused functions or using clear polymorphism reduces cognitive load and makes unit testing easier."
+        },
+        {
+          "id": "b",
+          "text": "The function omits explicit type annotations which could obscure expected inputs and complicate refactoring across the codebase.",
+          "isCorrect": false,
+          "explanation": "Missing type hints are a real maintenance concern, but they do not by themselves explain the primary readability problem here. The dominant issue is the control flow shape. Adding types helps, but does not remove mental overhead caused by deeply nested branching."
+        },
+        {
+          "id": "c",
+          "text": "The function mixes network calls with business logic which can increase latency and hinder unit testing practices later on.",
+          "isCorrect": false,
+          "explanation": "Combining I/O and logic is a valid smell when present, but the snippet shows branching complexity as the main symptom. If I/O were the main concern, you would see explicit external calls here. The fix for mixing concerns differs from simplifying heavy branching."
+        },
+        {
+          "id": "d",
+          "text": "The function repeats similar conditional blocks multiple times which increases duplication and risk of inconsistent fixes over time.",
+          "isCorrect": false,
+          "explanation": "Duplication is harmful and can coexist with complex branching, but the code primarily suffers from nested conditional depth rather than repeated near-duplicate blocks. Addressing duplication might not sufficiently reduce cognitive load without restructuring control flow."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which concern best captures the unnecessary complexity introduced by this API method signature?",
+      "codeSnippet": "function scheduleJob(job, {urgent = false, dryRun = false, notify = true, retry = false}) {\n  // complex branching based on flags\n  if (urgent && retry) { /* ... */ }\n  if (dryRun) { /* ... */ }\n  // many paths\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The method accepts multiple boolean flags that encode modes and thereby obscure the method's external behavior.",
+          "isCorrect": true,
+          "explanation": "Boolean flags that change function behavior force callers to understand combinations of options rather than clear intent. Replacing flags with explicit methods, named builders, or strategy objects expresses intent and reduces accidental misuse."
+        },
+        {
+          "id": "b",
+          "text": "The class lacks comments documenting each flag which increases onboarding time and makes intent unclear to new developers.",
+          "isCorrect": false,
+          "explanation": "Documentation helps explain intent, but relying solely on comments does not remove the complexity of combinatorial flag logic. A better long term fix is to redesign the API so intent is encoded in types or separate operations, reducing the need for explanatory comments."
+        },
+        {
+          "id": "c",
+          "text": "The method uses a switch statement to dispatch behavior which could cause performance overhead in tight loops if misused aggressively.",
+          "isCorrect": false,
+          "explanation": "Performance concerns from switches are situational and rarely the primary simplicity issue in higher level business code. The bigger problem here is semantic complexity from mode flags, not the dispatch mechanism itself."
+        },
+        {
+          "id": "d",
+          "text": "The constructor exposes internal configuration details which may leak implementation and complicate future refactoring efforts.",
+          "isCorrect": false,
+          "explanation": "Leaking configuration details is a legitimate design concern, but the snippet shows a single API method taking flags rather than a leaking constructor. The root simplicity issue is behavioral multiplicity within one method, which should be addressed by clearer API boundaries."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two implementations handle a business rule. Which version better preserves simplicity and long term maintainability?",
+      "codeSnippet": "// Version A\nfunction applyDiscount(order) {\n  if (order.total > 1000) return applyPercent(order, 10);\n  if (order.customer.isPreferred) return applyPercent(order, 5);\n  return applyFixed(order, 20);\n}\n\n// Version B\nfunction applyDiscount(order, flags) {\n  let discount = 0;\n  if (flags.usePercent && order.total > 1000) discount = 10;\n  if (flags.preferred && order.customer.isPreferred) discount = Math.max(discount, 5);\n  if (!discount) discount = 20;\n  // further nested flag handling\n  return finalizeDiscount(order, discount);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A organizes behavior into small intent revealing checks and reuseable helpers which improves clarity and testing.",
+          "isCorrect": true,
+          "explanation": "Version A expresses each rule with a direct check and delegates work to small helpers, making intent explicit and each path easy to test. This aligns with keeping domain logic readable and composable. Smaller focused functions reduce accidental coupling and make future rule changes local and safer."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes conditional logic behind flags which creates tangled branches and makes behavioral intent obscure to callers.",
+          "isCorrect": false,
+          "explanation": "Centralized flag-driven logic hides the business rules behind configuration combinations, which increases the chance of subtle bugs when flags interact. Over time this pattern forces maintainers to understand a matrix of flag states rather than reading clear business rules. Prefer explicit, intent-revealing structure for domain logic."
+        }
+      ]
+    }
+  ]
+}

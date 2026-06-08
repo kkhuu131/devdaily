@@ -1,0 +1,106 @@
+{
+  "id": 68,
+  "conceptName": "Separation of Concerns",
+  "category": "principle",
+  "definition": "A design principle that encourages dividing a system into distinct sections, each addressing a separate responsibility, to reduce coupling and increase maintainability.",
+  "ruleOfThumb": "Keep each module focused on a single area of responsibility so changes in one concern do not ripple into others.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Architecture",
+    "chapter": "Component Cohesion Principles",
+    "page": null,
+    "externalUrl": "https://www.oreilly.com/library/view/clean-architecture/9780134494272/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What primary problem does the following controller code most clearly illustrate?",
+      "codeSnippet": "class OrderController {\n  createOrder(req, res) {\n    const user = Auth.verify(req.headers.token);\n    if (!user) return res.status(401);\n    const total = this.calculateTotal(req.body.items);\n    const order = new Order(req.body);\n    order.save();\n    res.json({ id: order.id, total: total });\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A single class mixes HTTP handling, validation, and database persistence responsibilities into one tightly coupled implementation.",
+          "isCorrect": true,
+          "explanation": "This code bundles transport, authorization, business calculation, and persistence into one class. That mixing makes the controller hard to test and change because unrelated reasons to change affect the same type. A healthier design extracts responsibilities into layers or collaborators so each can be tested and evolved independently."
+        },
+        {
+          "id": "b",
+          "text": "The snippet exposes low cohesion because unrelated web handling and domain logic are implemented in the same module.",
+          "isCorrect": false,
+          "explanation": "This observation is true in spirit but is less precise. Low cohesion is a symptom; the more actionable issue is multiple responsibilities coexisting in one class. Addressing cohesion alone may not clarify how to split responsibilities across layers like transport, domain, and persistence."
+        },
+        {
+          "id": "c",
+          "text": "There is a missing abstraction level because business rules are implemented directly with transport and storage code.",
+          "isCorrect": false,
+          "explanation": "This is a plausible diagnosis because embedding business rules in transport code shows a missing domain/service layer. However it frames the problem as an abstraction absence rather than a responsibility entanglement. Effective fixes focus on clearly separating roles, not only adding abstractions."
+        },
+        {
+          "id": "d",
+          "text": "This code shows excessive coupling making testing difficult because many behaviors need real infrastructure to run.",
+          "isCorrect": false,
+          "explanation": "Excessive coupling and test difficulty are valid consequences of the implementation, but calling it only coupling hides the root cause: multiple concerns placed in one class. Separating responsibilities reduces coupling and makes tests more focused and faster."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which primary maintainability problem is most likely caused by this service implementation?",
+      "codeSnippet": "class InvoiceService {\n  createInvoice(data) {\n    validate(data);\n    const pdf = PdfFormatter.format(data);\n    const id = Database.insert('invoices', { data, pdf });\n    Email.send(data.email, pdf);\n    Logger.info('invoice created', id);\n    return id;\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The service conflates orchestration, presentation formatting, persistence, and external communication into one class which harms modular testability.",
+          "isCorrect": true,
+          "explanation": "The method mixes validation, formatting, persistence, messaging, and logging. That conflation ties unrelated changes together and makes isolated testing hard. A better approach delegates formatting, persistence, and messaging to dedicated components and keeps orchestration separate to improve modularity and testability."
+        },
+        {
+          "id": "b",
+          "text": "The implementation likely suffers from premature optimization because it tries to reduce DB calls at expense of clear code separation.",
+          "isCorrect": false,
+          "explanation": "While premature optimization can cause convoluted code, nothing in the snippet indicates performance-driven consolidation of calls. The larger issue is responsibilities mixed in one class. Optimizations are a possible but less direct explanation for the observed entanglement."
+        },
+        {
+          "id": "c",
+          "text": "This design is mainly a transaction boundary issue because persistence and messaging are not wrapped in a single atomic operation.",
+          "isCorrect": false,
+          "explanation": "Transaction management may be a real concern when persistence and messaging need atomicity, but the snippet's primary symptom is multiple responsibilities in one place. Transaction boundaries are orthogonal and should be addressed after separating responsibilities into appropriate components."
+        },
+        {
+          "id": "d",
+          "text": "There is a missing dependency injection problem because the class directly instantiates infrastructure and cannot be easily configured for tests.",
+          "isCorrect": false,
+          "explanation": "Direct dependency creation does hinder testing, but the snippet shows higher level mixing of concerns beyond just DI. Introducing dependency injection helps, but the more structural fix is to separate formatting, persistence, and communication into distinct collaborators first."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation would you choose for long term maintainability and why?",
+      "codeSnippet": "// Version A\nclass OrderService {\n  process(orderData) {\n    const id = Repository.save(orderData);\n    const payload = Formatter.format(orderData);\n    Http.send(200, payload);\n  }\n}\n\n// Version B\nclass OrderController {\n  handle(req) { Service.process(req.body); }\n}\nclass Service { process(data) { Repository.save(data); } }\nclass Repository { static save(d) { /* db */ } }\nclass Formatter { static format(d) { /* formatting */ } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A reduces files but couples UI, business, and persistence logic inside one class causing fragile changes.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes responsibilities which can simplify initial implementation, but it creates tight coupling among transport, domain, and persistence concerns. Over time small changes in any concern force edits to the same class, increasing risk and making feature branches and tests brittle. This fragility is why the alternative modular breakdown is preferable in larger systems."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates transport, business, and storage responsibilities into separate modules cleanly.",
+          "isCorrect": true,
+          "explanation": "Version B separates roles into distinct modules, which reduces coupling and makes each part easier to test and evolve. While it introduces more types and files, those artifacts map to explicit responsibilities and lower the cost of change. This aligns with established guidance on keeping modules focused and decoupled for maintainability. See Robert C. Martin on component cohesion principles and Fowler on layering for detailed rationale."
+        }
+      ]
+    }
+  ]
+}

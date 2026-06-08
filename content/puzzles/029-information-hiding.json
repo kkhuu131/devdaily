@@ -1,0 +1,106 @@
+{
+  "id": 29,
+  "conceptName": "Information Hiding",
+  "category": "solid",
+  "definition": "Conceal internal implementation and representation details behind a minimal public interface so callers depend only on stable abstractions.",
+  "ruleOfThumb": "Expose as little as possible; prefer small, intention-revealing interfaces and keep representation details private to enable safe change.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code",
+    "chapter": "Chapter 6: Objects and Data Structures",
+    "page": "pp. 45-60",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-code/9780136083238/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Inspect this class. Which statement best describes the primary design problem?",
+      "codeSnippet": "class Order {\n  public items: string[] = [];\n  public status: string;\n  constructor(status: string) {\n    this.status = status;\n  }\n  addItem(item: string) { this.items.push(item); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class exposes internal state via public fields and directly couples callers to its representation.",
+          "isCorrect": true,
+          "explanation": "The class publishes its internal arrays and status as public fields, so callers can read and mutate representation details. That creates tight coupling and prevents changing the internal layout or invariants without breaking clients. This is a classic violation of hiding implementation behind an interface; prefer accessor methods or a small API that enforces invariants and hides the concrete collection type."
+        },
+        {
+          "id": "b",
+          "text": "The class lacks input validation on setters and allows invalid domain values to propagate unpredictable runtime behavior later.",
+          "isCorrect": false,
+          "explanation": "While missing validation is a real concern, the snippet shows public fields rather than setters. The immediate smell is exposure of representation rather than missing validation logic. Adding validation helps, but it does not address the primary coupling caused by public mutable fields which lets callers bypass any checks entirely."
+        },
+        {
+          "id": "c",
+          "text": "The class performs multiple unrelated tasks and combines domain logic with persistence in a single hard to maintain component.",
+          "isCorrect": false,
+          "explanation": "Combining responsibilities is a plausible worry, but the small example simply shows state and an addItem method. There is no persistence or multiple subsystems present. The more specific issue here is direct exposure of internal collections and fields, which increases coupling more than a mixed responsibility violation in this snippet."
+        },
+        {
+          "id": "d",
+          "text": "The class relies on global state and singletons and thereby introduces hidden dependencies that make unit testing brittle.",
+          "isCorrect": false,
+          "explanation": "Global state and singletons do cause hidden dependencies, but the snippet contains only instance fields and methods with no globals. The concrete problem is the public surface exposing internal data structures. Tests will be brittle because clients can mutate internals, not because of singletons in this code."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review the module below. What is the most likely maintenance risk introduced by this design?",
+      "codeSnippet": "export type UserRecord = {\n  id: number;\n  name: string;\n  email: string;\n  createdAt: string;\n  lastLogin?: string;\n};\n\nexport async function fetchUser(id: number): Promise<UserRecord> {\n  return db.query(`select * from users where id = ${id}`);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The module exports database record shape directly and couples callers to the persisted storage representation.",
+          "isCorrect": true,
+          "explanation": "Exporting the raw record type and returning DB rows ties callers to the exact storage shape, including column names and types. That coupling makes refactoring schemas, renaming fields, or introducing a richer domain model expensive because many callers will need changes. A mapping layer to a domain type or a stable API prevents leakage of storage concerns."
+        },
+        {
+          "id": "b",
+          "text": "The module interpolates parameters into SQL strings and therefore opens a risk of SQL injection in the query layer.",
+          "isCorrect": false,
+          "explanation": "Direct string interpolation into SQL is a genuine security problem, but the prompt is aimed at design rather than security. The main maintenance risk shown is returning raw DB records via exported types. That structural coupling causes broader evolution issues beyond the SQL-injection concern, which should be addressed separately by parameterized queries."
+        },
+        {
+          "id": "c",
+          "text": "The module returns raw timestamp strings and forces every caller to implement time parsing logic across the codebase.",
+          "isCorrect": false,
+          "explanation": "Returning raw timestamp strings does push parsing responsibilities to callers, which is a design smell. However, the example emphasizes returning a storage-shaped record type rather than just timestamps. The bigger problem is reliance on the storage shape as the API, not only time handling, so a dedicated domain model or DTO would be preferable."
+        },
+        {
+          "id": "d",
+          "text": "The module exposes optional metadata fields and thereby leaks internal details that will increase coupling and complicate evolution.",
+          "isCorrect": false,
+          "explanation": "Leaking metadata is a specific form of exposing internal details and is a plausible concern. In this snippet the broader issue is the exported UserRecord and returning DB rows wholesale, which leaks the entire storage representation. Addressing metadata is useful, but the recommended fix is to introduce a stable abstraction rather than selectively hiding fields."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which version better prevents callers from becoming dependent on storage representation?",
+      "codeSnippet": "// Version A\ntype User = { id: number; name: string; email: string };\nclass UserRepoA {\n  async fetch(id: number): Promise<User> {\n    const row = await db.queryRow('select id,name,email from users where id=?', [id]);\n    return { id: row.id, name: row.name, email: row.email };\n  }\n}\n\n// Version B\nexport type UserRow = { id: number; name: string; email: string; created_at: string };\nexport class UserRepoB {\n  async fetch(id: number): Promise<UserRow> {\n    return db.queryRow('select * from users where id=?', [id]);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A encapsulates the storage shape behind a mapping layer and prevents callers from depending on raw database fields.",
+          "isCorrect": true,
+          "explanation": "Version A maps database rows to a focused domain type before returning data, so callers never see column names like created_at or transient DB concerns. That boundary lets you change queries, add columns, or refactor persistence without rippling changes to callers. This aligns with hiding implementation details and exposing a stable intent-revealing API."
+        },
+        {
+          "id": "b",
+          "text": "Version B shares internal structs across modules to avoid duplication and therefore makes refactoring storage representation risky and intrusive.",
+          "isCorrect": false,
+          "explanation": "Version B returns the raw DB row and exports that shape, which means callers depend on the exact storage schema. While sharing structs reduces initial wiring, it couples consumers to persistence details and forces wide changes when the schema evolves. That tight coupling is the very maintenance risk that hiding storage behind a small API aims to avoid."
+        }
+      ]
+    }
+  ]
+}

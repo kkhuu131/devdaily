@@ -1,0 +1,106 @@
+{
+  "id": 73,
+  "conceptName": "Data Class",
+  "category": "code-smell",
+  "definition": "An object that primarily exposes state through fields or simple accessors and contains little or no behavior tied to that state.",
+  "ruleOfThumb": "If most domain logic lives outside an object and the object only carries values, consider moving behavior into the object or consolidating logic.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code: A Handbook of Agile Software Craftsmanship",
+    "chapter": "Objects and Data Structures",
+    "page": "137",
+    "externalUrl": "https://www.investigatii.md/uploads/resurse/Clean%20Code.pdf"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description below best matches the following class?",
+      "codeSnippet": "class UserProfile {\n  public id: string;\n  public name: string;\n  public email: string;\n  constructor(id: string, name: string, email: string) {\n    this.id = id;\n    this.name = name;\n    this.email = email;\n  }\n  getDisplayName() { return this.name; }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class only exposes public fields and trivial accessors and contains no domain behavior to operate on its data.",
+          "isCorrect": true,
+          "explanation": "The class is a passive holder of values with only trivial accessors and no meaningful behavior. This is the classic smell where the object is used purely as a container and domain rules are implemented elsewhere. Typical refactorings include moving related behavior into the class or introducing a richer domain object to keep invariants local. See Clean Code chapter on Objects and Data Structures for guidance on balancing data and behavior."
+        },
+        {
+          "id": "b",
+          "text": "This class duplicates validation logic across services and mixes responsibilities between persistence and business rules causing coupling.",
+          "isCorrect": false,
+          "explanation": "While duplicated validation and mixed responsibilities are real problems, the snippet shows no duplicated validation or infrastructure code; it merely exposes state. A class that mixes persistence concern would reference repositories or serialization details, which are not present here. This option is a plausible misdiagnosis but not the primary issue."
+        },
+        {
+          "id": "c",
+          "text": "This class stores too many unrelated fields and is likely a god object that violates the single responsibility guideline.",
+          "isCorrect": false,
+          "explanation": "A god object typically aggregates many unrelated behaviors or large APIs that touch many parts of the system. The shown class has only three cohesive fields related to a user profile, so the god object diagnosis is not accurate. The real concern is lack of behavior rather than excessive unrelated responsibilities."
+        },
+        {
+          "id": "d",
+          "text": "This class primarily converts between formats and is acting as a thin transfer object without business logic or validation.",
+          "isCorrect": false,
+          "explanation": "A transfer object often contains mapping or transformation code tied to I/O boundaries. The snippet contains no conversion methods, only simple getters and fields, so while it resembles a transfer object in being passive, the option implies conversion responsibilities that are not shown. The more precise observation is that it is a passive data holder lacking domain behavior."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Assess the design quality of this class and choose the most accurate statement.",
+      "codeSnippet": "class Invoice {\n  private id: string;\n  private items: { price: number; qty: number }[];\n  constructor(id: string, items: { price: number; qty: number }[]) {\n    this.id = id;\n    this.items = items;\n  }\n  total() { return this.items.reduce((s, i) => s + i.price * i.qty, 0); }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class primarily exposes state with minimal behavior, suggesting it is a passive entity lacking domain responsibilities.",
+          "isCorrect": true,
+          "explanation": "The Invoice holds state and offers a simple total calculation, but most domain rules (discounts, tax rules, payment actions) would likely be implemented elsewhere. That pattern leads to an anemic design where the object does not protect its invariants. Refactor options include adding richer behaviors to the class or moving related rules into cohesive domain objects so invariants are enforced locally."
+        },
+        {
+          "id": "b",
+          "text": "This class embeds transactional persistence details and should be refactored into a repository to remove infrastructure concerns.",
+          "isCorrect": false,
+          "explanation": "Embedding persistence concerns would show repository methods, database calls, or transaction boundaries inside the class. The snippet contains only in-memory totals and no persistence code. While separation from infrastructure is important, that is not the primary concern shown here."
+        },
+        {
+          "id": "c",
+          "text": "This class centralizes validation and business rules and should be split into smaller cohesive services handling single responsibility.",
+          "isCorrect": false,
+          "explanation": "Centralizing validation and many business rules is a real smell, but the provided class contains only a simple aggregation method. Splitting into services is a possible approach, but the immediate issue is the object lacks sufficient domain behavior rather than it being overloaded with responsibilities."
+        },
+        {
+          "id": "d",
+          "text": "This class is responsible for UI formatting and network transformation and therefore belongs in a presentation or adapter layer.",
+          "isCorrect": false,
+          "explanation": "Presentation or adapter responsibilities would include formatting for display or serializing for transport. The Invoice example shows raw domain-ish data and a calculation, not formatting or network concerns. The better diagnosis is that it is a passive domain representation that could accept additional domain behavior."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better preserves encapsulation and enforces invariants in the domain model?",
+      "codeSnippet": "// Version A\nclass Customer {\n  private balance: number;\n  constructor(balance = 0) { this.balance = balance; }\n  charge(amount: number) {\n    if (amount + this.balance > 10000) throw new Error('limit exceeded');\n    this.balance += amount;\n  }\n}\n\n// Version B\nclass Customer {\n  public balance: number;\n  constructor(balance = 0) { this.balance = balance; }\n}\nclass CustomerService {\n  charge(customer: Customer, amount: number) {\n    if (amount + customer.balance > 10000) throw new Error('limit exceeded');\n    customer.balance += amount;\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps the behavior with the state and preserves encapsulation and object invariants inside the entity.",
+          "isCorrect": true,
+          "explanation": "Version A encapsulates both state and the rules that govern it, so invariants are enforced where the data lives. This reduces the surface area for incorrect mutations and makes the object easier to reason about and maintain. It follows principles from 'Objects and Data Structures' in Clean Code and aligns with rich domain model practices advocated by Fowler. When behavior and state are co-located, tests and refactorings tend to be more straightforward because invariants are not scattered across services."
+        },
+        {
+          "id": "b",
+          "text": "Version B separates behavior into external services which leads to scattered logic and makes invariants harder to enforce globally.",
+          "isCorrect": false,
+          "explanation": "Putting domain rules in external services can be appropriate for certain architectures, but it risks scattering business logic across the codebase and turning entities into passive containers. That scattering makes it easy for different services to accidentally bypass rules, increasing the chance of bugs. The tradeoffs include testability and a clear owner for invariants; for domain-centric logic, keeping behavior with the data is often preferable as recommended by domain modeling guidance."
+        }
+      ]
+    }
+  ]
+}

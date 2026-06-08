@@ -1,0 +1,105 @@
+{
+  "id": 50,
+  "conceptName": "Pull Up Method",
+  "category": "refactoring",
+  "definition": "Move a method that is duplicated in two or more subclasses up into their common superclass so behavior is centralized and duplication is reduced.",
+  "ruleOfThumb": "If two or more subclasses implement the exact same method body and the method does not depend on subclass-only state, move it to the common superclass.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Pull Up Method",
+    "page": "p. 104",
+    "externalUrl": "https://refactoring.com/catalog/pullUpMethod.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which symptom most strongly suggests extracting a common method into a shared superclass?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Two subclasses contain identical method bodies that clearly belong conceptually to their cohesive shared superclass.",
+          "isCorrect": true,
+          "explanation": "When multiple subclasses have identical implementations that conceptually fit the superclass, moving the implementation up eliminates duplication and clarifies responsibility. This is the classic trigger for pulling a method up. If the method accesses only parameters and superclass-visible state, moving it reduces maintenance surface and improves reuse."
+        },
+        {
+          "id": "b",
+          "text": "An interface is missing so duplicated method implementations appear in multiple classes instead of being declared once.",
+          "isCorrect": false,
+          "explanation": "A missing interface can be a design smell, but interfaces declare contracts rather than providing shared implementations. If the goal is to reuse behavior rather than just type, lifting the common implementation to a superclass is usually more appropriate than only introducing an interface."
+        },
+        {
+          "id": "c",
+          "text": "The duplicated method relies on different subclass fields making it unsafe to move to the shared superclass without adaptation.",
+          "isCorrect": false,
+          "explanation": "If implementations depend on differing subclass state, a naive movement would break encapsulation or require exposing fields. That situation demands redesign (for example, introduce protected helpers or an abstract accessor) before pulling code up, rather than refusing refactoring entirely."
+        },
+        {
+          "id": "d",
+          "text": "Shared logic is only superficial and moving it up would create a superclass bloated with unrelated responsibilities.",
+          "isCorrect": false,
+          "explanation": "Superclasses should model a meaningful abstraction. If the duplicated code is coincidental and would introduce unrelated behaviors into the superclass, then moving it harms cohesion. In that case consider other refactorings such as composition or extracting a helper object."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the code below, which refactor most directly reduces duplication while preserving subclass differences?",
+      "codeSnippet": "class PremiumUser {\n  calculateCharge(days: number) {\n    const base = days * 10;\n    return base - this.loyaltyDiscount();\n  }\n  loyaltyDiscount() { return 5; }\n}\nclass FreeUser {\n  calculateCharge(days: number) {\n    const base = days * 10;\n    return base - this.loyaltyDiscount();\n  }\n  loyaltyDiscount() { return 0; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Move the common calculateCharge implementation into a shared superclass where subclasses override only loyaltyDiscount methods.",
+          "isCorrect": true,
+          "explanation": "Pulling calculateCharge up to a common superclass centralizes the identical algorithm while allowing subclasses to provide differing loyaltyDiscount implementations. This reduces duplication without losing subclass-specific behavior. The superclass can call an abstract loyaltyDiscount method that each subclass implements."
+        },
+        {
+          "id": "b",
+          "text": "Extract a utility function and call it from each subclass to avoid inheritance and keep classes independent.",
+          "isCorrect": false,
+          "explanation": "A utility function removes duplication but shifts the algorithm out of the type hierarchy, possibly losing semantic connection to the domain object. If calculateCharge conceptually belongs to the user role, keeping it on the superclass is usually preferable for clarity and future extension."
+        },
+        {
+          "id": "c",
+          "text": "Introduce a decorator to wrap different loyalty rules so calculateCharge remains duplicated but decorated differently per subclass.",
+          "isCorrect": false,
+          "explanation": "Using decorators can modularize variant behavior, but it keeps the main algorithm duplicated in subclasses and adds indirection. For this simple case where the algorithm is identical, lifting it to a superclass is a more straightforward refactor with lower cognitive overhead."
+        },
+        {
+          "id": "d",
+          "text": "Create an abstract superclass declaring calculateCharge and duplicate body in both subclasses for future method divergence.",
+          "isCorrect": false,
+          "explanation": "Declaring an abstract method without consolidating the existing identical implementation preserves duplication and increases future maintenance burden. If the current logic is identical, apply the refactor to centralize it now and introduce overrides later only when divergence actually occurs."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better applies the appropriate refactor for centralizing shared behavior while respecting subclass differences?",
+      "codeSnippet": "abstract class Account {\n  // Version A: moved common behavior to superclass\n  getFee(days: number) {\n    const base = days * 2;\n    return base - this.specialDiscount;\n  }\n}\n\nclass GoldAccount extends Account {\n  specialDiscount = 5;\n}\n\nclass SilverAccount extends Account {\n  specialDiscount = 2;\n}\n\n// Version B: moved common behavior using an abstract helper\nabstract class AccountV2 {\n  getFee(days: number) {\n    const base = days * 2;\n    return base - this.getDiscount();\n  }\n  abstract getDiscount(): number;\n}\n\nclass GoldAccountV2 extends AccountV2 {\n  getDiscount() { return 5; }\n}\n\nclass SilverAccountV2 extends AccountV2 {\n  getDiscount() { return 2; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A exposes superclass to subclass state which creates fragile coupling and breaks superclass abstraction.",
+          "isCorrect": false,
+          "explanation": "Version A tightly couples the superclass to fields that exist only in subclasses. That creates fragile assumptions about subclass internals and undermines the superclass abstraction. A superclass should not depend on subclass-specific state; doing so leads to brittle code and maintenance hazards."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes the common calculation in the superclass and delegates variant details through an abstract helper method.",
+          "isCorrect": true,
+          "explanation": "Version B is the correct application: the shared algorithm lives in the superclass while subclass-specific differences are provided via a well-defined abstract helper. This preserves encapsulation, keeps the superclass free of subclass fields, and follows standard refactoring practice for moving common behavior upward. Fowler describes this pattern as pulling up behavior while introducing abstract operations when subclasses must supply specifics."
+        }
+      ]
+    }
+  ]
+}

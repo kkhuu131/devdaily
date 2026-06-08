@@ -1,0 +1,106 @@
+{
+  "id": 52,
+  "conceptName": "Composite Pattern",
+  "category": "design-pattern",
+  "definition": "A structural pattern that composes objects into tree structures so clients treat individual objects and compositions uniformly.",
+  "ruleOfThumb": "Use when clients should treat single objects and composites the same way and tree-like structures are natural.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Composite",
+    "page": "223",
+    "externalUrl": "https://refactoring.guru/design-patterns/composite"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the following TypeScript snippet, which observation best describes the intent of these classes?",
+      "codeSnippet": "interface Component {\n  render(): string\n}\n\nclass Leaf implements Component {\n  constructor(private name: string) {}\n  render() { return this.name }\n}\n\nclass Container implements Component {\n  private children: Component[] = []\n  add(c: Component) { this.children.push(c) }\n  render() { return this.children.map(c => c.render()).join(',') }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It represents tree structures where leaves and containers are treated through a common interface uniformly.",
+          "isCorrect": true,
+          "explanation": "The snippet defines a Component interface implemented by both Leaf and Container so clients can treat them uniformly. This is the core intent of the pattern: compose objects into a tree and operate on the tree through a common interface without depending on concrete leaf or composite types."
+        },
+        {
+          "id": "b",
+          "text": "It decouples client code by allowing specific leaf implementations to be substituted without changing client logic.",
+          "isCorrect": false,
+          "explanation": "While substitutability is a beneficial side effect, the primary point of the design shown is structural composition allowing uniform treatment of single and grouped objects. Substitution alone could be achieved with simpler polymorphism without the tree composition behavior."
+        },
+        {
+          "id": "c",
+          "text": "It primarily focuses on optimizing recursive traversal performance instead of simplifying client-side object interactions consistently.",
+          "isCorrect": false,
+          "explanation": "Performance of traversal is not the primary intention. The example emphasizes a uniform interface and composition; traversal is an implementation detail that may be recursive but is not the defining purpose of the structure."
+        },
+        {
+          "id": "d",
+          "text": "It forces a strict binary tree shape by constraining components to exactly two children in every container.",
+          "isCorrect": false,
+          "explanation": "Nothing in the code restricts the number of children to two. The Container uses a list allowing arbitrary branching. The pattern models general tree structures, not specifically binary trees."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review the snippet where a Folder class implements child management separately from the Component interface. What is the primary design concern?",
+      "codeSnippet": "interface Component { render(): string }\n\nclass File implements Component {\n  constructor(private name: string) {}\n  render() { return name }\n}\n\nclass Folder implements Component {\n  children: Component[] = []\n  addChild(c: Component) { this.children.push(c) }\n  render() { return this.children.map(c => c.render()).join('\\n') }\n}\n\n// client code\nfunction attach(parent: Component, child: Component) {\n  if (parent instanceof Folder) parent.addChild(child)\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The implementation requires client type checks to manage children, breaking uniform treatment of components across clients.",
+          "isCorrect": true,
+          "explanation": "The client performs an instanceof check to call addChild, which means clients must know about concrete container types. That undermines the goal of treating components uniformly and increases coupling between client code and concrete component implementations."
+        },
+        {
+          "id": "b",
+          "text": "The folder class risks deep recursion that might cause stack overflow when processing very deep nested hierarchies in production.",
+          "isCorrect": false,
+          "explanation": "Deep recursion can be a practical concern for any tree, but the shown code does not demonstrate a traversal algorithm problem specifically. The more immediate design issue is client reliance on concrete Folder rather than uniform component usage."
+        },
+        {
+          "id": "c",
+          "text": "The code exposes the internal children array directly which creates aliasing and mutation bugs when modified externally.",
+          "isCorrect": false,
+          "explanation": "Exposing internal collections can cause bugs, but in this snippet children is a public field only in the example for brevity. The primary pattern-level concern is the need for runtime type checks to manage children rather than a structural exposure issue."
+        },
+        {
+          "id": "d",
+          "text": "The implementation violates single responsibility by mixing tree management with rendering logic in the same classes.",
+          "isCorrect": false,
+          "explanation": "Mixing responsibilities can be worth addressing, yet in many composite implementations rendering and child management naturally belong to the same composite class. The larger design smell here is the client-level type checking that defeats uniformity."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better preserves uniform client usage and avoids forcing leaf classes to implement inappropriate child management methods?",
+      "codeSnippet": "// Version A\ninterface Component { render(): string }\ninterface Container { add(c: Component): void; remove(c: Component): void }\nclass Folder implements Component, Container { private children: Component[] = []\n  add(c: Component) { this.children.push(c) }\n  remove(c: Component) { this.children = this.children.filter(x => x !== c) }\n  render() { return this.children.map(c => c.render()).join(',') }\n}\nclass File implements Component { render() { return 'file' } }\n\n// Version B\ninterface ComponentV2 { render(): string; add?(c: ComponentV2): void }\nclass FolderV2 implements ComponentV2 { children: ComponentV2[] = []; add(c: ComponentV2) { this.children.push(c) } render() { return '' } }\nclass FileV2 implements ComponentV2 { render() { return 'file' } add(c: ComponentV2) { throw new Error('cannot add to leaf') } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A places child management methods strictly on container classes across the component hierarchy.",
+          "isCorrect": true,
+          "explanation": "Version A separates the child-management concern into a dedicated interface implemented by container types. That preserves a clean Component interface for leaves and prevents leaves from having to implement meaningless add or remove operations. It keeps client code able to work with components uniformly while only depending on container capabilities when necessary."
+        },
+        {
+          "id": "b",
+          "text": "Version B attaches child management to every component forcing leaves to implement no-op or throwing operations at runtime.",
+          "isCorrect": false,
+          "explanation": "Version B adds child-management methods into the base component type, which requires leaf classes to either implement no-op behavior or throw exceptions. That design leads to runtime errors and less clear contracts. It encourages clients to perform runtime checks or handle exceptions rather than relying on compile-time type guarantees. See GoF and pragmatic guidance about keeping container responsibilities separate."
+        }
+      ]
+    }
+  ]
+}

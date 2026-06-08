@@ -1,0 +1,106 @@
+{
+  "id": 61,
+  "conceptName": "Divergent Change",
+  "category": "code-smell",
+  "definition": "A code smell that occurs when a single module or class must be changed in many different ways for different reasons, indicating it has multiple responsibilities and will cause ripple effects when requirements evolve.",
+  "ruleOfThumb": "If you find yourself editing one class for many unrelated reasons, consider splitting responsibilities so each reason affects only one place.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Code Smells",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the class below. Which short description best identifies the primary maintainability problem?",
+      "codeSnippet": "class UserService {\n  saveUser(user) { /* persist user */ }\n  formatWelcomeEmail(user) { /* format email */ }\n  sendNotification(user, message) { /* send via SMS or email */ }\n  logActivity(user, action) { /* append to audit log */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class mixes persistence, formatting, and notification responsibilities causing changes for multiple unrelated reasons later.",
+          "isCorrect": true,
+          "explanation": "The class groups responsibilities that will tend to change for different reasons: storage, presentation, and communication. That means adding a feature affecting emails will require touching the same class, increasing the risk of regressions. The typical remedy is to separate responsibilities into distinct modules so each reason to change affects only one place."
+        },
+        {
+          "id": "b",
+          "text": "This class centralizes many unrelated fields and methods creating a god object that is hard to test.",
+          "isCorrect": false,
+          "explanation": "A god object is a plausible concern because many methods are present, but the core problem here is the mixing of distinct change drivers rather than sheer size. Splitting by responsibility improves testability and isolates change more directly than only trying to shrink the class."
+        },
+        {
+          "id": "c",
+          "text": "Small methods access many internals of other objects causing behavior to belong elsewhere and be refactored.",
+          "isCorrect": false,
+          "explanation": "Accessing internals of other objects can indicate feature envy, which is a real smell. In this example there is no clear indication of heavy access to other objects; instead the issue is that unrelated concerns are co-located in one class and will change independently."
+        },
+        {
+          "id": "d",
+          "text": "Multiple client classes need coordinated edits across different modules when a single API changes frequently.",
+          "isCorrect": false,
+          "explanation": "This describes shotgun surgery, where a single conceptual change requires edits across many modules. The snippet shows one class accumulating responsibilities and would instead cause edits concentrated in that class when features change, so shotgun surgery is not the best label here."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Consider this payment processor. Which description best captures the future maintenance risk?",
+      "codeSnippet": "class PaymentProcessor {\n  process(payment) {\n    if (payment.type === 'credit') { /* credit logic */ }\n    else if (payment.type === 'paypal') { /* paypal logic */ }\n    else if (payment.type === 'crypto') { /* crypto logic */ }\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code centralizes distinct payment behaviors requiring edits here when new payment types are added frequently.",
+          "isCorrect": true,
+          "explanation": "Each payment type adds a new branch in the same class, so adding or changing a payment method will repeatedly modify this module. Introducing a polymorphic abstraction for payment types would localize changes and reduce the need to alter the processor for each new variant."
+        },
+        {
+          "id": "b",
+          "text": "This code duplicates logic across different methods increasing the risk of inconsistent updates across similar behaviors.",
+          "isCorrect": false,
+          "explanation": "Logic duplication is a real concern, but the snippet shows branching inside a single method rather than the same code duplicated in multiple places. The primary risk is that multiple unrelated behaviors are co-located, which makes adding types more invasive than simple duplication would."
+        },
+        {
+          "id": "c",
+          "text": "This code exposes platform dependencies through many conditional branches making integration and testing more brittle.",
+          "isCorrect": false,
+          "explanation": "Conditional branching can complicate testing if it ties to external systems, but the main maintainability issue here is that different payment reasons force edits to the same class. Refactoring toward a strategy or handler pattern would address both testing and change isolation."
+        },
+        {
+          "id": "d",
+          "text": "This code mixes transport concerns with business rules causing unclear separation of responsibilities and harder reuse.",
+          "isCorrect": false,
+          "explanation": "Mixing transport and business logic is a valid design flaw, yet the example emphasizes multiple payment behaviors in one spot. The more precise problem is that changes for new payment types will repeatedly touch the same module, suggesting a need for separate behavior classes rather than only separating transport layers."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two refactor variants are proposed. Which version better prevents future unrelated changes from touching the same module?",
+      "codeSnippet": "// Version A\nclass EventHandler {\n  handle(event) {\n    switch(event.type) {\n      case 'signup': this.handleSignup(event); break;\n      case 'purchase': this.handlePurchase(event); break;\n      case 'notification': this.handleNotification(event); break;\n    }\n  }\n}\n\n// Version B\ninterface Handler { handle(event): void }\nclass SignupHandler implements Handler { handle(e) { /* signup */ } }\nclass PurchaseHandler implements Handler { handle(e) { /* purchase */ } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A consolidates multiple behaviors into one large class with mixed responsibilities and broader coupling across modules.",
+          "isCorrect": false,
+          "explanation": "Version A groups all event handling in a single structure, which can seem simpler and reduce class count. However that consolidation means a change for one event type may force edits in the same class, increasing the chance of regressions and making it harder to apply focused tests or separate deployments."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates each behavior into separate focused classes with clear narrow responsibilities across the module.",
+          "isCorrect": true,
+          "explanation": "Version B gives each behavior its own focused class, so changes related to one event type are localized and unlikely to affect other handlers. This improves encapsulation, simplifies testing of single behaviors, and enables safer independent evolution or replacement of individual handlers. The pattern aligns with the single responsibility principle and common handler/strategy refactorings."
+        }
+      ]
+    }
+  ]
+}

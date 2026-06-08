@@ -1,0 +1,106 @@
+{
+  "id": 78,
+  "conceptName": "Hollywood Principle",
+  "category": "principle",
+  "definition": "A guideline for Inversion of Control where a framework or higher-level component calls into lower-level code via callbacks or hooks, keeping control flow in the framework rather than the application directly invoking framework internals.",
+  "ruleOfThumb": "Design frameworks to invoke registered handlers at the right time instead of requiring callers to orchestrate framework internals.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Inversion of Control (blog)",
+    "chapter": "Inversion of Control",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/InversionOfControl.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the snippet, which description best matches the control relationship between the app and the registered component?",
+      "codeSnippet": "interface Plugin {\n  start(): void\n}\n\nclass App {\n  private plugins: Plugin[] = []\n  register(plugin: Plugin) { this.plugins.push(plugin) }\n  run() { this.plugins.forEach(p => p.start()) }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The framework code invokes methods on registered plugins to let plugins handle behavior instead of plugins pulling state.",
+          "isCorrect": true,
+          "explanation": "This snippet shows the app (framework) iterating over registered plugins and invoking start on each one. The control flows from the app into plugin implementations, which is the core idea here: the framework calls hooks provided by lower-level code so behavior is supplied by the plugin but invoked by the framework."
+        },
+        {
+          "id": "b",
+          "text": "The plugins actively poll framework internals rather than having the framework invoke plugin hooks at lifecycle points.",
+          "isCorrect": false,
+          "explanation": "Polling would require plugins to call back into framework internals repeatedly; the snippet instead shows the framework invoking plugin methods at a lifecycle point (run). Polling is not happening here because plugins are passive until the framework calls start."
+        },
+        {
+          "id": "c",
+          "text": "The framework exposes global singletons that plugin code must call directly to perform operations and coordinate.",
+          "isCorrect": false,
+          "explanation": "Global singletons would mean plugin code reaches out to framework services directly. In this code the plugins expose methods and the framework invokes them, so there is no evidence of plugins calling global framework singletons."
+        },
+        {
+          "id": "d",
+          "text": "The plugin registers handlers and then framework invokes them during runtime to drive application behavior.",
+          "isCorrect": false,
+          "explanation": "This option is a close description but subtly different from the correct answer because it frames plugins as simply registering handlers; while true, the key observation is that the framework actively invokes plugin methods to handle behavior. Option a more directly states that the framework invokes methods to let plugins supply behavior."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Examine the design. Which interpretation most accurately describes the intended dependency direction and responsibility for side effects?",
+      "codeSnippet": "interface Notifier { notify(evt: string): void }\n\nclass PaymentProcessor {\n  constructor(private notifier: Notifier) {}\n  process(amount: number) {\n    // process payment\n    this.notifier.notify('payment_processed')\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The processor depends on a provided notifier so external code controls side effects and delivery strategy.",
+          "isCorrect": true,
+          "explanation": "The constructor injection shows the processor depending on an external notifier abstraction. This design pushes side effect responsibility to whoever supplies the notifier, which enables substituting different delivery strategies in tests or runtime."
+        },
+        {
+          "id": "b",
+          "text": "This code couples processing directly to a concrete network service making the processor responsible for connection concerns.",
+          "isCorrect": false,
+          "explanation": "There is no concrete network service in the snippet; the processor depends on an abstraction (Notifier) not a concrete implementation. Coupling to a concrete service would be evident if the class constructed or referenced a specific network client inside process."
+        },
+        {
+          "id": "c",
+          "text": "The processor resolves a notifier from a global container at runtime instead of accepting it via constructor injection.",
+          "isCorrect": false,
+          "explanation": "Constructor injection is explicit here. Resolving from a global container would show code calling a registry or container inside the class, which is not present. The snippet shows the notifier being injected, not looked up."
+        },
+        {
+          "id": "d",
+          "text": "The processor exposes a hook so callers can register callbacks for lifecycle events which it will call.",
+          "isCorrect": false,
+          "explanation": "The snippet calls notifier.notify directly; it does not expose registration hooks for external callbacks. The design accepts a notifier dependency rather than providing its own registration API for callbacks."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better preserves clear control flow and keeps lifecycle concerns centralized?",
+      "codeSnippet": "// Version A: application must drive engine tick\nclass EngineA {\n  private tasks: (() => void)[] = []\n  addTask(t: () => void) { this.tasks.push(t) }\n  tick() { this.tasks.forEach(t => t()) }\n}\nconst engineA = new EngineA()\nengineA.addTask(() => console.log('task'))\n// App must call engineA.tick() regularly\n\n// Version B: engine runs and invokes registered tasks internally\nclass EngineB {\n  private tasks: (() => void)[] = []\n  register(t: () => void) { this.tasks.push(t) }\n  start() { setInterval(() => this.tasks.forEach(t => t()), 1000) }\n}\nconst engineB = new EngineB()\nengineB.register(() => console.log('task'))\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A forces the application to orchestrate execution timing which scatters lifecycle concerns across callers.",
+          "isCorrect": false,
+          "explanation": "Version A requires external callers to remember to drive engine.tick, which pushes scheduling and lifecycle responsibilities into many callers. That scattering increases coupling between app logic and timing concerns and makes testing the overall lifecycle harder because callers must simulate ticks."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes control in the engine and invokes registered tasks internally.",
+          "isCorrect": true,
+          "explanation": "Version B keeps the timing and orchestration inside the engine, letting callers simply register tasks. This centralization reduces accidental misuse, keeps lifecycle code in one place, and makes testing easier because the engine coordinates execution. For reasoning about inversion of control patterns see Martin Fowler on Inversion of Control and related discussions in design literature."
+        }
+      ]
+    }
+  ]
+}

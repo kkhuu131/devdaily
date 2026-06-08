@@ -1,0 +1,106 @@
+{
+  "id": 74,
+  "conceptName": "Global Data",
+  "category": "code-smell",
+  "definition": "Shared, application-scoped mutable state that different modules or components read and write, creating hidden coupling and ordering dependencies.",
+  "ruleOfThumb": "Prefer local ownership or explicit pass-through of state to avoid implicit dependencies and surprising mutations.",
+  "citation": {
+    "author": "Michael Feathers",
+    "bookTitle": "Working Effectively with Legacy Code",
+    "chapter": "Dealing with Static State and Global Variables",
+    "page": null,
+    "externalUrl": "https://www.oreilly.com/library/view/working-effectively-with/0201179616/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this module. What is the primary code smell shown?",
+      "codeSnippet": "let cache: { [k: string]: any } = {};\n\nexport function get(key: string) {\n  return cache[key];\n}\n\nexport function set(key: string, value: any) {\n  cache[key] = value;\n}\n\nexport function reset() {\n  cache = {};\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It defines a module-scoped mutable object that multiple unrelated functions read and write causing hidden coupling.",
+          "isCorrect": true,
+          "explanation": "The module holds mutable state at module scope and provides setters and getters. That creates implicit dependencies where any importer can alter state and affects other consumers unpredictably. This is classic shared mutable state that leads to tight coupling and test fragility."
+        },
+        {
+          "id": "b",
+          "text": "It relies on closure captured constants that make functions produce stale values when asynchronous tasks complete.",
+          "isCorrect": false,
+          "explanation": "While closure-captured values can cause stale reads in async code, this snippet exposes a mutable object and explicit setter functions. The primary issue is shared mutable scope rather than stale closure values in asynchronous flows."
+        },
+        {
+          "id": "c",
+          "text": "It implements a complex singleton factory pattern that prevents creating independent instances for testing or concurrent use.",
+          "isCorrect": false,
+          "explanation": "A singleton-like effect is present because the module exposes one shared instance, but calling it a complex factory is inaccurate. The real smell is the uncontrolled shared mutable container rather than a deliberately designed singleton abstraction."
+        },
+        {
+          "id": "d",
+          "text": "It performs heavy synchronous I O operations inside exported functions causing unpredictable latency and coupling to environment.",
+          "isCorrect": false,
+          "explanation": "Synchronous I/O would be an operational concern, but the snippet shows an in-memory cache with getters and setters. The observed problem is cross-module mutation of shared state, not blocking I/O or environment coupling."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "An app exports a central settings object and many modules update it at runtime. Which interpretation best explains the risk?",
+      "codeSnippet": "// config.ts\nexport const settings = {\n  featureFlag: false,\n  theme: 'light'\n};\n\n// otherModule.ts\nimport { settings } from './config';\nsettings.featureFlag = true;\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This file exports a mutable shared settings object that is mutated by many modules at runtime creating hidden ordering dependencies.",
+          "isCorrect": true,
+          "explanation": "Exporting a mutable configuration object lets any importer change global configuration in place, producing initialization and ordering bugs. Tests may need to reset this state explicitly and runtime changes can have unpredictable side effects."
+        },
+        {
+          "id": "b",
+          "text": "This file uses the object as a transient cache which intentionally allows mutation for performance reasons across modules in hot paths.",
+          "isCorrect": false,
+          "explanation": "A shared cache is a legitimate pattern when carefully controlled, but the snippet shows a generic settings object being mutated without access controls. The primary concern remains broadly shared mutable configuration rather than an intentional ephemeral cache."
+        },
+        {
+          "id": "c",
+          "text": "This file attempts to be a registry and becomes an implicit dependency injection point for unrelated components at runtime.",
+          "isCorrect": false,
+          "explanation": "A registry issue is plausible because shared objects can act as service locators, but this example reads and writes flat configuration properties. The central problem is uncontrolled shared mutation rather than a designed registry or service location pattern."
+        },
+        {
+          "id": "d",
+          "text": "This file was designed to expose read only configuration but an export leak allows external code to mutate internal state unexpectedly across tests.",
+          "isCorrect": false,
+          "explanation": "Leaking mutable state does happen when you intend read only exports. However, the snippet explicitly exports a mutable object, so the root is deliberate shared mutability rather than an accidental leak. Either way tests and runtime behavior suffer."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better prevents surprising cross-module mutations and why?",
+      "codeSnippet": "// Version A: encapsulated store\nclass UserStore {\n  private users: string[] = [];\n  add(user: string) { this.users.push(user); }\n  getAll() { return [...this.users]; }\n}\nexport const userStore = new UserStore();\n\n// Version B: shared mutable export\nexport const users: string[] = [];\nexport function addUser(u: string) { users.push(u); }\nexport function getUsers() { return users; }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes mutable state inside one owning class under a single owner.",
+          "isCorrect": true,
+          "explanation": "Version A encapsulates state behind an owner with controlled mutation methods and returns copies for reads. That confines responsibility and makes reasoning, testing, and future concurrency controls easier. Encapsulation prevents arbitrary external writes and reduces the surface for accidental coupling."
+        },
+        {
+          "id": "b",
+          "text": "Version B exports raw mutable arrays and lets external modules write directly creating unexpected cross module mutations and race conditions.",
+          "isCorrect": false,
+          "explanation": "Version B exposes the underlying array so any importer can mutate it directly or hold references. That permits accidental shared writes, makes tests fragile due to implicit global state, and increases the chance of concurrent modification problems. This design leaks implementation and ownership, which leads to subtle bugs."
+        }
+      ]
+    }
+  ]
+}

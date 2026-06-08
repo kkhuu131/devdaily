@@ -1,0 +1,105 @@
+{
+  "id": 43,
+  "conceptName": "Long Parameter List",
+  "category": "code-smell",
+  "definition": "A function or method that takes many separate parameters instead of grouping related data or encapsulating behavior, making interfaces hard to read and maintain.",
+  "ruleOfThumb": "If a routine has more than three to four parameters, consider grouping related arguments into a value object or refactoring responsibilities.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Introduce Parameter Object",
+    "page": "p. 140",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the most direct problem suggested by this function signature?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "This function signature contains many parameters indicating poor abstraction across responsibilities and reduced encapsulation at runtime.",
+          "isCorrect": true,
+          "explanation": "A long list of parameters usually signals that related data is not encapsulated. Grouping related values into a single object or extracting a smaller collaborator reduces coupling and clarifies the API. This observation points directly to an abstraction and encapsulation problem rather than a transient bug."
+        },
+        {
+          "id": "b",
+          "text": "This method likely violates a single responsibility and indicates data being passed instead of encapsulated behavior.",
+          "isCorrect": false,
+          "explanation": "While long parameter lists can coincide with SRP violations, the immediate symptom is the shape of the interface rather than an explicit mixing of responsibilities. The method might still have a single responsibility while taking many configuration values."
+        },
+        {
+          "id": "c",
+          "text": "This call pattern increases the chance of positional errors and makes testing and composing the API harder.",
+          "isCorrect": false,
+          "explanation": "Positional mistakes and brittle call sites are real risks, but they are consequences of the interface shape. The root concern is missing grouping or encapsulation of related parameters rather than only callsite ergonomics."
+        },
+        {
+          "id": "d",
+          "text": "This public API surface is brittle because callers must supply many related values rather than one cohesive object.",
+          "isCorrect": false,
+          "explanation": "This describes a valid maintenance pain, and it is closely related to the correct answer. However, the phrasing emphasizes caller burden rather than the underlying lack of a domain object or encapsulation that caused the signature to grow."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the code below, which specific maintenance concern is most directly indicated by the signature?",
+      "codeSnippet": "const emailService = new EmailService();\n\nemailService.scheduleEmail(\n  \"alice@example.com\",\n  \"Welcome!\",\n  \"Hello Alice\",\n  new Date(Date.now() + 3600000),\n  3,\n  \"high\",\n  true,\n  \"campaign-123\"\n);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This signature forces callers to manage many separate arguments and increases callsite complexity for creation and configuration.",
+          "isCorrect": true,
+          "explanation": "The call requires many positional values which makes the callsite hard to read and maintain. Introducing a typed options object or parameter grouping clarifies intent and reduces errors when adding new configuration fields."
+        },
+        {
+          "id": "b",
+          "text": "This design suggests the function mixes responsibilities between delivery, retry policy, and campaign tracking concerns.",
+          "isCorrect": false,
+          "explanation": "Bundling delivery, retry, and tracking into a single API can hint at mixed concerns, but the immediate code smell is the unwieldy parameter list. Separating responsibilities might be useful later, but first-level improvement is to model the data more clearly."
+        },
+        {
+          "id": "c",
+          "text": "This API will likely suffer from positional errors when called and complicates future optional parameter additions.",
+          "isCorrect": false,
+          "explanation": "Positional errors and optional-parameter growth are real and probable maintenance problems. They are symptoms that flow from the same cause as the correct answer, but they describe downstream effects rather than the primary structural issue of how configuration is passed."
+        },
+        {
+          "id": "d",
+          "text": "This signature indicates performance problems due to large parameter copying and expensive object serialization at runtime.",
+          "isCorrect": false,
+          "explanation": "Performance concerns from parameter copying are typically negligible for primitive and small object values in most high-level languages. The more pressing maintenance issue is clarity and cohesion of parameter grouping rather than runtime copying costs."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is structurally preferable for maintainability?",
+      "codeSnippet": "// Version A\n\ntype SendOptions = {\n  to: string;\n  subject: string;\n  body: string;\n  sendAt?: Date;\n  retries?: number;\n};\n\nfunction sendEmail(options: SendOptions) {\n  // validate and send\n}\n\n// Version B\n\nfunction sendEmailV2(to: string, subject: string, body: string, sendAt?: Date, retries?: number) {\n  // many positional args\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes related parameters into a typed configuration object for clearer usage.",
+          "isCorrect": true,
+          "explanation": "Version A collects related fields into a named type which documents intent, enables validation in one place, and improves callsite readability. A parameter object also eases adding optional fields without breaking callers and supports named arguments semantics. This approach aligns with the Introduce Parameter Object refactoring and reduces coupling between caller and callee."
+        },
+        {
+          "id": "b",
+          "text": "Version B hides parameter intent behind many positional arguments which increases caller errors and fragile refactors.",
+          "isCorrect": false,
+          "explanation": "Version B relies on positional order and numerous individual parameters. That makes callsites less descriptive and fragile when parameters are added or reordered. While some advocate builders in certain domains, this shape increases risk of positional mistakes, complicates API evolution, and disperses validation logic across many callsites instead of a single cohesive model."
+        }
+      ]
+    }
+  ]
+}

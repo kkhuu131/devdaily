@@ -1,0 +1,105 @@
+{
+  "id": 60,
+  "conceptName": "Memento Pattern",
+  "category": "design-pattern",
+  "definition": "Allows capturing and externalizing an object's internal state so it can be restored later without exposing its implementation details.",
+  "ruleOfThumb": "When you need undo or snapshot semantics without letting external code reach into an object's internals, capture state opaquely.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns - Memento",
+    "page": "307",
+    "externalUrl": "https://refactoring.guru/design-patterns/memento"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best describes the core intent of the pattern shown in typical codebases?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Capture an object's internal state externally so it can be restored later without exposing its internals.",
+          "isCorrect": true,
+          "explanation": "This describes the core intent: preserve an object's state for later restoration while keeping implementation details hidden. The pattern provides a way for the originator to save and restore state without other components peeking into or manipulating its private fields. That separation prevents clients from depending on internal representation changes and supports undo stacks or checkpoints."
+        },
+        {
+          "id": "b",
+          "text": "Provide a copy of the object to clients so they can modify snapshots without affecting the original.",
+          "isCorrect": false,
+          "explanation": "This describes producing mutable clones for clients, which is different. Cloning hands clients full access to internal state and representation. The pattern's goal is not to give clients editable copies but to let the originator supply opaque snapshots that preserve encapsulation. Giving editable copies increases coupling and loses control over valid state transitions."
+        },
+        {
+          "id": "c",
+          "text": "Serialize an object to persistent storage to support long term undo and cross process state restoration.",
+          "isCorrect": false,
+          "explanation": "Persistence and serialization can be used alongside the pattern but are not the defining intent. The pattern focuses on in-memory state capture with encapsulation preserved. Relying on serialization conflates storage concerns with restoring internal invariants, and it may expose representation details unless additional encapsulation measures are applied."
+        },
+        {
+          "id": "d",
+          "text": "Centralize state changes in a service to allow transactional rollback across multiple domain objects easily.",
+          "isCorrect": false,
+          "explanation": "This describes a transactional rollback or unit-of-work approach spanning multiple objects, which is a broader coordination concern. The pattern targets capturing a single object's state and restoring it without exposing internals. Cross-object rollback requires orchestration beyond the single-object snapshot semantics this pattern provides."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In the TypeScript excerpt below, what is the primary design concern with this implementation?",
+      "codeSnippet": "class Editor {\n  private content: string = '';\n  private cursor: number = 0;\n  saveSnapshot() { return { content: this.content, cursor: this.cursor }; }\n  restoreSnapshot(s: { content: string; cursor: number }) { this.content = s.content; this.cursor = s.cursor; }\n}\nclass History {\n  private snapshots: any[] = [];\n  push(s: any) { this.snapshots.push(s); }\n  pop() { return this.snapshots.pop(); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The originator exposes raw internal state objects which breaks encapsulation and allows external mutation of internal fields.",
+          "isCorrect": true,
+          "explanation": "The code returns plain objects as snapshots, exposing the Editor's private representation to callers. That breaks encapsulation because any consumer can inspect or mutate the snapshot, causing aliasing or invalid state to be applied back to the originator. The intended design should return an opaque token or an encapsulated snapshot type controlled by the originator to preserve invariants."
+        },
+        {
+          "id": "b",
+          "text": "This implementation risks large memory growth from keeping full snapshots without any compaction or incremental differencing strategy.",
+          "isCorrect": false,
+          "explanation": "While uncontrolled snapshot retention can consume memory, the more immediate design issue in this snippet is the exposure of internal representation. Memory growth is a real operational concern but orthogonal to the structural problem of encapsulation and snapshot integrity."
+        },
+        {
+          "id": "c",
+          "text": "The code couples caretaker logic to snapshot structure so future internal state changes will require updates across collectors.",
+          "isCorrect": false,
+          "explanation": "This is a plausible concern: storing plain snapshot shapes in History couples snapshot consumers to structure. However coupling arises because snapshots are raw objects; the root problem remains that internal state is exposed. Proper encapsulation would prevent coupling by keeping snapshot structure internal to the originator."
+        },
+        {
+          "id": "d",
+          "text": "Restoration uses shallow copied plain objects so nested mutable fields may be shared and cause unexpected aliasing bugs.",
+          "isCorrect": false,
+          "explanation": "Shallow copying and aliasing are legitimate risks when snapshots include nested mutable data. Still, the more fundamental design flaw here is returning raw state structures. Encapsulation would allow the originator to control deep or shallow copy semantics and avoid aliasing surprises."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better preserves encapsulation and reduces coupling between originator and caretakers?",
+      "codeSnippet": "// Version A\nclass SnapshotToken {\n  private state: string;\n  constructor(s: string) { this.state = s; }\n  // Only originator should access the internal state\n}\nclass EditorV1 {\n  private content = '';\n  save(): SnapshotToken { return new SnapshotToken(this.content); }\n  restore(t: SnapshotToken) { /* originator extracts state internally */ }\n}\n\n// Version B\nclass EditorV2 {\n  private content = '';\n  save() { return { content: this.content }; }\n  restore(s: { content: string }) { this.content = s.content; }\n}\nclass History { items: any[] = []; push(s: any) { this.items.push(s); } pop() { return this.items.pop(); } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A preserves encapsulation by giving caretakers opaque snapshot tokens that cannot be introspected or mutated.",
+          "isCorrect": true,
+          "explanation": "Version A encapsulates the saved state inside an opaque token type that only the originator understands. Caretakers can store and return the token but cannot inspect or change its contents, preserving invariants and preventing coupling to the internal representation. This supports safe undo semantics and allows the originator to evolve its internal structure without affecting clients."
+        },
+        {
+          "id": "b",
+          "text": "Version B stores plain mutable snapshot objects in history allowing callers to inspect and modify originator internals directly.",
+          "isCorrect": false,
+          "explanation": "Version B returns plain objects as snapshots, which means any consumer can read or alter the saved fields. That creates tight coupling between history consumers and the originator's representation and opens the door to aliasing and invalid state restoration. Although simpler, this design leaks internals and complicates future refactoring of the originator's state."
+        }
+      ]
+    }
+  ]
+}

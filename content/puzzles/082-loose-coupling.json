@@ -1,0 +1,106 @@
+{
+  "id": 82,
+  "conceptName": "Loose Coupling",
+  "category": "principle",
+  "definition": "Designing components so they depend on stable abstractions rather than on the concrete details of other components, minimizing ripple effects when parts change.",
+  "ruleOfThumb": "Depend on interfaces or abstractions, not on concrete implementations; keep module boundaries small and communicate via well defined contracts.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Architecture",
+    "chapter": "Component Cohesion and Coupling",
+    "page": "ch6",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-architecture/9780134494272/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best describes the structural problem in this code?",
+      "codeSnippet": "// database.ts\nexport class PostgresClient {\n  constructor(connectionString: string) {}\n  query(sql: string) { /* ... */ }\n}\n\n// userService.ts\nimport { PostgresClient } from \"./database\";\nexport class UserService {\n  private db = new PostgresClient(process.env.DB_URL!);\n  findUser(id: string) { return this.db.query(`select * from users where id='${id}'`); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Multiple modules instantiate and use the concrete PostgresClient class, coupling code to that specific database implementation.",
+          "isCorrect": true,
+          "explanation": "The service directly creates and depends on a concrete database client. This ties modules to that implementation and makes substitution, mocking, or independent evolution harder. In practice you want an abstraction or factory so callers depend on a stable contract instead of a concrete class."
+        },
+        {
+          "id": "b",
+          "text": "The code embeds raw SQL string concatenation in service methods, introducing SQL injection risk and query fragility.",
+          "isCorrect": false,
+          "explanation": "While string concatenation is a real risk for SQL injection, the primary structural issue shown is the direct dependency on a concrete client. SQL sanitization is a separate concern that should also be addressed but does not explain the cross-module coupling problem."
+        },
+        {
+          "id": "c",
+          "text": "The UserService constructs database client during class initialization which creates hidden heavy resources at module import time.",
+          "isCorrect": false,
+          "explanation": "Eagerly creating resources at import time can cause startup and resource problems, and it is a valid operational concern. However, the snippet highlights structural coupling through concrete type usage rather than just resource lifecycle management."
+        },
+        {
+          "id": "d",
+          "text": "The database client API leaks low level query concerns into service layer, scattering SQL across unrelated modules.",
+          "isCorrect": false,
+          "explanation": "Leaking query concerns into higher layers is a maintainability issue, but the core architectural smell here is the direct use of a concrete client class across modules. The leakage could be mitigated differently from removing the tight dependency on a concrete implementation."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the most significant maintainability risk in this design?",
+      "codeSnippet": "// billing.ts\nexport interface Invoice { id: string; amountCents: number; metadata?: any }\nexport function formatInvoice(i: Invoice) { return `${i.id}:${i.amountCents}` }\n\n// paymentProcessor.ts\nimport { Invoice } from \"./billing\"\nexport function charge(invoice: Invoice) {\n  // callers rely on metadata shape and mutate it directly\n  processPayment(invoice.metadata.gatewayId, invoice.amountCents)\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Exporting domain model objects with flexible metadata allows external modules to rely on internal fields and mutate implementation details directly.",
+          "isCorrect": true,
+          "explanation": "Exposing mutable domain objects with an opaque metadata field encourages consumers to depend on specific internal shapes. That creates tight coupling between modules because changes to the model will ripple into all consumers. A clearer boundary or DTOs reduce this risk."
+        },
+        {
+          "id": "b",
+          "text": "Using a primitive number for cents causes ambiguous currency rules and rounding errors when payment logic becomes international.",
+          "isCorrect": false,
+          "explanation": "Using integers for cents is a common and often acceptable practice to avoid floating point rounding. The shown code's bigger problem is leaking and mutating metadata across modules, not the primitive numeric representation."
+        },
+        {
+          "id": "c",
+          "text": "Formatting invoices as a simple string couples presentation concerns into billing module and prevents separation of view logic.",
+          "isCorrect": false,
+          "explanation": "Coupling presentation into the billing module is a maintainability concern, but the snippet indicates that consumers are depending on mutable internal metadata and shape. Presentation coupling is secondary to the broader coupling caused by shared domain objects."
+        },
+        {
+          "id": "d",
+          "text": "The paymentProcessor directly imports billing models which may create a tangled dependency graph across domain modules at scale.",
+          "isCorrect": false,
+          "explanation": "Direct imports can contribute to dependency entanglement, and that is a reasonable concern. The more precise maintainability risk here is the exposure and mutation of internal model details by consumers, which drives stronger coupling than the import itself."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better supports independent module evolution and safer testing?",
+      "codeSnippet": "// Version A\n// Service directly imports concrete PaymentGateway and constructs it\nimport { PaymentGateway } from './gateways/stripe'\nexport class BillingService {\n  private gateway = new PaymentGateway(process.env.STRIPE_KEY!)\n  charge(i: any) { return this.gateway.charge(i) }\n}\n\n// Version B\n// Service depends on an interface and receives a gateway implementation via constructor\nexport interface IPaymentGateway { charge(invoice: any): Promise<any> }\nexport class BillingServiceV2 { constructor(private gateway: IPaymentGateway) {}\n  charge(i: any) { return this.gateway.charge(i) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is preferable because direct concrete usage reduces indirection and keeps call paths and debugging simpler.",
+          "isCorrect": false,
+          "explanation": "Direct concrete usage can feel simpler initially, but it couples the service to a single implementation and hinders testing and replacement. When the gateway needs to be swapped or mocked, the cost of change and test complexity grows significantly."
+        },
+        {
+          "id": "b",
+          "text": "Version B establishes explicit interface boundaries that prevent compile time coupling and simplify independent component evolution.",
+          "isCorrect": true,
+          "explanation": "Version B applies dependency inversion by depending on an abstraction. This reduces compile time coupling and makes substitution, mocking, and independent evolution straightforward. The pattern aligns with interface based design advocated in sources like Clean Architecture and GoF dependency inversion recommendations."
+        }
+      ]
+    }
+  ]
+}

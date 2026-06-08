@@ -1,0 +1,105 @@
+{
+  "id": 41,
+  "conceptName": "Acyclic Dependencies Principle",
+  "category": "solid",
+  "definition": "A package dependency structure should not contain cycles; packages must be organized so dependencies form a directed acyclic graph.",
+  "ruleOfThumb": "Keep package dependencies one-directional and introduce stable shared contracts if multiple packages must depend on common types.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Agile Software Development, Principles, Patterns, and Practices",
+    "chapter": "Package Design Principles",
+    "page": "ch.9",
+    "externalUrl": "https://www.objectmentor.com/resources/articles/DependencyPrinciples.pdf"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best describes the package-level dependency constraint shown here?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Packages must form a directed acyclic graph so no package transitively depends back on itself.",
+          "isCorrect": true,
+          "explanation": "Correct. The core issue is that package-level dependencies must not create cycles so modules remain independently changeable and buildable. When packages form a cycle a change in one package can require coordinated changes across the cycle, making refactor and deployment difficult."
+        },
+        {
+          "id": "b",
+          "text": "Packages must be grouped by runtime dependency to ensure one package always depends on lower level ones.",
+          "isCorrect": false,
+          "explanation": "Plausible but incomplete. Grouping by runtime level is a categorization strategy, not a guarantee against cycles. You can still arrange levels and accidentally introduce cycles between levels unless you enforce acyclic package dependencies explicitly."
+        },
+        {
+          "id": "c",
+          "text": "Packages must expose all internal types so callers can avoid creating cyclic compile time dependencies.",
+          "isCorrect": false,
+          "explanation": "This is misleading. Exposing internals increases coupling and does not prevent cycles; it can make cycles worse by leaking domain details into many packages. The real fix is reorganizing dependencies, not exposing internals."
+        },
+        {
+          "id": "d",
+          "text": "Packages must strictly prevent any form of shared mutable state to stop indirect dependency cycles.",
+          "isCorrect": false,
+          "explanation": "Shared mutable state is a separate concern from dependency cycles. Preventing shared mutable state helps concurrency and coupling but does not by itself remove package dependency cycles — structural dependency direction must be addressed."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the package imports shown, which description most precisely identifies the structural problem to fix?",
+      "codeSnippet": "/* packages/orders/index.ts */\nimport { charge } from '../billing';\nexport function placeOrder() { charge(); }\n\n/* packages/billing/index.ts */\nimport { Order } from '../orders';\nexport function charge() { /* use Order */ }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code creates a circular package dependency where orders and billing directly import each other causing build and design fragility.",
+          "isCorrect": false,
+          "explanation": "This correctly points at a cycle but frames it as general fragility. The important structural problem is the cycle itself which prevents independent evolution and recompilation; the suggested wording is less precise about package-level consequences."
+        },
+        {
+          "id": "b",
+          "text": "The code forms a cycle of package-level dependencies so modules cannot be independently changed or deployed.",
+          "isCorrect": true,
+          "explanation": "Correct. The imports create a package-level dependency cycle which couples change, testing and deployment. Breaking the cycle by introducing stable contracts or inverting a dependency restores independent changeability."
+        },
+        {
+          "id": "c",
+          "text": "The code leaks domain details through a shared utility, so internal models are coupled across packages incorrectly.",
+          "isCorrect": false,
+          "explanation": "Leaking domain details is a real concern but not the specific structural issue here. The presented imports show a mutual dependency rather than merely a utility leak; addressing coupling alone may not remove the cycle."
+        },
+        {
+          "id": "d",
+          "text": "The code duplicates logic across packages, so duplication not dependency direction is the primary maintenance risk.",
+          "isCorrect": false,
+          "explanation": "Duplication can be a maintenance issue, but the snippet shows mutual imports rather than duplicated implementations. Focusing on duplication misses the immediate problem of circular dependencies that block independent modification."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better eliminates package dependency cycles while keeping boundaries clear?",
+      "codeSnippet": "// Version A\n// packages/api/models.ts\nexport interface Order { id: string }\n// packages/repository/index.ts\nimport { Order } from '../api/models'\nexport function save(o: Order) { /*...*/ }\n\n// Version B\n// packages/contracts/order.ts\nexport interface OrderContract { id: string }\n// packages/api/index.ts\nimport { OrderContract } from '../contracts/order'\nexport function place(o: OrderContract) { /*...*/ }\n// packages/repository/index.ts\nimport { OrderContract } from '../contracts/order'\nexport function save(o: OrderContract) { /*...*/ }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A places shared domain types in the top-level package causing lower-level packages to depend upwards cyclically.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes types in a higher level package so lower-level components import upward. That tends to create cycles when higher-level modules also depend on lower-level implementations. This structure couples layers and can force circularity when responsibilities shift."
+        },
+        {
+          "id": "b",
+          "text": "Version B consolidates stable shared contracts into a single low-dependency package with no outgoing package dependencies.",
+          "isCorrect": true,
+          "explanation": "Version B is preferable because it isolates shared interfaces into a stable, low-level contracts package that depends on nothing else. This breaks potential cycles by giving both API and repository a single inward dependency. Creating a small stable contract package aligns with package dependency guidelines and supports independent evolution. See Robert C. Martin on package-level dependency rules and using stable abstractions to avoid cycles."
+        }
+      ]
+    }
+  ]
+}

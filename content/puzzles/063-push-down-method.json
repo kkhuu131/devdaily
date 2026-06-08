@@ -1,0 +1,106 @@
+{
+  "id": 63,
+  "conceptName": "Push Down Method",
+  "category": "refactoring",
+  "definition": "When a method defined in a superclass is only useful for one or more subclasses, move it down into those subclasses to keep responsibilities localized.",
+  "ruleOfThumb": "If a method relies on subclass state or is conditionally used only for certain subclasses, move it into the owning subclass to avoid superclass pollution.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Moving Features Between Objects",
+    "page": "p. 180",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the snippet. Which observation most clearly suggests the method should live lower in the hierarchy?",
+      "codeSnippet": "class Customer {\n  calculateDiscount() {\n    return this.loyaltyPoints * 0.01;\n  }\n}\n\nclass SpecialCustomer extends Customer {\n  loyaltyPoints: number;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The method accesses fields or behavior that exist only on a specific subclass and not the superclass.",
+          "isCorrect": true,
+          "explanation": "The method reads loyaltyPoints which is declared only on SpecialCustomer. That indicates the method belongs with the subclass that owns the data — moving it lowers coupling and clarifies ownership."
+        },
+        {
+          "id": "b",
+          "text": "The method is overridden in subclasses with different implementations that duplicate logic across those subclasses.",
+          "isCorrect": false,
+          "explanation": "Overriding with different implementations can suggest move or extract refactorings, but duplication alone does not prove the superclass is the wrong location if shared flow remains."
+        },
+        {
+          "id": "c",
+          "text": "Call sites always use the concrete subclass so the method is never meaningful at the superclass level.",
+          "isCorrect": false,
+          "explanation": "Frequent use via concrete type hints at locating behavior on the subclass, but this could be a client code smell rather than a method placement issue if superclass abstraction is still valid."
+        },
+        {
+          "id": "d",
+          "text": "The method behavior depends on responsibilities specific to one subclass and is unused by sibling classes.",
+          "isCorrect": false,
+          "explanation": "Being unused by siblings is a strong sign, yet you must confirm the method truly relies on subclass state or semantics before moving it to avoid breaking invariants."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which diagnosis best describes the smell in this example that indicates relocating the method would improve design?",
+      "codeSnippet": "class Account {\n  printMonthlyStatement() {\n    if (this instanceof SavingsAccount) {\n      this.accrueInterest();\n    } else {\n      this.recordFees();\n    }\n  }\n}\nclass SavingsAccount extends Account { accrueInterest() { /*...*/ } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The method performs runtime type checks and only meaningful behavior occurs for one concrete subclass.",
+          "isCorrect": true,
+          "explanation": "Runtime type checks are a classic sign that polymorphism is not being used. Pushing the behavior into the subclass removes conditionals and keeps the superclass focused on shared concerns."
+        },
+        {
+          "id": "b",
+          "text": "The method centralizes workflow used by multiple subclasses and moving it would duplicate shared orchestration logic.",
+          "isCorrect": false,
+          "explanation": "Centralized orchestration can justify keeping a method in the superclass. Here though the presence of explicit type checks indicates the behavior is not truly shared and is a better fit lower in the hierarchy."
+        },
+        {
+          "id": "c",
+          "text": "The method is a thin wrapper around external services and should be extracted to a domain service module.",
+          "isCorrect": false,
+          "explanation": "Extracting to a service is sometimes appropriate, but when the logic depends on subclass-specific rules or state, moving it into the subclass preserves cohesion better than creating a shared service."
+        },
+        {
+          "id": "d",
+          "text": "The method calls hooks overridden by subclasses and must remain in superclass to preserve the template orchestration.",
+          "isCorrect": false,
+          "explanation": "Template Method pattern justifies a superclass orchestration calling hooks. In this snippet the conditional is explicit rather than hook-based, so template preservation is unlikely to be the right reason to keep the method."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which design is preferable and why in terms of responsibility placement?",
+      "codeSnippet": "// Version A\nclass Notification {\n  send() {}\n}\nclass EmailNotification extends Notification {\n  smtpServer: string;\n  send() { /* uses smtpServer and template */ }\n}\n\n// Version B\nclass Notification2 {\n  send() {\n    if (this instanceof EmailNotification2) {\n      // use smtpServer\n    }\n  }\n}\nclass EmailNotification2 extends Notification2 { smtpServer: string; }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A places the behavior in the concrete subclass that owns its configuration and dependencies.",
+          "isCorrect": true,
+          "explanation": "Version A keeps the send logic with EmailNotification which owns smtpServer and templates. This localizes configuration and reduces conditional complexity. Moving behavior to the subclass follows the single responsibility principle and avoids runtime type checks that Version B introduces."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes behavior in the superclass causing runtime type checks and mixing unrelated responsibilities across subclasses.",
+          "isCorrect": false,
+          "explanation": "Version B may seem to centralize logic, but it introduces instance checks and mixes protocols for different notification channels. That design violates cohesion and makes adding new channels harder. While central orchestration can be valid, doing so with type checks is brittle compared to locating channel specific behavior in subclasses."
+        }
+      ]
+    }
+  ]
+}

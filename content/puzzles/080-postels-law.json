@@ -1,0 +1,106 @@
+{
+  "id": 80,
+  "conceptName": "Postel's Law",
+  "category": "principle",
+  "definition": "A robustness guideline advising components to accept a wide range of inputs while producing strict, well-formed outputs to maximize interoperability.",
+  "ruleOfThumb": "Be forgiving when reading input, strict when producing output; normalize incoming variations to a stable canonical form.",
+  "citation": {
+    "author": "Jon Postel",
+    "bookTitle": "Robustness Principle (original RFC commentary)",
+    "chapter": "Robustness Principle",
+    "page": null,
+    "externalUrl": "https://en.wikipedia.org/wiki/Robustness_principle"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What behavior is this HTTP handler showing with respect to incoming request shapes?",
+      "codeSnippet": "app.post('/user', (req, res) => {\n  const id = typeof req.body.id === 'string' ? Number(req.body.id) : req.body.id;\n  const email = (req.body.email || '').trim().toLowerCase();\n  // tolerate missing optional fields and coerce simple types\n  const user = { id: Number(id), name: String(req.body.name || ''), email };\n  res.json({ user });\n});",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Server accepts multiple input variants and tolerates minor deviations while normalizing output to a strict canonical format.",
+          "isCorrect": true,
+          "explanation": "This handler coaxes different incoming shapes into a consistent internal representation and returns a standardized response. That is the core of the robustness principle: tolerate and normalize inputs but keep outputs predictable. This improves interoperability with diverse clients but can hide client bugs if not coupled with logs or validation."
+        },
+        {
+          "id": "b",
+          "text": "Server rejects any input that does not exactly match schema and returns detailed validation errors to callers.",
+          "isCorrect": false,
+          "explanation": "A strict-reject approach would perform exact schema checks and fail fast. The handler above does not throw on mismatches; instead it coerces types and provides defaults. While strict rejection surfaces client errors early, it reduces tolerance for legacy or inconsistent clients."
+        },
+        {
+          "id": "c",
+          "text": "Server forwards raw incoming payloads to backend services without modification and avoids local validation steps for speed.",
+          "isCorrect": false,
+          "explanation": "Forwarding raw payloads would skip normalization and validation entirely, potentially pushing compatibility problems downstream. The snippet shows local coercion and normalization, which contradicts a pure passthrough design and instead aims to stabilize responses."
+        },
+        {
+          "id": "d",
+          "text": "Server mirrors client requests back in responses and does not guarantee a stable output representation for consumers.",
+          "isCorrect": false,
+          "explanation": "Mirroring input would return whatever the client sent, leaving consumers to cope with varying shapes. The code instead constructs a predictable user object and canonicalizes fields like email, which ensures consumers see stable output."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A shared date utility accepts strings, numbers, and Date objects. Which risk is most associated with that tolerant acceptance?",
+      "codeSnippet": "export function parseDate(input: string | number | Date) {\n  if (input instanceof Date) return new Date(input).toISOString();\n  const ts = typeof input === 'number' ? input : Date.parse(String(input));\n  return new Date(isNaN(ts) ? Date.now() : ts).toISOString();\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Library accepts many date formats and increases the risk of silently accepting ambiguous or incorrect date semantics from callers.",
+          "isCorrect": true,
+          "explanation": "Flexible parsing improves compatibility but can mask subtle client mistakes like wrong timezones or misformatted timestamps. Overly tolerant parsing may allow incorrect semantics to propagate silently, making bugs harder to detect later."
+        },
+        {
+          "id": "b",
+          "text": "Library defers strict validation to the caller and may push error handling complexity into many client implementations.",
+          "isCorrect": false,
+          "explanation": "If the library accepted nothing and delegated validation, clients would need uniform validation logic. Here the library actually centralizes parsing, so this distractor describes the opposite trade off. Centralizing parsing reduces duplication but can hide errors."
+        },
+        {
+          "id": "c",
+          "text": "Library uses heuristics that increase CPU cost and can slow down high throughput services when resolving many ambiguous formats.",
+          "isCorrect": false,
+          "explanation": "Heuristic parsing can cost CPU, especially at scale. This is a valid performance concern for tolerant parsing libraries, but the most immediate functional risk is silent acceptance of incorrect meanings rather than purely CPU overhead."
+        },
+        {
+          "id": "d",
+          "text": "Library broad acceptance creates inconsistent logs and makes root cause analysis of client side bugs more difficult for operations teams.",
+          "isCorrect": false,
+          "explanation": "Lenient parsing can indeed complicate observability because inputs get normalized before logging. That makes debugging harder, but it is a secondary consequence compared to the core risk of silently accepting incorrect or ambiguous date values."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better follows the robustness guideline of maximizing interoperability while providing predictable outputs?",
+      "codeSnippet": "// Version A: tolerant normalization\nfunction parseUser(payload: any) {\n  const id = typeof payload.id === 'string' ? Number(payload.id) : payload.id;\n  const created = typeof payload.created === 'number' ? new Date(payload.created) : new Date(payload.created || Date.now());\n  return { id: Number(id), name: String(payload.name || ''), created: created.toISOString() };\n}\n\n// Version B: strict validation\nfunction parseUserStrict(payload: { id: number; name: string; created: string }) {\n  if (typeof payload.id !== 'number' || typeof payload.name !== 'string') {\n    throw new Error('Invalid payload');\n  }\n  return { id: payload.id, name: payload.name, created: new Date(payload.created).toISOString() };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A accepts multiple input variants and normalizes them into a single stable canonical internal representation.",
+          "isCorrect": true,
+          "explanation": "Version A demonstrates tolerant acceptance combined with normalization to a canonical output, which improves interoperability with heterogeneous clients. That matches the traditional robustness guideline by absorbing client variability while maintaining predictable outputs for downstream consumers. Practically, pairing this with logging and optional validation warnings preserves observability and helps detect client regressions."
+        },
+        {
+          "id": "b",
+          "text": "Version B rejects any nonexact input shape and forces callers to strictly match a single rigid format before proceeding.",
+          "isCorrect": false,
+          "explanation": "Version B enforces strict input shapes and fails fast. That approach surfaces client errors early but reduces compatibility with diverse or legacy clients and increases the coordination cost of upgrades. In contexts where interoperability is the priority, strict rejection can fragment integrations and force many clients to change simultaneously."
+        }
+      ]
+    }
+  ]
+}

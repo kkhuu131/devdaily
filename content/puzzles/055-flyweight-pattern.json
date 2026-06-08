@@ -1,0 +1,106 @@
+{
+  "id": 55,
+  "conceptName": "Flyweight Pattern",
+  "category": "design-pattern",
+  "definition": "A technique to minimize memory usage by sharing fine grained immutable state across many objects while keeping per-use state external.",
+  "ruleOfThumb": "Share immutable intrinsic state for many small objects and keep variable extrinsic state outside the shared instances.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Structural Patterns - Flyweight",
+    "page": "295",
+    "externalUrl": "https://en.wikipedia.org/wiki/Flyweight_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "You find code that constructs thousands of small Color objects per request. What is the most accurate observation about this code?",
+      "codeSnippet": "class Color {\n  constructor(public r: number, public g: number, public b: number) {}\n}\n\nfunction renderScene() {\n  for (let i = 0; i < 10000; i++) {\n    const c = new Color(255, 0, 0);\n    drawPixel(i, c);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code repeatedly constructs large numbers of identical immutable objects across requests and contexts unnecessarily.",
+          "isCorrect": true,
+          "explanation": "This is an observation that many identical immutable objects are created. Sharing those immutable instances can reduce allocations and memory pressure. The pattern separates intrinsic immutable state from per-use extrinsic state so identical values can be reused rather than recreated."
+        },
+        {
+          "id": "b",
+          "text": "The code allocates identical objects causing unpredictable mutation bugs when references are shared between unrelated callers.",
+          "isCorrect": false,
+          "explanation": "This concern is plausible but the code shows immutable objects, not mutable ones. If the objects were mutable or reused incorrectly, mutation bugs would be a real risk, but the primary issue here is redundant allocation rather than mutation."
+        },
+        {
+          "id": "c",
+          "text": "The code relies on object identity for caching which will break when objects are recreated per request instead of reused.",
+          "isCorrect": false,
+          "explanation": "Identity-based caching is a valid concern; however the snippet shows new identical instances being created rather than cached. The core smell is repeated allocation of identical immutable values, which suggests sharing intrinsic state rather than identity caching fixes alone."
+        },
+        {
+          "id": "d",
+          "text": "The code constructs many small objects which likely causes excessive garbage collection pauses under high throughput workloads.",
+          "isCorrect": false,
+          "explanation": "This is a realistic performance symptom of excessive allocations. It is a consequence rather than the architectural opportunity: replacing duplicated immutable objects with shared instances reduces allocation churn and therefore GC pressure."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A renderer stores style objects in a cache keyed by their whole style object. Which assessment best describes the subtle problem here?",
+      "codeSnippet": "type Style = { font: string; size: number; bold: boolean };\nclass Glyph { constructor(private style: Style) {} }\n\nconst pool = new Map<object, Glyph>();\nfunction getGlyph(style: Style) {\n  if (!pool.has(style)) pool.set(style, new Glyph(style));\n  return pool.get(style)!;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This implementation uses global mutable keys for cached instances which will cause cache corruption under concurrent style mutation.",
+          "isCorrect": false,
+          "explanation": "Using mutable objects as Map keys is risky because if callers mutate the style after insertion, lookups and sharing break. This is a real problem, but the deeper architectural issue is mixing per use parameters with keys for shared objects rather than isolating intrinsic state."
+        },
+        {
+          "id": "b",
+          "text": "This implementation eagerly constructs many unique objects for each render call which will slow warm startup and increase allocations.",
+          "isCorrect": false,
+          "explanation": "Eager construction and allocation are valid concerns, but the snippet actually defers creation until needed. The more subtle bug is conflating mutable caller state with the identity of the shared object which prevents safe reuse."
+        },
+        {
+          "id": "c",
+          "text": "This implementation shares objects by their intrinsic properties and keeps per use parameters external to the shared object.",
+          "isCorrect": true,
+          "explanation": "The correct observation is that sharing should be based on immutable intrinsic properties while per-use parameters remain external. That separation avoids caching by mutable caller objects and ensures safe reuse of small shared instances."
+        },
+        {
+          "id": "d",
+          "text": "This implementation couples identity of cached items to caller context which will prevent effective reuse across similar render requests.",
+          "isCorrect": false,
+          "explanation": "Tying cache keys to caller-provided objects can prevent reuse when callers recreate equivalent but distinct objects. This is a practical symptom; the architectural remedy is to compute a canonical key from intrinsic properties or to keep intrinsic state in shared immutable instances."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two alternative designs for character objects are proposed. Which version better separates shared intrinsic state from use specific context?",
+      "codeSnippet": "// Version A\n// single cache keyed by full request context\nconst globalCacheA = new Map<string, Character>();\nfunction getCharA(keyedContext: string) {\n  if (!globalCacheA.has(keyedContext)) globalCacheA.set(keyedContext, new Character(keyedContext));\n  return globalCacheA.get(keyedContext)!;\n}\n\n// Version B\n// cache of small immutable glyphs; render context passed per draw\nconst glyphPoolB = new Map<string, Glyph>();\nfunction getGlyphB(intrinsicKey: string) {\n  if (!glyphPoolB.has(intrinsicKey)) glyphPoolB.set(intrinsicKey, new Glyph(intrinsicKey));\n  return glyphPoolB.get(intrinsicKey)!;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes a single cache keyed by full request state causing accidental sharing of request specific data.",
+          "isCorrect": false,
+          "explanation": "Version A uses a cache keyed with full request context which collapses extrinsic per-use data into the shared identity. That can cause unrelated requests to observe each others' data and prevents safe reuse of intrinsic parts. The correct approach is to cache only based on intrinsic immutable properties and pass extrinsic state at call time."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes a cache of small immutable intrinsic objects and passes contextual data separately per use.",
+          "isCorrect": true,
+          "explanation": "Version B separates immutable intrinsic representation from per-use contextual parameters. This aligns with the pattern's intent: share fine grained immutable state and keep extrinsic state external so objects can be safely reused. See GoF Structural Patterns and Fowler on object sharing and intrinsic versus extrinsic state for supporting design rationale."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 37,
+  "conceptName": "Parallel Inheritance Hierarchies",
+  "category": "code-smell",
+  "definition": "A design problem where related differences in behavior are represented by duplicated subclass hierarchies, so extending one family requires parallel changes in another.",
+  "ruleOfThumb": "If you find yourself adding a new subtype in one hierarchy and immediately adding a matching subtype elsewhere, consider collapsing or composing the hierarchies.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Parallel Hierarchies",
+    "page": "p. 168",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What smell is shown by this code snippet?",
+      "codeSnippet": "abstract class PaymentMethod {}\nclass Card extends PaymentMethod {}\nclass BankTransfer extends PaymentMethod {}\n\nabstract class PaymentProcessor {}\nclass CardProcessor extends PaymentProcessor {}\nclass BankTransferProcessor extends PaymentProcessor {}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code repeats two related class hierarchies across modules and couples their lifecycles tightly together.",
+          "isCorrect": false,
+          "explanation": "This is a plausible observation but it frames the problem as general duplication and coupling. The real smell is that related domain variants are represented by matched subclass families, meaning adding a variant forces parallel additions. That nuance matters when choosing a refactoring such as merging responsibilities or using composition."
+        },
+        {
+          "id": "b",
+          "text": "Each concrete type requires a matching processor subclass which forces simultaneous structural changes across hierarchies.",
+          "isCorrect": false,
+          "explanation": "This is a concrete consequence that developers often notice. It is accurate as a symptom but it focuses narrowly on maintenance cost. The deeper issue is the mirrored inheritance structure itself, which suggests reorganizing responsibilities rather than only reducing duplicated code."
+        },
+        {
+          "id": "c",
+          "text": "Behavioral responsibilities are mirrored across separate subclass families producing duplicated logic and fragile cross dependencies.",
+          "isCorrect": false,
+          "explanation": "This description highlights duplication and fragility, which are real problems. However it reads as an outcome of the mirrored hierarchies rather than the primary structural smell. Identifying the mirrored hierarchies points to refactorings that remove the need for parallel subclasses."
+        },
+        {
+          "id": "d",
+          "text": "Adding a new concrete variant forces you to edit matched subclass families in different modules at the same time.",
+          "isCorrect": true,
+          "explanation": "This is the clearest single-sentence recognition of the smell without extra reasoning. It points directly at the maintenance burden that defines the antipattern: paired changes across hierarchies. From here you can evaluate solutions like combining hierarchies, using composition, or extracting common behavior to avoid parallel edits."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this design, which problem should concern you most when the domain gains new variants?",
+      "codeSnippet": "abstract class DocumentType {}\nclass InvoiceType extends DocumentType {}\nclass ReceiptType extends DocumentType {}\n\nabstract class FeeCalculator {}\nclass InvoiceFeeCalculator extends FeeCalculator {}\nclass ReceiptFeeCalculator extends FeeCalculator {}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It forces adding parallel subclasses across two hierarchies whenever a new specific domain variant must be modeled.",
+          "isCorrect": true,
+          "explanation": "This pinpoints the primary maintenance burden: when the domain grows, you must extend multiple inheritance trees in lockstep. That is the hallmark of the smell and guides the refactoring choice toward merging behaviors or using composition patterns to decouple variant representation from operations."
+        },
+        {
+          "id": "b",
+          "text": "It prevents straightforward composition because constructors and behavior are tightly coupled to concrete subtype implementations.",
+          "isCorrect": false,
+          "explanation": "This is a valid secondary concern—tight coupling can make composition harder. However the immediate design smell is the mirrored hierarchies themselves. Tackling the parallel structure first often makes composition and constructor design easier afterward."
+        },
+        {
+          "id": "c",
+          "text": "It scatters runtime dispatch logic because duplicated switch or lookup code will likely appear across corresponding subclass families.",
+          "isCorrect": false,
+          "explanation": "Duplicated dispatch logic is a real and harmful symptom that often coexists with parallel hierarchies. Still, it is a symptom rather than the primary structural design issue; fixing the hierarchy alignment typically also simplifies dispatch."
+        },
+        {
+          "id": "d",
+          "text": "It increases test surface because every operation must be tested on each matched pair of variant and handler subclasses.",
+          "isCorrect": false,
+          "explanation": "This describes a measurable consequence and is often true, but like the others it is derivative. The root is that variants and handlers are duplicated in separate hierarchies. That recognition points to refactorings that reduce the combinatorial testing burden."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which design would you choose for long term maintainability in this domain? Review both versions and pick the better option.",
+      "codeSnippet": "// Version A: unified hierarchy where each subtype implements its own behavior\nabstract class Document { abstract process(): void }\nclass Invoice extends Document { process() { /* invoice processing */ } }\nclass Receipt extends Document { process() { /* receipt processing */ } }\n\n// Version B: separate type and processor hierarchies requiring matched subclasses\nabstract class DocumentType {}\nclass InvoiceType extends DocumentType {}\nclass ReceiptType extends DocumentType {}\nabstract class Processor { abstract handle(t: DocumentType): void }\nclass InvoiceProcessor extends Processor { handle(t: InvoiceType) { /* ... */ } }\nclass ReceiptProcessor extends Processor { handle(t: ReceiptType) { /* ... */ } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A consolidates related behavior into one hierarchy and avoids matched subclass duplication.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable because it keeps the behavioral implementation with the concrete variants, avoiding the paired subclass proliferation seen in Version B. That reduces the need for simultaneous edits across separate trees, simplifies evolution, and makes polymorphism the mechanism for extension. Refactorings to aim for this structure include 'Move Method' or 'Collapse Hierarchy' from Fowler, and using composition if behavior must be shared differently."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes behavior in separate processors but still requires adding matched processor subclasses for new types.",
+          "isCorrect": false,
+          "explanation": "Version B preserves separation between types and handlers which can be useful for some concerns, but it still forces parallel subclass additions when the domain grows. That leads to the same maintenance coupling the antipattern warns about. If externalizing behavior is required, consider a registry or strategy mapping rather than mirrored class hierarchies to avoid paired edits."
+        }
+      ]
+    }
+  ]
+}
