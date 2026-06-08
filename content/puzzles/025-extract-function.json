@@ -1,0 +1,106 @@
+{
+  "id": 25,
+  "conceptName": "Extract Function",
+  "category": "refactoring",
+  "definition": "Moving a contiguous block of code out of a larger routine into a new, named function to clarify intent and reduce duplication.",
+  "ruleOfThumb": "When a sequence of statements forms a single logical step or can be given a clear name, pull it into its own function.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Extract Method",
+    "page": "72-76",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary code smell in the following TypeScript function?",
+      "codeSnippet": "function processOrder(order) {\n  validate(order);\n  const fee = calculateFee(order);\n  for (const item of order.items) {\n    item.price = applyDiscount(item);\n    updateInventory(item);\n  }\n  sendConfirmation(order);\n  logAudit(order);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function performs several independent duties rather than a single clear responsibility across its body.",
+          "isCorrect": true,
+          "explanation": "The body mixes validation, calculation, mutation, notification, and auditing. That low cohesion is the classic sign that parts should be separated into named routines so tests and intent are clearer."
+        },
+        {
+          "id": "b",
+          "text": "This function mutates many external objects directly which increases coupling and will make concurrent execution fragile.",
+          "isCorrect": false,
+          "explanation": "Mutating external objects is a real concern, but the snippet shows multiple distinct responsibilities more prominently than a concurrency issue. Addressing cohesion first yields clearer design improvements."
+        },
+        {
+          "id": "c",
+          "text": "This function has inadequate error handling paths scattered through different tasks which will obscure failure modes and recovery.",
+          "isCorrect": false,
+          "explanation": "Scattered error handling can be problematic, yet the immediate smell is that unrelated steps are mixed. Error handling should be revisited after separating concerns to keep recovery paths simple."
+        },
+        {
+          "id": "d",
+          "text": "This function contains repeated logic inside loops and conditionals which suggests a missing helper to reduce duplication.",
+          "isCorrect": false,
+          "explanation": "Duplication is worth removing, but the snippet primarily demonstrates multiple responsibilities rather than obvious repeated code. Extracting into focused helpers improves clarity even when duplication is not present."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which guideline best justifies pulling a block of code into its own function from a maintainability perspective?",
+      "codeSnippet": "function calculateInvoice(items) {\n  let subtotal = 0;\n  for (const i of items) {\n    subtotal += i.price * i.quantity - i.discount;\n  }\n  const tax = computeTax(subtotal);\n  return subtotal + tax;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Extract when the block is short and used only once because shorter code is always preferable for performance.",
+          "isCorrect": false,
+          "explanation": "Shortness or single use alone is not a sufficient reason. Extraction is about clarity and intent rather than micro performance concerns. Premature extraction for a trivial block can harm locality."
+        },
+        {
+          "id": "b",
+          "text": "Extract when the block expresses a distinct, well named step that improves the calling function readability and intent.",
+          "isCorrect": true,
+          "explanation": "A block that can be described with a single clear name makes the higher level function read like a sequence of steps. That naming benefit is the strongest practical reason to extract a block."
+        },
+        {
+          "id": "c",
+          "text": "Extract when the block contains any loop or conditional complexity because structural constructs must be separated into new functions.",
+          "isCorrect": false,
+          "explanation": "Loops and conditionals may motivate extraction, but not always. If the loop is the core action of the function, moving it can add indirection rather than clarity. Aim for semantic steps instead."
+        },
+        {
+          "id": "d",
+          "text": "Extract when the block references many local variables because moving code will always reduce parameter clutter.",
+          "isCorrect": false,
+          "explanation": "Referencing many locals may indicate the block belongs in the same scope rather than being moved. Extraction that requires excessive parameter passing suggests a different refactor such as reorganizing data instead."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for long term maintainability in this payment processing example?",
+      "codeSnippet": "function processPayment(ctx: PaymentContext) {\n  // Version A\n  function chargeEverything() {\n    const total = ctx.items.reduce((s, i) => s + i.amount, 0);\n    ctx.gateway.charge(ctx.user, total);\n    ctx.audit.log('charged', ctx.user.id);\n  }\n\n  // Version B\n  function calculateTotal(items) {\n    return items.reduce((s, i) => s + i.amount, 0);\n  }\n  const total = calculateTotal(ctx.items);\n  ctx.gateway.charge(ctx.user, total);\n  ctx.audit.log('charged', ctx.user.id);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps the helper close to context and avoids parameter passing but it binds the helper to external mutable state.",
+          "isCorrect": false,
+          "explanation": "Keeping a helper inside the parent can seem convenient because it captures surrounding context, but it creates hidden dependencies on the parent state. That coupling makes unit testing and reuse harder and tends to proliferate when the helper is needed elsewhere."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates the computation into a small pure function with explicit inputs and clearer intent.",
+          "isCorrect": true,
+          "explanation": "Version B separates a single responsibility into a pure function that operates on explicit inputs. This reduces hidden coupling, improves testability, and makes the higher level flow easier to read. Fowler describes extracting methods that represent named operations to document intent and reduce dependencies."
+        }
+      ]
+    }
+  ]
+}

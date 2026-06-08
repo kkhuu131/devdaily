@@ -1,0 +1,106 @@
+{
+  "id": 27,
+  "conceptName": "State Pattern",
+  "category": "design-pattern",
+  "definition": "A behavioral design approach where an object alters its behavior when its internal state changes by delegating to separate state objects.",
+  "ruleOfThumb": "If you have many conditionals on an internal status and behavior changes accordingly, encapsulate each status in its own state object.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns: State",
+    "page": "293",
+    "externalUrl": "https://en.wikipedia.org/wiki/State_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the code. Which description best matches the design illustrated by this snippet?",
+      "codeSnippet": "interface State {\n  handle(context: Context): void;\n}\n\nclass Context {\n  private state: State;\n  constructor(state: State) { this.state = state; }\n  setState(state: State) { this.state = state; }\n  request() { this.state.handle(this); }\n}\n\nclass ConcreteStateA implements State {\n  handle(ctx: Context) { ctx.setState(new ConcreteStateB()); }\n}\n\nclass ConcreteStateB implements State {\n  handle(ctx: Context) { ctx.setState(new ConcreteStateA()); }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "An object alters its behavior by delegating requests to interchangeable state objects chosen at runtime.",
+          "isCorrect": true,
+          "explanation": "This snippet shows a Context delegating request work to a State interface with concrete states swapping themselves. That is the classic approach where behavior is encapsulated per state and the context simply delegates to the current state object."
+        },
+        {
+          "id": "b",
+          "text": "A family of classes share an interface and a factory returns concrete instances based on configuration.",
+          "isCorrect": false,
+          "explanation": "This describes a factory-created family with configuration driven instantiation, which differs because it focuses on object creation rather than runtime behavior changes via an internal state reference."
+        },
+        {
+          "id": "c",
+          "text": "Behavior is extended by composing multiple decorators that wrap the original object to add responsibilities.",
+          "isCorrect": false,
+          "explanation": "The decorator approach layers responsibilities by wrapping objects, whereas the shown code uses interchangeable state objects and delegation, not runtime wrapping to add behavior."
+        },
+        {
+          "id": "d",
+          "text": "An algorithm isolates varying parts into separate strategy objects swapped in by the client to change behavior.",
+          "isCorrect": false,
+          "explanation": "Strategy moves algorithm selection outside the context and clients choose the strategy. The snippet embeds transition responsibility within the states themselves, so the behavior changes based on internal state rather than external strategy selection."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You find a class with long if else chains switching on an internal status. What is the most likely refactor to reduce that complexity?",
+      "codeSnippet": "type OrderStatus = 'new' | 'paid' | 'shipped' | 'cancelled';\n\nclass OrderProcessor {\n  handle(order: Order) {\n    if (order.status === 'new') { /* handle new */ }\n    else if (order.status === 'paid') { /* handle paid */ }\n    else if (order.status === 'shipped') { /* handle shipped */ }\n    else if (order.status === 'cancelled') { /* handle cancelled */ }\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Replace the sprawling conditional status logic with object oriented state objects that encapsulate each state's behavior.",
+          "isCorrect": true,
+          "explanation": "Moving each branch into a state object removes conditionals and localizes behavior per status. That preserves behavior changes and enables easier extension and testing."
+        },
+        {
+          "id": "b",
+          "text": "Extract the condition branches into separate strategy classes and let a chooser select appropriate strategy at runtime.",
+          "isCorrect": false,
+          "explanation": "Strategy could move branching into separate classes, but it implies external selection by the client. If transitions depend on internal lifecycle and mutate context, strategy misses encapsulating transition responsibility."
+        },
+        {
+          "id": "c",
+          "text": "Introduce a state machine DSL or configuration driven rules to decouple business rules from code flow.",
+          "isCorrect": false,
+          "explanation": "A state machine or DSL can be appropriate for complex workflows, but it adds infrastructure and may be overkill if simple polymorphic objects can encapsulate state behavior more directly."
+        },
+        {
+          "id": "d",
+          "text": "Keep the conditional logic but centralize it in a helper service to reduce duplication and improve readability.",
+          "isCorrect": false,
+          "explanation": "Centralizing conditionals can reduce duplication but preserves a monolithic decision structure. That does not eliminate branching complexity or make adding new behaviors as straightforward as encapsulation would."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better represents a robust approach for runtime behavior changes and why? Review Version A and Version B implementations.",
+      "codeSnippet": "/* Version A */\ninterface State { handle(ctx: OrderContext): void }\nclass PendingState implements State {\n  handle(ctx: OrderContext) { ctx.setState(new PaidState()); }\n}\nclass PaidState implements State {\n  handle(ctx: OrderContext) { /* ship order */ }\n}\nclass OrderContext {\n  private state: State;\n  constructor(s: State) { this.state = s; }\n  transition() { this.state.handle(this); }\n}\n\n/* Version B */\nclass OrderContextBad {\n  status: string = 'pending';\n  transition() {\n    switch (this.status) {\n      case 'pending': this.status = 'paid'; break;\n      case 'paid': /* ship order */ break;\n    }\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A moves transition logic into state objects improving encapsulation and reducing conditional branching.",
+          "isCorrect": true,
+          "explanation": "Version A delegates behavior and transitions to state objects. That encapsulates both actions and state transitions, makes each state easier to test, and adheres better to single responsibility and open closed principles. It also allows adding new states without modifying the context."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes state checks in the context and triggers transitions from a large switch statement causing tight coupling.",
+          "isCorrect": false,
+          "explanation": "Version B keeps transition logic inside the context via a switch, which couples the context to all possible states and requires modifying the context when adding new states. This approach tends to grow brittle as behaviors and transitions increase."
+        }
+      ]
+    }
+  ]
+}

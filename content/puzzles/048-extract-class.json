@@ -1,0 +1,106 @@
+{
+  "id": 48,
+  "conceptName": "Extract Class",
+  "category": "refactoring",
+  "definition": "When a single class takes on multiple responsibilities that can form independent cohesive groups, move one group into a new collaborating class to improve cohesion and reduce coupling.",
+  "ruleOfThumb": "If a class has two or more clusters of fields and methods that are only loosely related, consider separating one cluster into its own collaborator.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Extract Class",
+    "page": "n/a",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html#Extract_Class"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this class. What is the primary smell that suggests factoring out responsibilities into another object?",
+      "codeSnippet": "class UserAccount {\n  id: string;\n  email: string;\n  passwordHash: string;\n  billingAddress: string;\n  cardNumber: string;\n  authenticate(password: string) { /*...*/ }\n  chargeCard(amount: number) { /*...*/ }\n  updateProfile(data: any) { /*...*/ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class mixes authentication, billing, and profile logic together inside one object, causing responsibility overlap.",
+          "isCorrect": true,
+          "explanation": "The class holds multiple unrelated groups of fields and behavior (auth, billing, profile). That indicates a single object has too many responsibilities. Extracting a collaborator for billing or authentication would localize those concerns and improve cohesion. Fowler's Extract Class refactoring targets exactly this situation where cohesive subsets of behavior should be owned by separate classes."
+        },
+        {
+          "id": "b",
+          "text": "This class lacks an interface abstraction and should expose a clear contract to enable mocking and testing.",
+          "isCorrect": false,
+          "explanation": "While adding an interface can help testing, the core problem here is mixed responsibilities rather than missing abstraction. Creating an interface would not separate the billing logic from authentication and profile code. Extracting a collaborator addresses ownership of behavior rather than only adding a test seam."
+        },
+        {
+          "id": "c",
+          "text": "This class performs heavy synchronous IO in methods and needs asynchronous refactor for nonblocking behavior.",
+          "isCorrect": false,
+          "explanation": "Synchronous IO is a performance concern, but the snippet shows domain mixing (billing and auth) rather than I/O blocking. Converting calls to async would not fix entangled responsibilities. The better first step is to separate responsibilities into focused classes and then address any I/O patterns."
+        },
+        {
+          "id": "d",
+          "text": "This class has public fields and violates encapsulation so fields should be made private with accessors.",
+          "isCorrect": false,
+          "explanation": "Encapsulation improvements are worthwhile, but the prominent design smell is that unrelated features are grouped together. Making fields private does not reduce the cognitive load of a class that handles authentication, billing, and profile updates. Extracting a collaborator targets the structural issue more effectively."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this class where a subset of fields and methods form a clear cluster, which refactoring is most appropriate?",
+      "codeSnippet": "class ReportGenerator {\n  dataSource: DataSource;\n  formatOptions: any;\n  calculationCache: Map<string, number>;\n  generateCsv(reportId: string) { /* uses formatOptions and dataSource */ }\n  generatePdf(reportId: string) { /* uses formatOptions and dataSource */ }\n  cacheResult(key: string, value: number) { this.calculationCache.set(key, value); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Create a new collaborating class to own the grouped fields and the methods that operate on them.",
+          "isCorrect": true,
+          "explanation": "When a set of fields and methods form a cohesive unit (formatting and data access in this example), moving them into a new class clarifies responsibilities and reduces the size of the original class. This is the typical situation where extracting a class reduces coupling and improves cohesion."
+        },
+        {
+          "id": "b",
+          "text": "Introduce a parameter object to pass the grouped fields through method calls without changing class responsibilities.",
+          "isCorrect": false,
+          "explanation": "A parameter object can simplify method signatures but does not relocate ownership of the behavior. Here the methods and data are cohesive and benefit from being owned by a dedicated collaborator; a parameter object would only hide the grouping instead of encapsulating it."
+        },
+        {
+          "id": "c",
+          "text": "Refactor into subclasses per feature to separate behavior even though data grouping is not hierarchical.",
+          "isCorrect": false,
+          "explanation": "Using subclasses implies an is-a relationship and tends to complicate the type hierarchy when concerns are orthogonal. Since the grouping is about related data and behavior rather than specialization, extracting a separate class is a cleaner solution than inheritance."
+        },
+        {
+          "id": "d",
+          "text": "Encapsulate fields with accessors and delegate logic to helper functions inside the same class scope.",
+          "isCorrect": false,
+          "explanation": "Wrapping fields and moving logic to internal helpers keeps everything inside the original class and does not establish clear ownership boundaries. Extracting a collaborator yields better modularity and makes the helper behavior independently testable and maintainable."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare these two versions. Which version better addresses the structural problem of mixed responsibilities?",
+      "codeSnippet": "// Version A\nclass Customer {\n  profile: Profile;\n  billing: BillingAccount;\n  getInvoice(id: string) { return this.billing.fetchInvoice(id); }\n  updateEmail(email: string) { this.profile.email = email; }\n}\n\n// Version B\nclass Customer {\n  profileEmail: string;\n  cardNumber: string;\n  getInvoice(id: string) { /* accesses cardNumber and profileEmail */ }\n  updateEmail(email: string) { this.profileEmail = email; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates billing responsibilities into a dedicated collaborator and separates concerns clearly.",
+          "isCorrect": true,
+          "explanation": "Version A delegates billing work to a BillingAccount collaborator and keeps profile concerns separate. That separation creates clearer boundaries, higher cohesion, and smaller units to reason about and test. Extracting a collaborator gives explicit ownership of the billing responsibility and avoids leaking billing details into the core Customer object."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes related fields into the same class to reduce indirection and minimize object interactions.",
+          "isCorrect": false,
+          "explanation": "Version B keeps billing and profile data lumped together inside Customer, which reduces indirection but increases coupling and responsibility overload. This design tends to grow the monolithic class and complicate testing and maintenance. The nuanced failure is that removing collaborators to avoid indirection often sacrifices clear boundaries and violates separation of concerns."
+        }
+      ]
+    }
+  ]
+}

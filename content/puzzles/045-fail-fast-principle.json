@@ -1,0 +1,105 @@
+{
+  "id": 45,
+  "conceptName": "Fail Fast Principle",
+  "category": "principle",
+  "definition": "Design approach that surfaces errors as early as possible so faults are detected and handled close to their origin.",
+  "ruleOfThumb": "Validate inputs and configuration early, throw clear errors on violation, and avoid hiding failures behind defaults or nulls.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code: A Handbook of Agile Software Craftsmanship",
+    "chapter": "Errors and Exceptions",
+    "page": "79",
+    "externalUrl": "https://en.wikipedia.org/wiki/Fail-fast"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which behavior best indicates the intended design of surfacing problems early in a service?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "The service throws an explicit error immediately when given invalid configuration rather than proceeding with defaults.",
+          "isCorrect": true,
+          "explanation": "Throwing at the point of invalid configuration makes the fault obvious and prevents cascading failures later in the call chain. This approach keeps the root cause local and simplifies debugging."
+        },
+        {
+          "id": "b",
+          "text": "The service logs a warning and continues running using best effort defaults when configuration values are missing from environment.",
+          "isCorrect": false,
+          "explanation": "Logging and continuing hides the root cause and permits the system to run in an unintended state, which can produce surprising failures far from the original error."
+        },
+        {
+          "id": "c",
+          "text": "The service retries background tasks for a long time before giving up and reporting an error to callers.",
+          "isCorrect": false,
+          "explanation": "Lengthy retries can mask startup or configuration problems and increase tail latency; retries should be targeted and failures surfaced when recovery is unlikely."
+        },
+        {
+          "id": "d",
+          "text": "The service returns partial results and a success status while queuing validation errors for a later background process.",
+          "isCorrect": false,
+          "explanation": "Returning success with partial data obscures correctness violations and forces downstream consumers to reason about incomplete state, increasing overall system complexity."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary maintainability or runtime risk in the following code?",
+      "codeSnippet": "class PaymentClient {\n  constructor(private config: Config) {\n    if (!config.apiKey) {\n      console.error('Missing API key, continuing without payments');\n    }\n  }\n\n  async charge(amount: number) {\n    try {\n      return await this.callGateway(amount);\n    } catch (e) {\n      return null;\n    }\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code masks startup and runtime failures by catching unexpected exceptions and returning null to callers.",
+          "isCorrect": true,
+          "explanation": "Returning null from a catch block removes the error signal and forces callers to infer failure from a nullable result. Early explicit errors or propagated exceptions preserve the failure semantics and help operators detect misconfiguration."
+        },
+        {
+          "id": "b",
+          "text": "This code contains inconsistent logging levels causing noisy logs and making production incidents hard to triage quickly.",
+          "isCorrect": false,
+          "explanation": "While inconsistent logging is a real concern, the more harmful issue here is the swallowing of errors and returning null which hides failures from higher layers, not merely log noise."
+        },
+        {
+          "id": "c",
+          "text": "This code relies on side effects during construction that may leave objects partially initialized under certain runtime conditions.",
+          "isCorrect": false,
+          "explanation": "Constructor side effects can be problematic, but the snippet mainly shows suppressed errors and silent degradation rather than partial initialization as the primary fault."
+        },
+        {
+          "id": "d",
+          "text": "This code uses broad catch blocks that swallow different error types preventing targeted retry or distinct remediation strategies.",
+          "isCorrect": false,
+          "explanation": "Broad catch blocks are indeed an anti-pattern; however the core issue emphasized here is the policy of returning null on error which hides failure semantics, beyond just lack of specific handling."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which design is preferable for detecting configuration errors early and why?",
+      "codeSnippet": "// Version A\nclass ServiceV1 {\n  constructor(config: Config) {\n    if (!config.endpoint) {\n      throw new Error('Missing endpoint');\n    }\n    this.client = new HttpClient(config.endpoint);\n  }\n}\n\n// Version B\nclass ServiceV2 {\n  constructor(config: Config) {\n    if (!config.endpoint) {\n      console.warn('Missing endpoint, operating in degraded mode');\n      this.client = new NoOpClient();\n      return;\n    }\n    this.client = new HttpClient(config.endpoint);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A validates configuration and throws immediately, keeping failures visible and services consistent.",
+          "isCorrect": true,
+          "explanation": "Version A enforces correctness at construction, making misconfiguration fail loud and early. This prevents the system from entering inconsistent runtime states and simplifies debugging and monitoring. Early termination reduces blast radius and makes remediation straightforward compared to silent degradation."
+        },
+        {
+          "id": "b",
+          "text": "Version B logs warnings and continues with degraded behavior, allowing misconfiguration to remain hidden and cause subtle runtime errors later.",
+          "isCorrect": false,
+          "explanation": "Version B hides the root cause by falling back to a no-op client and emitting only a warning. That choice defers failures into runtime paths where diagnosis is harder, increases the chance of subtle bugs, and complicates operational visibility and service contracts."
+        }
+      ]
+    }
+  ]
+}

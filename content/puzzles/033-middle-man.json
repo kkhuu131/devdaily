@@ -1,0 +1,106 @@
+{
+  "id": 33,
+  "conceptName": "Middle Man",
+  "category": "code-smell",
+  "definition": "A delegating object that does little other than forward calls to another class, adding indirection without meaningful behavior.",
+  "ruleOfThumb": "Remove thin delegators that only forward calls; let callers talk directly to the class that has the real behavior.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Remove Middle Man",
+    "page": "n/a",
+    "externalUrl": "https://martinfowler.com/bliki/MiddleMan.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the class below. What is the most likely design problem?",
+      "codeSnippet": "class PaymentProxy {\n  constructor(private gateway: PaymentGateway) {}\n  charge(card, amount) {\n    return this.gateway.charge(card, amount);\n  }\n  refund(txId) {\n    return this.gateway.refund(txId);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class is an unnecessary delegator that only forwards calls to another object without adding meaningful behavior.",
+          "isCorrect": true,
+          "explanation": "The class simply forwards methods to PaymentGateway without adding orchestration, validation, or transformation. This is the classic symptom where the middle layer provides no value and adds maintenance overhead. Fowler recommends removing such delegators or moving any real work into them."
+        },
+        {
+          "id": "b",
+          "text": "This class creates tight coupling by exposing the collaborator's methods directly and leaking internal details to external callers.",
+          "isCorrect": false,
+          "explanation": "While leaking collaborator details is a real concern, the code shows pure forwarding without exposing internal state. The primary issue is redundant delegation rather than increased coupling from surface API exposure."
+        },
+        {
+          "id": "c",
+          "text": "This class violates single responsibility by mixing delegation and business logic making maintenance and testing harder over time.",
+          "isCorrect": false,
+          "explanation": "Violating SRP is plausible when classes do multiple things, but the snippet contains no business logic. The problem is a thin delegator rather than a class carrying multiple responsibilities."
+        },
+        {
+          "id": "d",
+          "text": "This class risks performance problems by adding an extra forwarding layer that increases call depth in critical hot paths.",
+          "isCorrect": false,
+          "explanation": "Extra call layers can have a performance impact in tight loops, but in most domains the cost is negligible compared with added cognitive and maintenance cost. The primary design smell remains unnecessary delegation."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which description best identifies the real maintenance risk in this code?",
+      "codeSnippet": "class OrderController {\n  constructor(private orderService: OrderService) {}\n  place(order) {\n    return this.orderService.place(order);\n  }\n  cancel(id) {\n    return this.orderService.cancel(id);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class is an unnecessary delegator that only forwards requests to another service without meaningful orchestration or transformation.",
+          "isCorrect": true,
+          "explanation": "The controller adds a layer that simply mirrors OrderService methods. That duplication increases maintenance burden because changes must be tracked in two places. Removing the thin forwarding layer simplifies the call graph and reduces duplication."
+        },
+        {
+          "id": "b",
+          "text": "This class has high coupling because it duplicates service validation logic across multiple forwarding methods causing consistency risks.",
+          "isCorrect": false,
+          "explanation": "Duplicated validation would be a significant issue, but the snippet shows no validation duplication. The key problem is the thin passthrough rather than interleaved validation logic causing inconsistencies."
+        },
+        {
+          "id": "c",
+          "text": "This class properly implements the facade role by centralizing related operations and simplifying the public API for callers.",
+          "isCorrect": false,
+          "explanation": "A facade should provide simplified or combined operations. Here the controller only mirrors methods one to one without simplifying or aggregating behavior, so it is not a meaningful facade."
+        },
+        {
+          "id": "d",
+          "text": "This class violates single responsibility by feeling like a controller and a translator and handling protocol concerns too.",
+          "isCorrect": false,
+          "explanation": "Mixing responsibilities is a valid concern when a class handles multiple concerns. The code, however, shows only delegation to OrderService. The prominent smell is unnecessary delegation rather than SRP violation from protocol handling."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better design for reducing unnecessary delegation and clarifying responsibilities?",
+      "codeSnippet": "// Version A\nclass OrderProcessorA {\n  private service = new OrderService();\n  create(o) { return this.service.create(o); }\n  cancel(id) { return this.service.cancel(id); }\n}\n\n// Version B\nclass OrderServiceB {\n  create(o) {\n    // validation and persistence\n  }\n  cancel(id) {\n    // validation and cancellation\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps a thin delegating layer that superficially isolates callers but adds no substantial behavior or value.",
+          "isCorrect": false,
+          "explanation": "Version A introduces an extra class that only forwards to the real service. That superficially seems to isolate callers, but it increases indirection and maintenance without providing orchestration or enhancements. It is the textbook redundant delegator case."
+        },
+        {
+          "id": "b",
+          "text": "Version B consolidates responsibilities into the service and removes the redundant forwarding layer created in the other version.",
+          "isCorrect": true,
+          "explanation": "Version B places the real operations directly in the service, eliminating a thin forwarding layer. This reduces unnecessary indirection and clarifies where behavior lives. Consolidation improves maintainability and testability by reducing replication of method signatures and call paths. See Fowler on removing middle man for guidance and the Pragmatic Programmer on reducing unnecessary abstraction."
+        }
+      ]
+    }
+  ]
+}

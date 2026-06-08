@@ -1,0 +1,106 @@
+{
+  "id": 44,
+  "conceptName": "Proxy Pattern",
+  "category": "design-pattern",
+  "definition": "An object that provides a surrogate or placeholder for another object to control access, add behavior, or defer expensive operations.",
+  "ruleOfThumb": "Use a surrogate object when you need controlled access, lazy creation, access control, logging, or remote access without changing clients.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Proxy",
+    "page": "217",
+    "externalUrl": "https://en.wikipedia.org/wiki/Proxy_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches the role demonstrated by the ServiceProxy class in the snippet below?",
+      "codeSnippet": "interface Service {\n  fetch(): string\n}\nclass RealService implements Service {\n  fetch() { return 'data' }\n}\nclass ServiceProxy implements Service {\n  private real?: RealService\n  fetch() {\n    if (!this.real) this.real = new RealService()\n    return this.real.fetch()\n  }\n}\nconst s: Service = new ServiceProxy()\ns.fetch()",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A wrapper object that controls access to a real service and performs lazy initialization on demand.",
+          "isCorrect": true,
+          "explanation": "Correct. The proxy object here delays creation of RealService until needed and mediates client calls. This is a classic use case described in GoF for controlling access and adding behavior without changing clients."
+        },
+        {
+          "id": "b",
+          "text": "An adapter that changes the service interface so clients can use it without modifying the real service implementation.",
+          "isCorrect": false,
+          "explanation": "Incorrect. An adapter alters an incompatible interface to match client expectations. The snippet preserves the Service interface and focuses on access and lazy creation rather than adapting interface differences."
+        },
+        {
+          "id": "c",
+          "text": "A decorator that augments the service behavior by wrapping it to add logging or other runtime modifications.",
+          "isCorrect": false,
+          "explanation": "Incorrect. A decorator is primarily about adding or modifying behavior dynamically while preserving the component interface. The example shows delayed instantiation and access mediation rather than layering additional behaviors per call."
+        },
+        {
+          "id": "d",
+          "text": "A factory-like helper that encapsulates object creation logic and returns configured instances to client code directly.",
+          "isCorrect": false,
+          "explanation": "Incorrect. A factory centralizes creation and returns instances to callers, typically not implementing the same interface for clients. The proxy here implements the same interface and forwards calls, rather than simply creating instances for callers."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the LoggerProxy below, what is the primary responsibility of this component?",
+      "codeSnippet": "interface Logger {\n  log(msg: string): void\n}\nclass ConsoleLogger implements Logger {\n  log(msg: string) { console.log(msg) }\n}\nclass LoggerProxy implements Logger {\n  constructor(private logger: Logger) {}\n  log(msg: string) {\n    const stamped = `[${new Date().toISOString()}] ${msg}`\n    this.logger.log(stamped)\n  }\n}\nconst logger = new LoggerProxy(new ConsoleLogger())\nlogger.log('hi')",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This component adapts an incompatible logging interface to match client expectations before delegating to the real logger.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect. Adapters change interfaces between components. The proxy here preserves the Logger interface and enriches behavior rather than translating between different interfaces."
+        },
+        {
+          "id": "b",
+          "text": "This component caches previous messages to reduce duplicate log entries and avoids writing identical messages repeatedly.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect. Caching duplicate messages is a specific optimization concern. The code instead timestamps messages and delegates immediately, so caching is not the observed responsibility."
+        },
+        {
+          "id": "c",
+          "text": "This component augments logging with timestamps and optional throttling before delegating to the underlying logger.",
+          "isCorrect": true,
+          "explanation": "Correct. The proxy enriches or intercepts the logging call with a timestamp and could add cross cutting concerns like throttling before forwarding to the real logger — a common proxy use described in design pattern literature."
+        },
+        {
+          "id": "d",
+          "text": "This component manages lifecycle responsibilities by creating or destroying logger instances on demand for resource control.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect. Lifecycle management can be a proxy responsibility, but the snippet shows message enrichment and delegation rather than on demand creation or destruction of logger instances."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for adding access control and lazy creation in a maintainable codebase?",
+      "codeSnippet": "interface DataFetcher {\n  fetch(): Promise<string>\n}\nclass RealFetcher implements DataFetcher {\n  async fetch() { return 'payload' }\n}\n// Version A: subclassing\nclass FetcherSubclass extends RealFetcher {\n  private cached?: Promise<string>\n  private hasAccess() { return true }\n  async fetch() {\n    if (!this.hasAccess()) throw new Error('denied')\n    if (!this.cached) this.cached = super.fetch()\n    return this.cached\n  }\n}\n// Version B: delegation via wrapper\nclass FetcherProxy implements DataFetcher {\n  private cached?: Promise<string>\n  constructor(private real: DataFetcher) {}\n  private hasAccess() { return true }\n  async fetch() {\n    if (!this.hasAccess()) throw new Error('denied')\n    if (!this.cached) this.cached = this.real.fetch()\n    return this.cached\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A embeds access control by subclassing the real fetcher, reducing indirection but coupling behavior into inheritance.",
+          "isCorrect": false,
+          "explanation": "This is a tempting argument for using inheritance to avoid an extra wrapper. However, coupling access control into a subclass mixes responsibilities and makes future changes, testing, and reuse harder. Composition provides clearer separation and is preferred in the pattern literature."
+        },
+        {
+          "id": "b",
+          "text": "Version B composes a lightweight delegating wrapper that separates access control from the core fetcher implementation.",
+          "isCorrect": true,
+          "explanation": "Correct. Composition keeps access control and caching concerns in a separate wrapper that implements the same interface. This improves single responsibility, testability, and substitutability. GoF discusses proxies as standins that delegate; Martin Fowler and pragmatic design guidance also favor composition over inheritance for orthogonal concerns."
+        }
+      ]
+    }
+  ]
+}

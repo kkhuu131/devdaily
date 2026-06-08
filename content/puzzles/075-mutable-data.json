@@ -1,0 +1,106 @@
+{
+  "id": 75,
+  "conceptName": "Mutable Data",
+  "category": "code-smell",
+  "definition": "A situation where objects or data structures are shared and changed after creation, causing surprising coupling and hidden side effects across the codebase.",
+  "ruleOfThumb": "Prefer returning new values or defensive copies for shared data, and avoid exposing internal references to callers.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code",
+    "chapter": "Objects and Data Structures",
+    "page": "43",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-code-a/9780136083238/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which of these observations best identifies the problematic behavior in the snippet below?",
+      "codeSnippet": "function promoteUser(user: { name: string; role: string }) {\n  user.role = 'admin';\n  return user;\n}\n\nconst u = { name: 'Amy', role: 'user' };\npromoteUser(u);\nconsole.log(u.role);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function directly assigns to a property on the input object, altering state held by the caller.",
+          "isCorrect": true,
+          "explanation": "This is a classic symptom: the function mutates an object owned by the caller. Such in-place changes create hidden coupling and make reasoning, testing, and reuse harder. A safer alternative is to return a new object or perform a defensive copy so callers do not observe unexpected changes."
+        },
+        {
+          "id": "b",
+          "text": "The function returns a new object but still references nested objects that allow external mutation.",
+          "isCorrect": false,
+          "explanation": "This distractor points to a real issue where shallow copies still share nested structures. In the provided snippet the function does not create a new object at all, it mutates the passed object directly. However, the concern about shallow copying is valid in many similar cases and worth checking."
+        },
+        {
+          "id": "c",
+          "text": "The function shallow copies the input which still shares internal arrays allowing caller visible modifications later.",
+          "isCorrect": false,
+          "explanation": "Shallow-copy pitfalls are a legitimate source of shared mutable state bugs. In this snippet no copying occurs, so this concern does not apply here. Developers should nonetheless be mindful when returning copies that nested references can still be shared."
+        },
+        {
+          "id": "d",
+          "text": "The function uses global variables to compute results which can be changed by unrelated parts of code.",
+          "isCorrect": false,
+          "explanation": "Global mutable state is another common risk, but the example mutates its input object rather than touching globals. This option is a plausible confusion because both globals and mutated inputs lead to hidden couplings, yet they are distinct root causes requiring different fixes."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In this class design, which observation best pinpoints the source of shared state problems?",
+      "codeSnippet": "class Order {\n  private items: string[] = [];\n  getItems() { return this.items; }\n  addItem(item: string) { this.items.push(item); }\n}\n\nconst o = new Order();\nconst items = o.getItems();\nitems.push('sneaky');",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The getter returns the internal items array reference which allows callers to mutate the order's internal collection directly.",
+          "isCorrect": true,
+          "explanation": "Returning the actual internal array hands control of internal state to callers. This breaks encapsulation and leads to hard to find bugs because external code can change the internal representation without using the class's API. The usual fixes are returning a copy or an immutable view."
+        },
+        {
+          "id": "b",
+          "text": "The addItem method performs an in place push that shows function side effects which complicate testing of order mutation.",
+          "isCorrect": false,
+          "explanation": "Mutating methods do have side effects and can complicate testing, but the more specific smell here is the getter exposing the internal array. Even with addItem present, the exposed reference lets callers bypass the method and mutate state, which is the core problem."
+        },
+        {
+          "id": "c",
+          "text": "The class lacks defensive copying when returning data so nested objects could be shared and mutated by unrelated modules.",
+          "isCorrect": false,
+          "explanation": "This identifies a related issue: failing to defensively copy returned structures. It is true and relevant, but the code specifically returns the actual array reference. The distinction is subtle but important: the immediate risk is exposure of the internal array, which defensive copying would address."
+        },
+        {
+          "id": "d",
+          "text": "The private items field is mutable which means its type could be changed later causing unpredictable runtime behaviors in clients.",
+          "isCorrect": false,
+          "explanation": "A mutable field can indeed be problematic, but the specific problem shown is that the internal array is exposed by reference. The risk described here about type changes is less direct and does not target the immediate encapsulation leak present in the snippet."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable when you want to avoid shared state and unexpected caller visible mutations?",
+      "codeSnippet": "// Version A\nfunction updateProfile(profile: { name: string; tags: string[] }, newTag: string) {\n  return { ...profile, tags: [...profile.tags, newTag] };\n}\n\n// Version B\nfunction updateProfileInPlace(profile: { name: string; tags: string[] }, newTag: string) {\n  profile.tags.push(newTag);\n  return profile;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A creates a new profile object with copied tags preventing caller visible side effects.",
+          "isCorrect": true,
+          "explanation": "Version A returns a fresh object with a copied tags array, avoiding shared internal references. That prevents callers from observing or causing unexpected mutations on the original profile. This approach aligns with defensive copying and functional update patterns recommended to reduce coupling and make state changes explicit. See Clean Code on preferring clear data ownership and Martin Fowler on immutable value transformations."
+        },
+        {
+          "id": "b",
+          "text": "Version B mutates the passed profile's tags array causing shared state and surprising caller visible side effects.",
+          "isCorrect": false,
+          "explanation": "Version B directly modifies the passed object, which shares the same array instance with all holders of that object. This yields shared mutable state and makes reasoning about program behavior harder. While in-place updates can be more memory efficient, they introduce implicit coupling and increase chances of bugs across modules."
+        }
+      ]
+    }
+  ]
+}

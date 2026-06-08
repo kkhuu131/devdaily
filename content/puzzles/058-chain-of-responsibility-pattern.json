@@ -1,0 +1,106 @@
+{
+  "id": 58,
+  "conceptName": "Chain of Responsibility Pattern",
+  "category": "design-pattern",
+  "definition": "A behavioral design pattern that lets a request pass along a chain of handler objects until one of them handles it, decoupling senders from receivers.",
+  "ruleOfThumb": "Model each processing step as a separate handler and link them so requests flow until handled.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns - Chain of Responsibility",
+    "page": "233",
+    "externalUrl": "https://refactoring.guru/design-patterns/chain-of-responsibility"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which design intent best matches the following TypeScript snippet?",
+      "codeSnippet": "interface Handler {\n  setNext(handler: Handler): Handler;\n  handle(request: any): any | null;\n}\nclass ConcreteHandler implements Handler {\n  private next?: Handler;\n  setNext(handler: Handler) { this.next = handler; return handler; }\n  handle(request: any) { if (request.type === 'A') return 'handled A'; return this.next ? this.next.handle(request) : null; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This design lets a request traverse a chain of handlers until one handler chooses to process it.",
+          "isCorrect": true,
+          "explanation": "This snippet shows handlers linked via setNext and delegating to next when they do not handle the request. That is the classic intent of the pattern — decoupling senders from receivers and letting a request be handled by whichever handler in the chain chooses to act. Handlers remain unaware of other concrete handlers beyond the next reference."
+        },
+        {
+          "id": "b",
+          "text": "This design composes objects by wrapping them to add responsibilities to an instance at runtime.",
+          "isCorrect": false,
+          "explanation": "This description fits the Decorator pattern, where objects wrap others to extend behavior. The snippet does not wrap instances; it links handlers and forwards requests along a chain instead of layering additional behavior on a single object."
+        },
+        {
+          "id": "c",
+          "text": "This design chains functions as middleware that modify requests and responses in a fixed pipeline order.",
+          "isCorrect": false,
+          "explanation": "Middleware pipelines are similar in appearance but typically emphasize transformation of request and response through a fixed sequence of functions. The snippet models object handlers deciding whether to handle or pass on the request, not pure transform middleware semantics."
+        },
+        {
+          "id": "d",
+          "text": "This design broadcasts events to multiple subscribers so many listeners react independently to the same notification.",
+          "isCorrect": false,
+          "explanation": "The Observer pattern broadcasts events to many listeners. The snippet forwards a request along a single linked path until one handler handles it, which is different from broadcasting the same event to multiple independent subscribers."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary benefit shown when handlers are assembled at runtime with setNext chaining?",
+      "codeSnippet": "interface Handler { setNext(h: Handler): Handler; handle(req: any): any | null; }\nclass AuthHandler implements Handler {\n  private next?: Handler;\n  setNext(h: Handler) { this.next = h; return h; }\n  handle(req: any) { if (!req.auth) return null; return this.next ? this.next.handle(req) : null; }\n}\n// chain assembled at runtime\nconst chain = new AuthHandler();\nchain.setNext(new LoggingHandler()).setNext(new DataHandler());",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It decouples the sender from concrete handlers so different handling sequences can be assembled at runtime.",
+          "isCorrect": true,
+          "explanation": "The runtime assembly of handlers lets the client remain unaware of which concrete handler will process a request and lets the system reorder or replace handlers without changing the sender. This supports flexibility and late binding of processing responsibilities."
+        },
+        {
+          "id": "b",
+          "text": "It primarily improves raw throughput by parallelizing request handling across multiple threads without shared mutable state.",
+          "isCorrect": false,
+          "explanation": "Parallelism is unrelated to the chaining mechanism shown. The pattern is about delegation and decoupling, not inherent parallel processing. Implementing concurrency would require additional design beyond simple chain linking."
+        },
+        {
+          "id": "c",
+          "text": "It enforces compile time type safety to guarantee exactly one handler will process each kind of request object.",
+          "isCorrect": false,
+          "explanation": "Type safety guarantees are orthogonal to the pattern. The chain does not ensure exactly one handler processes a request; multiple handlers could choose to handle or pass along a request depending on implementation."
+        },
+        {
+          "id": "d",
+          "text": "It reduces the number of classes by merging handler logic into a single class with a long conditional chain.",
+          "isCorrect": false,
+          "explanation": "This describes an anti-pattern of monolithic conditionals. The shown approach favors multiple small handler classes linked together, which increases modularity and makes extension easier compared to merging logic into long conditionals."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation choice is preferable for an extensible request-processing pipeline in a large codebase?",
+      "codeSnippet": "// Version A: multiple small handler classes linked at runtime\ninterface Handler { setNext(h: Handler): Handler; handle(req: any): any | null; }\nclass AuthHandler implements Handler { /* checks auth and forwards */ }\nclass LoggingHandler implements Handler { /* logs and forwards */ }\n// Version B: single processor with long conditional chain\nclass Processor {\n  process(req: any) {\n    if (req.type === 'auth') { /* auth logic */ }\n    else if (req.type === 'log') { /* logging logic */ }\n    else { /* other logic */ }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A preserves loose coupling and allows runtime reordering of independent handler responsibilities.",
+          "isCorrect": true,
+          "explanation": "Version A models each concern as an independent handler with a next link, enabling open extension and runtime composition. Handlers can be added, removed, or reordered without changing other handlers or the sender. This reduces the risk of large conditional methods and keeps individual classes small and testable. Fowler and the GoF recommend such behavioral decoupling for systems that require flexible processing chains."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes responsibility in one class making extensions risky and changes require modifying long conditional logic.",
+          "isCorrect": false,
+          "explanation": "Version B couples many responsibilities into a single class with conditionals, which increases change impact and makes testing and extension harder. While simpler at first, it violates single responsibility and open closed principles in larger evolving systems and tends to accumulate complex conditional branches over time."
+        }
+      ]
+    }
+  ]
+}

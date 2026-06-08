@@ -1,0 +1,106 @@
+{
+  "id": 38,
+  "conceptName": "Inappropriate Intimacy",
+  "category": "code-smell",
+  "definition": "A code smell where one class knows too much about the internal structure or private behavior of another class, causing tight coupling and reduced encapsulation.",
+  "ruleOfThumb": "If a class repeatedly reaches into another object's internals, move the behavior to the object that owns the data or add a clear API.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Code Smells",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary problem demonstrated by the code below?",
+      "codeSnippet": "class Order {\n  private items: { price: number }[];\n  getTotal() { return this.items.reduce((s, i) => s + i.price, 0); }\n}\nclass InvoicePrinter {\n  print(order: Order) {\n    const items = (order as any).items;\n    return items.map(i => i.price).join(', ');\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "One class directly accesses another object's internal fields and logic instead of using its public API.",
+          "isCorrect": true,
+          "explanation": "The printer casts the Order and reads its private items array directly. That indicates the printer depends on Order internals rather than using a public method. Refactor by adding a method on Order to expose the needed representation or behavior."
+        },
+        {
+          "id": "b",
+          "text": "Two classes are tightly coupled through shared global state making reuse and testing difficult overall.",
+          "isCorrect": false,
+          "explanation": "While tight coupling is a concern, there is no global state here. The coupling comes from one object inspecting another's internals, not from shared globals. The fix is to preserve encapsulation rather than remove a global variable."
+        },
+        {
+          "id": "c",
+          "text": "A utility function mixes presentation and business logic causing responsibilities to be unclear across modules.",
+          "isCorrect": false,
+          "explanation": "This suggests separation of concerns, which is relevant, but the concrete problem shown is direct access to Order internals. Moving formatting away from business calculation helps, but first hide internals behind Order methods."
+        },
+        {
+          "id": "d",
+          "text": "A long method contains many branches and conditionals indicating the need to decompose behavior into separate functions.",
+          "isCorrect": false,
+          "explanation": "Decomposition can improve readability, but the snippet lacks long conditionals. The main issue is external access to internal data, so moving behavior to the owning class is the more direct remedy."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which concern best describes the design issue suggested by this snippet?",
+      "codeSnippet": "class Customer {\n  private address: { street: string, city: string };\n  getStreet() { return this.address.street; }\n  getCity() { return this.address.city; }\n}\nclass ShippingLabel {\n  format(customer: Customer) {\n    const s = (customer as any).address.street;\n    const c = (customer as any).address.city;\n    return `${s}, ${c}`;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A class repeatedly navigates and manipulates another class's internal details instead of relying on the other's encapsulation and API.",
+          "isCorrect": true,
+          "explanation": "The ShippingLabel reaches into Customer internals via casting and duplicated accesses. This violates encapsulation and couples the label formatting to Customer's internal shape. Better to add a Customer.formatAddress method or similar."
+        },
+        {
+          "id": "b",
+          "text": "This code could indicate a Feature Envy case where functionality belongs on the object being inspected rather than the caller.",
+          "isCorrect": false,
+          "explanation": "Feature Envy is related and plausible because formatting uses Customer data heavily. However here the caller also accesses raw internals directly which is a stronger signal of intimacy with the data layout rather than just poor placement."
+        },
+        {
+          "id": "c",
+          "text": "A service layer is doing too much work indicating anemic domain model or misplaced application logic into services.",
+          "isCorrect": false,
+          "explanation": "An anemic domain model critique fits when domain objects lack behavior, but the immediate flaw is invasive reads of internals. The remedy is to enrich the domain object with an API rather than solely rebalancing service responsibilities."
+        },
+        {
+          "id": "d",
+          "text": "Multiple classes depend on the same data structure making changes risky and suggesting a need for a shared abstraction.",
+          "isCorrect": false,
+          "explanation": "Sharing raw data structures across classes is risky, but the snippet shows a caller poking into another object's internals rather than using any shared abstraction. Introducing a focused API on Customer is the clearer fix."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better addresses encapsulation and long term maintainability?",
+      "codeSnippet": "// Version A\nclass Invoice {\n  items: { price: number, tax: number }[];\n}\nclass Report {\n  totalExTax(inv: Invoice) {\n    return inv.items.reduce((s, i) => s + i.price * (1 - i.tax), 0);\n  }\n}\n\n// Version B\nclass InvoiceV2 {\n  items: { price: number, tax: number }[];\n  totalExTax() {\n    return this.items.reduce((s, i) => s + i.price * (1 - i.tax), 0);\n  }\n}\nclass ReportV2 {\n  totalExTax(inv: InvoiceV2) {\n    return inv.totalExTax();\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A performs calculations by directly iterating another object's internal collection, coupling logic to the consumer's view.",
+          "isCorrect": false,
+          "explanation": "Version A ties Report to Invoice's internal items structure. Any change in Invoice layout forces changes in Report, increasing coupling and test brittleness. This is the intimacy problem that makes maintenance harder."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps the calculation inside the Invoice class alongside its data and responsibilities.",
+          "isCorrect": true,
+          "explanation": "Version B encapsulates behavior with the data it operates on, preventing external classes from depending on internal representation. This reduces coupling and makes refactors safer. Recommended refactoring is to move related behavior onto the domain object as shown here."
+        }
+      ]
+    }
+  ]
+}

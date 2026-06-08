@@ -1,0 +1,105 @@
+{
+  "id": 62,
+  "conceptName": "Lazy Element",
+  "category": "code-smell",
+  "definition": "A pattern where objects or UI elements are constructed on first access in dispersed accessors, producing hidden initialization, scattered null checks, unpredictable lifecycle, and testability headaches.",
+  "ruleOfThumb": "Prefer explicit construction or a single factory/initializer rather than ad hoc on-access creation scattered across accessors.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Composing Methods",
+    "page": "85",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation most clearly signals a maintainability problem in code that frequently defers object creation until access time?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Object construction is deferred across many accessors causing scattered null checks and hidden initialization order dependencies.",
+          "isCorrect": true,
+          "explanation": "Deferred construction in many accessors typically creates scattered guards and implicit ordering constraints. The smell manifests as hidden lifecycle and brittle ordering assumptions that are hard to reason about and test. Refactoring toward explicit construction or a dedicated factory reduces this risk."
+        },
+        {
+          "id": "b",
+          "text": "Factory abstraction is missing so developers create instances inline and duplicate creation logic across different modules.",
+          "isCorrect": false,
+          "explanation": "Inline duplication is a real problem but it points to missing factory extraction rather than the structural issue of hidden lifecycle caused by on-access creation. Addressing duplication alone may not fix the scattered initialization semantics."
+        },
+        {
+          "id": "c",
+          "text": "Tests are not mocking side effects so production code lazily instantiates heavy dependencies during unit runs.",
+          "isCorrect": false,
+          "explanation": "Slow tests from real instantiation is a plausible symptom, but it is a downstream testing issue. The underlying smell is distributed lazy construction which should be addressed independently of mocking strategy."
+        },
+        {
+          "id": "d",
+          "text": "Memory usage spikes because transient objects are retained by closures created during on demand instantiation steps.",
+          "isCorrect": false,
+          "explanation": "Retained closures and memory leaks can occur with lazy creation, but this is a consequence rather than the core maintainability problem. The primary issue remains the concealed lifecycle and scattered responsibility for creation."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which single concern is most likely the root problem in the following component code?",
+      "codeSnippet": "class Panel {\n  private _title: HTMLElement | null = null;\n  private _toolbar: HTMLElement | null = null;\n  get title() {\n    if (!this._title) this._title = document.createElement('h1');\n    return this._title;\n  }\n  get toolbar() {\n    if (!this._toolbar) this._toolbar = document.createElement('div');\n    return this._toolbar;\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Hidden lifecycle coupling through accessors causes unpredictable initialization order and difficult reasoning about object state across calls.",
+          "isCorrect": true,
+          "explanation": "The primary problem is that construction is tied to access, scattering lifecycle decisions and making order of access significant. This obscures object invariants and complicates maintenance and testing. Consolidating construction clarifies invariants."
+        },
+        {
+          "id": "b",
+          "text": "Concurrent access will cause race conditions because no locking is used when creating cached elements on first access.",
+          "isCorrect": false,
+          "explanation": "Race conditions are possible in multithreaded contexts, but typical JavaScript environments are single threaded. This concern is real in other runtimes but is not the most general root cause of the smell in this snippet."
+        },
+        {
+          "id": "c",
+          "text": "Factory responsibility is missing because element construction logic is embedded in getters instead of injected builders.",
+          "isCorrect": false,
+          "explanation": "Embedding construction hints at missing factories, but the harder issue is the scattering of initialization across accessors. Injecting builders helps but does not by itself resolve hidden lifecycle concerns."
+        },
+        {
+          "id": "d",
+          "text": "Tests will be slow and flaky because real DOM elements are created during unit tests without proper test doubles.",
+          "isCorrect": false,
+          "explanation": "Test fragility is a symptom that lazy creation can cause, but the root design problem is the distributed on-access construction. Fixing test doubles can mitigate symptoms without addressing architecture."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better addresses the underlying structural issue shown previously: keep on-access creation in getters (Version A) or centralize construction with explicit lifecycle (Version B)?",
+      "codeSnippet": "/* Version A */\nclass WidgetA {\n  private _content: Node | null = null;\n  get content() {\n    if (!this._content) this._content = buildHeavyContent();\n    return this._content;\n  }\n}\n\n/* Version B */\nclass WidgetB {\n  private content: Node;\n  constructor(private factory: ContentFactory) {}\n  initialize() { this.content = this.factory.build(); }\n  getContent() { return this.content; }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps dispersed on access creation which conceals lifecycle and complicates testing across modules.",
+          "isCorrect": false,
+          "explanation": "Version A continues the dispersed on-access creation pattern which hides lifecycle and makes it hard to assert invariants or to set up deterministic tests. The smell persists because responsibility for creation remains scattered rather than centralized."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes construction and exposes clear lifecycle methods across modules to make creation explicit.",
+          "isCorrect": true,
+          "explanation": "Centralizing construction and exposing initialization makes object state and lifecycle explicit, improving reasoning and testability. This aligns with principles of single responsibility and explicit dependencies. See Martin Fowler on making side effects visible and Robert C. Martin on explicit dependencies."
+        }
+      ]
+    }
+  ]
+}

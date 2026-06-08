@@ -1,0 +1,106 @@
+{
+  "id": 56,
+  "conceptName": "Switch Statements",
+  "category": "code-smell",
+  "definition": "A conditional-heavy construct where a single decision point branches across many discrete cases, often scattering variant-specific behavior and making code harder to extend or test.",
+  "ruleOfThumb": "If you find multiple case branches handling different variants, consider replacing the central decision with variant-specific handlers or polymorphism to improve extensibility.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Conditional with Polymorphism",
+    "page": "ch 10",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this implementation. Which symptom most directly indicates the design smell in the snippet?",
+      "codeSnippet": "type Order = { type: 'physical' | 'digital'; price: number };\nfunction calculateShipping(order: Order) {\n  switch (order.type) {\n    case 'physical':\n      return order.price * 0.1;\n    case 'digital':\n      return 0;\n    default:\n      return 0;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function contains many explicit case branches handling different concrete variants in a single decision point.",
+          "isCorrect": true,
+          "explanation": "This is the core smell: variant-specific logic centralized in one function. Fowler recommends moving variant behavior into objects or handlers to avoid changing a single decision point whenever a new variant is added. Centralizing cases increases coupling and reduces extensibility."
+        },
+        {
+          "id": "b",
+          "text": "The function contains deep nested branching that mixes data transformation with decision logic across responsibilities.",
+          "isCorrect": false,
+          "explanation": "Deep nesting and mixed responsibilities are real problems, but this snippet shows flat branching by variant rather than deeply nested conditionals. The primary issue is centralizing variant behavior, not nested control flow."
+        },
+        {
+          "id": "c",
+          "text": "The function contains duplicated constants and parallel condition blocks repeated across unrelated modules without abstraction.",
+          "isCorrect": false,
+          "explanation": "Duplicated constants or parallel blocks across modules can indicate missing abstraction, but the snippet demonstrates a single decision point handling variants. The more direct smell is the centralized branching per variant, which prevents clean abstraction."
+        },
+        {
+          "id": "d",
+          "text": "The function contains large sequential case handlers that prevent adding new variants without modifying existing code.",
+          "isCorrect": false,
+          "explanation": "This statement identifies a correct consequence of centralized branching but frames it as 'large sequential handlers'. The core observation is the centralized case branches themselves; the main concern is extensibility and the need to modify the decision point for new variants."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "This event dispatcher uses branching per event kind. Which issue is the primary maintenance risk here?",
+      "codeSnippet": "type Event = { kind: 'click' | 'keydown' | 'resize'; payload: any };\nfunction handleEvent(e: Event) {\n  switch (e.kind) {\n    case 'click': return handleClick(e.payload);\n    case 'keydown': return handleKey(e.payload);\n    case 'resize': return handleResize(e.payload);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This handler requires modification to add new event kinds, indicating poor extensibility across variant types.",
+          "isCorrect": true,
+          "explanation": "Adding a new event kind forces edits to the dispatcher, violating the open for extension principle. Replacing the central branching with a registry or polymorphic handlers reduces the need to change the dispatcher for new variants."
+        },
+        {
+          "id": "b",
+          "text": "This handler centralizes unrelated event processing causing a high coupling between event parsing and business behavior within one routine.",
+          "isCorrect": false,
+          "explanation": "High coupling between parsing and handling is a valid concern, but the primary maintenance risk in this structure is extensibility when adding new event kinds. Decoupling is helpful, yet the need to modify the switch remains the core smell."
+        },
+        {
+          "id": "c",
+          "text": "This handler risks inconsistent error handling because each branch duplicates validation and logging steps across cases.",
+          "isCorrect": false,
+          "explanation": "Duplicated validation and logging can occur and should be addressed, but the code shown focuses on per-kind branching. The more pressing issue that leads to repeated edits is adding or changing event kinds at the dispatcher."
+        },
+        {
+          "id": "d",
+          "text": "This handler will cause runtime type narrowing to fail when used with dynamic payloads in external modules and edge cases.",
+          "isCorrect": false,
+          "explanation": "Runtime type narrowing and dynamic payload problems are practical concerns, but they are secondary to the structural problem of centralized variant branching. Better design for variants usually improves type safety as a side effect."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation is preferable for a codebase that must frequently add new variants and needs good testability?",
+      "codeSnippet": "// Version A: single function with case branches\nfunction processPaymentA(payment: any) {\n  switch (payment.type) {\n    case 'card': return chargeCard(payment);\n    case 'paypal': return chargePaypal(payment);\n    default: throw new Error('unsupported');\n  }\n}\n\n// Version B: registry of handlers\nconst processors: Record<string, (p: any) => any> = {\n  card: (p) => chargeCard(p),\n  paypal: (p) => chargePaypal(p),\n};\nfunction processPaymentB(payment: any) {\n  const fn = processors[payment.type];\n  if (!fn) throw new Error('unsupported');\n  return fn(payment);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A puts all variant handling into a single function which will require edits for new types.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes behavior, so each new variant requires modifying the dispatcher function. That pattern increases risk when multiple teams modify the same function and makes isolated testing of new variants harder. Fowler recommends moving variant-specific behavior out of conditional branches when extensibility is required."
+        },
+        {
+          "id": "b",
+          "text": "Version B moves each variant to dedicated handlers registered in a map which supports adding types without edits.",
+          "isCorrect": true,
+          "explanation": "Version B isolates variant behavior into separate handler entries, allowing new variants to be added by registering handlers rather than editing core dispatch code. This improves extensibility, supports focused unit tests per handler, and reduces merge conflicts. This aligns with refactorings such as Replace Conditional with Polymorphism or using a Strategy registry described by Fowler and patterns from the Gang of Four."
+        }
+      ]
+    }
+  ]
+}

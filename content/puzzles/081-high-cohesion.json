@@ -1,0 +1,106 @@
+{
+  "id": 81,
+  "conceptName": "High Cohesion",
+  "category": "principle",
+  "definition": "A design principle that keeps related responsibilities together so a module or class changes for only one reason and has focused purpose.",
+  "ruleOfThumb": "Group behaviour that changes for the same reason into the same unit; prefer small focused modules over broad multipurpose ones.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Architecture",
+    "chapter": "Chapter 8: Component Cohesion Principles",
+    "page": "p. 140",
+    "externalUrl": "https://www.goodreads.com/book/show/18043011-clean-architecture"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this service. Which observation best indicates a cohesion problem in the class?",
+      "codeSnippet": "class CustomerService {\n  sendInvoice(customerId: string) { /* formats and emails invoice */ }\n  calculateDiscount(customer: Customer) { /* business rule calculations */ }\n  renderDashboard(userId: string) { /* builds HTML for UI */ }\n  fetchPaymentGatewayConfig() { /* reads external infra settings */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class groups many unrelated responsibilities into one unit and depends on several distinct external concerns.",
+          "isCorrect": true,
+          "explanation": "The class mixes presentation rendering, business rules, and infra access. That indicates a module that will need changes for multiple unrelated reasons and is fragile. Keeping responsibilities focused reduces blast radius for changes and clarifies ownership."
+        },
+        {
+          "id": "b",
+          "text": "This class primarily manipulates the same private fields across methods and keeps related behavior closely together.",
+          "isCorrect": false,
+          "explanation": "When methods operate on the same private state and express closely related behavior, that is a sign of good cohesion, not poor cohesion. The presented code shows distinct responsibilities rather than just one shared state."
+        },
+        {
+          "id": "c",
+          "text": "This class delegates core operations to small collaborators and exposes a unified, focused public interface for use.",
+          "isCorrect": false,
+          "explanation": "Delegation to collaborators with a focused public API is usually desirable because it keeps responsibilities localized. This option describes a well-factored design and therefore is not the correct diagnosis for the sample."
+        },
+        {
+          "id": "d",
+          "text": "This class is a thin wrapper around an external library and only translates types for a single concern.",
+          "isCorrect": false,
+          "explanation": "A thin adapter that translates between layers for a single concern is typically acceptable and indicates focused responsibility. The sample code shows multiple distinct concerns rather than a single adapter role."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this order processing module, which maintenance problem is most likely to occur if traffic and feature requests increase?",
+      "codeSnippet": "export function processOrder(order: Order) {\n  validateOrder(order);\n  applyDiscounts(order);\n  persistOrder(order);\n  sendConfirmationEmail(order);\n  generatePdfReceipt(order);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This module mixes multiple business responsibilities so modifying one rule will require changes across many unrelated functions.",
+          "isCorrect": true,
+          "explanation": "Mixing validation, persistence, notification, and rendering in one module means a change to a business rule may force edits across unrelated functions. That increases coupling and regression risk as features evolve."
+        },
+        {
+          "id": "b",
+          "text": "This module uses many small focused helpers which make the execution flow harder to trace and increase mental overhead.",
+          "isCorrect": false,
+          "explanation": "Many small helpers can make tracing harder, but the presented code shows broad responsibilities in a single place rather than fragmentation by excessive tiny helpers. The primary maintenance risk is responsibility mixing."
+        },
+        {
+          "id": "c",
+          "text": "This module relies on global mutable state that will cause unpredictable behavior as concurrency or parallel requests increase.",
+          "isCorrect": false,
+          "explanation": "Global mutable state is indeed a serious concern, but the snippet shows sequential operations within a module. The immediate problem is that unrelated concerns are combined in one module, not evident global state usage."
+        },
+        {
+          "id": "d",
+          "text": "This module depends on fragile exception routing that will frequently hide errors and make debugging and tracing difficult.",
+          "isCorrect": false,
+          "explanation": "Fragile exception handling can hide errors, but the snippet does not demonstrate complex exception routing. The most likely maintainability issue here is the co-location of diverse concerns in one module."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which version better supports easier maintenance and clearer ownership?",
+      "codeSnippet": "// Version A\nclass OrderService {\n  placeOrder(order: Order) { /* validate, persist, notify, render receipt */ }\n}\n\n// Version B\nclass OrderValidator { validate(o: Order) { /* ... */ } }\nclass OrderRepository { save(o: Order) { /* ... */ } }\nclass NotificationSender { notify(o: Order) { /* ... */ } }\nclass OrderFacade {\n  constructor(private v: OrderValidator, private r: OrderRepository, private n: NotificationSender) {}\n  placeOrder(o: Order) { this.v.validate(o); this.r.save(o); this.n.notify(o); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A groups validation persistence notification and rendering into a single service creating brittle interdependencies.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes many responsibilities inside one class, so changes in one area will ripple and require touching unrelated code. That increases regression scope and reduces testability and clear ownership."
+        },
+        {
+          "id": "b",
+          "text": "Version B splits concerns into focused services with narrow responsibilities and composes them through a small coordinating facade.",
+          "isCorrect": true,
+          "explanation": "Version B separates validation persistence and notification into distinct components and composes them via a facade. This reduces the blast radius of changes, clarifies ownership, and improves testability. This follows component cohesion guidance in Clean Architecture and SOLID composition recommendations."
+        }
+      ]
+    }
+  ]
+}

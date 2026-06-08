@@ -1,0 +1,106 @@
+{
+  "id": 32,
+  "conceptName": "Message Chains",
+  "category": "code-smell",
+  "definition": "A client navigates through a series of objects by repeatedly accessing internal properties or calling getters to reach needed data, exposing the navigation in many callers.",
+  "ruleOfThumb": "Prefer providing a higher-level operation on the closer domain object so callers do not navigate through multiple segments to get data.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Hide Delegate",
+    "page": null,
+    "externalUrl": "https://refactoring.com/catalog/hideDelegate.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the call in the snippet. What is the primary design smell shown by the chained access?",
+      "codeSnippet": "class Order { constructor(public customer: Customer) {} }\nclass Customer { constructor(public address: Address) {} }\nclass Address { constructor(public postalCode: string) { }\n  getPostalCode() { return this.postalCode; }\n}\n\nconst order = new Order(new Customer(new Address('12345')));\nconsole.log(order.customer.address.getPostalCode());",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This indicates a client reaching through several objects to access nested data instead of asking a higher-level object.",
+          "isCorrect": true,
+          "explanation": "The code exposes traversal through multiple objects, which couples callers to the internal structure. Refactoring to hide the delegate by adding a delegating method on Order or Customer reduces coupling and localizes traversal logic. This is closely related to the Law of Demeter and the Refactoring pattern Hide Delegate."
+        },
+        {
+          "id": "b",
+          "text": "This indicates tight coupling to object internals caused by chaining getters across multiple domain objects in client code.",
+          "isCorrect": false,
+          "explanation": "While tight coupling is a real symptom, this option describes the effect rather than the targeted refactoring approach. The core problem is the exposed traversal that callers reproduce; reducing coupling typically involves adding delegation or a focused API on the owning object."
+        },
+        {
+          "id": "c",
+          "text": "This indicates duplicated traversal logic scattered in callers rather than exposing a focused operation on the owning object.",
+          "isCorrect": false,
+          "explanation": "Duplicated traversal often coexists with this smell, but duplication is a secondary consequence. The primary issue is that callers navigate internal structures instead of delegating, so moving the traversal into a single method on the domain object is the preferred fix."
+        },
+        {
+          "id": "d",
+          "text": "This indicates fragile client code that breaks when intermediate objects change their structure or remove intermediate accessors.",
+          "isCorrect": false,
+          "explanation": "Fragility is an accurate consequence, yet this answer frames the problem as brittleness. The more actionable identification is the exposed navigation itself; addressing it by adding a delegating method stabilizes the client regardless of internal changes."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You find the same long access chain repeated in several modules. Which remediation is generally preferable here?",
+      "codeSnippet": "function sendInvoice(order: Order) {\n  const postal = order.customer.address.getPostalCode();\n  // use postal to format invoice\n}\n\nfunction scheduleDelivery(order: Order) {\n  const postal = order.customer.address.getPostalCode();\n  // use postal to plan route\n}\n\n// Traversal duplicated across multiple callers",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Prefer adding a delegating method on the owning object to provide the needed value and encapsulate traversal logic locally.",
+          "isCorrect": true,
+          "explanation": "Adding a delegating method (for example Order.getCustomerPostalCode()) centralizes traversal inside the domain object that owns the data. This reduces duplication, hides structural details, and gives a stable API for callers. Fowler recommends Hide Delegate when clients repeatedly navigate into collaborators."
+        },
+        {
+          "id": "b",
+          "text": "Prefer creating a data transfer object at boundary to carry flattened data and avoid repeated deep traversal in multiple layers.",
+          "isCorrect": false,
+          "explanation": "A DTO can be useful at service boundaries or external layers, but introducing DTOs everywhere can duplicate domain logic and leak mapping code. If the callers are internal, delegating methods on the domain object are a cleaner encapsulation than flattening data broadly."
+        },
+        {
+          "id": "c",
+          "text": "Prefer introducing a facade that coalesces calls so clients depend on a stable API rather than internal nested accessors.",
+          "isCorrect": false,
+          "explanation": "A facade can hide traversal when many unrelated clients need varied behaviors, but it can also become an anemic wrapper if domain logic belongs on the domain object itself. Choosing a facade versus delegation depends on ownership of behavior and cohesion."
+        },
+        {
+          "id": "d",
+          "text": "Prefer leaving the chain in place when client is simple and traversal is unlikely to change across application lifetime.",
+          "isCorrect": false,
+          "explanation": "Keeping the chain might be acceptable for throwaway or one-off scripts, but in production code repeated chains increase coupling and maintenance risk. This conservative choice is plausible but generally less robust than encapsulating access on the owning object."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare these two alternatives. Which version is the better design and why?",
+      "codeSnippet": "// Version A\nclass OrderA {\n  constructor(public customer: Customer) {}\n  getCustomerPostalCode() { return this.customer.address.getPostalCode(); }\n}\n\n// Version B\nfunction getCustomerPostalCode(order: Order) { return order.customer.address.getPostalCode(); }\n\n// Clients either call orderA.getCustomerPostalCode() or getCustomerPostalCode(order)",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A encapsulates traversal inside the owning domain object and provides a stable descriptive method on the object.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable because it keeps knowledge of how to retrieve the postal code with the object that owns or coordinates that data. This preserves encapsulation and makes refactoring internal structure safer for callers. Conversely, putting traversal logic in free functions or util modules pushes domain knowledge out of the domain and increases coupling across modules. See Fowler on Hide Delegate and the Law of Demeter for guidance."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes traversal in a util module so domain knowledge lives outside core objects and increases coupling across callers.",
+          "isCorrect": false,
+          "explanation": "Version B may appear to centralize traversal, but it relocates domain knowledge outside the owning object, making the util module a leaky abstraction. That choice prevents the domain object from evolving its API naturally and scatters usage semantics across the codebase. Over time this approach tends to create brittle dependencies and hinders encapsulation."
+        }
+      ]
+    }
+  ]
+}

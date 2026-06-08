@@ -1,0 +1,106 @@
+{
+  "id": 28,
+  "conceptName": "Dependency Injection",
+  "category": "solid",
+  "definition": "A technique where an object receives the collaborators it depends on from external code rather than creating them internally, making dependencies explicit and enabling easier testing and composition.",
+  "ruleOfThumb": "Prefer having collaborators provided to an object at construction time so responsibilities stay clear and tests remain simple.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Inversion of Control Containers and the Dependency Injection Pattern",
+    "chapter": "Introduction",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/articles/injection.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the code. What is the primary characteristic demonstrated by the class design below?",
+      "codeSnippet": "class Logger {\n  log(message: string) { console.log(message); }\n}\n\nclass OrderService {\n  constructor(private logger: Logger) {}\n  placeOrder(order: any) { this.logger.log('placed'); }\n}\n\nconst logger = new Logger();\nconst svc = new OrderService(logger);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class receives its collaborator through its constructor instead of creating the dependency inside the class itself.",
+          "isCorrect": true,
+          "explanation": "The snippet shows the service receiving a Logger instance via its constructor. This makes the dependency explicit and allows tests or callers to substitute a different implementation. It reduces internal coupling and separates construction from usage."
+        },
+        {
+          "id": "b",
+          "text": "The class creates its own concrete collaborator inside methods causing tight coupling and making tests harder to write.",
+          "isCorrect": false,
+          "explanation": "This description would match code that new's up collaborators internally. That is not what the snippet does; here the Logger is created outside and passed in, avoiding the tight coupling described."
+        },
+        {
+          "id": "c",
+          "text": "The class relies on global state and service locators to resolve dependencies at runtime which hides configuration details.",
+          "isCorrect": false,
+          "explanation": "A service locator or global registry hides what a class needs. The example does not use a global resolver; its constructor signature explicitly lists the dependency, so configuration is visible to callers."
+        },
+        {
+          "id": "d",
+          "text": "The class exposes setters for collaborators so callers must remember to configure services before using the object which is error prone.",
+          "isCorrect": false,
+          "explanation": "Setter injection requires extra steps and can lead to partially initialized objects. The snippet uses constructor parameters, so it avoids the setter-related initialization risk described here."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review the constructor shown. What is the most likely design concern this constructor signals?",
+      "codeSnippet": "class ReportGenerator {\n  constructor(\n    private repo: Repo,\n    private formatter: Formatter,\n    private logger: Logger,\n    private metrics: Metrics,\n    private notifier: Notifier,\n    private validator: Validator\n  ) {}\n\n  generate() { /* ... */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class requires many collaborators in its constructor indicating it likely has multiple responsibilities and needs refactoring.",
+          "isCorrect": true,
+          "explanation": "A long parameter list of collaborators commonly signals a class doing too much. Extracting responsibilities or introducing a facade can reduce the number of dependencies and clarify single responsibility boundaries."
+        },
+        {
+          "id": "b",
+          "text": "This class is over dependent on a runtime service locator pattern making dependency resolution implicit and hard to trace.",
+          "isCorrect": false,
+          "explanation": "A service locator concern is real but the code shows explicit constructor parameters rather than using a locator. The explicit list points toward responsibility bloat rather than hidden resolution."
+        },
+        {
+          "id": "c",
+          "text": "This class should use lazy resolution because constructing all collaborators up front incurs unnecessary startup cost and resource use.",
+          "isCorrect": false,
+          "explanation": "Lazy resolution can address performance concerns, but the primary smell here is the number of collaborators indicating mixed responsibilities. Prematurely adding laziness would not fix the core design issue."
+        },
+        {
+          "id": "d",
+          "text": "This class should accept a configuration object instead of specific collaborators to simplify the constructor and reduce parameter count.",
+          "isCorrect": false,
+          "explanation": "Packing collaborators into a config object only hides the real issue and increases indirection. Refactoring responsibilities or composing smaller services is preferable to masking many dependencies behind a single object."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the preferable design and why, based on clarity of responsibilities and testability?",
+      "codeSnippet": "// Version A\nclass PaymentProcessor {\n  constructor(private gateway: Gateway, private logger: Logger) {}\n  process(p: Payment) { this.gateway.charge(p); this.logger.log('ok'); }\n}\n\n// Version B\nclass PaymentProcessor2 {\n  process(p: Payment) {\n    const gateway = Container.get<Gateway>('Gateway');\n    const logger = Container.get<Logger>('Logger');\n    gateway.charge(p);\n    logger.log('ok');\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A accepts collaborators via constructor parameters making required collaborators explicit and straightforward to mock in tests.",
+          "isCorrect": true,
+          "explanation": "Version A declares its required collaborators in the constructor so callers must provide them. That explicitness clarifies responsibilities and enables simple, isolated unit tests without needing a global container. Construction concerns remain separated from runtime behavior."
+        },
+        {
+          "id": "b",
+          "text": "Version B fetches services from a global container inside methods which hides dependencies and increases coupling to container.",
+          "isCorrect": false,
+          "explanation": "Version B hides what the class needs by reaching into a global container at runtime. This couples implementation to the container API and makes testing harder because tests must configure the container or perform global setup rather than passing in simple test doubles."
+        }
+      ]
+    }
+  ]
+}

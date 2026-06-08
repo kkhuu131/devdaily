@@ -1,0 +1,105 @@
+{
+  "id": 72,
+  "conceptName": "Alternative Classes with Different Interfaces",
+  "category": "code-smell",
+  "definition": "Two or more classes provide overlapping responsibilities but expose different public APIs, forcing clients to conditionally handle each type.",
+  "ruleOfThumb": "If clients must detect concrete types or translate between methods to use similar behavior, introduce a common abstraction or adapter.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Alternative Classes with Different Interfaces",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/AlternativeClassesWithDifferentInterfaces.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at these two classes used interchangeably by client code. What primary problem is this demonstrating?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "These classes offer the same responsibility but expose mismatched method names causing conditional logic and fragile client code.",
+          "isCorrect": true,
+          "explanation": "Correct. The classes fulfill similar roles but expose different interfaces so clients must branch or translate calls. This is the core of the smell: duplicated capability behind different APIs. The usual refactor is to introduce a shared interface or an adapter so clients depend on a single contract."
+        },
+        {
+          "id": "b",
+          "text": "These classes duplicate the same data model and therefore indicate a data duplication problem requiring consolidation to a single schema.",
+          "isCorrect": false,
+          "explanation": "Plausible but not accurate. Data duplication is about duplicated state and storage. Here the issue is API mismatch rather than duplicated fields or schemas. Consolidating schemas would not remove the need for a common API or adapters."
+        },
+        {
+          "id": "c",
+          "text": "These classes violate SRP by mixing UI rendering with business logic in the same types causing unclear separation of concerns.",
+          "isCorrect": false,
+          "explanation": "This is a common misdiagnosis. SRP violations involve distinct reasons to change within one class. The sample shows different public methods for similar responsibilities, not an internal mixing of UI and business logic."
+        },
+        {
+          "id": "d",
+          "text": "These classes are examples of premature optimization where low level performance hacks complicate the public API surface unnecessarily.",
+          "isCorrect": false,
+          "explanation": "Also plausible in some code reviews, but incorrect here. Premature optimization is about micro-optimizations affecting implementation. The real problem is inconsistent APIs between classes that serve the same conceptual role."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review the snippet below. Which description best identifies the core design fragility?",
+      "codeSnippet": "class EmailProvider {\n  sendEmail(to: string, body: string) { /*...*/ }\n}\nclass SmsProvider {\n  sendSms(number: string, message: string) { /*...*/ }\n}\nclass NotificationService {\n  send(provider: any, recipient: string, message: string) {\n    if (provider instanceof EmailProvider) provider.sendEmail(recipient, message);\n    else provider.sendSms(recipient, message);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code exhibits two provider classes with different method names forcing client type checks and conditional sending logic.",
+          "isCorrect": true,
+          "explanation": "Correct. Clients must detect concrete provider types and branch, which couples client code to both implementations. Introducing a common interface or adapter removes the conditional and centralizes the contract, improving extensibility and testability."
+        },
+        {
+          "id": "b",
+          "text": "This code exhibits a missing interface abstraction causing compile time failures when swapping concrete implementations across modules.",
+          "isCorrect": false,
+          "explanation": "Incorrect diagnosis. Missing interface abstraction can cause maintenance friction, but there is no compile failure here—the code compiles because concrete types are used directly. The key issue is the conditional branching caused by differing method names rather than compile-time swapping problems."
+        },
+        {
+          "id": "c",
+          "text": "This code exhibits single responsibility violations because the notification service mixes transport selection and message formatting responsibilities together.",
+          "isCorrect": false,
+          "explanation": "Partially true in some designs, but not the main fragility shown. The notification service here is primarily selecting how to send based on provider type, which stems from differing APIs. Message formatting mixing would be a separate SRP concern to address independently."
+        },
+        {
+          "id": "d",
+          "text": "This code exhibits a strategy leak where internal transport details bleed into the higher level domain causing tight coupling overall.",
+          "isCorrect": false,
+          "explanation": "A reasonable concern, but this answer is too generic. The stronger, more actionable diagnosis is that the providers expose different method names requiring client-side type checks. Refactoring to a common strategy interface or adapters addresses the leak and removes client conditional logic."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better resolves the design problem while keeping code readable and extensible?",
+      "codeSnippet": "/* Version A */\nclass PaypalProcessor {\n  pay(amount: number) { /*...*/ }\n}\nclass StripeProcessor {\n  charge(cents: number) { /*...*/ }\n}\nfunction submitPayment(p: any, amt: number) {\n  if (p instanceof PaypalProcessor) p.pay(amt);\n  else p.charge(amt * 100);\n}\n\n/* Version B */\ninterface PaymentGateway { notify(amount: number): void }\nclass PaypalAdapter implements PaymentGateway { notify(amount: number) { /*...*/ } }\nclass StripeAdapter implements PaymentGateway { notify(amount: number) { /*...*/ } }\nfunction submitPaymentV2(g: PaymentGateway, amt: number) { g.notify(amt); }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Choose Version A when you prefer keeping distinct APIs even though clients must type check and branch.",
+          "isCorrect": false,
+          "explanation": "Version A preserves the original divergent APIs and maintains client branching logic. That can be acceptable short term for very small codebases, but it scales poorly—every client must learn implementation differences, tests multiply, and adding a new gateway requires touching all branches. The refactoring literature recommends introducing a stable abstraction or adapters to avoid this burden."
+        },
+        {
+          "id": "b",
+          "text": "Choose Version B when you need a single stable contract and avoid client side type checks or conditional logic.",
+          "isCorrect": true,
+          "explanation": "Correct. Version B introduces a common interface (or adapters) so clients depend on a single contract and no longer perform type checks. This reduces coupling, simplifies tests, and makes adding new implementations straightforward. Use adapters if you cannot change third party APIs. This aligns with Fowler's advice to unify alternative classes behind a consistent interface and with design principles from the GoF and Clean Code regarding clear contracts and testability."
+        }
+      ]
+    }
+  ]
+}

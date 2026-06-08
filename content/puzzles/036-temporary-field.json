@@ -1,0 +1,106 @@
+{
+  "id": 36,
+  "conceptName": "Temporary Field",
+  "category": "code-smell",
+  "definition": "An instance field that is only used in specific circumstances (often within one method or a short operation) and otherwise remains unused or null, producing confusing object state and hiding per-operation data on the object.",
+  "ruleOfThumb": "If a field is only populated during a single operation and not part of the object's enduring state, prefer a local variable or a small helper object instead of an instance field.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Temporary Field",
+    "page": "96",
+    "externalUrl": "https://martinfowler.com/bliki/TemporaryField.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Inspect the class below. Which description best identifies the core smell in this code?",
+      "codeSnippet": "class InvoiceCalculator {\n  private tmpTotal?: number;\n  calculate(items: number[]) {\n    this.tmpTotal = items.reduce((s, v) => s + v, 0);\n    const tax = this.computeTax(this.tmpTotal);\n    const result = this.tmpTotal + tax;\n    this.tmpTotal = undefined;\n    return result;\n  }\n  private computeTax(total?: number) { return (total || 0) * 0.2; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class declares a field that is assigned only during a single calculation and otherwise remains unused.",
+          "isCorrect": true,
+          "explanation": "The field is only meaningful inside the calculate method and is cleared afterward. This makes the field transient state, confusing the object's invariant and exposing lifecycle complexity. Refactoring options include converting it to a local variable or extracting a helper object to hold the intermediate value."
+        },
+        {
+          "id": "b",
+          "text": "This class declares a field that is serialized with the object and could leak temporary computation into persisted state.",
+          "isCorrect": false,
+          "explanation": "Serializing a temporary field could be a real issue in some systems, but nothing in the snippet shows serialization. The real smell is that the field is only used during calculation and not part of the object's enduring state. Serialization concerns would matter if persistence code were present."
+        },
+        {
+          "id": "c",
+          "text": "This class declares a field that is shared across concurrent requests and may introduce thread safety problems in async code.",
+          "isCorrect": false,
+          "explanation": "Concurrent access is a plausible concern for mutable fields, but the snippet focuses on a single-method usage pattern that is cleared after use. The primary design problem is transient per-operation state kept on the instance rather than concurrency per se. Concurrency risk is secondary unless the object is shared across threads."
+        },
+        {
+          "id": "d",
+          "text": "This class declares a field that caches intermediate results to optimize repeated calls and might complicate testing.",
+          "isCorrect": false,
+          "explanation": "Caching intermediate results is different from the shown behavior. A cache is intentionally retained across calls; here the field is set and then cleared within the same operation. The real issue is temporary instance state, not a deliberate cache strategy that affects tests differently."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this builder style class. Which statement best explains the ambiguity that signals a temporary-per-operation state problem?",
+      "codeSnippet": "class ReportBuilder {\n  private buffer = '';\n  start() { this.buffer = ''; }\n  addLine(line: string) { this.buffer += line + '\\n'; }\n  finish() { const out = this.buffer.trim(); this.buffer = ''; return out; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class accumulates per-operation data in an instance field which creates hidden coupling between its methods.",
+          "isCorrect": true,
+          "explanation": "The buffer is clearly per-report data but is stored on the instance, meaning start/addLine/finish share hidden state. That coupling makes usage order important and complicates reuse and testing. Safer alternatives include using a dedicated builder instance per operation or keeping the buffer local to the generation function."
+        },
+        {
+          "id": "b",
+          "text": "This class stores the buffer on the instance to implement a persistent cache usable across multiple report generations.",
+          "isCorrect": false,
+          "explanation": "Describing the buffer as a persistent cache is plausible, but the code resets the buffer at start/finish, showing intent for per-operation use rather than caching across generations. The smell is that transient accumulation is kept on the object instead of being confined to the operation."
+        },
+        {
+          "id": "c",
+          "text": "This class holds mutable state on the object which may simplify incremental building but complicates reuse and tests.",
+          "isCorrect": false,
+          "explanation": "This is a true consequence of mutable instance state, and it's a worthwhile concern. However it restates an effect rather than pinpointing the ambiguity that the buffer is strictly per-operation temporary state stored on the object. The best diagnosis names that hidden per-operation state and suggests localizing it."
+        },
+        {
+          "id": "d",
+          "text": "This class uses an object field to avoid repeating string allocations and so marginally improves hot-path performance.",
+          "isCorrect": false,
+          "explanation": "Micro-optimizing allocations is a plausible motive for keeping the buffer on the instance, but the snippet shows explicit clearing and per-operation usage which implies the field is not a long-lived performance cache. Treating this as a performance optimization can mislead you away from fixing the design smell."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two versions implement request processing. Which version is preferable and why?",
+      "codeSnippet": "// Version A\nclass ProcessorA {\n  private tempState: string = '';\n  process(request: string) {\n    this.tempState = request.trim();\n    // many helper calls use this.tempState\n    return this.tempState.toUpperCase();\n  }\n}\n\n// Version B\nclass ProcessorB {\n  process(request: string) {\n    const tempState = request.trim();\n    // many helper calls take tempState as an argument\n    return tempState.toUpperCase();\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A reuses an instance field to avoid allocations but risks accidental state retention across concurrent or asynchronous requests.",
+          "isCorrect": false,
+          "explanation": "Reusing an instance field can seem attractive to reduce allocations, but it couples operation-specific data to the object lifetime. In multi-threaded or asynchronous environments that reuse ProcessorA instances, the field can be observed in wrong states or cause race conditions. Even in single-threaded code it hides the data flow and makes reasoning harder. The better design keeps per-call state local or moves it into a short-lived helper object."
+        },
+        {
+          "id": "b",
+          "text": "Version B confines per-call state to local variables instead of storing transient data on the object.",
+          "isCorrect": true,
+          "explanation": "Version B keeps the transient request data in a local variable, making the call self-contained and removing hidden object-level state. This reduces accidental coupling between calls, makes the code easier to reason about, and avoids concurrency hazards. Refactoring guidance from Fowler highlights converting temporary fields into local variables or small helper objects to clarify object responsibilities and invariants. Additional resources: Fowler's Refactoring entry on Temporary Field and Clean Code chapters on minimizing mutable shared state."
+        }
+      ]
+    }
+  ]
+}

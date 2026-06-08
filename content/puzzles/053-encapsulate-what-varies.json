@@ -1,0 +1,106 @@
+{
+  "id": 53,
+  "conceptName": "Encapsulate What Varies",
+  "category": "principle",
+  "definition": "Identify the aspects of a system that are likely to change and separate them behind stable interfaces so implementations can vary independently from clients.",
+  "ruleOfThumb": "When you see conditionals or repeated forks for similar behavior, introduce small interchangeable abstractions for each variant.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Conditional with Polymorphism",
+    "page": "p. 120",
+    "externalUrl": "https://refactoring.com"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary design problem illustrated by the snippet below?",
+      "codeSnippet": "class NotificationService {\n  send(notification: any) {\n    if (notification.type === 'email') {\n      // format and send email\n      sendEmail(notification);\n    } else if (notification.type === 'sms') {\n      // format and send sms\n      sendSMS(notification);\n    } else if (notification.type === 'push') {\n      // format and send push\n      sendPush(notification);\n    }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code centralizes multiple conditional behaviors into one function, making new variants hard to add.",
+          "isCorrect": true,
+          "explanation": "This snippet lumps distinct behaviors behind conditionals. Adding a new notification type forces an edit to the same method, violating modularity and making tests and maintenance harder. Extracting each behavior behind a small abstraction lets you add types by adding implementations rather than changing existing code."
+        },
+        {
+          "id": "b",
+          "text": "The code mixes UI representation concerns with business rules, making it hard to change presentation.",
+          "isCorrect": false,
+          "explanation": "While presentation concerns would be problematic, the shown methods appear to be transport formatting and dispatch rather than UI. The more immediate maintenance cost is the conditional branching pattern rather than a UI/business mix. The real risk is growth of branches as variants increase."
+        },
+        {
+          "id": "c",
+          "text": "The code exhibits premature optimization causing unnecessary caching and complexity unrelated to business logic.",
+          "isCorrect": false,
+          "explanation": "There is no visible caching or optimization in the snippet. Claiming premature optimization misidentifies the issue. The concrete symptom is branching for variants, which suggests a structural refactor rather than removing speculative optimizations."
+        },
+        {
+          "id": "d",
+          "text": "The code violates single responsibility by having a single method handle different notification formats and transports.",
+          "isCorrect": false,
+          "explanation": "This is a reasonable observation and close to the root cause, but phrasing as a single responsibility violation is less precise. The core problem is the entanglement of variant behaviors in one conditional structure, which is best addressed by isolating each variant behind an abstraction."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the price calculation code below, which refactor best isolates the varying parts for future extension?",
+      "codeSnippet": "class PriceCalculator {\n  calculate(order: any) {\n    switch (order.type) {\n      case 'retail': return this.calculateRetail(order);\n      case 'wholesale': return this.calculateWholesale(order);\n      case 'discounted': return this.calculateDiscounted(order);\n      default: throw new Error('unknown order type');\n    }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Replace the conditional branches with separate strategy objects and a selector to choose the correct behavior at runtime.",
+          "isCorrect": true,
+          "explanation": "Introducing strategy objects moves each calculation into its own class and a selector maps orders to strategies. This isolates varying algorithms, reduces conditional logic, and allows adding new calculation types by adding new strategy implementations instead of modifying existing code."
+        },
+        {
+          "id": "b",
+          "text": "Introduce a configuration table mapping types to handler names and use reflection to invoke handlers dynamically.",
+          "isCorrect": false,
+          "explanation": "A configuration table with reflection centralizes knowledge of handlers in strings and runtime lookups. That reduces compile time safety and can make debugging harder. It delays but does not eliminate the coupling between types and behavior."
+        },
+        {
+          "id": "c",
+          "text": "Extract smaller helper functions for each case inside the same class to reduce method length and duplication.",
+          "isCorrect": false,
+          "explanation": "Moving logic into private helper methods helps readability but keeps the decision logic and coupling inside the same class. Adding new types would still require modifying the switch and the class, so extensibility gains are limited compared to introducing interchangeable objects."
+        },
+        {
+          "id": "d",
+          "text": "Convert the switch into a dictionary of lambdas stored locally to remove the switch without changing class shape.",
+          "isCorrect": false,
+          "explanation": "A local lambda dictionary eliminates the switch but keeps behavior definitions tied to the class and its construction. This reduces syntactic clutter but does not provide a clear extension point for independently adding new calculation implementations."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better supports frequent addition of new payment types with minimal changes to existing code?",
+      "codeSnippet": "// Version A\ninterface PaymentMethod { process(amount: number): Promise<void> }\nclass CreditCard implements PaymentMethod {\n  async process(amount: number) { /* card processing */ }\n}\nclass Paypal implements PaymentMethod {\n  async process(amount: number) { /* paypal processing */ }\n}\nclass ProcessorA {\n  private registry = new Map<string, PaymentMethod>();\n  register(name: string, impl: PaymentMethod) { this.registry.set(name, impl); }\n  async process(name: string, amount: number) { return this.registry.get(name)!.process(amount); }\n}\n\n// Version B\nclass ProcessorB {\n  async process(type: string, amount: number) {\n    if (type === 'card') { /* card processing */ }\n    else if (type === 'paypal') { /* paypal processing */ }\n    else { throw new Error('unsupported'); }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates each payment behavior behind a clear interface and supports runtime registration.",
+          "isCorrect": true,
+          "explanation": "Version A encapsulates the varying behaviors in separate implementations behind a stable abstraction and a registry. Adding a new payment type only requires a new implementation and a registration call, leaving existing code unchanged. This aligns with object-oriented extension without modification and enables independent testing and deployment of new variants."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes switching logic in the service, requiring edits to the service for every new payment type added.",
+          "isCorrect": false,
+          "explanation": "Version B encodes all variants as conditionals inside a single method. Every new payment type forces a modification of that method, increasing risk of regressions and making the class a maintenance hotspot. Over time this leads to larger methods and tighter coupling, which harms reliability and slows feature delivery."
+        }
+      ]
+    }
+  ]
+}

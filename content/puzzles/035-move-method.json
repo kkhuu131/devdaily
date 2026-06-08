@@ -1,0 +1,106 @@
+{
+  "id": 35,
+  "conceptName": "Move Method",
+  "category": "refactoring",
+  "definition": "Relocate a method from one class to a more appropriate class when it interacts more with the other class's data or behavior than its own.",
+  "ruleOfThumb": "If a method uses more features of another class than its own, prefer placing it where the data lives.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Move Method",
+    "page": "pp. 30-34",
+    "externalUrl": "https://refactoring.com/catalog/moveMethod.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which symptom most directly indicates a method is implemented in the wrong class?",
+      "codeSnippet": "class Order {\n  items: {price:number, quantity:number}[] = [];\n}\n\nclass Invoice {\n  constructor(private order: Order) {}\n  calculate(): number {\n    return this.order.items.reduce((s, i) => s + i.price * i.quantity, 0);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The method predominantly accesses data and behavior of another class instead of its own object.",
+          "isCorrect": true,
+          "explanation": "When a method reaches across the boundary to use many fields or methods of another class, it indicates misplaced responsibility. Moving the method to the class whose data it uses reduces coupling and clarifies ownership. Fowler recommends moving the behavior to the class that owns most of the data it manipulates."
+        },
+        {
+          "id": "b",
+          "text": "The method requires seven or more parameters to perform a simple task and is hard to call.",
+          "isCorrect": false,
+          "explanation": "A method with many parameters is a design smell pointing at data clumps or poor encapsulation, but it does not by itself indicate the method belongs to a different class. The fix might be to group parameters into an object or improve API design rather than relocate the method."
+        },
+        {
+          "id": "c",
+          "text": "The method is duplicated with subtle differences across several classes leading to maintainability problems and bugs.",
+          "isCorrect": false,
+          "explanation": "Duplication suggests refactoring to remove repeated logic, possibly extracting a helper or creating a shared abstraction. While duplication can coexist with a misplaced method, duplication alone does not prove the method should be moved to a specific other class."
+        },
+        {
+          "id": "d",
+          "text": "The method name is vague and does not express whether it operates on its own internal state.",
+          "isCorrect": false,
+          "explanation": "A vague name weakens readability and API clarity and should be fixed, but renaming is orthogonal to ownership. The correct remedy might be renaming or clarifying responsibilities; relocation is only warranted when usage patterns show foreign-data domination."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the snippet, which observation most justifies relocating calculateTotal to a different class?",
+      "codeSnippet": "class Invoice {\n  constructor(private order: Order) {}\n  calculateTotal(): number {\n    return this.order.items.reduce((s, i) => s + i.price * i.quantity, 0)\n      - this.order.customer.getDiscount();\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The method uses more of the order's data and behavior than the invoice's own state and members.",
+          "isCorrect": true,
+          "explanation": "The snippet shows calculateTotal reaching into order.items and order.customer.getDiscount, indicating it manipulates Order state. Placing the behavior on Order improves encapsulation and reduces the Invoice needing intimate knowledge of Order internals. This follows the ownership principle in refactoring."
+        },
+        {
+          "id": "b",
+          "text": "The method performs heavy numeric computation that requires optimization and asynchronous handling across threads or processes.",
+          "isCorrect": false,
+          "explanation": "Heavy computation concerns performance and concurrency but do not imply wrong ownership. You might optimize or offload work, but moving the method is driven by data ownership and cohesion rather than computation weight."
+        },
+        {
+          "id": "c",
+          "text": "The method causes a circular dependency risk because invoice references order which can reference invoice in other modules.",
+          "isCorrect": false,
+          "explanation": "Circular dependency risk is a real concern; however the snippet alone does not show Order referencing Invoice. If a cycle exists, address module boundaries or abstraction. The primary relocation rationale remains the method using Order's data more than Invoice's."
+        },
+        {
+          "id": "d",
+          "text": "The method primarily formats the final amount for presentation which suggests it belongs to a view or formatter.",
+          "isCorrect": false,
+          "explanation": "Formatting for presentation belongs elsewhere, such as a presenter or view model. The example shows arithmetic and discount calculation rather than formatting, so moving to a formatter would be inappropriate compared to moving behavior to Order."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better organizes responsibilities for computing totals in a domain model?",
+      "codeSnippet": "// Version A: calculation in Invoice\nclass Invoice {\n  constructor(private order: Order) {}\n  total(): number {\n    return this.order.items.reduce((s, i) => s + i.price * i.quantity, 0) - this.order.customer.getDiscount();\n  }\n}\n\n// Version B: calculation in Order\nclass Order {\n  items: { price: number; quantity: number }[] = [];\n  customer: Customer;\n  total(): number {\n    return this.items.reduce((s, i) => s + i.price * i.quantity, 0) - this.customer.getDiscount();\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A leaves invoice calculation in Invoice while requiring frequent access to Order internal fields.",
+          "isCorrect": false,
+          "explanation": "Keeping the computation in Invoice forces that class to know Order internals, increasing coupling and breaking encapsulation. Over time this pattern leads to brittle code when Order's internals change. The more robust approach is to let the data owner expose an intentful operation."
+        },
+        {
+          "id": "b",
+          "text": "Version B locates the calculation within Order where the related data and behavior already reside.",
+          "isCorrect": true,
+          "explanation": "Placing the total calculation on Order aligns behavior with the data owner and preserves encapsulation. This reduces client classes needing intimate knowledge of Order structure and simplifies future changes to how totals are computed. Fowler and other refactoring authorities recommend locating behavior with the data it primarily uses to improve cohesion."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 71,
+  "conceptName": "Replace Magic Number with Symbolic Constant",
+  "category": "refactoring",
+  "definition": "Remove unexplained numeric literals from code by giving them a descriptive name and appropriate scope so their meaning and usage are explicit.",
+  "ruleOfThumb": "If a number encodes domain meaning, policy, or is repeated, give it a descriptive constant at the correct scope.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Magic Number with Symbolic Constant",
+    "page": null,
+    "externalUrl": "https://refactoring.com/catalog/replace_magic_number_with_symbolic_constant.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "In this TypeScript snippet, which observation best indicates a problematic use of a numeric literal?",
+      "codeSnippet": "function daysToMs(days: number) {\n  return days * 86400000;\n}\n\nfunction subscriptionExpiry(start: Date, days: number) {\n  return new Date(start.getTime() + daysToMs(days));\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code uses an unexplained numeric literal 86400000 directly which hides domain meaning and is repeated without a name.",
+          "isCorrect": true,
+          "explanation": "This is the classic smell: a raw number that encodes domain semantics (milliseconds per day) appears without a descriptive name. Extracting a named constant makes intent explicit and reduces duplication when the value is reused. See Fowler's refactoring catalog for guidance on extracting symbolic constants."
+        },
+        {
+          "id": "b",
+          "text": "The literal appears only in one place and the arithmetic is obvious so renaming could add unnecessary indirection.",
+          "isCorrect": false,
+          "explanation": "If the value truly appears only once and is obvious, introducing a constant might be overengineering. However, even single occurrences that encode domain-specific units or policies often benefit from naming to document intent and prevent future duplication."
+        },
+        {
+          "id": "c",
+          "text": "A nearby comment documents the numeric meaning which makes introducing a new named value potentially redundant.",
+          "isCorrect": false,
+          "explanation": "Comments can help but they rot and are not enforced by the compiler. A named constant documents intent in code and allows the compiler to help maintain consistency. Prefer a constant over comments when the number represents domain meaning."
+        },
+        {
+          "id": "d",
+          "text": "The multiplication is trivial and this literal seems unlikely to change so extracting a name may add noise.",
+          "isCorrect": false,
+          "explanation": "Trivial arithmetic can tempt you to leave literals inline, but when a literal encodes a unit or policy it's clearer to name it. Weigh the cost of indirection against future maintenance and clarity for readers unfamiliar with the domain."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You find these invoice calculations. Which immediate refactor is most appropriate to clarify numeric policy and minimize risk?",
+      "codeSnippet": "function calculateTotal(amount: number) {\n  const tax = amount * 0.0825;\n  return amount + tax;\n}\n\nfunction applyDiscount(amount: number) {\n  return amount - 10;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Extract the numeric values into well named constants near related logic choosing scope appropriate for reuse and clarity.",
+          "isCorrect": true,
+          "explanation": "Extracting to well named constants at the correct scope makes intent explicit, centralizes policy, and prevents inconsistent updates. Choose local file scope if only used there, or exported configuration if shared—this balances encapsulation and reuse."
+        },
+        {
+          "id": "b",
+          "text": "Move the numbers into a runtime configuration file so non developers can tune business rules without changing application code.",
+          "isCorrect": false,
+          "explanation": "Moving to configuration exposes policy for tuning but adds operational complexity and may not communicate intent in code. For values that are part of the domain semantics, compile time constants paired with config for truly dynamic policies often work better."
+        },
+        {
+          "id": "c",
+          "text": "Wrap the calculations in functions that compute these values each time so the literals are hidden behind functional calls.",
+          "isCorrect": false,
+          "explanation": "Wrapping logic can encapsulate behavior but hiding the literal inside functions without naming it still obscures the underlying policy. Prefer a named constant plus a small function when behavior needs encapsulation and the name documents the meaning."
+        },
+        {
+          "id": "d",
+          "text": "Leave the numeric literals inline but add unit tests documenting values to prevent accidental change and explain the numbers.",
+          "isCorrect": false,
+          "explanation": "Tests are valuable but they do not replace readable code. Tests that document values are helpful but a descriptive constant in code makes intent obvious to future maintainers and reduces the chance of inconsistent changes across code paths."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for maintainability?",
+      "codeSnippet": "// Version A\nconst MILLIS_PER_DAY = 86400000;\nfunction daysToMs(days: number) {\n  return days * MILLIS_PER_DAY;\n}\n\n// Version B\nfunction daysToMsB(days: number) {\n  return days * 86400000;\n}\nfunction subscriptionExpiry(start: Date, days: number) {\n  return new Date(start.getTime() + daysToMsB(days));\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes the numeric value into a single named constant across the file.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable because it gives the value a clear name and a single point of truth. That improves readability and reduces the risk of inconsistent updates when the same domain value appears in multiple places. Centralizing constants is a low cost refactor that clarifies intent and aids future changes."
+        },
+        {
+          "id": "b",
+          "text": "Version B leaves the literal inline causing silent inconsistencies when the value must change in multiple places.",
+          "isCorrect": false,
+          "explanation": "Version B repeats the raw literal which can lead to bugs when the numeric policy changes and some occurrences are missed. While inline literals may seem simpler, they make it harder to search, document, and update domain values reliably across a codebase."
+        }
+      ]
+    }
+  ]
+}

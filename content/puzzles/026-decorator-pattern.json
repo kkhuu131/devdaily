@@ -1,0 +1,106 @@
+{
+  "id": 26,
+  "conceptName": "Decorator Pattern",
+  "category": "design-pattern",
+  "definition": "A structural technique where behavior is added to individual objects by wrapping them with lightweight objects that implement the same interface.",
+  "ruleOfThumb": "Use wrapping objects to combine orthogonal responsibilities at runtime instead of proliferating subclasses.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Structural Patterns - Decorator",
+    "page": "175-183",
+    "externalUrl": "https://en.wikipedia.org/wiki/Decorator_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which code example most clearly demonstrates wrapping an object instance to extend behavior without modifying its original class?",
+      "codeSnippet": "interface Notifier { send(message: string): void }\nclass EmailNotifier implements Notifier { send(m: string) { console.log('email:'+m) } }\nclass LoggingNotifier implements Notifier {\n  constructor(private inner: Notifier) {}\n  send(m: string) { console.log('log'); this.inner.send(m) }\n}\nconst n = new LoggingNotifier(new EmailNotifier());\nn.send('hi');",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This example wraps an existing object instance with another object to add behavior at call time.",
+          "isCorrect": true,
+          "explanation": "The LoggingNotifier holds a reference to a Notifier and forwards calls while adding logging. This is the classic object wrapping approach for extending behavior without altering the wrapped class."
+        },
+        {
+          "id": "b",
+          "text": "This example defines a subclass that overrides methods to change behavior for all subclass instances at compile time.",
+          "isCorrect": false,
+          "explanation": "Subclassing changes the type hierarchy and affects all instances of that subclass. It is not wrapping an existing instance and does not allow runtime stacking of multiple independent behaviors."
+        },
+        {
+          "id": "c",
+          "text": "This example directly mutates the original object's methods at runtime to inject new responsibilities into existing instances.",
+          "isCorrect": false,
+          "explanation": "Direct mutation of instances is different from wrapping because it alters the original object's shape or methods. That approach risks unexpected side effects and is not the reusable wrapper approach shown here."
+        },
+        {
+          "id": "d",
+          "text": "This example registers callbacks in a central dispatcher to apply additional behavior across unrelated object instances.",
+          "isCorrect": false,
+          "explanation": "A central dispatcher applies cross-cutting behavior via registration, but it does not wrap individual objects. This is a different architectural technique and lacks the per-instance composability visible in the snippet."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In a UI component system where features are combined dynamically, which sign suggests you should prefer composing wrappers over creating subclasses?",
+      "codeSnippet": "class Component { render(): string { return 'base' } }\nclass RoundedComponent extends Component { render(){ return 'rounded '+ super.render() } }\nclass BlueComponent extends Component { render(){ return 'blue '+ super.render() } }\nclass RoundedBlueComponent extends Component { render(){ return 'rounded blue '+ super.render() } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "When combinations of orthogonal features produce many subclasses, prefer composing small wrapper objects to combine behaviors at runtime.",
+          "isCorrect": true,
+          "explanation": "The snippet shows combinatorial subclass growth as features combine. Composing wrappers avoids class explosion by enabling mix-and-match at runtime, improving maintainability and extensibility."
+        },
+        {
+          "id": "b",
+          "text": "When a feature needs to alter private state inside the base class, prefer subclassing to access internals directly at compile time.",
+          "isCorrect": false,
+          "explanation": "While subclassing can access protected members, it couples the feature to the class internals. Often a better alternative is to expose controlled extension points rather than assuming subclassing will scale."
+        },
+        {
+          "id": "c",
+          "text": "When you must apply behavior to many unrelated classes, prefer a global registry to avoid creating many small wrapper types.",
+          "isCorrect": false,
+          "explanation": "A global registry centralizes behavior but introduces coupling and global state. Wrappers applied per instance keep concerns local and composable, which is typically preferable for many unrelated types."
+        },
+        {
+          "id": "d",
+          "text": "When behavior varies per instance and must change at runtime, prefer composing instances with additional wrapper objects.",
+          "isCorrect": false,
+          "explanation": "This option describes a valid advantage of per-instance composition but it overlaps with the correct choice. The most telling sign in the snippet is the combinatorial explosion of subclasses, which directly argues for composition."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B for adding concerns around a core stream write. Which version better supports flexible composition and future extension?",
+      "codeSnippet": "// Version A: small wrapper types\ninterface Stream { write(s: string): void }\nclass FileStream implements Stream { write(s: string) { console.log(s) } }\nclass Buffered implements Stream { constructor(private inner: Stream) {} write(s: string) { /* buffer then */ this.inner.write(s) } }\nclass Compressed implements Stream { constructor(private inner: Stream) {} write(s: string) { /* compress then */ this.inner.write(s) } }\n\n// Version B: single class with feature flags\nclass StreamV2 { constructor(private buffered: boolean, private compressed: boolean) {} write(s: string) { if (this.compressed) s = compress(s); if (this.buffered) s = buffer(s); console.log(s) } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A composes small wrapper objects around a core stream to enable flexible runtime stacking of behaviors.",
+          "isCorrect": true,
+          "explanation": "Version A uses composition of independently tested wrappers that each implement the Stream interface. That approach allows arbitrary ordering and reuse of behaviors, making it easier to extend and test. The wrapper composition keeps concerns isolated and avoids coupling flags and conditional logic into one class."
+        },
+        {
+          "id": "b",
+          "text": "Version B mixes many boolean flags in one class causing combinatorial logic and poor scalability for new behavior combinations.",
+          "isCorrect": false,
+          "explanation": "Version B centralizes behavior behind flags which leads to conditionals and combinatorial growth as features increase. This makes testing harder and reduces the ability to reuse or reorder behaviors without modifying the single class implementation."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 79,
+  "conceptName": "Defensive Programming",
+  "category": "principle",
+  "definition": "A coding practice that anticipates and guards against unexpected inputs, states, and failures so software fails in a controlled way.",
+  "ruleOfThumb": "Validate and check boundaries early; fail fast with clear errors; avoid hidden assumptions that let invalid state propagate.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code: A Handbook of Agile Software Craftsmanship",
+    "chapter": "Error Handling",
+    "page": "p. 190-197",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-code/9780136083238/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What primary practice is demonstrated by the code below?",
+      "codeSnippet": "function processOrder(order: Order | null) {\n  if (!order || !order.items) {\n    logger.warn('Invalid order');\n    return;\n  }\n  try {\n    // heavy processing\n    shipItems(order.items);\n  } catch (err) {\n    logger.error('Processing failed', err);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code aims to validate inputs and guard against null or missing properties to avoid runtime errors.",
+          "isCorrect": true,
+          "explanation": "The snippet shows explicit null checks and defensive guards before processing. It prevents null dereferences and reduces unexpected exceptions by validating preconditions early. This keeps later code simpler and safer to execute."
+        },
+        {
+          "id": "b",
+          "text": "This code aims to centralize business logic so service boundaries are kept thin and explicit.",
+          "isCorrect": false,
+          "explanation": "Although centralizing business logic is valuable, the shown pattern focuses on defensive checks and early returns rather than extracting logic boundaries. The evidence in the snippet is about guarding input, not about reorganizing responsibilities."
+        },
+        {
+          "id": "c",
+          "text": "This code aims to catch all exceptions and swallow errors which may hide real system failures.",
+          "isCorrect": false,
+          "explanation": "The presence of a catch block might suggest error swallowing, but the snippet logs errors and returns early on invalid input. The primary goal is preventing invalid inputs from reaching processing logic, not hiding failures silently."
+        },
+        {
+          "id": "d",
+          "text": "This code aims to improve performance by avoiding allocations and minimizing function calls in hot paths.",
+          "isCorrect": false,
+          "explanation": "Performance concerns would typically show micro-optimizations or caching. Here we see explicit validation and logging which indicate safety and robustness priorities rather than performance tuning."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In a team codebase, which problem is this pattern most likely intended to address?",
+      "codeSnippet": "async function fetchUser(id: string) {\n  const res = await api.get(`/users/${id}`);\n  const data = res.data;\n  if (!data || !data.id || !data.email) {\n    logger.error('Incomplete user data', { id });\n    throw new Error('Invalid user data');\n  }\n  return { id: data.id, email: data.email };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This pattern is primarily addressing early detection of malformed external inputs to avoid propagating invalid data.",
+          "isCorrect": true,
+          "explanation": "The function validates the shape of external API data and throws on missing fields. In team contexts this prevents invalid objects from flowing through other modules and surfaces errors close to the source."
+        },
+        {
+          "id": "b",
+          "text": "This pattern is primarily addressing reducing attack surface by rejecting suspicious external payloads before processing sensitive logic.",
+          "isCorrect": false,
+          "explanation": "Rejecting malformed payloads does improve safety but security-specific controls usually involve sanitization, authentication, and rate limits. The shown checks are about data shape rather than deliberate security filtering."
+        },
+        {
+          "id": "c",
+          "text": "This pattern is primarily addressing performance by failing fast to reduce wasted processing on invalid or missing external data.",
+          "isCorrect": false,
+          "explanation": "Failing fast can save work, but the explicit logging and throwing here are aimed at correctness and visibility rather than measurable performance improvements. Performance would require benchmarking and different optimizations."
+        },
+        {
+          "id": "d",
+          "text": "This pattern is primarily addressing easier debugging by logging and throwing when unexpected shapes are encountered from third party services.",
+          "isCorrect": false,
+          "explanation": "While logging and throwing do aid debugging, the core intent is to enforce data invariants and prevent consumers from receiving malformed objects. Debuggability is a secondary benefit rather than the main purpose."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation choice is preferable in a medium sized codebase aiming to minimize maintenance burden?",
+      "codeSnippet": "// Version A: Inline guards everywhere\nfunction createInvoiceA(data: any) {\n  if (!data.customer || !data.amount) throw new Error('bad data');\n  // more inline guards duplicated across functions\n}\n\nfunction updateInvoiceA(data: any) {\n  if (!data.customer || !data.amount) throw new Error('bad data');\n  // similar duplication\n}\n\n// Version B: Centralized validator\nfunction validateInvoice(data: any) {\n  if (!data.customer || !data.amount) throw new Error('bad data');\n}\n\nfunction createInvoiceB(data: any) {\n  validateInvoice(data);\n  // business logic without guards\n}\n\nfunction updateInvoiceB(data: any) {\n  validateInvoice(data);\n  // business logic without guards\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps checks next to use sites so it prevents invalid state propagation at each individual call site.",
+          "isCorrect": false,
+          "explanation": "Putting guards at each call site makes failures local and explicit, but it yields duplication and higher maintenance cost when invariants change. Central copy of the checks will reduce repeated edits and the risk of inconsistent validation."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes validation in one place so it reduces duplication and makes maintaining invariants easier across modules.",
+          "isCorrect": true,
+          "explanation": "Centralized validation removes duplicate checks, enforces a single source of truth for data invariants, and simplifies updates when requirements change. Fowler and Martin both recommend consolidating validation to reduce coupling and maintenance overhead — keeping business logic separate from repetitive guard code leads to clearer, more testable modules."
+        }
+      ]
+    }
+  ]
+}

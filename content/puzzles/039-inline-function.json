@@ -1,0 +1,106 @@
+{
+  "id": 39,
+  "conceptName": "Inline Function",
+  "category": "refactoring",
+  "definition": "Replace a trivial wrapper function by using its body directly at the call sites when the wrapper adds no meaningful abstraction.",
+  "ruleOfThumb": "If a function only delegates or returns a simple expression and has no independent reason to exist, remove it and use its body.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Inline Function",
+    "page": "p. 92",
+    "externalUrl": "https://martinfowler.com/refactoring/inlineFunction.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this helper used in one place. What is the best first assessment about the helper?",
+      "codeSnippet": "const TAX_RATE = 0.08;\nfunction calculateTax(amount: number) {\n  return amount * TAX_RATE;\n}\nconst total = 100 + calculateTax(100);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function can be removed and its body used directly at each call site instead.",
+          "isCorrect": true,
+          "explanation": "This helper is a trivial one line delegate that does not express additional intent or encapsulate side effects. Fowler recommends inlining such functions to reduce indirection when they provide no extra abstraction."
+        },
+        {
+          "id": "b",
+          "text": "The function encapsulates calculation and should be kept to provide a clear intent and future extension point.",
+          "isCorrect": false,
+          "explanation": "Keeping a tiny function for intent can be valid when it documents behavior or will evolve. But here the body only references a constant and offers no clearer intent than the expression itself."
+        },
+        {
+          "id": "c",
+          "text": "The function centralizes the constant and should be preserved to avoid duplicated magic constants across the codebase.",
+          "isCorrect": false,
+          "explanation": "Centralizing the constant is important, but the constant is already separate (TAX_RATE). The wrapper does not protect the constant from duplication and can be removed without losing the centralized constant."
+        },
+        {
+          "id": "d",
+          "text": "The function may have hidden side effects so replacing calls with the body could risk changing runtime behavior.",
+          "isCorrect": false,
+          "explanation": "Concern about side effects is reasonable. In this example the function is pure and side effect free, so inlining is safe. One should check purity before inlining in other cases."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "This small formatter is used in several places. Which assessment best balances intent and duplication concerns?",
+      "codeSnippet": "function formatPrice(amount: number) {\n  const total = amount * 1.2;\n  return total.toFixed(2);\n}\nconst a = formatPrice(10);\nconst b = formatPrice(20);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Keep this small named abstraction to preserve intent and prevent duplicating the calculation in multiple places.",
+          "isCorrect": true,
+          "explanation": "When a tiny function is used repeatedly and documents intent, keeping it avoids duplication and makes future changes easier. Fowler suggests keeping such abstractions when they express a meaningful name or prevent repeated logic."
+        },
+        {
+          "id": "b",
+          "text": "Replace the function with its body everywhere because the calculation is trivial and adds unnecessary indirection throughout.",
+          "isCorrect": false,
+          "explanation": "Inlining everywhere could remove a meaningful name and create duplication. If the calculation is truly one off and never reused, inlining is fine, but repeated uses favor keeping the abstraction."
+        },
+        {
+          "id": "c",
+          "text": "Extract the constant multiplier into its own configuration and keep the function to avoid scattering numeric literals in code.",
+          "isCorrect": false,
+          "explanation": "Extracting the constant is a reasonable refactor to improve configurability. However this does not resolve whether the function should remain; both extracting constants and preserving the function can be complementary decisions."
+        },
+        {
+          "id": "d",
+          "text": "Consolidate the call sites into a single service and make the function private to reduce its surface area across modules.",
+          "isCorrect": false,
+          "explanation": "Consolidation might be overengineering for simple formatting. It can be appropriate in larger architectures, but does not address the primary trade off between clear naming and duplication at call sites."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare these two versions. Which version is better and why, given the code shown?",
+      "codeSnippet": "// Version A: direct calculation at call site\nfunction priceAfterDiscount(price: number, discount: number) {\n  return price * (1 - discount);\n}\nconst finalA = priceAfterDiscount(100, 0.2);\n\n// Version B: trivial wrapper that delegates\nfunction computePrice(price: number, discount: number) {\n  return priceAfterDiscount(price, discount);\n}\nconst finalB = computePrice(100, 0.2);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A preserves simple call sites and removes a needless wrapper that adds no observable behavior.",
+          "isCorrect": true,
+          "explanation": "Version A avoids an extra layer of indirection that does not add intent, validation, or abstraction. Fowler advises eliminating such trivial wrappers because they increase cognitive load and call-site complexity without benefit. Keep the wrapper only if it will gain responsibility such as validation, logging, or clearer domain naming."
+        },
+        {
+          "id": "b",
+          "text": "Version B introduces a trivial wrapper method that increases indirection without adding clear behavior or documented intent.",
+          "isCorrect": false,
+          "explanation": "This critique is accurate about Version B, but it is the reason why Version B is worse in this context. Choosing Version B might be justified if the wrapper will provide a specific responsibility or a clearer domain name. Absent that, Version B is an unnecessary abstraction and should be removed."
+        }
+      ]
+    }
+  ]
+}

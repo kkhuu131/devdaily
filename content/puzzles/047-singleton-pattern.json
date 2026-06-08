@@ -1,0 +1,106 @@
+{
+  "id": 47,
+  "conceptName": "Singleton Pattern",
+  "category": "design-pattern",
+  "definition": "A Creational pattern that ensures a class has only one instance and provides a global point of access to it.",
+  "ruleOfThumb": "Prefer explicit construction and injection for testability and lifecycle control; use single-instance access only when truly required.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Singleton",
+    "page": null,
+    "externalUrl": "https://en.wikipedia.org/wiki/Singleton_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary design issue in the following TypeScript snippet?",
+      "codeSnippet": "class ConfigService {\n  private static instance: ConfigService | null = null;\n  public settings: Record<string, any> = {};\n  private constructor() {}\n  static getInstance() {\n    if (!ConfigService.instance) ConfigService.instance = new ConfigService();\n    return ConfigService.instance;\n  }\n}\n\nconst cfg = ConfigService.getInstance();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class centralizes a single globally accessible instance creating hidden global state and tight coupling.",
+          "isCorrect": true,
+          "explanation": "The snippet enforces one shared instance available globally via getInstance. That introduces hidden global state and couples callers to a single concrete instance, making substitution and independent testing harder. The pattern's risks include hidden dependencies and difficulty managing lifecycle and concurrency."
+        },
+        {
+          "id": "b",
+          "text": "This class exposes mutable global state across modules increasing risk of race conditions and unpredictable test results.",
+          "isCorrect": false,
+          "explanation": "While the class does expose shared mutable state, the core design concern is the enforced single-access point rather than only mutability. Race conditions and testing issues are symptoms of the single-instance access combined with global sharing rather than a separate flaw."
+        },
+        {
+          "id": "c",
+          "text": "This class breaks encapsulation by preventing multiple independent instances needed for parallel tasks or per-tenant isolation.",
+          "isCorrect": false,
+          "explanation": "Preventing multiple instances is a real limitation of this approach, especially for parallelism or multi-tenant needs. However, the primary design smell is the global single-access and hidden coupling; inability to create instances is a related but narrower consequence."
+        },
+        {
+          "id": "d",
+          "text": "This class complicates lifecycle management by hiding construction making resource cleanup and replacement difficult.",
+          "isCorrect": false,
+          "explanation": "Hiding construction and lifecycle is indeed a practical problem with this implementation, particularly for teardown in tests. Still, this explanation focuses on lifecycle symptoms, whereas the central design issue is the global single-access and its coupling effects."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this module exported service. Which concern is most important for a maintainable codebase?",
+      "codeSnippet": "// db.ts\nclass DatabaseConnection {\n  constructor(private url: string) {}\n  query(q: string) { /* ... */ }\n}\n\nexport const db = new DatabaseConnection(process.env.DB_URL || '');",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code exports a shared instance across imports which can cause hidden coupling and global mutable state across the app.",
+          "isCorrect": true,
+          "explanation": "Exporting a constructed instance at module load time creates a single shared object used everywhere imports occur. That introduces hidden coupling and global mutable state which complicate testing, replacement, and lifecycle control. Using factories or injection lets callers decide scope and lifecycle."
+        },
+        {
+          "id": "b",
+          "text": "This code leaks implementation details through module exports which prevents swapping implementations without touching many import sites.",
+          "isCorrect": false,
+          "explanation": "Leaking implementation details can be an issue, but the immediate maintainability risk stems from the preconstructed shared instance. You can still hide implementation behind an exported interface while avoiding eager single-instance exports by exporting a factory or provider instead."
+        },
+        {
+          "id": "c",
+          "text": "This code makes testing brittle by creating concrete dependencies at require time instead of allowing injection or mocking.",
+          "isCorrect": false,
+          "explanation": "Creating concrete dependencies on import does make tests harder because you cannot easily replace the instance. This is a correct symptom, but it is one facet of the larger problem of an eagerly exported shared instance and global coupling."
+        },
+        {
+          "id": "d",
+          "text": "This code risks premature resource initialization on module load which complicates startup order and error handling during boot.",
+          "isCorrect": false,
+          "explanation": "Premature initialization is a valid operational concern, particularly for networked resources. Still, the primary maintainability issue for application architecture and testing is the global shared instance pattern; initialization timing is an important but secondary consequence."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two approaches to obtaining a Logger in an app. Which version is preferable for testability and lifecycle control?",
+      "codeSnippet": "// Version A\nclass LoggerA {\n  private static instance: LoggerA | null = null;\n  private constructor() {}\n  static getInstance() { if (!LoggerA.instance) LoggerA.instance = new LoggerA(); return LoggerA.instance; }\n  log(msg: string) {}\n}\nconst loggerA = LoggerA.getInstance();\n\n// Version B\nclass LoggerB {\n  constructor(private level: string) {}\n  log(msg: string) {}\n}\nfunction createLogger(level = 'info') { return new LoggerB(level); }\nconst loggerB = createLogger();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes instance retrieval and hides lifecycle control which makes testing and replacement difficult.",
+          "isCorrect": false,
+          "explanation": "Version A uses a hidden global retrieval mechanism. That ties code to a single globally accessible instance and conceals construction parameters and lifecycle control. Tests must either manipulate global state or use brittle workarounds, and substitution of different logger implementations becomes awkward."
+        },
+        {
+          "id": "b",
+          "text": "Version B requires explicit construction and wiring which yields clearer lifecycle control and easier testing substitution.",
+          "isCorrect": true,
+          "explanation": "Version B makes the creation explicit, so callers control scope and configuration of each logger. This supports dependency injection, simpler mocking, and predictable teardown. Explicit construction is the safer default in larger systems where testability and lifecycle management matter. See Martin Fowler on explicit dependencies and Clean Code on testable design for supporting guidance."
+        }
+      ]
+    }
+  ]
+}

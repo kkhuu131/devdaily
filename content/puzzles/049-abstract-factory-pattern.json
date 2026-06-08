@@ -1,0 +1,105 @@
+{
+  "id": 49,
+  "conceptName": "Abstract Factory Pattern",
+  "category": "design-pattern",
+  "definition": "Provides an interface for creating families of related or dependent objects without specifying their concrete classes.",
+  "ruleOfThumb": "Use when a system must be independent of how its products are created and when products come in families.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Creational Patterns — Abstract Factory",
+    "page": "87-97",
+    "externalUrl": "https://en.wikipedia.org/wiki/Abstract_factory_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given this short design description, which statement best describes the intent of the shown factory-style API?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Creates families of related products with interchangeable factory interfaces, letting client code operate without concrete product classes.",
+          "isCorrect": true,
+          "explanation": "This choice captures the central intent: provide a family-level factory interface so clients use products without depending on concrete classes. The pattern bundles related product creation and hides concrete implementations from the client, enabling swapping entire families. See GoF chapter on Abstract Factory for rationale and examples."
+        },
+        {
+          "id": "b",
+          "text": "Forces client code to switch on product types, causing scattered conditionals and concrete class knowledge throughout modules.",
+          "isCorrect": false,
+          "explanation": "This is a real smell for simple factory implementations that use conditionals, but it does not describe the shown factory-style API intent. The described pattern is meant to avoid such switches by centralizing and encapsulating creation in cooperating factory interfaces."
+        },
+        {
+          "id": "c",
+          "text": "Encourages a single monolithic factory that instantiates all unrelated products, increasing coupling and decreasing testability across boundaries.",
+          "isCorrect": false,
+          "explanation": "A single monolithic factory is a plausible antipattern, yet it misses the idea of organizing factories by product family. The correct approach partitions factories by family to reduce coupling and improve substitution and testing."
+        },
+        {
+          "id": "d",
+          "text": "Wraps platform APIs into small adapters but leaves concrete classes exposed to callers, reducing portability across implementations.",
+          "isCorrect": false,
+          "explanation": "Wrapping platform APIs is a real tactic, but leaving concrete classes exposed contradicts the family-factory abstraction. The intended design hides concretes behind factory interfaces to improve portability and substitution."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Examine the snippet below. Which observation most accurately characterizes the design tradeoff in this factory usage?",
+      "codeSnippet": "interface Button { render(): void }\ninterface Checkbox { render(): void }\ninterface UIFactory { createButton(): Button; createCheckbox(): Checkbox }\nclass LightFactory implements UIFactory { createButton(){ return new LightButton() } createCheckbox(){ return new LightCheckbox() } }\nclass DarkFactory implements UIFactory { createButton(){ return new DarkButton() } createCheckbox(){ return new DarkCheckbox() } }\nfunction buildUI(factory: UIFactory){ return { btn: factory.createButton(), chk: factory.createCheckbox() } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Allows swapping entire product families by providing a single factory object that encapsulates concrete product creation logic.",
+          "isCorrect": true,
+          "explanation": "This highlights the benefit: the client receives a factory that produces a consistent family of products and can switch families by substituting the factory instance. That decouples creation from use and supports theme or platform variations without altering client code."
+        },
+        {
+          "id": "b",
+          "text": "Implements a service locator hiding dependencies which can make testing harder and increase global coupling across modules.",
+          "isCorrect": false,
+          "explanation": "A service locator is a different pattern where global lookup hides dependencies. While both hide concretes, the shown design injects a factory, keeping dependencies explicit and enabling easier testing by swapping the factory, unlike a service locator approach."
+        },
+        {
+          "id": "c",
+          "text": "Is just a thin abstraction over constructors and adds indirection without clear benefit for simple product sets.",
+          "isCorrect": false,
+          "explanation": "This criticism can be valid for overengineering when only one product exists, but the code demonstrates multiple related products (button and checkbox) where grouping creation into a family factory yields clear benefits for consistency and substitution."
+        },
+        {
+          "id": "d",
+          "text": "Encourages runtime type checks to select products which introduces conditional complexity rather than true pluggable families.",
+          "isCorrect": false,
+          "explanation": "Runtime type checks are a smell when factories implement selection with conditionals. The snippet instead uses distinct factory implementations to avoid conditionals, so this option points to a possible antipattern but does not match the shown implementation."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You must support third party plugins that provide new themed product families. Which implementation is preferable for plugin extensibility?",
+      "codeSnippet": "// Version A: registry of factory instances\ninterface Button { render(): void }\ninterface Checkbox { render(): void }\ninterface UIFactory { createButton(): Button; createCheckbox(): Checkbox }\nconst factoryRegistry = new Map<string, UIFactory>()\nfactoryRegistry.set('light', new LightFactory())\nfunction createUI(theme: string){ const f = factoryRegistry.get(theme)!; return { btn: f.createButton(), chk: f.createCheckbox() } }\n\n// Version B: single factory with conditionals\nclass MonolithicFactory { createButton(theme: string){ if(theme === 'light') return new LightButton(); return new DarkButton() } createCheckbox(theme: string){ if(theme === 'light') return new LightCheckbox(); return new DarkCheckbox() } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A cleanly separates factory interfaces so new families plug in without changing existing client code.",
+          "isCorrect": true,
+          "explanation": "Version A uses a registry of factory instances keyed by theme. This allows third party plugins to register new UIFactory implementations without modifying existing code. It supports the open closed principle, makes plugin registration straightforward, and avoids touching client creation logic — enabling runtime extension."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes creation with runtime conditionals which makes adding new families require modifying the factory code.",
+          "isCorrect": false,
+          "explanation": "Version B forces changes to the MonolithicFactory whenever a new family is added because selection is encoded as conditionals. That design violates open closed principles and tightly couples creation logic to known themes, making plugin extensibility fragile and error prone."
+        }
+      ]
+    }
+  ]
+}
