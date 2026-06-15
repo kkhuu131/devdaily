@@ -1,0 +1,106 @@
+{
+  "id": 38,
+  "conceptName": "Speculative Generality",
+  "category": "code-smell",
+  "definition": "Introducing abstractions, interfaces, or extension points that are not currently needed and exist only for anticipated future requirements.",
+  "ruleOfThumb": "Prefer concrete, simple implementations until a real need for extensibility or multiple implementations emerges.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Speculative Generality",
+    "page": "183",
+    "externalUrl": "https://martinfowler.com/articles/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the function below. What problem is most directly suggested by the unused optional parameters?",
+      "codeSnippet": "function renderWidget(widget: any, renderer?: (w: any) => string, pluginHook?: () => void) {\n  return \"<div>\" + widget.name + \"</div>\";\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function includes optional parameters that are never used and add unneeded complexity to the codebase.",
+          "isCorrect": true,
+          "explanation": "The extra parameters look like placeholders for future flexibility that do not serve any present purpose. That extra surface increases cognitive load and maintenance effort with no concrete benefit. This is classic premature abstraction where keeping the function signature minimal is preferable until actual extensibility is required."
+        },
+        {
+          "id": "b",
+          "text": "The function returns raw HTML strings which risks XSS vulnerabilities when used in untrusted contexts.",
+          "isCorrect": false,
+          "explanation": "Returning raw HTML can be a security concern in some contexts, but the snippet is focused on unused parameters rather than sanitization. While XSS is a valid worry for HTML generation, it is not the most direct issue suggested by the optional unused parameters."
+        },
+        {
+          "id": "c",
+          "text": "The function uses any types which prevents compile time safety across the codebase and should be typed properly.",
+          "isCorrect": false,
+          "explanation": "Using any weakens type safety and is a legitimate problem, but the salient smell in this snippet is the presence of extra, unused extension points. Strong typing should be applied, yet it does not address the speculative parameters themselves."
+        },
+        {
+          "id": "d",
+          "text": "The function inlines markup generation which reduces reusability and should be extracted to a template.",
+          "isCorrect": false,
+          "explanation": "Inlining markup can reduce reuse, and extracting templates may be a beneficial refactor. However, the primary issue shown by the example is unnecessary optional parameters that indicate overgeneralization, not specifically the inlining of markup."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review the exported service pattern below. Which observation best identifies a speculative generality concern?",
+      "codeSnippet": "// invoice.ts\ninterface Formatter { format(inv: any): string }\nclass JsonFormatter implements Formatter {\n  format(inv: any) { return JSON.stringify(inv) }\n}\nclass InvoiceService {\n  constructor(private formatter: Formatter) {}\n  export(inv: any) { return this.formatter.format(inv) }\n}\nnew InvoiceService(new JsonFormatter()).export({ id: 1 })\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This abstraction has only one concrete implementation and provides no practical benefit to the system today.",
+          "isCorrect": true,
+          "explanation": "The Formatter interface adds an indirection layer while only JsonFormatter exists and is used everywhere. When there is a single implementation and no real need for interchangeability, the interface is premature abstraction. Keeping the implementation concrete improves clarity until a second implementation justifies the indirection."
+        },
+        {
+          "id": "b",
+          "text": "This interface is required to support unit testing by allowing easy mock injection without coupling tests to concrete implementations.",
+          "isCorrect": false,
+          "explanation": "Using interfaces for testability is a valid reason, but it is not always necessary. Many teams use concrete classes with dependency injection or simple test helpers. The key question is whether testing constraints alone justify the abstraction when no other implementation or behavior variability exists."
+        },
+        {
+          "id": "c",
+          "text": "This design harms encapsulation because it exposes implementation details through the constructor making future refactors harder.",
+          "isCorrect": false,
+          "explanation": "Exposing dependencies via constructor parameters is usually a better encapsulation practice than hiding them. While poorly chosen constructor contracts can leak details, the presented pattern shows a normal dependency injection style, and the more direct concern here is the unnecessary interface rather than broken encapsulation."
+        },
+        {
+          "id": "d",
+          "text": "This pattern will significantly degrade runtime performance due to virtual dispatch and indirection in critical export paths.",
+          "isCorrect": false,
+          "explanation": "Indirection can have performance costs in very hot paths, but modern runtimes make this minimal in typical application code. This reason is often overstated compared to the maintenance and complexity costs introduced by premature abstractions, which are the more relevant concern in this example."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two versions of a notifier appear below. Which version should you prefer for maintainability given current requirements?",
+      "codeSnippet": "// Version A\nclass EmailSender {\n  send(to: string, body: string) { /* direct SMTP call */ }\n}\nclass UserNotifier {\n  private sender = new EmailSender()\n  notify(user: any, message: string) { this.sender.send(user.email, message) }\n}\n\n// Version B\ninterface IEmailSender { send(to: string, body: string): void }\nclass SmtpEmailSender implements IEmailSender { send(to: string, body: string) { /* direct SMTP call */ } }\nclass EmailSenderFactory { static create() { return new SmtpEmailSender() } }\nclass UserNotifier2 {\n  private sender: IEmailSender\n  constructor() { this.sender = EmailSenderFactory.create() }\n  notify(user: any, message: string) { this.sender.send(user.email, message) }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A: Concrete implementation with minimal indirection and fewer moving parts to maintain over time.",
+          "isCorrect": true,
+          "explanation": "Version A favors simplicity: fewer layers, direct instantiation, and straightforward flow. When no alternative email strategies or runtime selection are required, this reduces cognitive load and maintenance costs. If variability becomes necessary later, a focused refactor to introduce an interface is cheap compared to carrying unused abstraction indefinitely."
+        },
+        {
+          "id": "b",
+          "text": "Version B: Added abstraction layers and factories that anticipate change but increase indirection and long term maintenance burden.",
+          "isCorrect": false,
+          "explanation": "Version B anticipates future change by introducing an interface and factory, which can be useful when multiple implementations or runtime selection are required. However, those layers add indirection and boilerplate that must be maintained now. If the anticipated scenarios never appear, this extra complexity will hinder readability and make refactoring harder. Prefer introducing such abstractions when a clear need and at least a second implementation or runtime variability exists."
+        }
+      ]
+    }
+  ]
+}

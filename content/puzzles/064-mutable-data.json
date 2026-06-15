@@ -1,0 +1,105 @@
+{
+  "id": 64,
+  "conceptName": "Mutable Data",
+  "category": "code-smell",
+  "definition": "Values or data structures that are changed in place after creation, causing shared state, hidden coupling, and surprising side effects across modules.",
+  "ruleOfThumb": "Prefer producing new values or explicit transformers instead of changing caller supplied objects in place, especially across module boundaries.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Changing Data Structures",
+    "page": "38",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which example most clearly exhibits the described code smell?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "A function changes a shared session object property directly before returning, affecting other callers unexpectedly.",
+          "isCorrect": false,
+          "explanation": "Mutating a shared session object is a clear symptom because other parts of the system rely on that object remaining stable. This is a common source of nondeterministic bugs when multiple callers access the same object reference."
+        },
+        {
+          "id": "b",
+          "text": "A function returns a new object leaving the original input unchanged, avoiding side effects on the caller.",
+          "isCorrect": false,
+          "explanation": "Returning a new object is the nonmutable approach and not a smell; this option is intentionally a plausible distractor showing the desirable pattern. The smell is about in-place changes, not about returning new values."
+        },
+        {
+          "id": "c",
+          "text": "A data transfer object is passed everywhere with its fields modified by multiple modules at runtime.",
+          "isCorrect": true,
+          "explanation": "This describes pervasive in-place field updates across modules, which creates hidden coupling and makes reasoning and refactoring difficult. When many modules write to the same DTO, understanding who owns state becomes costly and error prone."
+        },
+        {
+          "id": "d",
+          "text": "A constant is declared once and never reassigned, ensuring its value stays stable across the application.",
+          "isCorrect": false,
+          "explanation": "A truly constant value is the opposite of the smell; it is included as a distractor. Immutable constants reduce coupling and do not lead to the described problems of shared mutable state."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the most likely root cause of the surprising behavior in this code?",
+      "codeSnippet": "type Item = { id: string; price: number; qty: number };\nfunction applyDiscount(order: { items: Item[]; total: number }, discount: number) {\n  const discounted = order.items.map(i => ({ ...i, price: i.price * (1 - discount) }));\n  order.items = discounted;\n  order.total = order.items.reduce((s, it) => s + it.price * it.qty, 0);\n}\nconst cart = { items: [{ id: \"a\", price: 10, qty: 1 }], total: 10 };\napplyDiscount(cart, 0.5);\n// another module later expects original prices\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function mutates the passed order object in place altering the original items and total.",
+          "isCorrect": true,
+          "explanation": "applyDiscount assigns back to order.items and sets order.total, modifying the caller supplied object. The root cause is in-place mutation of input state instead of returning a new value, leading other modules to observe unexpected changes."
+        },
+        {
+          "id": "b",
+          "text": "The function creates a new items array but assigns it back to the original order causing shared state to be altered.",
+          "isCorrect": false,
+          "explanation": "This is a plausible description but subtly reframes the issue. Creating a new array is not inherently wrong; the real problem is assigning it to the caller supplied order object, which is a form of mutating shared state. The distinction is ownership versus copying."
+        },
+        {
+          "id": "c",
+          "text": "The discount math uses mutated price values leading to compounding discounts when the function is called multiple times.",
+          "isCorrect": false,
+          "explanation": "Compounding discounts can happen if prices are mutated across calls, and this is a reasonable suspicion. However, the snippet shows creating new item objects before assignment, so the primary problem is that the order object itself is overwritten rather than math error per se."
+        },
+        {
+          "id": "d",
+          "text": "The shallow copy of items prevents isolation because inner item objects are still shared across modules.",
+          "isCorrect": false,
+          "explanation": "Shallow copies can leak shared references for nested mutable structures. In this snippet the map creates shallow copies of top level item objects which are then assigned to order, but the prominent issue remains mutation of the caller provided order container rather than deeper aliasing."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for robust, maintainable code in a system with many callers?",
+      "codeSnippet": "// Version A\nfunction updateUserA(user: User, patch: Partial<User>): User {\n  Object.assign(user, patch);\n  return user;\n}\n\n// Version B\nfunction updateUserB(user: User, patch: Partial<User>): User {\n  return { ...user, ...patch };\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A updates the supplied user object in place and makes shared state changes visible across modules.",
+          "isCorrect": false,
+          "explanation": "Version A mutates the caller's object which centralizes updates but couples callers to that shared object state. This can be tempting for perceived simplicity, yet it increases risk of unexpected side effects and makes concurrent reasoning and testing harder. Fowler and other authors recommend minimizing such shared mutations."
+        },
+        {
+          "id": "b",
+          "text": "Version B returns a new user object and leaves the caller supplied object unchanged.",
+          "isCorrect": true,
+          "explanation": "Version B produces a new value and preserves the original input, removing accidental coupling between callers. Returning new objects keeps ownership explicit, simplifies reasoning about state, and enables safer composition and testing. See Fowler on changing data structures and Robert C. Martin on minimizing hidden side effects for similar guidance."
+        }
+      ]
+    }
+  ]
+}

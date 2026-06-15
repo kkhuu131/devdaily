@@ -1,0 +1,106 @@
+{
+  "id": 62,
+  "conceptName": "Global Data",
+  "category": "code-smell",
+  "definition": "A code smell where mutable state is exposed and shared across modules or components, creating hidden coupling, unpredictable interactions, and test fragility.",
+  "ruleOfThumb": "Avoid widely shared mutable state; prefer passing explicit context, dependency injection, or immutable values so each unit's dependencies are obvious and testable.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Global Data",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/articles/globalData.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the snippet. Which description best identifies the immediate design problem shown?",
+      "codeSnippet": "// config.ts\nexport let currentTenant = 'acme';\n\n// ordersService.ts\nimport { currentTenant } from './config';\nexport function findOrders() {\n  return db.query(`SELECT * FROM orders WHERE tenant='${currentTenant}'`);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code exhibits a single mutable value exported from a module and accessed widely creating hidden shared mutable state.",
+          "isCorrect": true,
+          "explanation": "The snippet shows an exported mutable variable used across modules. That pattern creates implicit coupling and hidden runtime dependencies which are hard to reason about and test. This is the classic global state smell where changes in one place affect distant code."
+        },
+        {
+          "id": "b",
+          "text": "This code exhibits accidental tight coupling through direct imports that prevents composing different data sources without significant changes.",
+          "isCorrect": false,
+          "explanation": "While direct imports can create coupling, the primary issue here is the shared mutable exported variable. Tight coupling is a related concern but not the root cause; the exported mutable state hides the dependency rather than merely coupling modules."
+        },
+        {
+          "id": "c",
+          "text": "This code exhibits a global singleton anti pattern where mutable configuration hides dependencies and prevents safe testing in isolation.",
+          "isCorrect": false,
+          "explanation": "Describing it as a singleton anti pattern captures part of the problem, but a singleton implies a controlled instance. The real problem is that arbitrary modules mutate and read the exported variable, creating scattered hidden state rather than an encapsulated singleton."
+        },
+        {
+          "id": "d",
+          "text": "This code exhibits tight coupling by scattering tenant logic across modules causing many implicit runtime assumptions about state.",
+          "isCorrect": false,
+          "explanation": "Scattering tenant logic is a symptom you might see, but the more precise diagnosis is shared mutable state. The implicit runtime assumptions come from that shared state rather than simply scattering logic alone."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given a shared mutable session object imported across modules, what is the primary runtime risk to address first?",
+      "codeSnippet": "// session.ts\nexport const sessionState = { userId: null as string | null };\nexport function setUser(id: string) { sessionState.userId = id; }\n\n// service.ts\nimport { sessionState } from './session';\nexport function doWork() { return `user:${sessionState.userId}`; }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The primary risk is implicit shared state causing unpredictable behavior across components and making reasoning and testing harder.",
+          "isCorrect": true,
+          "explanation": "Shared mutable sessionState leads to hidden dependencies between modules: one module changing the object can produce surprising behavior elsewhere. This unpredictability makes debugging and unit testing brittle, and is the most immediate architectural concern."
+        },
+        {
+          "id": "b",
+          "text": "The primary risk is thread safety and race conditions when concurrent requests mutate the same shared object without synchronization.",
+          "isCorrect": false,
+          "explanation": "Race conditions can be a real problem, especially in multithreaded environments. In many JavaScript runtimes the bigger issue is shared state across asynchronous flows and test interference; synchronization concerns are secondary here but still important in other platforms."
+        },
+        {
+          "id": "c",
+          "text": "The primary risk is accidental security leakage where one user's session data is exposed to another user through shared state.",
+          "isCorrect": false,
+          "explanation": "Security leakage is a plausible and serious outcome of shared state, particularly in request handling. However, it is a possible consequence rather than the fundamental design problem, which is implicit coupling and unpredictability."
+        },
+        {
+          "id": "d",
+          "text": "The primary risk is configuration drift between environments because mutable defaults are changed at runtime and not validated.",
+          "isCorrect": false,
+          "explanation": "Configuration drift is a concern when defaults are mutated, but the snippet shows per-request session mutation rather than global configuration mutation across environments. The core issue remains hidden shared mutable state affecting behavior."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B for per request tenant handling. Which version is structurally preferable for maintainability?",
+      "codeSnippet": "// Version A: explicit per request context\nclass RequestContext {\n  private tenant: string;\n  constructor(tenant: string) { this.tenant = tenant; }\n  getTenant() { return this.tenant; }\n}\nfunction handleRequestA(ctx: RequestContext) {\n  const tenant = ctx.getTenant();\n  // use tenant for business logic\n}\n\n// Version B: shared module state\n// context.ts\nexport let currentTenant = 'default';\nfunction handleRequestB() {\n  const tenant = currentTenant;\n  // use tenant for business logic\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A reduces implicit coupling by making per request state explicit through created context instances.",
+          "isCorrect": true,
+          "explanation": "Version A encapsulates request-scoped state inside an object that is created per request and passed explicitly to consumers. This makes dependencies visible in APIs, eases testing by constructing contexts in isolation, and prevents cross-request interference. Fowler and others recommend replacing widely shared mutable state with explicit parameters or encapsulated instances to improve reasoning and refactorability."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes state in a shared module causing hidden coupling and making tests fragile and parallel execution unsafe.",
+          "isCorrect": false,
+          "explanation": "Version B uses a module-level mutable variable to hold tenant information. That design creates hidden runtime coupling, data leakage between requests, and test flakiness when tests or concurrent requests rely on or mutate the same module state. While simpler to access, it scales poorly and complicates reasoning, mocking, and parallelism."
+        }
+      ]
+    }
+  ]
+}

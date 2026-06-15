@@ -1,0 +1,106 @@
+{
+  "id": 28,
+  "conceptName": "Message Chains",
+  "category": "code-smell",
+  "definition": "A pattern where client code navigates through a sequence of object references to reach a distant property or behavior, coupling callers to the internal structure of collaborators.",
+  "ruleOfThumb": "Hide traversal behind a small query method on a sensible owner or aggregate root so callers do not depend on deep object structure.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Message Chains",
+    "page": null,
+    "externalUrl": "https://refactoring.com/catalog/messageChains.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the snippet. What is the primary smell this code demonstrates?",
+      "codeSnippet": "class OrderProcessor {\n  getCustomerPostalCode(order: Order) {\n    return order.customer.address.postalCode;\n  }\n}\n\nconst postal = new OrderProcessor().getCustomerPostalCode(order);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code couples the caller tightly to nested object structure through repeated chained accessors across multiple object boundaries.",
+          "isCorrect": true,
+          "explanation": "The snippet navigates through several object links (order -> customer -> address -> postalCode). That creates a dependency on the internal shape of collaborators, so callers break if any intermediate class changes its structure. The usual refactor is to provide a focused query method on a sensible owner so callers ask for data instead of performing traversal themselves."
+        },
+        {
+          "id": "b",
+          "text": "This code risks null or undefined errors when any intermediate accessor returns no object and lacks defensive checks at each step.",
+          "isCorrect": false,
+          "explanation": "Null or undefined dereferences are a real concern with chained access, but they are an implementation hazard rather than the structural smell. Adding null checks fixes runtime safety but does not address the coupling to the collaborators' internal layout. The deeper issue is that traversal is happening in the caller rather than being encapsulated."
+        },
+        {
+          "id": "c",
+          "text": "This code creates a brittle test surface because tests must construct nested objects to reach inner values under test across many layers.",
+          "isCorrect": false,
+          "explanation": "Brittle tests are a plausible downstream effect because tests need to build deep object graphs. However, brittleness is a symptom rather than the root smell. The core problem is the way callers traverse collaborators instead of asking a single object for the needed information."
+        },
+        {
+          "id": "d",
+          "text": "This code undermines encapsulation by exposing internal traversal logic instead of providing a focused query method on the owner object.",
+          "isCorrect": false,
+          "explanation": "This option correctly identifies encapsulation concerns, which are closely related to the smell. It describes a valid reason why deep chaining is problematic, but the best concise identification is that the caller is tightly coupled to nested structure through chained accessors. All three observations point to the same root issue."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which refactor most directly addresses the structural problem in the example below?",
+      "codeSnippet": "class ShippingService {\n  ship(order: Order) {\n    const country = order.customer.address.country;\n    // use country to calculate duties\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Extract a query method on the root object that returns the nested value and hides traversal details from callers.",
+          "isCorrect": true,
+          "explanation": "Extracting a small query method (for example order.getDestinationCountry()) moves traversal into the domain where it belongs. That reduces coupling of callers to internal structure, centralizes any null checks or changes, and makes intent clearer. This is the canonical refactor for this smell and aligns with the Law of Demeter."
+        },
+        {
+          "id": "b",
+          "text": "Introduce null safe accessors and defensive checks at each call site to avoid runtime errors from missing components or undefined fields.",
+          "isCorrect": false,
+          "explanation": "Adding defensive checks improves robustness, but it leaves traversal logic scattered across callers and does not reduce coupling. Null safety is complementary but not a replacement for restructuring the API to hide traversal."
+        },
+        {
+          "id": "c",
+          "text": "Replace objects with a flattened data transfer object so consumers no longer need to traverse nested domain objects for simple values.",
+          "isCorrect": false,
+          "explanation": "Flattening into DTOs can reduce chaining for data retrieval across process boundaries, but it moves data representation rather than improving domain encapsulation. It may be appropriate for remote calls but introduces duplication and can bypass behavior that should live on domain objects."
+        },
+        {
+          "id": "d",
+          "text": "Move traversal logic into the service layer so callers remain thin and traversal is centralized for reuse and control of access patterns.",
+          "isCorrect": false,
+          "explanation": "Centralizing traversal in the service layer concentrates logic but can violate domain encapsulation and distribute knowledge of object internals to an application layer. Extracting a query on the domain object is usually preferable because it keeps traversal within the owning object's boundary."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for long term design and why? Consider encapsulation, testability, and API clarity.",
+      "codeSnippet": "/* Version A */\nclass BillingService {\n  charge(order: Order) {\n    const zip = order.customer.address.postalCode;\n    // use zip for tax lookup\n  }\n}\n\n/* Version B */\nclass Order {\n  getPostalCode() { return this.customer.address.postalCode; }\n}\nclass BillingService {\n  charge(order: Order) {\n    const zip = order.getPostalCode();\n    // use zip for tax lookup\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A leaves traversal logic in callers, resulting in widespread coupling to internal object structure across codebase.",
+          "isCorrect": false,
+          "explanation": "Version A has callers navigate deep graphs, which scatters knowledge of object internals throughout the codebase. That increases maintenance burden: when the model changes you must update many call sites and tests. It also makes intent less clear because callers perform mechanical traversal rather than expressing a domain query."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes traversal behind a single focused query on the aggregate root to preserve encapsulation and reduce coupling.",
+          "isCorrect": true,
+          "explanation": "Version B hides traversal inside a method on a sensible owner (the Order), so callers ask for domain intent instead of performing navigation. This change localizes knowledge of the object graph, simplifies tests by reducing fixture depth, and gives a stable API when internals change. Fowler and other refactoring authorities recommend this approach for precisely these maintenance benefits."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 29,
+  "conceptName": "Encapsulate What Varies",
+  "category": "principle",
+  "definition": "Identify aspects of a system that change frequently and isolate them behind stable abstractions so the rest of the system remains unaffected by those changes.",
+  "ruleOfThumb": "When code contains conditionals or duplicated logic that changes for different cases, separate those variants into their own cooperating abstractions.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Composing Methods / Encapsulate What Varies",
+    "page": "p. 40-52",
+    "externalUrl": "https://martinfowler.com/bliki/EncapsulateWhatVaries.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation best describes the maintainability problem in this code snippet?",
+      "codeSnippet": "function processPayment(payment) {\n  switch (payment.type) {\n    case 'card':\n      validateCard(payment.details);\n      chargeCard(payment.details);\n      break;\n    case 'bank':\n      validateBank(payment.details);\n      transferFunds(payment.details);\n      break;\n  }\n}\n\n// New payment types require editing this function directly",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function centralizes all payment behaviors in a switch statement inside a single procedural method.",
+          "isCorrect": true,
+          "explanation": "Centralizing each payment behavior in a switch means every new payment type or change requires editing the same function. The core idea is to extract the varying behavior behind an abstraction so additions do not force edits across a monolithic conditional. Refactoring into separate strategy objects or handler classes reduces risk when adding new payment methods and improves testability."
+        },
+        {
+          "id": "b",
+          "text": "This function creates tight coupling between payment cases and calling code, increasing risk of widespread breakage.",
+          "isCorrect": false,
+          "explanation": "Tight coupling is a real concern here because callers indirectly depend on the procedural structure, but the immediate smell is the co-location of multiple variant behaviors. Coupling will improve once each payment behavior is factored out to its own implementation and the switch is replaced by a polymorphic dispatch or registry."
+        },
+        {
+          "id": "c",
+          "text": "This function duplicates similar payment logic across multiple branches, leading to subtle divergence when behavior changes.",
+          "isCorrect": false,
+          "explanation": "Duplication may occur if validation or logging repeats across cases, and duplication is an important maintenance problem. In this snippet the more actionable design step is to separate the varying behavior into discrete units so shared concerns can be centralized and duplicated code removed through composition or delegation."
+        },
+        {
+          "id": "d",
+          "text": "This function mixes business rules and I/O directly, making it hard to test individual payment behaviors.",
+          "isCorrect": false,
+          "explanation": "Mixing business logic and I/O does hinder testing, and extracting I/O to collaborators is beneficial. However the prominent issue shown is the presence of multiple varying behaviors inside a single switch; addressing that by introducing concentrated implementations will also make I/O boundaries clearer and easier to mock in tests."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary design concern in the following pricing implementation?",
+      "codeSnippet": "class PricingService {\n  calculate(order) {\n    let total = 0;\n    if (order.customer.isVip) total += this.vipDiscount(order);\n    if (order.items.length > 10) total += this.bulkDiscount(order);\n    if (order.region === 'EU') total += this.euTax(order);\n    return total;\n  }\n}\n\n// Business keeps introducing new conditional rules",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The PricingService violates single responsibility by handling both pricing rules and input validation in the same method.",
+          "isCorrect": false,
+          "explanation": "SRP violations are common, and mixing validation with pricing would be a problem if present. In this snippet the methods appear to be pricing rules rather than validation. The more pressing issue is the mixing of multiple variant pricing rules in one method, which makes the class hard to extend safely."
+        },
+        {
+          "id": "b",
+          "text": "The PricingService relies on runtime flags and conditionals that will become more fragile as rules multiply over time.",
+          "isCorrect": false,
+          "explanation": "Relying on conditionals is a legitimate maintenance concern because each new rule increases branching complexity. This observation is plausible, but it describes a symptom; the underlying design improvement is to separate each variant rule into its own behavior so branching moves to composition rather than sprawling conditionals."
+        },
+        {
+          "id": "c",
+          "text": "The PricingService mixes multiple variant pricing behaviors inside a single method across customer and region conditions.",
+          "isCorrect": true,
+          "explanation": "Embedding several variation points in one method forces changes to the same code path whenever a new pricing rule appears. The recommended approach is to represent each varying rule as an independent collaborator or strategy so new rules can be added without modifying the existing method."
+        },
+        {
+          "id": "d",
+          "text": "The PricingService lacks caching or memoization which could cause performance problems under heavy pricing evaluation loads.",
+          "isCorrect": false,
+          "explanation": "Performance and caching are valid concerns if pricing calculation is expensive. However the snippet emphasizes multiple conditional rules added for business variability. Addressing the structural variability first by separating rules makes it easier to add caching as a targeted optimization later."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation is preferable for supporting frequent changes to pricing rules while keeping the service simple to change?",
+      "codeSnippet": "// Version A\ninterface PricingRule { apply(order: any): number }\nclass VipRule implements PricingRule { apply(order){ /* ... */ return 10 } }\nclass RegionRule implements PricingRule { apply(order){ /* ... */ return 5 } }\nclass PricingServiceA {\n  constructor(private rules: PricingRule[]){}\n  calculate(order){ return this.rules.reduce((s,r)=>s+r.apply(order), 0) }\n}\n\n// Version B\nclass PricingServiceB {\n  calculate(order){\n    let total=0; if(order.customer.isVip) total+=10;\n    if(order.region==='EU') total+=5; if(order.items.length>10) total+=15;\n    return total;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates pricing rules behind small strategy implementations used by the service for runtime composition.",
+          "isCorrect": true,
+          "explanation": "Version A moves each varying rule into its own implementation and composes them at runtime. That isolates change to individual rule classes so adding or modifying rules does not require changing the service. It improves testability, enables reuse, and keeps the service stable as business rules evolve. This aligns with the principle of isolating variation behind abstractions as advocated in refactoring literature."
+        },
+        {
+          "id": "b",
+          "text": "Version B hides variations in flags and nested conditionals, causing modifications to require editing the central service class.",
+          "isCorrect": false,
+          "explanation": "Version B buries every variation inside conditionals in the central class. Each new business rule forces edits to the same method which increases risk of regressions and makes unit testing specific rules harder. While Version B may be simpler initially, it does not scale for frequent rule changes; the structural fragility is the reason to prefer a composed rule approach."
+        }
+      ]
+    }
+  ]
+}

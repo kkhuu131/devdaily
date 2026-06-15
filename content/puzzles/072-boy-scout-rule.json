@@ -1,0 +1,105 @@
+{
+  "id": 72,
+  "conceptName": "Boy Scout Rule",
+  "category": "principle",
+  "definition": "When touching existing code, make small, incremental improvements so the codebase is left slightly cleaner than before.",
+  "ruleOfThumb": "When you edit a file to fix or add behavior, also make small, safe cleanups to that file.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Uncle Bob Blog",
+    "chapter": "The Boy Scout Rule",
+    "page": null,
+    "externalUrl": "https://blog.cleancoder.com/uncle-bob/2016/02/17/the-boy-scout-rule.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "You open a pull request that alters a single file for a bug fix. Which practice best matches a senior developer's incremental cleanup habit?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Make small improvements to any file you edit to gradually reduce incidental technical debt over time.",
+          "isCorrect": true,
+          "explanation": "The core idea is to leave files a little better whenever you touch them. Small, behavior-preserving edits reduce rot without risking large regressions. This minimizes future cleanup and keeps commits focused and reviewable. See advice about continuous cleanup and incremental improvements in pragmatic software craftsmanship literature."
+        },
+        {
+          "id": "b",
+          "text": "Only modify files when necessary to fix your bug, avoiding unrelated cleanups that cause merge conflicts later.",
+          "isCorrect": false,
+          "explanation": "Avoiding unrelated changes reduces review scope and merge pain, but it also misses opportunities to steadily improve code quality. Over time, postponing all cleanup creates larger refactors. The tradeoff is real and sometimes warranted, but it is not the habitual incremental-cleanup practice implied here."
+        },
+        {
+          "id": "c",
+          "text": "Leave existing code untouched when possible and schedule separate refactor tasks for broader cleanup work later.",
+          "isCorrect": false,
+          "explanation": "Scheduling dedicated refactors keeps fixes and cleanups isolated, which can be appropriate for large changes. However, it delays low-risk improvements that could have been made immediately and raises the cost of future refactors. The incremental approach favors small, local improvements instead."
+        },
+        {
+          "id": "d",
+          "text": "Add extensive style and formatting changes across multiple files to enforce consistency in the same commit.",
+          "isCorrect": false,
+          "explanation": "Large, sweeping style changes can obscure functional changes in reviews and cause noisy merges. While consistency is valuable, this approach is high risk in a single commit. The recommended practice is limited, behavior-preserving cleanups local to touched files rather than broad reformatting."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You find a long function with confusing variable names while fixing a bug. What is the most appropriate immediate action?",
+      "codeSnippet": "function processOrder(order) {\n  // TODO: simplify this logic\n  if (!order.items) {\n    return null\n  }\n  if (order.total === undefined) {\n    order.total = order.items.reduce((s, i) => s + i.price, 0)\n  }\n  // many more branches and nested checks\n  return order\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Make a narrowly scoped cleanup to the touched function while preserving existing behavior and tests.",
+          "isCorrect": true,
+          "explanation": "A focused, behavior-preserving cleanup reduces immediate cognitive load for future edits without introducing high risk. Rename local variables for clarity, extract a tiny helper, and run tests. This follows the incremental improvement habit and keeps the change reviewable and safe."
+        },
+        {
+          "id": "b",
+          "text": "Replace the whole module with a redesigned version in the same commit to solve structure and style issues.",
+          "isCorrect": false,
+          "explanation": "A full redesign in the same commit increases risk and review complexity. It may introduce regressions and block other work. Large refactors are better done incrementally with tests and smaller commits to limit scope and make rollbacks simpler."
+        },
+        {
+          "id": "c",
+          "text": "Leave the file unchanged and open a separate refactor ticket to avoid mixing bug fixes and cleanups.",
+          "isCorrect": false,
+          "explanation": "Creating a separate ticket keeps changes isolated but misses the opportunity to make small, safe improvements now. The separate-ticket approach can lead to perpetual postponement of simple cleanups that would have reduced future maintenance cost."
+        },
+        {
+          "id": "d",
+          "text": "Add a test that documents current behavior before making broad changes to reduce risk during future refactors.",
+          "isCorrect": false,
+          "explanation": "Adding tests first is a valuable safety step for larger refactors. However, for small, local cleanups a behavior-preserving change with existing tests may be faster and lower overhead. Tests are critical for big refactors but are not always required for tiny, well-scoped edits."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two engineers propose different change sets for the same bug fix. Which version better follows the incremental cleanup habit when modifying code?",
+      "codeSnippet": "/* Version A: one large commit */\n// Modified 12 files including formatting and API surface changes\nfunction handle(req, res) {\n  // replaced several helper interfaces and reformatted many modules\n  performFix(req)\n}\n\n/* Version B: focused edits */\n// Modified only files touched for the bug and renamed a confusing local variable\nfunction handle(req, res) {\n  let items = req.order.items\n  performFix(req)\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A attempts a large rewrite across unrelated modules in a single commit risking integration problems and review fatigue.",
+          "isCorrect": false,
+          "explanation": "Version A groups many unrelated changes, which raises the chance of regressions and makes review and bisecting harder. Large commits hide the intent of the bug fix and increase merge conflicts. While consolidating improvements might seem efficient, it violates the incremental safety tradeoffs practitioners recommend."
+        },
+        {
+          "id": "b",
+          "text": "Version B restricts changes to files actually edited and incrementally improves code with minimal merge friction and clearer intent.",
+          "isCorrect": true,
+          "explanation": "Version B exemplifies the small-improvement habit: it minimizes scope, preserves behavior, and leaves the codebase slightly better where work occurs. This reduces review complexity and merge risk while enabling continuous quality improvement. The approach is supported by craftsmanship principles advocating for incremental cleanup and maintainability."
+        }
+      ]
+    }
+  ]
+}

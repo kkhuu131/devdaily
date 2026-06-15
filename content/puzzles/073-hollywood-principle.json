@@ -1,0 +1,105 @@
+{
+  "id": 73,
+  "conceptName": "Hollywood Principle",
+  "category": "principle",
+  "definition": "An architectural guideline where a framework controls overall flow and calls application-provided callbacks for specific behavior, inverting traditional control relationships.",
+  "ruleOfThumb": "Design extension points the framework will call, not places where plugins must call into the framework.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Patterns of Enterprise Application Architecture",
+    "chapter": "Inversion of Control",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/InversionOfControl.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which concise description best matches a design where the framework calls application code rather than the other way around?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "The framework controls high level flow and invokes client callbacks to let modules supply behavior.",
+          "isCorrect": true,
+          "explanation": "Correct. This captures the core idea that control flow is owned by the framework and that application code supplies behavior as callbacks. The emphasis is on the inversion of who orchestrates work rather than how dependencies are provided."
+        },
+        {
+          "id": "b",
+          "text": "Components receive collaborators injected by caller code and explicitly call into those collaborators to perform tasks.",
+          "isCorrect": false,
+          "explanation": "This describes dependency injection, where collaborators are supplied to components and the components call those collaborators. It is plausible to confuse with inversion of control, but dependency injection focuses on how dependencies are provided rather than which party drives the flow."
+        },
+        {
+          "id": "c",
+          "text": "Event bus pattern where independent components publish and subscribe to events without a central controlling framework.",
+          "isCorrect": false,
+          "explanation": "This describes a pub/sub or event bus approach. While events can invert some responsibilities, pub/sub decentralizes flow and does not necessarily imply a framework controlling the overall lifecycle, so it is a distinct pattern."
+        },
+        {
+          "id": "d",
+          "text": "Service locator where modules request dependencies from a global registry at runtime creating hidden coupling and lookup cost.",
+          "isCorrect": false,
+          "explanation": "This captures the service locator anti-pattern where modules pull dependencies from a global registry. It is often mistaken for inversion of control because the lookup hides wiring, but it does not reflect a framework calling back into client code."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this plugin registration snippet, what primary architectural principle is in use?",
+      "codeSnippet": "class Framework {\n  private handlers: Record<string, Function[]> = {};\n  register(event: string, handler: () => void) {\n    (this.handlers[event] ||= []).push(handler);\n  }\n  trigger(event: string) {\n    (this.handlers[event] || []).forEach(h => h());\n  }\n}\n\n// app code calls framework.register('start', () => doStartup());",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The framework inverts control by registering callbacks that it later invokes to execute application specific behavior.",
+          "isCorrect": true,
+          "explanation": "Correct. The snippet shows the framework offering a registration API and later invoking registered callbacks. That inversion of who drives execution is the essence of the principle. It differs from DI and service locator which focus on dependency provision rather than call direction."
+        },
+        {
+          "id": "b",
+          "text": "It demonstrates dependency injection where the framework constructs and supplies dependencies to handlers at creation time.",
+          "isCorrect": false,
+          "explanation": "This is not DI because the code does not show the framework constructing or injecting objects into handlers. Instead handlers are functions registered for callbacks. A DI system would typically pass configured instances into constructors or factory methods."
+        },
+        {
+          "id": "c",
+          "text": "It is a service locator approach where handlers actively request services from a shared container during runtime execution.",
+          "isCorrect": false,
+          "explanation": "This option misreads the snippet. The code shows handlers being stored and invoked by the framework rather than handlers pulling services from a container. A service locator implies lookup calls inside handlers, which are absent here."
+        },
+        {
+          "id": "d",
+          "text": "It shows an observer pattern where handlers subscribe to state changes and are loosely coupled to the subject emitting events.",
+          "isCorrect": false,
+          "explanation": "This is a plausible interpretation since register/trigger resembles observer/subscriber behavior. However, the key distinction is whether a framework owns lifecycle and orchestration versus simple event subscription. The snippet better illustrates inversion through framework-driven invocation than a pure observer semantic focused on state change."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for building predictable extension points that a framework controls?",
+      "codeSnippet": "// Version A: framework defines Hook interface and calls plugin methods\ninterface Hook { onStart(): void }\nclass Framework {\n  private hooks: Hook[] = [];\n  register(h: Hook) { this.hooks.push(h) }\n  start() { this.hooks.forEach(h => h.onStart()) }\n}\n\n// Version B: framework offers global registry that plugins push plain functions into\nclass Registry {\n  static handlers: Function[] = []\n  static register(fn: Function) { this.handlers.push(fn) }\n}\nfunction frameworkStart() { Registry.handlers.forEach(fn => fn()) }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps framework control and exposes explicit typed callbacks for predictable extension points.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable because it makes the extension contract explicit and places the framework in charge of invocation order and lifecycle. Typed interfaces make intentions and testing easier and avoid hidden global state. This aligns with recommended practices for clear inversion of control and testability as discussed by Martin Fowler and others."
+        },
+        {
+          "id": "b",
+          "text": "Version B hides invocation order inside a global registry which creates hidden coupling and testing difficulty.",
+          "isCorrect": false,
+          "explanation": "Version B centralizes callbacks in a global registry which obscures ordering, lifecycle, and dependency relationships. That hidden coupling increases brittleness and makes unit testing harder because plugins implicitly rely on global state rather than an explicit contract. This subtle loss of structure is why explicit hooks are usually favored."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 78,
+  "conceptName": "Loose Coupling",
+  "category": "principle",
+  "definition": "A design approach that minimizes interdependencies between modules so changes in one component have minimal impact on others.",
+  "ruleOfThumb": "Depend on abstractions, not concretions; prefer small, stable interfaces and inject collaborators instead of instantiating them inline.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Architecture",
+    "chapter": "Boundaries and Layers",
+    "page": "Ch 3",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-architecture/9780134494272/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary design problem illustrated by the following code?",
+      "codeSnippet": "class OrderService {\n  private repo = new SqlOrderRepository();\n\n  placeOrder(order: Order) {\n    this.repo.save(order);\n  }\n}\n\nclass SqlOrderRepository {\n  save(o: Order) { /* writes to SQL */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The service directly constructs a concrete repository implementation inside its constructor creating a tight runtime dependency.",
+          "isCorrect": true,
+          "explanation": "By instantiating SqlOrderRepository inside OrderService the code binds the service to a specific implementation. That makes substitution, parallel testing, and alternative persistence strategies harder. A common remedy is to depend on an abstraction passed in (for example via constructor) so different implementations can be provided without changing the service."
+        },
+        {
+          "id": "b",
+          "text": "The service mixes persistence logic into the business layer making transaction boundaries unclear and complex to unit test.",
+          "isCorrect": false,
+          "explanation": "This concern is plausible because persistence and business logic often get entangled, but the snippet shows no SQL or transaction code inside the service. The real issue is the direct construction of the repo, not embedded SQL or transaction handling. Separating responsibilities may help, but first address the hard binding to the concrete class."
+        },
+        {
+          "id": "c",
+          "text": "The repository lacks an asynchronous API which can block event loop and degrade performance under heavy production load.",
+          "isCorrect": false,
+          "explanation": "Missing async behavior can indeed be a production issue, yet the snippet does not indicate whether save is synchronous or asynchronous. The visible smell is the tight binding between service and concrete repository, which affects extensibility and testability more directly than a potential sync/async implementation detail."
+        },
+        {
+          "id": "d",
+          "text": "The code uses a concrete implementation instead of an interface preventing easy substitution and mocking in unit tests.",
+          "isCorrect": false,
+          "explanation": "This option identifies a real limitation: concrete types hamper substitution. It is closely related to the correct answer but frames the problem as a testing-only issue. The primary smell is the inline construction creating a runtime dependency; depending on an interface and injecting an implementation addresses both substitution and testing."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which maintainability risk best describes the problem in this notification code?",
+      "codeSnippet": "class NotificationService {\n  private email = new EmailSender();\n  private sms = new SmsSender();\n\n  notify(user, msg) {\n    if (user.preferSms) this.sms.send(user.phone, msg);\n    else this.email.send(user.email, msg);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This design scatters decision logic across modules making feature changes require edits in many places and risking regressions.",
+          "isCorrect": false,
+          "explanation": "Scattered decision logic is a plausible maintenance problem; however the snippet centralizes transport choice inside the service rather than scattering it. The core issue here is the service holding concrete transport instances and making higher-level decisions while depending on specific implementations."
+        },
+        {
+          "id": "b",
+          "text": "This design couples the notification service to concrete transport classes across multiple modules and files.",
+          "isCorrect": true,
+          "explanation": "The service creates and uses EmailSender and SmsSender directly which ties the service to those concrete transports. That coupling makes adding or replacing transports require changes to this service. Introducing an abstraction and injecting a transport strategy would decouple the service from specific implementations."
+        },
+        {
+          "id": "c",
+          "text": "This design centralizes send responsibility which may create a performance bottleneck for high throughput messaging scenarios.",
+          "isCorrect": false,
+          "explanation": "Centralizing responsibility can cause bottlenecks in some architectures, but the snippet shows a basic synchronous call pattern without clear scalability context. The maintainability concern more directly visible is the hard dependency on specific senders, not an inherent throughput bottleneck."
+        },
+        {
+          "id": "d",
+          "text": "This design violates single responsibility by mixing transport selection and message composition in a single class complicating testing.",
+          "isCorrect": false,
+          "explanation": "Mixing responsibilities is a reasonable critique, yet the snippet only mixes transport selection with sending; message composition is not shown. The standout problem is the tight coupling to concrete senders, which increases fragility and makes testing substitutions harder."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two versions below. Which version is the better long term design for substituting payment gateways?",
+      "codeSnippet": "// Version A\nclass PaymentServiceA {\n  private processor = new StripeProcessor();\n  process(amount: number) { this.processor.charge(amount); }\n}\n\n// Version B\ninterface IPaymentProcessor { charge(amount: number): void }\nclass PaymentServiceB {\n  constructor(private processor: IPaymentProcessor) {}\n  process(amount: number) { this.processor.charge(amount); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is preferable because it reduces indirection by constructing the concrete processor directly simplifying immediate debugging effort.",
+          "isCorrect": false,
+          "explanation": "Direct construction can make local reasoning and debugging straightforward, which tempts teams to favor Version A. However that tight binding prevents runtime substitution of alternate gateways and forces code changes when swapping providers. In the long run the convenience of fewer indirections is outweighed by decreased flexibility and harder automated testing."
+        },
+        {
+          "id": "b",
+          "text": "Version B uses an injected processor abstraction enabling different gateway implementations to be substituted without changing the service code.",
+          "isCorrect": true,
+          "explanation": "Version B depends on an abstraction provided from the outside which keeps the service implementation independent of any specific gateway. That makes adding new providers, mocking for tests, and configuring different gateways for environments straightforward. This pattern aligns with established guidance on depending on interfaces and inverting dependencies to keep modules decoupled."
+        }
+      ]
+    }
+  ]
+}

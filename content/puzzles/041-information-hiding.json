@@ -1,0 +1,106 @@
+{
+  "id": 41,
+  "conceptName": "Information Hiding",
+  "category": "solid",
+  "definition": "A design principle that a module should expose only what is necessary and hide internal representation and implementation details to minimize coupling.",
+  "ruleOfThumb": "Export behavior through small, stable interfaces and keep data structures and implementation details private to reduce coupling.",
+  "citation": {
+    "author": "David L. Parnas",
+    "bookTitle": "On the Criteria To Be Used in Decomposing Systems into Modules",
+    "chapter": "Modularization and information hiding",
+    "page": "1972",
+    "externalUrl": "https://users.ece.cmu.edu/~koopman/des_s99/parnas.pdf"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this small service. What is the most likely design problem?",
+      "codeSnippet": "class OrderService {\n  public orders: Order[] = [];\n  add(order: Order) { this.orders.push(order); }\n}\n\nconst svc = new OrderService();\nsvc.orders.push({ id: 1 });",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The module exposes internal data structures directly to callers, coupling external code to specific implementation details.",
+          "isCorrect": true,
+          "explanation": "The code exposes its internal collection as a public field so callers can read and mutate it. Pushing callers into knowledge of the concrete representation creates tight coupling and prevents the service from enforcing invariants or changing its storage without breaking users. Parnas argued that modules should hide their representations so changes remain local."
+        },
+        {
+          "id": "b",
+          "text": "The module bundles too many responsibilities into one class, increasing maintenance cost and making tests more fragile.",
+          "isCorrect": false,
+          "explanation": "This is a plausible concern when a class has many duties, but the snippet shows a single responsibility (managing orders). The primary issue is not mixed responsibilities but the public exposure of the internal collection which directly creates coupling and mutability risks rather than an SRP violation."
+        },
+        {
+          "id": "c",
+          "text": "The module relies on global mutable state across files, causing nonlocal side effects and unpredictable behavior during execution.",
+          "isCorrect": false,
+          "explanation": "Global mutable state can cause the problems described, yet the example has an instance field on a class, not a true global. The concrete problem here is the class exposing its internal structure to callers, which is a local encapsulation leak rather than global state leakage."
+        },
+        {
+          "id": "d",
+          "text": "The module defines a large public API surface with many methods, raising risk of inconsistent implementations over time.",
+          "isCorrect": false,
+          "explanation": "A large public API surface is indeed risky, but the snippet actually shows a tiny surface with a single public field and one method. The real design concern is the public data exposure which makes the internal representation part of the API, not an oversized method surface."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which concern best describes the risk in this factory function?",
+      "codeSnippet": "export function createCache() {\n  const items: Record<string, any> = {};\n  return {\n    items, // leaked internal collection\n    set(key: string, value: any) { items[key] = value; }\n  };\n}\n\nconst cache = createCache();\ncache.items.foo = 42;",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The factory returns internal mutable collections directly, allowing callers to change internal state and break object invariants.",
+          "isCorrect": true,
+          "explanation": "Returning the internal items object lets callers mutate the cache's internal storage without going through its API. That breaks encapsulation and makes it impossible for the factory to maintain invariants or change the representation later without breaking callers. A better approach is to return only controlled operations."
+        },
+        {
+          "id": "b",
+          "text": "The factory uses a concrete class return type, reducing flexibility and making future swapping of implementations harder.",
+          "isCorrect": false,
+          "explanation": "Returning a concrete class does reduce flexibility in some designs, but this snippet returns a plain object with a leaked collection. The core problem is the exposed mutable collection rather than a rigid concrete return type. Hiding the collection would address the primary risk."
+        },
+        {
+          "id": "c",
+          "text": "The factory performs heavy initialization during creation, causing slow startup and surprising expensive operations for callers.",
+          "isCorrect": false,
+          "explanation": "Eager heavy initialization is a valid concern for factories, yet the example shows a trivial initialization of an empty object. The practical concern demonstrated is not cost but the direct exposure of internal state which undermines encapsulation and invariants."
+        },
+        {
+          "id": "d",
+          "text": "The factory throws runtime errors for missing options instead of validating inputs, shifting error handling to calling code unexpectedly.",
+          "isCorrect": false,
+          "explanation": "Poor validation can be a real issue, but the code sample does not show input validation or thrown errors. The concrete, demonstrated issue is the returned items object being exposed so callers can mutate internal state directly."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better preserves module boundaries and prevents external code from depending on internal representation?",
+      "codeSnippet": "// Version A\nexport const StateModuleA = {\n  items: [] as string[],\n  add(item: string) { this.items.push(item); }\n};\n\n// Version B\nexport const StateModuleB = (() => {\n  const items: string[] = [];\n  return { add(item: string) { items.push(item); } };\n})();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A exposes its internal collections directly and allows callers to mutate internal module state.",
+          "isCorrect": false,
+          "explanation": "Version A makes the items array part of the public API so any caller can read or write it. That leaks the representation and forces external code to depend on that specific structure. Changes to representation in the future would be breaking. This exposes invariants and couples clients to implementation details."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps internal collections private and exposes specific operations to maintain internal invariants.",
+          "isCorrect": true,
+          "explanation": "Version B encloses the items array in a private scope and provides only the add operation, preventing direct mutation by callers. This preserves module boundaries and lets the implementation change without breaking clients. The approach aligns with Parnas's guidance on hiding design decisions that are likely to change — keep representation private and expose minimal, behavior-focused interfaces."
+        }
+      ]
+    }
+  ]
+}

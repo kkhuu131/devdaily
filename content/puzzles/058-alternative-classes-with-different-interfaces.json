@@ -1,0 +1,106 @@
+{
+  "id": 58,
+  "conceptName": "Alternative Classes with Different Interfaces",
+  "category": "code-smell",
+  "definition": "A situation where two or more classes represent interchangeable concepts but expose different method names or signatures, forcing client code to branch or adapt whenever implementations change.",
+  "ruleOfThumb": "If callers must test types or call different methods to use similar objects, introduce a common abstraction or adapters.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Alternative Classes with Different Interfaces",
+    "page": "146",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What design problem does the following TypeScript snippet illustrate?",
+      "codeSnippet": "class SmsNotifier {\n  send(phone: string, text: string) {\n    /* send SMS */\n  }\n}\n\nclass EmailNotifier {\n  deliver(address: string, subject: string, body: string) {\n    /* send email */\n  }\n}\n\n// Client code must know which notifier and call different methods",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code shows two classes that fulfill the same role but expose incompatible interfaces at runtime.",
+          "isCorrect": true,
+          "explanation": "The two classes both provide notification behavior but expose different method names and signatures. That forces callers to know concrete types and prevents simple substitution. This is the classic smell where similar alternatives do not share a consistent abstraction and leads to conditional code or ad hoc adapters."
+        },
+        {
+          "id": "b",
+          "text": "This code shows two classes that duplicate similar behavior and duplicate implementation details across multiple places.",
+          "isCorrect": false,
+          "explanation": "While duplicated implementation can be a real concern, the snippet emphasizes differing method names and signatures rather than repeated internal logic. Duplicated behavior would be clearer if both classes implemented similar method names with repeated code."
+        },
+        {
+          "id": "c",
+          "text": "This code shows two classes where data and behavior are split incorrectly causing external functions to manage internals.",
+          "isCorrect": false,
+          "explanation": "Feature envy or improper data-behavior grouping would appear if external functions were manipulating internal state. Here the issue is inconsistent public APIs for equivalent responsibilities, not misplaced behavior or data."
+        },
+        {
+          "id": "d",
+          "text": "This code shows two classes that will force many files to change for a single concept causing maintenance pain.",
+          "isCorrect": false,
+          "explanation": "Wide ripple effects can occur from many smells, but the immediate problem shown is incompatible interfaces for similar abstractions. The maintenance pain described is a possible long term consequence rather than the immediate diagnosis."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this payment gateway usage. What is the primary design problem here?",
+      "codeSnippet": "class PayPalProcessor {\n  process(amount: number) { /* uses dollars */ }\n}\nclass StripeProcessor {\n  charge(cents: number) { /* uses cents */ }\n}\nfunction createGateway(type: string) {\n  return type === 'paypal' ? new PayPalProcessor() : new StripeProcessor();\n}\nconst g = createGateway('paypal');\nif (g instanceof PayPalProcessor) g.process(10);\nelse (g as StripeProcessor).charge(1000);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Client code depends on concrete classes and discriminates between implementations instead of using a common substitution interface.",
+          "isCorrect": true,
+          "explanation": "The client inspects concrete types and calls different methods; this indicates the absence of a shared abstraction or adapter. A common interface would let the client call a single method without type checks, reducing conditional logic and coupling to concrete classes."
+        },
+        {
+          "id": "b",
+          "text": "The code mixes parameter units across implementations which risks silent unit conversion bugs and inconsistent monetary handling.",
+          "isCorrect": false,
+          "explanation": "Unit inconsistency between dollars and cents is a valid practical problem but secondary here. The snippet shows callers branching by implementation; the unit issue could be solved independently but is not the primary structural smell."
+        },
+        {
+          "id": "c",
+          "text": "Object creation responsibilities are duplicated leading to repetitive conditional logic and tight coupling in many usage sites.",
+          "isCorrect": false,
+          "explanation": "A factory that returns concrete instances is not inherently wrong, but the problematic pattern is how callers then branch on concrete types. Improving creation alone will not stop callers from depending on concrete implementations."
+        },
+        {
+          "id": "d",
+          "text": "Missing error handling around external payments may cause failures to be ignored and transactions to become inconsistent.",
+          "isCorrect": false,
+          "explanation": "Robust error handling is essential for payment code, but the key design flaw shown is the need for callers to handle different APIs. Error handling concerns are orthogonal to the interface inconsistency problem highlighted here."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better resolves the structural problem while minimizing churn for callers and future providers?",
+      "codeSnippet": "// Version A: callers detect provider types and call provider specific methods\nclass PayPal { process(amount: number) {/*...*/} }\nclass Stripe { charge(cents: number) {/*...*/} }\nfunction makeGateway(type: string) { return type === 'paypal' ? new PayPal() : new Stripe(); }\nconst g = makeGateway('paypal');\nif (g instanceof PayPal) g.process(10);\nelse (g as Stripe).charge(1000);\n\n// Version B: adapters implement a shared interface so callers use a single abstraction\ninterface PaymentGateway { pay(cents: number): void }\nclass PayPalAdapter implements PaymentGateway { constructor(private p: PayPal){} pay(cents:number){ this.p.process(cents / 100); } }\nclass StripeAdapter implements PaymentGateway { constructor(private s: Stripe){} pay(cents:number){ this.s.charge(cents); } }\nconst gateway: PaymentGateway = new PayPalAdapter(new PayPal());\ngateway.pay(1000);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A still requires callers to detect concrete providers and call provider specific methods directly.",
+          "isCorrect": false,
+          "explanation": "Version A keeps client knowledge of concrete types and provider APIs, so every caller remains fragile to provider API changes. That design pushes adaptation burden into callers and increases scattering of conditional logic, making future provider additions more costly."
+        },
+        {
+          "id": "b",
+          "text": "Version B provides a stable interface with adapters so callers can depend on a single abstraction.",
+          "isCorrect": true,
+          "explanation": "Version B isolates provider differences behind adapter implementations that conform to a common PaymentGateway interface. This lets callers use a single method without branching and keeps provider-specific conversions localized. The pattern reduces churn when adding or changing providers and follows established guidance on interfaces and adapters from Fowler and GoF."
+        }
+      ]
+    }
+  ]
+}

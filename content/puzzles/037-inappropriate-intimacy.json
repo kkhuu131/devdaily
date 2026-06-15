@@ -1,0 +1,106 @@
+{
+  "id": 37,
+  "conceptName": "Inappropriate Intimacy",
+  "category": "code-smell",
+  "definition": "A code smell where one class knows too much about the internals of another, accessing private state or relying on implementation details instead of a stable abstraction.",
+  "ruleOfThumb": "If two classes frequently access each other's internals or many getters are used to perform another class's work, introduce a clearer interface or move behavior to the owning class.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Inappropriate Intimacy",
+    "page": "p. 92",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the snippet. Which option best describes the primary code smell present?",
+      "codeSnippet": "class Account {\n  private balance = 1000;\n  private overdraftLimit = 100;\n}\n\nclass AuditService {\n  log(account: Account) {\n    console.log(account['balance']);\n    account['overdraftLimit'] = 200;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A class reaches into another class to read or modify private implementation details directly unnecessarily.",
+          "isCorrect": true,
+          "explanation": "The AuditService is directly inspecting and mutating Account internals rather than using a well defined interface. This is a textbook case of classes knowing each other's implementation details, which increases coupling and makes future changes risky. The fix is to introduce clearer operations on Account or relocate the behavior to the class that owns the data."
+        },
+        {
+          "id": "b",
+          "text": "A class duplicates business logic across modules instead of using a shared abstraction for consistent behavior and less duplication.",
+          "isCorrect": false,
+          "explanation": "While duplication is a real concern, the snippet shows direct access to private fields rather than duplicated algorithms. A developer might mistake the symptom for duplication if similar code appears elsewhere, but the pressing problem here is the tight coupling caused by reaching into another object's internals."
+        },
+        {
+          "id": "c",
+          "text": "A class exposes a wide public surface allowing other modules to rely on internal behavior instead of defined stable interfaces.",
+          "isCorrect": false,
+          "explanation": "This describes excessive public API surface which can lead to misuse. It is related, but the code snippet demonstrates outright access to private members, not merely an overly broad public API. The root issue is the consumer depending on implementation details rather than a cohesive interface."
+        },
+        {
+          "id": "d",
+          "text": "A class depends on global state instead of explicit dependencies making interactions implicit and testing more difficult.",
+          "isCorrect": false,
+          "explanation": "Implicit global dependencies do harm testability and clarity, but the example shows direct access to a specific object's private members, not reliance on globals. This distractor is plausible because both problems increase coupling, but it does not match the concrete symptom shown."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which description best matches the design problem in this snippet?",
+      "codeSnippet": "class Account {\n  private balance = 0;\n  private overdraftLimit = 100;\n  getBalance() { return this.balance; }\n  getOverdraftLimit() { return this.overdraftLimit; }\n}\n\nclass AuditService {\n  record(account: Account) {\n    const b = account.getBalance();\n    const allowed = b + account.getOverdraftLimit();\n    console.log(allowed);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code shows one class relying on another class internal details through multiple accessors repeatedly.",
+          "isCorrect": true,
+          "explanation": "AuditService is obtaining multiple low level pieces of Account state and composing logic on them. That indicates one class has detailed knowledge of another's internals instead of asking the other class to perform the operation. The repair is to add an explicit method on Account or a domain operation that expresses the intent."
+        },
+        {
+          "id": "b",
+          "text": "This code shows a performance issue where repeated accessor calls prevent caching and cause unnecessary CPU overhead under heavy load.",
+          "isCorrect": false,
+          "explanation": "Repeated accessor calls could cause performance concerns in some contexts, but the core design smell here is about coupling and knowledge boundaries. Performance may be a secondary issue, but it is not the primary design problem illustrated."
+        },
+        {
+          "id": "c",
+          "text": "This code shows a single responsibility violation because AuditService mixes auditing logic with business rules about account calculations.",
+          "isCorrect": false,
+          "explanation": "Mixing responsibilities is a valid critique, but the snippet more clearly demonstrates that AuditService depends on Account internals to compute values. The single responsibility problem would be clearer if AuditService also contained unrelated unrelated features; here the main issue is inappropriate coupling through accessors."
+        },
+        {
+          "id": "d",
+          "text": "This code shows a modularization problem where Account exposes many accessors instead of providing a focused collaboration API.",
+          "isCorrect": false,
+          "explanation": "Having many accessors can indicate poor modularization, and it is a plausible distractor. It is closely related to the real smell; however, the actionable problem is the consumer composing internals rather than Account explicitly offering the needed operation, so refactoring behavior into Account is the preferred fix."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better avoids the design problem shown earlier? Choose the better design.",
+      "codeSnippet": "/* Version A */\nclass Account {\n  private balance = 500;\n  private overdraftLimit = 100;\n  allowedWithdrawal() { return this.balance + this.overdraftLimit; }\n}\n\nclass AuditService {\n  record(account: Account) {\n    console.log(account.allowedWithdrawal());\n  }\n}\n\n/* Version B */\nclass AccountV2 {\n  private balance = 500;\n  private overdraftLimit = 100;\n  getBalance() { return this.balance; }\n  getOverdraftLimit() { return this.overdraftLimit; }\n}\n\nclass AuditServiceV2 {\n  record(account: AccountV2) {\n    const allowed = account.getBalance() + account.getOverdraftLimit();\n    console.log(allowed);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps account internals encapsulated behind a single explicit stable operation.",
+          "isCorrect": true,
+          "explanation": "Version A moves the calculation into Account, exposing a clearly named operation that expresses intent and hides implementation details. That prevents other classes from composing internals and reduces coupling. This follows encapsulation and tells the consumer what to ask for instead of how to compute it. Fowler recommends moving behavior to the class that owns the data when collaborators are reaching into internals."
+        },
+        {
+          "id": "b",
+          "text": "Version B exposes multiple internal accessors and lets the service compute logic using object internals directly.",
+          "isCorrect": false,
+          "explanation": "Version B allows AuditService to assemble internal pieces of Account, which creates tight coupling and spreads knowledge of Account internals across the codebase. That design makes future changes to Account risky because multiple consumers may rely on the former internal shape. This is the very pattern identified as the smell in classic refactorings and should be resolved by providing a focused API on the owning class."
+        }
+      ]
+    }
+  ]
+}

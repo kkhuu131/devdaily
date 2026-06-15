@@ -1,0 +1,106 @@
+{
+  "id": 51,
+  "conceptName": "Move Method",
+  "category": "refactoring",
+  "definition": "Relocate a method from one class to a different class that holds the data and responsibilities the method primarily uses.",
+  "ruleOfThumb": "If a method uses another class's data more than its own, consider relocating it to the class it mostly interacts with.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Move Method",
+    "page": null,
+    "externalUrl": "https://refactoring.com/catalog/moveMethod.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the snippet below, which diagnosis most directly explains why formatAddress might belong elsewhere?",
+      "codeSnippet": "class Address {\n  street: string;\n  city: string;\n}\nclass User {\n  name: string;\n  address: Address;\n  formatAddress(): string {\n    return `${this.address.street}, ${this.address.city}`;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This method depends more on another object's internal data than on its own class's state and fields.",
+          "isCorrect": true,
+          "explanation": "The method is primarily accessing Address data rather than User state. This is classic feature envy where the behavior fits better on the Address object. Moving the method to Address or providing an Address-level formatting method reduces coupling and keeps behavior next to the data it needs."
+        },
+        {
+          "id": "b",
+          "text": "This class appears to have multiple responsibilities and would benefit from splitting unrelated concerns into separate classes.",
+          "isCorrect": false,
+          "explanation": "While multiple responsibilities can be a real problem, the snippet shows a single User responsibility with a method that just formats an Address. Splitting the class is heavier surgery than needed. The more precise fix is to relocate behavior to the class it primarily uses."
+        },
+        {
+          "id": "c",
+          "text": "This code duplicates address formatting in multiple places and should be refactored to remove repeated logic.",
+          "isCorrect": false,
+          "explanation": "Duplicated formatting is a plausible concern, but the snippet does not show duplicate implementations. The immediate smell is that the formatting operation lives on the wrong object, not necessarily that duplication exists. Moving the method addresses ownership regardless of duplication."
+        },
+        {
+          "id": "d",
+          "text": "This method breaks encapsulation by directly accessing another object's fields and should be hidden behind an accessor.",
+          "isCorrect": false,
+          "explanation": "Direct access to another object's fields can indicate encapsulation issues, but the Address in this example exposes its fields and the formatting uses them. The stronger architectural observation is that the behavior belongs on Address itself, which both preserves encapsulation and groups related logic."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review the Order.calculateShipping implementation. Which change is the most appropriate single-step refactoring here?",
+      "codeSnippet": "class ShippingRates {\n  static estimate(items: Item[], country: string, postalCode: string) {\n    // complex lookup\n    return 10.0;\n  }\n}\nclass Order {\n  items: Item[];\n  shippingAddress: { country: string; postalCode: string };\n  calculateShipping() {\n    return ShippingRates.estimate(this.items, this.shippingAddress.country, this.shippingAddress.postalCode);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code should move the shipping calculation into the shipping rates component instead of keeping it inside the order class.",
+          "isCorrect": true,
+          "explanation": "The calculation delegates almost all work to ShippingRates and passes shipping-specific data. Moving the method into ShippingRates or a ShippingService keeps related logic together and reduces Order's responsibilities. Fowler calls this pattern out when behavior uses another class's data more heavily."
+        },
+        {
+          "id": "b",
+          "text": "This code should extract smaller helper functions inside the order class to isolate shipping logic without moving it to another class.",
+          "isCorrect": false,
+          "explanation": "Extracting helpers keeps the behavior in Order, which may help readability but does not address ownership. If the logic primarily concerns shipping data and rules, helpers still leave Order responsible for behavior that logically belongs elsewhere, increasing future coupling."
+        },
+        {
+          "id": "c",
+          "text": "This code should introduce a ShippingService facade and delegate calculation there to hide external rate details from the order object.",
+          "isCorrect": false,
+          "explanation": "Introducing a ShippingService is a reasonable architectural choice and can be complementary. However, the minimal targeted refactoring is to relocate the method to the type that owns relevant shipping behavior. Creating an extra facade might be heavier than simply moving the method to ShippingRates."
+        },
+        {
+          "id": "d",
+          "text": "This code should leave the calculation in the order class and only write tests around current behavior to ensure stability.",
+          "isCorrect": false,
+          "explanation": "Writing tests is valuable, but leaving the method in Order preserves the existing design problem. Tests do not fix misplaced responsibility. The principled refactor is to place the behavior where the data and domain logic sit."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B implementations below. Which version demonstrates the better object placement for the total calculation?",
+      "codeSnippet": "// Version A\nclass LineItem {\n  product: Product;\n  quantity: number;\n  total() { return this.product.price * this.quantity - this.product.discountForQuantity(this.quantity); }\n}\nclass OrderA {\n  lineItems: LineItem[];\n  total() { return this.lineItems.reduce((s, i) => s + i.total(), 0); }\n}\n\n// Version B\nclass Product { price: number; discountForQuantity(q: number) { return 0; } }\nclass LineItemB { product: Product; quantity: number; }\nclass OrderB {\n  lineItems: LineItemB[];\n  total() { return this.lineItems.reduce((s, li) => s + li.quantity * li.product.price - li.product.discountForQuantity(li.quantity), 0); }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A encapsulates the item total calculation inside LineItem that owns the required data.",
+          "isCorrect": true,
+          "explanation": "Version A keeps behavior next to the data it uses: LineItem knows quantity and has access to its Product. This reduces coupling and prevents Order from reaching into member internals. Placing the calculation on LineItem follows the tell don not ask principle and improves cohesion. Fowler and other design authorities recommend placing behavior with its data to avoid feature envy and tight coupling."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes the total calculation on the order and reaches into LineItem and Product internals increasing coupling.",
+          "isCorrect": false,
+          "explanation": "At first glance centralizing logic in Order may seem simpler, but OrderB reaches into LineItem and Product internals to compute totals. That tightens coupling, forces Order to know detailed product rules, and makes individual items harder to reason about or test. The nuanced failure is structural: behavior lives far from the data it needs, violating cohesion and making future changes more invasive."
+        }
+      ]
+    }
+  ]
+}

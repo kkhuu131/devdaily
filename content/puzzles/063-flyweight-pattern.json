@@ -1,0 +1,106 @@
+{
+  "id": 63,
+  "conceptName": "Flyweight Pattern",
+  "category": "design-pattern",
+  "definition": "A structural pattern that minimizes memory use by sharing fine-grained, immutable intrinsic state among many objects while keeping extrinsic state external.",
+  "ruleOfThumb": "Share large immutable parts of many similar objects and pass per-use mutable data externally to avoid duplication.",
+  "citation": {
+    "author": "Erich Gamma et al.",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Structural Patterns - Flyweight",
+    "page": "223",
+    "externalUrl": "https://en.wikipedia.org/wiki/Flyweight_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the snippet. Which observation best describes the design intent shown?",
+      "codeSnippet": "const iconPool: { [key: string]: Icon } = {};\nfunction getIcon(url: string) {\n  if (!iconPool[url]) {\n    iconPool[url] = new Icon(url); // heavy immutable data\n  }\n  return iconPool[url];\n}\nclass Icon { constructor(public url: string) {} }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code shares immutable intrinsic data across many lightweight objects to reduce per-object memory use.",
+          "isCorrect": true,
+          "explanation": "This is classic sharing of immutable intrinsic state so many clients reference a single heavy object. The intent is to reduce memory footprint by reusing a single representation for identical data rather than allocating duplicates. Gang of Four calls out separating intrinsic and extrinsic state as the defining characteristic of this pattern."
+        },
+        {
+          "id": "b",
+          "text": "This implementation appears to create scarce singleton instances leading to global state and hidden coupling across modules.",
+          "isCorrect": false,
+          "explanation": "While singleton concerns are plausible when objects are globally reused, the snippet shows per-url pooling not a single global object. The reuse is keyed by identity rather than imposing a single instance for all uses. The problem space and benefits differ from singleton trade offs."
+        },
+        {
+          "id": "c",
+          "text": "The code is simply caching recently created objects to improve performance and avoid repeated expensive construction costs.",
+          "isCorrect": false,
+          "explanation": "Object caching for performance is related but different: a cache may still allocate distinct objects per client and focus on time cost, not memory sharing of intrinsic state across many logical objects. The pool here is about sharing identical data, not just memoizing constructions."
+        },
+        {
+          "id": "d",
+          "text": "This looks like a factory abstraction creating distinct prototypes to clone per request with independent mutable state each.",
+          "isCorrect": false,
+          "explanation": "Prototype-based cloning produces independent instances, each with their own mutable state. The snippet returns the same instance for identical keys instead of cloning, so clients would not receive independent mutable objects. That behavioral difference is crucial for correctness."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Examine the renderer. What is the most likely design problem manifested here?",
+      "codeSnippet": "class Glyph {\n  char: string;\n  x = 0;\n  y = 0;\n  draw(ctx: any, x: number, y: number) {\n    this.x = x;\n    this.y = y;\n    ctx.drawText(this.char, this.x, this.y);\n  }\n}\nconst factory = new Map<string, Glyph>();\nfunction glyphFor(c: string) {\n  if (!factory.has(c)) factory.set(c, new Glyph());\n  return factory.get(c)!;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Shared glyph objects store per-character position inside themselves creating race conditions when reused across render passes concurrently.",
+          "isCorrect": true,
+          "explanation": "The code stores extrinsic per-use state (x,y) inside shared Glyph instances. That causes correctness and concurrency problems when the same Glyph is reused for different positions. The correct approach is to keep shared intrinsic data immutable and pass per-use coordinates externally."
+        },
+        {
+          "id": "b",
+          "text": "Glyph factory appears to use shared immutable shapes with rendering parameters passed separately which reduces memory pressure correctly.",
+          "isCorrect": false,
+          "explanation": "This description would be correct for a proper separation of intrinsic and extrinsic state, but the snippet shows mutating fields on the shared object rather than passing parameters without mutation. The observed behavior contradicts this optimistic interpretation."
+        },
+        {
+          "id": "c",
+          "text": "The problem is likely a leak from retaining large textures in a cache that never evicts causing unbounded memory growth over time.",
+          "isCorrect": false,
+          "explanation": "Unbounded cache growth is a real concern in pooling scenarios, but the given code shows reuse of small Glyph objects and not large texture resources. The immediate correctness hazard is shared mutable state, not a cache eviction policy."
+        },
+        {
+          "id": "d",
+          "text": "This looks like premature micro-optimization and should create distinct glyph instances per character for clarity and easier debugging later on.",
+          "isCorrect": false,
+          "explanation": "Creating distinct instances per character would avoid the shared-mutation bug but sacrifice memory benefits. The issue is not optimization level but incorrect placement of mutable state; the proper fix separates intrinsic and extrinsic state rather than abandoning sharing outright."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two render approaches are shown. Which version is the better long term choice for correctness and memory efficiency?",
+      "codeSnippet": "// Version A\nclass Style { color: string; x = 0; y = 0; }\nconst sharedStyle = new Style();\nfunction renderA(widgets: Widget[]) {\n  widgets.forEach((w, i) => {\n    sharedStyle.x = w.x;\n    sharedStyle.y = w.y;\n    draw(sharedStyle);\n  });\n}\n\n// Version B\nclass StyleB { constructor(public color: string) {} }\nconst sharedStyleB = new StyleB('blue');\nfunction renderB(widgets: Widget[]) {\n  widgets.forEach((w) => {\n    drawWithParams(sharedStyleB, w.x, w.y);\n  });\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A reuses mutable shared instances that embed per-widget state causing subtle concurrency and correctness bugs under reuse.",
+          "isCorrect": false,
+          "explanation": "Version A stores per-widget coordinates inside a shared Style instance. That mutation means rendering is not thread safe and can produce wrong positions when reused between widgets or frames. Sharing mutable extrinsic state defeats the intended memory savings and introduces hard to diagnose bugs."
+        },
+        {
+          "id": "b",
+          "text": "Version B separates shared immutable data from per-instance mutable state preserving correctness and reducing overall memory usage.",
+          "isCorrect": true,
+          "explanation": "Version B keeps the shared style immutable and passes position parameters externally at draw time. This keeps intrinsic state shared and safe while extrinsic state remains per-use. This matches the structural guidance to separate intrinsic and extrinsic state and yields both correctness and memory savings. See GoF Structural Patterns and pragmatic discussions about separating mutable and immutable components."
+        }
+      ]
+    }
+  ]
+}

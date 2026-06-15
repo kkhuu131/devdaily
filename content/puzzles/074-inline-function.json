@@ -1,0 +1,106 @@
+{
+  "id": 74,
+  "conceptName": "Inline Function",
+  "category": "refactoring",
+  "definition": "Remove a function whose body consists only of a simple delegation or trivially transforms arguments, replacing its call sites with the called code.",
+  "ruleOfThumb": "If a function does nothing but forward to another function and does not improve readability or encapsulate behavior, remove it and call the implementation directly.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Inline Method",
+    "page": "p. 47",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the most direct issue demonstrated by this code?",
+      "codeSnippet": "function calculateTotal(items: Item[]) {\n  return computeSum(items);\n}\n\n// used elsewhere\nconst total = calculateTotal(cart.items);\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A small wrapper function forwards its arguments directly to another function with no added logic or transformation.",
+          "isCorrect": true,
+          "explanation": "This function does nothing but delegate to computeSum, making it a trivial wrapper. According to Fowler's Inline Method, such forwarding functions are candidates for removal because they add indirection without encapsulating behavior or clarifying intent."
+        },
+        {
+          "id": "b",
+          "text": "A small wrapper function causes measurable performance overhead by adding an extra call in a tight hot path.",
+          "isCorrect": false,
+          "explanation": "While an extra call has some cost, the primary issue here is unnecessary indirection rather than a proven performance bottleneck. Performance concerns are context dependent and should be measured before optimizing by removing abstractions."
+        },
+        {
+          "id": "c",
+          "text": "A small wrapper function duplicates business rules across modules making maintenance and bug fixes more error prone.",
+          "isCorrect": false,
+          "explanation": "This option describes duplicated business logic, which is a real smell, but the snippet shows only delegation with no duplicated rules. The core problem here is indirection rather than duplicated behavior."
+        },
+        {
+          "id": "d",
+          "text": "A small wrapper function leaks implementation details to callers reducing encapsulation and increasing coupling between components.",
+          "isCorrect": false,
+          "explanation": "Leaking implementation details is a valid concern, but the example shows a direct forwarder that does not expose new internals. The more precise observation is that the forwarder is redundant and adds indirection."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this snippet, which observation about the helper function is most accurate?",
+      "codeSnippet": "function submitOrder(order: Order) {\n  if (!order.items || order.items.length === 0) {\n    throw new Error(\"No items\");\n  }\n  processOrder(order);\n}\n\nfunction placeOrder(order: Order) {\n  submitOrder(order);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The helper function is a pure forwarding wrapper with no additional behavior and is a candidate for removal.",
+          "isCorrect": true,
+          "explanation": "placeOrder only delegates to submitOrder without adding behavior. The wrapper does not encapsulate validation or provide distinct semantics, so inlining callers to submitOrder simplifies the code. Fowler recommends inlining such trivial methods unless they serve API clarity."
+        },
+        {
+          "id": "b",
+          "text": "The helper function centralizes input validation and error translation so it should not be removed from the public API.",
+          "isCorrect": false,
+          "explanation": "This would be a good reason to keep a wrapper, but in this snippet the validation lives in submitOrder, not in placeOrder. Since placeOrder adds no validation or translation, it is not providing the centralization claimed here."
+        },
+        {
+          "id": "c",
+          "text": "The helper function enforces transactional boundaries across calls and removing it would break commit semantics in complex flows.",
+          "isCorrect": false,
+          "explanation": "Transactional boundary enforcement is a meaningful reason to keep a wrapper, but there is no transactional code in placeOrder. Applying this concern here would be inventing behavior not present in the snippet."
+        },
+        {
+          "id": "d",
+          "text": "The helper function acts as a backward compatibility shim between versions and removing it would break older client integrations.",
+          "isCorrect": false,
+          "explanation": "Compatibility shims are legitimate reasons to preserve wrappers, but the snippet gives no indication that placeOrder is a compatibility layer. Without evidence of versioned clients or stability constraints, this concern is speculative."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable in this codebase and why, given maintainability and locality of change?",
+      "codeSnippet": "// Version A: callers invoke the implementation directly\nfunction processPayment(payment: Payment) {\n  return gateway.charge(payment.amount, payment.card);\n}\nfunction handleCheckout(order: Order) {\n  const result = processPayment(order.payment);\n  // ...\n}\n\n// Version B: callers go through a tiny wrapper\nfunction chargePayment(payment: Payment) {\n  return processPayment(payment);\n}\nfunction handleCheckoutV2(order: Order) {\n  const result = chargePayment(order.payment);\n  // ...\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A reduces unnecessary indirection and simplifies call sites across the codebase in common hot paths.",
+          "isCorrect": true,
+          "explanation": "Version A removes a trivial layer of indirection, making the call graph simpler and reducing the cognitive overhead when tracing behavior. When the wrapper adds no domain value or stabilization for public APIs, inlining reduces maintenance burden and clarifies call sites. Fowler recommends inlining such methods to remove needless indirection. Keep wrappers when they add intent or stabilization for external clients."
+        },
+        {
+          "id": "b",
+          "text": "Version B preserves a domain level name but introduces extra indirection that increases cognitive load and complicates refactoring later.",
+          "isCorrect": false,
+          "explanation": "Preserving a domain name can justify a wrapper, but if the wrapper merely forwards calls and is not a durable API boundary, it needlessly increases indirection and coupling. Choosing to keep such wrappers typically causes small obstacles when refactoring call chains and reasoning about behavior. If stabilization for an external API is required, a wrapper is appropriate; otherwise Version A is preferable."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 39,
+  "conceptName": "Dependency Injection",
+  "category": "solid",
+  "definition": "A technique where an object receives the components it depends on from an external source rather than creating them internally.",
+  "ruleOfThumb": "Pass collaborators into a component instead of creating them inside it to separate construction from behavior and improve testability.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Dependency Injection (article)",
+    "chapter": "Dependency Injection",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/articles/injection.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which practice does this TypeScript snippet most clearly demonstrate?",
+      "codeSnippet": "class PaymentProcessor {\n  constructor(private orderRepo: OrderRepository, private logger: Logger) {}\n\n  process(orderId: string) {\n    const order = this.orderRepo.find(orderId);\n    this.logger.info('processing', orderId);\n    // ...\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Constructor provision of required collaborators to allow external configuration and easy substitution during tests and production wiring.",
+          "isCorrect": true,
+          "explanation": "The snippet shows collaborators being provided through constructor parameters. This expresses the separation of construction from use, making it easy to supply test doubles or different concrete implementations at wiring time. This pattern supports loose coupling and testability and is commonly recommended in design guides and Fowler's discussion of inversion of control."
+        },
+        {
+          "id": "b",
+          "text": "Creating collaborator instances inside the class methods which hides runtime configuration and prevents replacing implementations in tests.",
+          "isCorrect": false,
+          "explanation": "This describes the opposite smell. If the class instantiated or newed its collaborators internally, tests would struggle to substitute mocks and runtime configuration would be hidden. The provided code does not do that; instead it receives collaborators from outside."
+        },
+        {
+          "id": "c",
+          "text": "Using a global service locator to pull dependencies at call time which makes dependencies implicit at runtime.",
+          "isCorrect": false,
+          "explanation": "A global service locator exposes a different concern: dependencies are fetched from a container at runtime and become implicit. That approach makes the dependency graph harder to understand and test. The snippet, however, takes dependencies as constructor parameters, not via a locator."
+        },
+        {
+          "id": "d",
+          "text": "Lazy initialization of optional services inside methods causing unpredictable lifecycle and tight coupling to concrete implementations.",
+          "isCorrect": false,
+          "explanation": "Lazy initializing services inside methods can cause lifecycle and coupling issues, but the snippet shows direct constructor-provided collaborators rather than lazy creation. The described concern is plausible in other code, but it does not match this example."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary design concern with this pattern in the snippet below?",
+      "codeSnippet": "class OrderService {\n  private logger = ServiceLocator.get(Logger);\n\n  placeOrder(order: Order) {\n    this.logger.info('placing order');\n    // ...\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code creates hidden runtime dependencies on a global locator which makes testing and reasoning about dependencies difficult.",
+          "isCorrect": true,
+          "explanation": "Using a service locator hides what a class truly depends on because calls to a global container scatter dependency resolution throughout the codebase. That implicitness hurts testability and makes it harder to reason about object graphs; tests must often configure the global locator instead of injecting explicit test doubles."
+        },
+        {
+          "id": "b",
+          "text": "This code violates single responsibility by mixing object creation with business logic inside the same class file.",
+          "isCorrect": false,
+          "explanation": "Mixing creation and behavior is a valid concern, but the more precise problem here is the global, implicit resolution of dependencies. The single responsibility complaint is broader and not as specific as the hidden dependency caused by a locator."
+        },
+        {
+          "id": "c",
+          "text": "This code increases startup cost by resolving services eagerly which could delay application initialization in production.",
+          "isCorrect": false,
+          "explanation": "Eager resolution can affect startup time, but the shown pattern performs resolution at field initialization time which may or may not be a real startup cost impact. The primary maintainability problem is the implicit global dependency rather than initialization performance."
+        },
+        {
+          "id": "d",
+          "text": "This code leaks implementation details into the public API by exposing framework types instead of domain abstractions.",
+          "isCorrect": false,
+          "explanation": "Leaking framework types is a real risk in some designs, but the snippet hides a dependency behind a global retrieval call rather than exposing framework types via the public API. The main issue remains the implicit runtime dependency and test complexity."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Given the two versions below, which design is preferable for maintainability and testability in most cases?",
+      "codeSnippet": "// Version A\nclass UserController {\n  private repo = new UserRepository();\n  getUser(id: string) {\n    return this.repo.findById(id);\n  }\n}\n\n// Version B\nclass UserControllerV2 {\n  constructor(private repo: UserRepository) {}\n  getUser(id: string) {\n    return this.repo.findById(id);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A ties the controller to a concrete repository by instantiating it internally which reduces testability and reuse.",
+          "isCorrect": false,
+          "explanation": "Version A constructs the repository internally, coupling the controller to a specific implementation and lifecycle. This makes unit testing harder because you cannot inject test doubles without modifying the class, and it reduces the ability to reuse the controller with alternative data sources. Many design guides recommend separating construction from use to avoid this tight coupling."
+        },
+        {
+          "id": "b",
+          "text": "Version B accepts the repository through its constructor and stores it for direct use by controller methods.",
+          "isCorrect": true,
+          "explanation": "Version B cleanly separates construction from behavior by receiving the repository via the constructor. That makes the dependency explicit, enables easy injection of mocks or alternative implementations during tests, and keeps the controller focused on its responsibility. This is the core benefit cited in Fowler's writings and in many SOLID-oriented resources."
+        }
+      ]
+    }
+  ]
+}

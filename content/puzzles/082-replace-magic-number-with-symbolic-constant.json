@@ -1,0 +1,106 @@
+{
+  "id": 82,
+  "conceptName": "Replace Magic Number with Symbolic Constant",
+  "category": "refactoring",
+  "definition": "Replacing literal numeric values sprinkled through code with named constants that convey intent and centralize change.",
+  "ruleOfThumb": "If a number encodes business meaning or is reused, give it a descriptive name and centralize it where the domain belongs.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Magic Number with Symbolic Constant",
+    "page": "pp. 41-43",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the most obvious code smell in the following snippet?",
+      "codeSnippet": "function calculateTax(amount: number) {\n  return amount * 0.0825;\n}\n\nfunction totalWithTax(amount: number) {\n  return amount + calculateTax(amount);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code contains hardcoded numeric literals that obscure business meaning and make updates error prone.",
+          "isCorrect": true,
+          "explanation": "The literal 0.0825 encodes the tax rate without giving it a name. A named constant like TAX_RATE clarifies intent, centralizes the value for updates, and prevents inconsistent copies. Fowler recommends introducing a symbolic constant when a number has domain significance to improve readability and maintainability."
+        },
+        {
+          "id": "b",
+          "text": "This code introduces a global state dependency that increases coupling between modules and hinders isolated testing.",
+          "isCorrect": false,
+          "explanation": "Although global state can be harmful, this snippet does not show shared mutable state or globals. The main problem is the anonymous numeric literal rather than coupling. Tests could still run in isolation; refactoring should focus on naming the value rather than restructuring module boundaries."
+        },
+        {
+          "id": "c",
+          "text": "This code shows a missing abstraction layer that duplicates logic across modules and reduces overall reuse.",
+          "isCorrect": false,
+          "explanation": "There is no evidence of duplicated tax calculation across modules in the snippet. The primary issue is the unnamed numeric constant. Creating an abstraction might help, but the immediate, lower-risk improvement is to introduce a descriptive constant rather than inventing a new abstraction prematurely."
+        },
+        {
+          "id": "d",
+          "text": "This code lacks explanatory comments so future readers must infer business rules from implementation details.",
+          "isCorrect": false,
+          "explanation": "Comments can help, but they are not the best remedy here. The numeric literal itself should convey intent via a well named constant. Prefer expressive code over comments; naming the tax rate reduces the need for explanatory comments and prevents stale documentation."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary maintenance risk with the code below?",
+      "codeSnippet": "export function isExpired(createdAt: Date) {\n  const ms = Date.now() - createdAt.getTime();\n  return ms > 86400000;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code relies on a literal number whose meaning is unclear and hides the one day expiration business rule.",
+          "isCorrect": true,
+          "explanation": "The literal 86400000 encodes a one day threshold in milliseconds with no name explaining intent. Naming it EXPIRE_THRESHOLD_MS or using a time helper makes the rule explicit and eases adjustments. This reduces the chance someone misinterprets the unit or duplicates a different value elsewhere."
+        },
+        {
+          "id": "b",
+          "text": "The code risks rounding or overflow because the literal number may behave differently in various time units and platforms.",
+          "isCorrect": false,
+          "explanation": "Rounding or overflow is unlikely for a value representing a single day in milliseconds in typical JavaScript environments. The real issue is lack of clarity about units and business meaning. Refactoring to a named constant or helper clarifies units and intent without addressing a false overflow concern."
+        },
+        {
+          "id": "c",
+          "text": "The code fails to account for timezones and daylight savings so the comparison may be incorrect across locales.",
+          "isCorrect": false,
+          "explanation": "Timezone and DST concerns matter for wall-clock comparisons, but this code compares elapsed milliseconds which is timezone independent. The maintenance risk is the anonymous literal and hidden unit, not a timezone bug. If wall-clock semantics were required, a different approach would be needed."
+        },
+        {
+          "id": "d",
+          "text": "The code uses a hardcoded numeric threshold which makes the expiration value difficult to find and to change correctly.",
+          "isCorrect": false,
+          "explanation": "This option is partly true and closely related, but it is less specific than option a. The key shortcoming is not just difficulty finding the value but that its business meaning and units are not expressed. A named constant solves both discoverability and intent simultaneously."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better design for handling numeric business values in the shipping calculation?",
+      "codeSnippet": "// Version A\nexport function calculateShipping(weightKg: number) {\n  const base = 5;\n  const surcharge = weightKg > 20 ? 10 : 0;\n  return base + surcharge;\n}\n\n// Version B\nexport const SHIPPING_BASE = 5;\nexport const SHIPPING_THRESHOLD_KG = 20;\nexport const SURCHARGE_AMOUNT = 10;\nexport function calculateShippingV2(weightKg: number) {\n  return SHIPPING_BASE + (weightKg > SHIPPING_THRESHOLD_KG ? SURCHARGE_AMOUNT : 0);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps numbers next to logic which preserves locality and avoids coupling to shared modules.",
+          "isCorrect": false,
+          "explanation": "Keeping literals local can feel simpler initially, but scattering numeric values hides intent, encourages inconsistent changes, and complicates cross-cutting updates. Version A makes it easy for callers or future maintainers to introduce slightly different values in other places. Centralizing domain numbers improves discoverability and reduces accidental divergence. See Fowler on naming values for intent and Clean Code on meaningful names."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes numeric thresholds and amounts into named domain constants that express intent and enable reuse.",
+          "isCorrect": true,
+          "explanation": "Version B groups related numeric values into well named constants, making their domain meaning explicit and simplifying changes and tests. Centralization prevents subtle inconsistencies when the same business rule is used in multiple places. This aligns with refactoring guidance to replace literal numbers with symbolic names so code reads like documentation and maintenance becomes safer. References: Martin Fowler, \"Replace Magic Number with Symbolic Constant\"; Robert C. Martin, Clean Code on meaningful names."
+        }
+      ]
+    }
+  ]
+}

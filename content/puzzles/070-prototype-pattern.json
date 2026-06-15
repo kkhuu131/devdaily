@@ -1,0 +1,106 @@
+{
+  "id": 70,
+  "conceptName": "Prototype Pattern",
+  "category": "design-pattern",
+  "definition": "A creational approach that produces new objects by copying or cloning a prototypical instance, avoiding repeated complex construction and configuration.",
+  "ruleOfThumb": "Use when creating an object is expensive or when many runtime variants of a configured instance are needed quickly.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Prototype",
+    "page": "106-114",
+    "externalUrl": "https://refactoring.guru/design-patterns/prototype"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the code. Which object-creation approach does this code demonstrate?",
+      "codeSnippet": "class Widget {\n  constructor(public name: string, public config: any) {}\n  clone(): Widget {\n    return Object.assign(Object.create(Object.getPrototypeOf(this)), this);\n  }\n}\nconst base = new Widget('button', { color: 'blue', size: 'md' });\nconst copy = base.clone();\ncopy.config.color = 'red';",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It creates objects by copying a configured instance rather than invoking complex constructors repeatedly at runtime.",
+          "isCorrect": true,
+          "explanation": "This code creates new objects by cloning an existing, configured instance instead of constructing from scratch. The clone method and Object.assign(Object.create(...)) idiom show a prototypical instance being reused to spawn similar objects. The intent is to avoid repeating expensive setup and to provide ready-to-customize instances. See GoF Prototype chapter for rationale about cloning configured prototypes."
+        },
+        {
+          "id": "b",
+          "text": "It returns a single shared object for global access causing implicit shared mutable state across callers and reuse risks.",
+          "isCorrect": false,
+          "explanation": "A singleton returns the same shared instance; this snippet instead calls clone to produce a new object. While shared mutable state is a real concern when objects are reused, the presence of clone and Object.create indicates new objects are produced rather than a single shared instance being returned."
+        },
+        {
+          "id": "c",
+          "text": "It builds objects step by step using separate builder helpers to assemble complex configuration before returning final instance to caller.",
+          "isCorrect": false,
+          "explanation": "The Builder approach increments through construction steps; here there is no fluent builder API or separate construct steps. Instead the code uses cloning to duplicate an existing instance, which differs from assembling a new object via builder helpers."
+        },
+        {
+          "id": "d",
+          "text": "It centralizes creation in factory functions to decide concrete subclass and parameter values before returning constructed object instances to consumers.",
+          "isCorrect": false,
+          "explanation": "A Factory centralizes creation logic and returns newly constructed instances, often choosing classes or parameters. The shown code uses clone on an existing instance, not a factory function that encapsulates subclass selection or parameter orchestration."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Examine this clone implementation. What is the primary design concern you should flag?",
+      "codeSnippet": "class Order {\n  constructor(public id: number, public items: string[]) {}\n  clone(): Order {\n    // shallow copy via Object.assign\n    return Object.assign(Object.create(Object.getPrototypeOf(this)), this);\n  }\n}\nconst o1 = new Order(1, ['apple']);\nconst o2 = o1.clone();\no2.items.push('banana');",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This implementation performs a shallow copy that will share nested collections leading to unexpected mutations between original and clones at runtime.",
+          "isCorrect": true,
+          "explanation": "The clone uses Object.assign which copies references, not nested objects. The items array is shared between original and clone, so mutating one affects the other. The fix is a custom clone that copies nested structures or defines cloning rules per field, as recommended in GoF and pragmatic sources when clones must be independent."
+        },
+        {
+          "id": "b",
+          "text": "This implementation leaks internal structure by returning mutable arrays directly and breaks encapsulation for callers using those arrays in place.",
+          "isCorrect": false,
+          "explanation": "Exposing mutable collections is a valid design concern, but the concrete issue in this snippet is that the clone shares the same array reference. While encapsulation could be improved by defensive copies on accessors, the root problem here is shallow cloning rather than accessor exposure."
+        },
+        {
+          "id": "c",
+          "text": "This implementation is inefficient because it creates full deep clones on every call which may increase memory and CPU usage in heavy workloads.",
+          "isCorrect": false,
+          "explanation": "Excessive deep cloning can be inefficient, but this snippet performs a shallow copy, not a deep clone. The more immediate correctness issue is shared mutable state rather than performance overhead from deep cloning."
+        },
+        {
+          "id": "d",
+          "text": "This implementation violates single responsibility by embedding cloning logic inside business model making testing and maintenance harder over time for models.",
+          "isCorrect": false,
+          "explanation": "Mixing concerns is a reasonable architectural critique, but putting a concise clone method on the model is an accepted form of encapsulating copy semantics. The pressing bug here is that the clone is shallow and shares nested arrays, not merely that cloning logic resides on the model."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You need runtime-configurable template variants with consistent initialization and fast creation. Which version is the better design choice?",
+      "codeSnippet": "// Version A: registry of configured instances and clone method\nclass EmailTemplate {\n  constructor(public subject: string, public body: string, public attachments: string[] = []) {}\n  clone(): EmailTemplate { return new EmailTemplate(this.subject, this.body, this.attachments.slice()); }\n}\nconst registry = new Map<string, EmailTemplate>();\nregistry.set('welcome', new EmailTemplate('Welcome', 'Hello!', ['logo.png']));\nconst instanceA = registry.get('welcome')!.clone();\n\n// Version B: factory that requires rebuilding configuration for each creation\nfunction createEmailTemplate(cfg: { subject: string; body: string; attachments?: string[] }) {\n  return new EmailTemplate(cfg.subject, cfg.body, cfg.attachments || []);\n}\nconst base = { subject: 'Welcome', body: 'Hello!', attachments: ['logo.png'] };\nconst instanceB = createEmailTemplate({ ...base });",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes ready instances for cheap cloning at runtime while preserving consistent initialization and reducing duplicated setup.",
+          "isCorrect": true,
+          "explanation": "Version A stores fully configured instances and provides a clone operation that returns a ready-to-use copy. This centralization keeps initialization logic in one place, reduces duplication, and makes creating multiple variants cheap. The Prototype approach shines when setup is nontrivial or when many similar variants are needed at runtime. If deep state exists, implement proper deep clone methods per field rather than relying on shallow copies. See GoF Prototype and pragmatic discussions about cloning trade offs."
+        },
+        {
+          "id": "b",
+          "text": "Version B requires callers to reconstruct full configuration each time which scatters setup and risks inconsistent template variants across code paths.",
+          "isCorrect": false,
+          "explanation": "Version B is a valid strategy when construction is cheap and type safety of parameters matters, but it forces every caller to reproduce base configuration or reference shared data, which can scatter configuration and lead to inconsistencies. That makes evolving defaults harder when many call sites exist. If creation cost is low and configuration can be centralized, factories can be preferable—however for runtime variant proliferation and expensive initialization, a prototype registry with cloning is usually more maintainable."
+        }
+      ]
+    }
+  ]
+}

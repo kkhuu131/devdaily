@@ -1,0 +1,105 @@
+{
+  "id": 76,
+  "conceptName": "Postel's Law",
+  "category": "principle",
+  "definition": "A robustness guideline for protocol and API design advising tolerant input acceptance and strict output emission to maximize interoperability.",
+  "ruleOfThumb": "Accept input variants where reasonable, but always emit a clear, well formed, and narrowly defined output.",
+  "citation": {
+    "author": "Jon Postel",
+    "bookTitle": "RFC 793 and related notes on the robustness principle",
+    "chapter": "Robustness Principle",
+    "page": null,
+    "externalUrl": "https://www.rfc-editor.org/info/rfc793"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best matches the interoperability guideline for handling external inputs and producing outputs?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Implementations should accept a wide range of valid inputs but produce only well formed, strict outputs.",
+          "isCorrect": true,
+          "explanation": "This succinctly captures the robustness guideline: tolerate variations when parsing inbound data, but emit a single, well defined format outbound so receivers can rely on consistent behavior. That improves forward compatibility while minimizing downstream ambiguity."
+        },
+        {
+          "id": "b",
+          "text": "Implementations should strictly validate all incoming inputs and reject any data that deviates from precise schema.",
+          "isCorrect": false,
+          "explanation": "Strict input validation is a reasonable strategy for safety, but rejecting slightly variant inputs can reduce interoperability with imperfect senders. The guideline prefers tolerant acceptance to avoid unnecessary hard failures across network boundaries."
+        },
+        {
+          "id": "c",
+          "text": "APIs should mirror client behavior and accept input variants only when the client explicitly requests flexibility.",
+          "isCorrect": false,
+          "explanation": "Tying acceptance to client negotiation can add protocol complexity and brittle branching. The guideline encourages servers to be tolerant by default rather than requiring clients to request leniency explicitly."
+        },
+        {
+          "id": "d",
+          "text": "Servers should sanitize every input aggressively and transform inputs into a single normalized canonical form.",
+          "isCorrect": false,
+          "explanation": "Normalizing to a canonical form is good practice for outputs, but aggressive sanitization at input time can hide sender bugs or corrupt intent. The guideline recommends tolerant parsing but careful, explicit normalization before emitting."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the parser below, which change most closely implements the robustness guideline for production APIs?",
+      "codeSnippet": "const parseOrder = (payload: string) => {\n  const obj = JSON.parse(payload);\n  if (!obj.items) throw new Error(\"missing items\");\n  return {\n    id: String(obj.id || \"\"),\n    items: Array.isArray(obj.items) ? obj.items : [obj.items],\n    note: obj.note || \"\"\n  };\n};",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Accept single item values and arrays at input, but always return a normalized array and typed order object.",
+          "isCorrect": true,
+          "explanation": "This follows the guideline: accept common input variants to be forgiving, but normalize and emit a single predictable structure so downstream code gets a stable contract. It separates tolerant parsing from strict output."
+        },
+        {
+          "id": "b",
+          "text": "Reject any input that does not exactly match the schema and return detailed validation errors for every malformed payload.",
+          "isCorrect": false,
+          "explanation": "While clear validation errors help callers fix issues, refusing slightly varied but reasonable inputs reduces robustness and interoperability. The guideline prefers accepting harmless variations instead of failing fast for every mismatch."
+        },
+        {
+          "id": "c",
+          "text": "Catch parsing failures and convert malformed payloads to an empty default order without surfacing errors to callers.",
+          "isCorrect": false,
+          "explanation": "Silently converting malformed payloads to defaults hides problems and can lead to data loss. The guideline advises tolerant parsing for reasonable variants but does not recommend suppressing or hiding outright parsing errors."
+        },
+        {
+          "id": "d",
+          "text": "Mirror client input structures exactly and forward whatever shape arrived without adding normalization or type guarantees.",
+          "isCorrect": false,
+          "explanation": "Echoing raw inputs preserves sender intent but creates downstream fragility because consumers cannot rely on a stable schema. The robustness guideline favors normalization on output to maintain predictable interfaces."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You have two handler versions. Which one better follows the principle for resilient protocol behavior in deployed services?",
+      "codeSnippet": "// Version A: Accept lenient inputs, normalize, emit strict outbound message\nfunction handleMessageA(raw: any) {\n  const msg = parseIncoming(raw);\n  const normalized = {\n    id: String(msg.id || \"\"),\n    type: msg.type || \"unknown\",\n    payload: Array.isArray(msg.payload) ? msg.payload : [msg.payload]\n  };\n  sendOutbound(normalized);\n}\n\n// Version B: Strictly validate and forward raw payload as received\nfunction handleMessageB(raw: any) {\n  if (!isValid(raw)) throw new Error(\"invalid message\");\n  sendOutbound(raw);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A normalizes variable inputs and emits a predictable strict output for downstream consumers.",
+          "isCorrect": true,
+          "explanation": "Version A adheres to the robustness guideline by being tolerant when parsing various incoming shapes while emitting a single, well defined outbound contract. This minimizes compatibility problems for receivers and centralizes normalization logic. In production systems this pattern improves interoperability without hiding serious errors — parsing tolerantly but rejecting or logging truly invalid cases remains important."
+        },
+        {
+          "id": "b",
+          "text": "Version B enforces strict input shape and forwards raw payloads unchanged, risking downstream divergence and interoperability problems.",
+          "isCorrect": false,
+          "explanation": "Version B's strict acceptance plus forwarding raw payloads makes downstream consumers responsible for handling many possible shapes, increasing coupling and the chance of subtle incompatibilities. While strict validation can be appropriate at certain boundaries, forwarding unnormalized data amplifies differences between senders and receivers and reduces system resilience."
+        }
+      ]
+    }
+  ]
+}

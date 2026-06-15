@@ -1,0 +1,106 @@
+{
+  "id": 59,
+  "conceptName": "Composite Pattern",
+  "category": "design-pattern",
+  "definition": "A structural pattern that lets clients treat individual objects and compositions of objects uniformly by defining a common interface for both leaves and containers.",
+  "ruleOfThumb": "Use when you need to represent part-whole hierarchies and let clients treat single objects and aggregates the same way.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Composite",
+    "page": "163",
+    "externalUrl": "https://refactoring.guru/design-patterns/composite"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the TypeScript snippet. What design intent is demonstrated by this implementation?",
+      "codeSnippet": "interface Node { render(): string }\nclass Leaf implements Node {\n  constructor(private name: string) {}\n  render() { return this.name }\n}\nclass Container implements Node {\n  constructor(public children: Node[] = []) {}\n  render() { return this.children.map(c => c.render()).join(',') }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It groups objects into tree structures so clients can treat leaves and containers uniformly without caring about concrete types.",
+          "isCorrect": true,
+          "explanation": "This code defines a common interface for single elements and aggregates, letting client code call render on either without distinction. That uniformity of treatment is the core intent of the pattern represented here."
+        },
+        {
+          "id": "b",
+          "text": "It encapsulates construction details behind a fluent builder API so callers can create complex objects stepwise.",
+          "isCorrect": false,
+          "explanation": "A builder focuses on creating complex objects with a fluent API and separates construction from representation. The snippet shows runtime composition of elements, not a construction DSL, so the builder interpretation is unlikely."
+        },
+        {
+          "id": "c",
+          "text": "It provides a plugin hook for runtime extension so new node types can be discovered and registered dynamically.",
+          "isCorrect": false,
+          "explanation": "Plugin or registry mechanisms revolve around discovery and registration points. While the code is extensible by adding new node implementations, there is no registry or discovery mechanism present, making this option a weaker fit."
+        },
+        {
+          "id": "d",
+          "text": "It centralizes distinct behaviors into strategy objects and selects one at runtime via delegation for flexibility.",
+          "isCorrect": false,
+          "explanation": "The Strategy pattern encapsulates interchangeable algorithms behind a common interface. The snippet composes elements into a tree rather than swapping algorithms, so interpreting it as strategy conflates different design intent."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this TypeScript excerpt. What is the primary design smell or concern present?",
+      "codeSnippet": "interface Item { add(child: Item): void; render(): string }\nclass Leaf implements Item {\n  render() { return 'leaf' }\n  add(child: Item) { throw new Error('cannot add to leaf') }\n}\nfunction attach(parent: Item, child: Item) {\n  if ((parent as any).add) parent.add(child)\n  else throw new Error('not a container')\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This implementation forces callers to perform runtime type checks before mutating children in typical client code paths.",
+          "isCorrect": true,
+          "explanation": "The code makes clients check types or presence of methods instead of providing a uniform contract that is safe to call. A true uniform interface would avoid runtime guards when adding children."
+        },
+        {
+          "id": "b",
+          "text": "This implementation violates Liskov substitution because leaf implementations throw on inherited mutators making them safer to reject.",
+          "isCorrect": false,
+          "explanation": "Throwing from a method inherited by a subtype can be a Liskov concern, but the primary symptom here is callers having to detect container capability, which is a leaky uniform interface problem rather than the deeper Liskov principle violation."
+        },
+        {
+          "id": "c",
+          "text": "This implementation exposes a mutable children array publicly and thereby creates tight coupling with external callers.",
+          "isCorrect": false,
+          "explanation": "Exposing internal collections is a common smell, but the snippet shows method throwing and runtime checks rather than a publicly mutable array. The coupling concern exists in other designs, but not as the main issue shown here."
+        },
+        {
+          "id": "d",
+          "text": "This implementation confuses structure with behavior and should instead centralize rendering logic away from nodes.",
+          "isCorrect": false,
+          "explanation": "Separating rendering logic can be valid, but the presented code mainly demonstrates misuse of a uniform interface and runtime type detection. Rendering separation is a different design trade off and not the central smell in this example."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which implementation is preferable for a maintainable tree of components?",
+      "codeSnippet": "// Version A\ninterface Node { render(): string; children?: Node[] }\nclass LeafA implements Node {\n  constructor(private name: string) {}\n  render() { return this.name }\n}\nclass ContainerA implements Node {\n  constructor(public children: Node[] = []) {}\n  render() { return this.children.map(c => c.render()).join(',') }\n}\n\n// Version B\ninterface Widget { render(): string }\nclass LeafB implements Widget {\n  constructor(private name: string) {}\n  render() { return this.name }\n}\nclass ContainerB implements Widget {\n  private children: Widget[] = []\n  add(child: Widget) { this.children.push(child) }\n  render() { return this.children.map(c => c.render()).join(',') }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A exposes internal child collections allowing external mutation and requiring callers to manage tree integrity directly.",
+          "isCorrect": false,
+          "explanation": "Version A makes children public, which leaks internal structure and pushes responsibility to callers to maintain invariants. That increases coupling and makes future changes harder, especially if you need to enforce invariants during mutations."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates children and provides a uniform interface for composing and rendering component trees.",
+          "isCorrect": true,
+          "explanation": "Version B hides the internal children array and exposes controlled mutation operations, enabling the object to maintain invariants and encapsulate behavior. This design supports substitutability and easier refactoring of composition behavior. See Gamma et al. on representing part whole hierarchies and Martin on encapsulation for further guidance."
+        }
+      ]
+    }
+  ]
+}

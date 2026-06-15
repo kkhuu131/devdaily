@@ -1,0 +1,106 @@
+{
+  "id": 34,
+  "conceptName": "Parallel Inheritance Hierarchies",
+  "category": "code-smell",
+  "definition": "A situation where two or more class hierarchies mirror each other so that each subclass in one hierarchy has a corresponding subclass in the other, causing duplicated structure and coordinated changes.",
+  "ruleOfThumb": "If adding a subtype forces parallel subclasses or duplicated methods in another hierarchy, consider consolidating behavior with composition or restructuring hierarchies.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Parallel Inheritance Hierarchies",
+    "page": "p. 178",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the snippet. Which observation best describes the structural issue present?",
+      "codeSnippet": "abstract class PaymentMethod {}\nclass CreditCard extends PaymentMethod {}\nclass PayPal extends PaymentMethod {}\n\nabstract class PaymentProcessor {}\nclass CreditCardProcessor extends PaymentProcessor {}\nclass PayPalProcessor extends PaymentProcessor {}\n\n// Adding new payment types requires adding classes in both hierarchies",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code has two class hierarchies that mirror each other and introduce duplicated subclass pairs across both hierarchies.",
+          "isCorrect": true,
+          "explanation": "The snippet shows two parallel class trees whose subclasses correspond one to one. That means adding a new payment type will require adding matching classes in both hierarchies and likely coordinated changes elsewhere. This is the classic smell where behavior and responsibilities are split across mirrored trees instead of being composed or centralized."
+        },
+        {
+          "id": "b",
+          "text": "This code centralizes behavior in one class creating a God object that mixes presentation and domain logic together.",
+          "isCorrect": false,
+          "explanation": "A God object typically means many unrelated responsibilities concentrated in a single class. Here the problem is not a single class doing too much; instead there are two small hierarchies mirroring each other. While a God object is a real concern, it does not match the structural duplication visible in the snippet."
+        },
+        {
+          "id": "c",
+          "text": "This code exposes internal representation through public fields which increases coupling between modules around data layout.",
+          "isCorrect": false,
+          "explanation": "Leaking internal representation refers to exposing fields or implementation details that other modules rely on. The snippet does not show public fields or data leaks; it shows parallel subclassing. Tight coupling via exposed fields is a plausible maintenance issue but not the primary structural smell here."
+        },
+        {
+          "id": "d",
+          "text": "This code relies on many utility functions promoting procedural patterns that scatter logic across object boundaries and modules.",
+          "isCorrect": false,
+          "explanation": "An overuse of utility functions and procedural style can scatter logic and reduce encapsulation. The provided code instead demonstrates duplicated subclass structures rather than procedural utilities. While both are problematic, they are different smells with different refactorings."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the pattern where handlers and serializers mirror each other, which maintenance risk is most likely as the system grows?",
+      "codeSnippet": "enum InvoiceType { Standard, Recurring }\n\nclass Invoice {}\nclass StandardInvoice extends Invoice {}\nclass RecurringInvoice extends Invoice {}\n\nclass InvoiceSerializer {}\nclass StandardInvoiceSerializer extends InvoiceSerializer {}\nclass RecurringInvoiceSerializer extends InvoiceSerializer {}\n\n// Developers add a new invoice type about every quarter",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This design will require creating parallel subclasses and updating multiple modules whenever a new invoice subtype is added to the system.",
+          "isCorrect": true,
+          "explanation": "When two hierarchies are coupled so that each subtype needs a matching serializer or handler, adding a new subtype forces coordinated edits across both hierarchies and any switch sites. That increases change surface area and the chance of inconsistent updates. Common refactorings include combining responsibilities, introducing a strategy, or moving serializers out of the parallel hierarchy."
+        },
+        {
+          "id": "b",
+          "text": "This design will likely cause a runtime performance issue due to many small class instances and increased garbage collection overhead in hotspots.",
+          "isCorrect": false,
+          "explanation": "Many small objects can matter in extreme performance-sensitive scenarios, but the primary concern with mirrored hierarchies is maintainability, not memory churn. Performance could be addressed separately; the structural duplication is the core maintenance risk here."
+        },
+        {
+          "id": "c",
+          "text": "This design exposes concrete classes across module boundaries causing tight coupling and fragile compile time dependencies between packages.",
+          "isCorrect": false,
+          "explanation": "Exposing concrete classes across modules is a plausible issue and can increase coupling, but the snippet specifically shows corresponding subclasses for serialization and domain types. The fragile coupling described here is related but not the most direct maintenance risk caused by mirrored hierarchies."
+        },
+        {
+          "id": "d",
+          "text": "This design encourages scattered switch statements to map types to handlers which makes the code base harder to reason about and change safely.",
+          "isCorrect": false,
+          "explanation": "Scattered switch or conditional logic is a real smell and often appears with type-based decisions. However, the snippet already encodes behavior as separate subclasses. The immediate growth concern with parallel hierarchies is duplication and coordinated edits rather than scattered switch statements, though both can coexist."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which version better addresses the mirrored subclass problem in the snippet?",
+      "codeSnippet": "// Version A: composition based\ninterface Renderer { render(report: Report): string }\nclass Report { constructor(private renderer: Renderer) {} render() { return this.renderer.render(this); } }\nclass SalesReport extends Report {}\nclass SalesRenderer implements Renderer { render(r: Report) { return 'sales'; } }\n\n// Version B: parallel hierarchies continue\nabstract class ReportBase {}\nclass SalesReportV2 extends ReportBase {}\nabstract class ReportRendererBase {}\nclass SalesReportRendererV2 extends ReportRendererBase {}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A consolidates variant behavior into composition based roles within the same class hierarchy.",
+          "isCorrect": true,
+          "explanation": "Version A uses composition to inject rendering behavior into Report instances, removing the need for matching renderer subclasses per report subtype. That reduces duplicated subclass pairs and keeps behavior closer to the object that needs it. This favors single responsibility and easier extension of rendering strategies without parallel changes in separate hierarchies. Recommended readings include Fowler on refactoring such mirrored hierarchies and the Strategy pattern for behavioral variation."
+        },
+        {
+          "id": "b",
+          "text": "Version B continues mirrored subclasses across hierarchies which forces coordinated edits across multiple class trees for new variants.",
+          "isCorrect": false,
+          "explanation": "Version B preserves two separate hierarchies, so adding a new report type would typically require adding corresponding renderers and potentially updating other parallel structures. That maintains the original smell and increases maintenance overhead. While there are scenarios where two hierarchies are unavoidable, this layout tends to make changes error prone and harder to localize. See Martin Fowler and design pattern texts on replacing parallel hierarchies with composition or visitor style approaches."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 67,
+  "conceptName": "Mediator Pattern",
+  "category": "design-pattern",
+  "definition": "Encapsulates how a set of objects interact by introducing a single coordinating object that controls communication and reduces direct dependencies between colleagues.",
+  "ruleOfThumb": "Centralize complex interaction behavior in a coordinator object so collaborators communicate through it rather than holding references to each other.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Mediator",
+    "page": "185",
+    "externalUrl": "https://www.oreilly.com/library/view/design-patterns-elements/0201633612/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the following snippet, which description best matches the overall communication structure shown?",
+      "codeSnippet": "class User {\n  constructor(public name: string, private room: ChatRoom) {}\n  send(message: string) { this.room.send(this, message); }\n  receive(sender: User, message: string) { console.log(`${this.name} received from ${sender.name}: ${message}`); }\n}\nclass ChatRoom {\n  private users: User[] = [];\n  register(u: User) { this.users.push(u); }\n  send(sender: User, message: string) { this.users.filter(u => u !== sender).forEach(u => u.receive(sender, message)); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This implementation shows a central chat coordinator object routing messages between participants to avoid direct peer to peer communication.",
+          "isCorrect": true,
+          "explanation": "The ChatRoom class clearly centralizes message routing and users call into it rather than calling each other directly. That is the core intent: colleagues interact through a mediator-like coordinator to reduce pairwise coupling and encapsulate interaction logic. See Gamma et al. for the canonical description of centralizing interaction logic in a dedicated object."
+        },
+        {
+          "id": "b",
+          "text": "This implementation looks like an observer style where subjects maintain subscriber lists and push events directly to registered listeners on changes.",
+          "isCorrect": false,
+          "explanation": "An Observer arranges one to many subscriptions where subjects publish state changes to listeners. In this snippet users are not subscribing to a subject's state changes; instead a central ChatRoom actively routes messages between participants. The central routing and explicit send call differentiate it from a pure Observer."
+        },
+        {
+          "id": "c",
+          "text": "This implementation resembles a command dispatcher where callers encapsulate actions as objects and queue them for later execution centrally.",
+          "isCorrect": false,
+          "explanation": "A Command pattern involves encapsulating requests as objects which can be queued, logged, or undone. The snippet shows synchronous routing of messages with no encapsulated request objects or queuing semantics, so it is not a Command dispatcher even though there is a central coordinator handling requests."
+        },
+        {
+          "id": "d",
+          "text": "This implementation could be mistaken for a facade that simplifies an API surface by delegating work to multiple subsystems behind one interface.",
+          "isCorrect": false,
+          "explanation": "A Facade simplifies access to a subsystem by providing a higher level interface; it does not primarily coordinate peer to peer interactions. Here ChatRoom coordinates peer messaging and enforces routing rules, which goes beyond the facade role of simplifying an API without managing complex interactions."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this controller snippet. What is the design concern most likely present here?",
+      "codeSnippet": "class OrderController {\n  createOrder(data) {\n    const payment = new PaymentService();\n    const inventory = new InventoryService();\n    if (!inventory.reserve(data.items)) { throw new Error('sold out'); }\n    payment.charge(data.card, data.total);\n    inventory.update(data.items);\n    // controller orchestrates and implements business checks\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This design centralizes both intercomponent routing and business logic into one controller creating a god object harming modularity.",
+          "isCorrect": true,
+          "explanation": "The controller above mixes orchestration and domain rules while instantiating services directly, producing a large class that everyone depends on. That centralization creates fragile coupling and makes it harder to evolve or test responsibilities independently. Consider separating communication coordination from domain operations and injecting collaborators to reduce the god object smell."
+        },
+        {
+          "id": "b",
+          "text": "This design matches a publish subscribe event bus where components emit events and subscribers react without sender knowledge.",
+          "isCorrect": false,
+          "explanation": "A publish subscribe design would have components emitting events and independent subscribers handling them. This controller directly calls and sequences specific service operations rather than emitting events, so it is not truly an event bus even though both approaches decouple some communication aspects."
+        },
+        {
+          "id": "c",
+          "text": "This design mimics a facade that wraps multiple services and exposes simplified methods while hiding service interaction details.",
+          "isCorrect": false,
+          "explanation": "A facade provides a simplified interface to a subsystem. While the controller exposes createOrder and delegates to services, it also contains business checks and instantiates dependencies directly. The mixing of orchestration and domain logic is more indicative of an overlarge controller than a pure facade that simply delegates."
+        },
+        {
+          "id": "d",
+          "text": "This design looks like dependency injection misuse where too many concrete dependencies are injected causing high coupling and poor tests.",
+          "isCorrect": false,
+          "explanation": "Excessive dependencies passed into classes can be a problem, but here the controller creates concrete service instances inline rather than being injected with many dependencies. The primary issue is centralization of routing plus logic rather than incorrect dependency injection usage specifically."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better separates coordination from individual peers to improve maintainability?",
+      "codeSnippet": "// Version A\nclass Coordinator {\n  private peers = new Map<string, Peer>();\n  register(p: Peer) { this.peers.set(p.id, p); }\n  send(senderId: string, recipientId: string, msg: string) { this.peers.get(recipientId)?.receive(senderId, msg); }\n}\nclass Peer { constructor(public id: string, private coord: Coordinator) {}\n  send(to: string, msg: string) { this.coord.send(this.id, to, msg); }\n  receive(from: string, msg: string) { /* handle */ }\n}\n\n// Version B\nclass PeerV {\n  constructor(public id: string) {}\n  send(to: PeerV, msg: string) { to.receive(this.id, msg); }\n  receive(from: string, msg: string) { /* handle */ }\n}\nconst a = new PeerV('a'); const b = new PeerV('b');\n// a and b must hold references to each other to communicate",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes communication in a coordinator class so peers remain unaware of other peers and stay decoupled.",
+          "isCorrect": true,
+          "explanation": "Version A isolates routing and addressing logic inside a coordinator, keeping Peer classes focused solely on domain behavior and message handling. This yields lower coupling, simpler testing of peers, and a single place to change interaction rules. Fowler and the GoF recommend placing interaction control in a dedicated object when collaboration logic becomes complex."
+        },
+        {
+          "id": "b",
+          "text": "Version B requires peers to hold direct references to other peers causing bidirectional knowledge and tightly coupled interactions across objects.",
+          "isCorrect": false,
+          "explanation": "In Version B each peer must maintain references to others it may call, which increases coupling and makes the network of interactions harder to reason about and evolve. When interaction topology or routing rules change, many peers may need updates. The wrongness is subtle because direct calls are simpler for trivial cases, but they become brittle as the system grows."
+        }
+      ]
+    }
+  ]
+}

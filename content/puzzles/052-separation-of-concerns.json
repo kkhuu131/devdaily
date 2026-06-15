@@ -1,0 +1,106 @@
+{
+  "id": 52,
+  "conceptName": "Separation of Concerns",
+  "category": "principle",
+  "definition": "Design principle that organizes a system so each module addresses a distinct responsibility, minimizing overlapping responsibilities and coupling.",
+  "ruleOfThumb": "Keep unrelated responsibilities in different modules or layers; prefer single-purpose components that can be tested and changed independently.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Architecture",
+    "chapter": "Component Cohesion Principles",
+    "page": "N/A",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-architecture/9780134494272/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation best indicates the code violates modular responsibility boundaries?",
+      "codeSnippet": "import { db } from './db';\n\nexport function getAccountPage(req: Request, res: Response) {\n  const user = db.query(`SELECT * FROM users WHERE id = ${req.params.id}`);\n  const errors = validateUser(user);\n  res.send(`<h1>${user.name}</h1><p>${errors.join(',')}</p>`);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This module mixes UI rendering, data access, and validation inside one function across several unrelated responsibilities.",
+          "isCorrect": true,
+          "explanation": "The function performs presentation, persistence, and validation in one place. That coupling makes testing and evolving each concern independently hard. Extracting data access, validation, and rendering to dedicated layers or helpers reduces surface area and clarifies intent."
+        },
+        {
+          "id": "b",
+          "text": "The code uses synchronous blocking calls that would cause high latency under concurrent server load in production.",
+          "isCorrect": false,
+          "explanation": "Blocking I/O can be a legitimate operational concern, but the snippet shows mixing of responsibilities rather than explicit synchronous APIs. Addressing latency is important but does not by itself describe the structural coupling problem present."
+        },
+        {
+          "id": "c",
+          "text": "The function lacks type annotations for all returns which could silently introduce runtime type errors later in production.",
+          "isCorrect": false,
+          "explanation": "Missing or weak typing increases risk, yet the primary smell here is multiple responsibilities collocated. Adding types helps detect errors but will not separate the UI, validation, and persistence concerns that are entangled."
+        },
+        {
+          "id": "d",
+          "text": "The SQL statements are vulnerable to injection because string concatenation builds queries from unvalidated user input values.",
+          "isCorrect": false,
+          "explanation": "SQL injection is a concrete security flaw and important to fix, but the structural issue the question targets is combined responsibilities. Both problems can coexist, and fixing injection should be done alongside untangling concerns."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A service class caches results and evaluates business rules inside the same methods. Which observation best captures the structural concern?",
+      "codeSnippet": "class OrderService {\n  private cache = new Map<number, Order>();\n  async processOrder(orderId: number) {\n    const cached = this.cache.get(orderId);\n    if (cached) return cached;\n    const order = await this.loadOrderFromDb(orderId);\n    if (!this.evaluateBusinessRules(order)) throw new Error('Invalid order');\n    this.cache.set(orderId, order);\n    return order;\n  }\n  private loadOrderFromDb(id: number) { /* ... */ }\n  private evaluateBusinessRules(o: Order) { /* ... */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class mixes business rule evaluation with in-memory caching logic within the same implementation layer.",
+          "isCorrect": true,
+          "explanation": "Caching is an orthogonal concern to core business logic. When they share the same class and method, tests and changes become harder to scope. Extracting caching behind an interface or decorator keeps business rules focused and testable."
+        },
+        {
+          "id": "b",
+          "text": "The data access implementation leaks SQL exceptions directly into higher layers causing fragile error handling and tight coupling.",
+          "isCorrect": false,
+          "explanation": "Leaking low level exceptions is a real integration concern, but the snippet shows a caching and rule-mix rather than exposed SQL errors. You might also want to wrap DB errors, yet it does not best explain the cohesion problem here."
+        },
+        {
+          "id": "c",
+          "text": "The method performs heavy synchronous I/O in a request thread which risks blocking under realistic concurrent traffic patterns.",
+          "isCorrect": false,
+          "explanation": "Blocking I/O is an operational risk. In this example the code uses async/await and the primary maintainability issue is mixing responsibilities. Addressing I/O patterns is valid but orthogonal to the modularity smell."
+        },
+        {
+          "id": "d",
+          "text": "The caching is a premature optimization that obscures the core business logic making future changes more risky and costly.",
+          "isCorrect": false,
+          "explanation": "Premature optimization can obscure code, and that is a reasonable concern. However, the core structural problem is that caching and business rules are implemented together, which is a design coupling issue even if caching were justified."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two sketches. Which version better keeps transaction handling separated from business code and why choose it?",
+      "codeSnippet": "// Version A: handlers manage transactions explicitly\napp.post('/pay', async (req, res) => {\n  const tx = db.beginTransaction();\n  try {\n    // business logic here\n    tx.commit();\n    res.send('ok');\n  } catch (e) {\n    tx.rollback();\n    res.status(500).send('error');\n  }\n});\n\n// Version B: middleware handles transactions\napp.post('/pay', transactional(async (req, res) => {\n  // business logic here with no transaction code\n  res.send('ok');\n}));\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes control in handlers but duplicates transaction handling and scatters error recovery logic across endpoints.",
+          "isCorrect": false,
+          "explanation": "Putting transaction management into each handler gives precise local control, but it duplicates plumbing and mixes lifecycle management with business steps. That scattering increases chance of inconsistent rollback behavior and complicates cross-cutting changes like retry policies."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates transaction management into middleware separated from business code across all endpoints uniformly.",
+          "isCorrect": true,
+          "explanation": "Version B moves transaction lifecycle into a single cross-cutting layer, so handlers and services stay focused on domain behavior. This reduces duplication and centralizes error and retry strategies. That aligns with component cohesion principles and improves testability and maintainability."
+        }
+      ]
+    }
+  ]
+}

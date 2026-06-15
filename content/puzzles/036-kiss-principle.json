@@ -1,0 +1,106 @@
+{
+  "id": 36,
+  "conceptName": "KISS Principle",
+  "category": "principle",
+  "definition": "A design guideline that favors simplicity in code and architecture to reduce cognitive load, avoid unnecessary abstraction, and make maintenance straightforward.",
+  "ruleOfThumb": "Prefer the simplest solution that meets current requirements; avoid premature abstractions and extra indirection unless clearly justified.",
+  "citation": {
+    "author": "Andrew Hunt and David Thomas",
+    "bookTitle": "The Pragmatic Programmer",
+    "chapter": "Rule of Simplicity",
+    "page": null,
+    "externalUrl": "https://pragprog.com/titles/tpp20/the-pragmatic-programmer-20th-anniversary-edition/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary issue in this function?",
+      "codeSnippet": "function computeInvoice(items: {price: number, qty: number}[]): number {\n  // verbose and repetitive for a simple sum\n  let total = 0;\n  for (let i = 0; i < items.length; i++) {\n    const item = items[i];\n    const line = (item.price * item.qty) - 0;\n    if (line !== 0) {\n      total = total + line;\n    } else {\n      total += 0;\n    }\n  }\n  return total;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function performs unnecessarily verbose steps and branching for a simple numeric sum, increasing cognitive load and error risk.",
+          "isCorrect": true,
+          "explanation": "The code is doing more work than required to compute a sum. The extra conditionals and temporary variables add noise without changing behavior. Applying a simpler loop or an array reduce with clear arithmetic reduces cognitive overhead and the chance of bugs. This aligns with keeping implementation straightforward for the current need rather than adding defensive no-op branches."
+        },
+        {
+          "id": "b",
+          "text": "This function suffers from floating point inaccuracies and should use a precise decimal library for monetary calculations instead.",
+          "isCorrect": false,
+          "explanation": "While floating point issues are real for money, the snippet shows integer-style arithmetic and no evidence of precision errors in the presented code. The immediate maintenance cost is in verbosity, not numeric precision. If this were a real monetary system, consider fixed-point or decimal types, but that is a secondary concern here compared to simplifying the logic."
+        },
+        {
+          "id": "c",
+          "text": "This function exposes state mutation by modifying external variables which makes concurrency and reuse more error prone in services.",
+          "isCorrect": false,
+          "explanation": "The function uses a local variable for accumulation and returns it; it does not mutate external state. Concurrency concerns would be relevant if shared state were modified, but here the clearest problem is unnecessary complexity. Refactoring to a pure, declarative reduction would address readability without needing to introduce concurrency primitives."
+        },
+        {
+          "id": "d",
+          "text": "This function has poor type annotations causing runtime uncertainty and should declare strict interfaces for items to avoid misuses.",
+          "isCorrect": false,
+          "explanation": "The types are declared in the snippet and are reasonably specific for this example. Strengthening types can help, but it does not address the immediate code smell of redundant branches and no-op arithmetic. Focus on simplifying behavior first, then refine types if broader misuse is observed."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which diagnosis best fits this class design?",
+      "codeSnippet": "class FeatureToggleManager {\n  private handlers: Map<string, Function> = new Map();\n\n  register<T>(name: string, fn: (payload: T) => void) {\n    this.handlers.set(name, fn);\n  }\n\n  execute(name: string, payload: any) {\n    const h = this.handlers.get(name);\n    if (!h) return;\n    h(payload);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class is an overgeneralized plugin container that anticipates unknown features and introduces unnecessary indirection for current requirements.",
+          "isCorrect": true,
+          "explanation": "The manager creates an indirection layer that looks like a generic plugin system. If the product currently needs only a few known toggles, this abstraction is premature and complicates reasoning and testing. Simplicity favors a direct conditional or a small registry tailored to current needs, evolving to a plugin model only when real requirements demand it."
+        },
+        {
+          "id": "b",
+          "text": "This class violates single responsibility by handling registration execution and storage concerns together causing unclear ownership across different responsibilities.",
+          "isCorrect": false,
+          "explanation": "It is reasonable to view registration, execution, and storage as separate responsibilities, but in practice a small registry often groups those behaviors coherently. The core issue here is anticipatory generalization rather than a clear SRP breach; extraction should follow observed duplication or complexity, not speculative separation."
+        },
+        {
+          "id": "c",
+          "text": "This class lacks type constraints on handlers which risks runtime errors when consumers pass unexpected payload shapes into execution.",
+          "isCorrect": false,
+          "explanation": "Weak typing is a valid concern, especially in TypeScript. However, the primary smell in the design is the generic handler map that adds indirection. Strengthening types improves safety but does not address whether the abstraction itself is warranted for current scope."
+        },
+        {
+          "id": "d",
+          "text": "This class is a performance bottleneck because Map lookups are slow and synchronous execution may block event loop under load.",
+          "isCorrect": false,
+          "explanation": "Map lookups are typically fast and unlikely to be the first performance issue. Synchronous execution could matter at scale, but premature optimization of that sort ignores the real maintainability cost of unnecessary abstraction. Measure performance before refactoring for speed."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which design better follows the goal of simple, maintainable responsibility separation?",
+      "codeSnippet": "// Version A\nclass PaymentProcessor {\n  processCard(payment) {\n    this.validate(payment);\n    this.log(payment);\n    this.chargeGateway(payment);\n    this.sendReceipt(payment);\n  }\n  // many private methods for unrelated concerns\n}\n\n// Version B\nclass PaymentValidator { validate(payment) { /*...*/ } }\nclass PaymentGateway { charge(payment) { /*...*/ } }\nclass ReceiptService { send(payment) { /*...*/ } }\nclass PaymentService {\n  constructor(v,g,r){ this.v=v; this.g=g; this.r=r; }\n  process(payment){ this.v.validate(payment); this.g.charge(payment); this.r.send(payment); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes heterogeneous responsibilities in one class causing brittle changes and harder unit testing across features.",
+          "isCorrect": false,
+          "explanation": "Version A mixes validation, logging, gateway interaction, and receipt delivery into a single class. That coupling makes it harder to change one concern without risking regressions in others and complicates isolated testing. While fewer classes can seem simpler at first, the bundled responsibilities increase cognitive load and reduce clarity when the system evolves."
+        },
+        {
+          "id": "b",
+          "text": "Version B separates distinct responsibilities into small classes allowing focused tests and simpler future modifications.",
+          "isCorrect": true,
+          "explanation": "Version B breaks the workflow into focused collaborators with a coordinating service. That separation makes responsibilities explicit, simplifies unit testing of each part, and reduces the impact radius of changes. It follows the principle of small, single-purpose components and keeps the orchestration layer minimal. For further reading, see Robert C. Martin on single responsibility and pragmatic modularization, and Fowler on refactoring toward smaller classes."
+        }
+      ]
+    }
+  ]
+}

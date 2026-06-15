@@ -1,0 +1,105 @@
+{
+  "id": 31,
+  "conceptName": "Middle Man",
+  "category": "code-smell",
+  "definition": "A class or module that delegates most of its work to another class, providing little or no additional behavior or abstraction.",
+  "ruleOfThumb": "If a type only forwards operations without adding meaningful logic, either remove it or move responsibility into it so it earns its place.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Middle Man",
+    "page": "83",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches the smell shown where a class mostly calls methods on another class without adding behavior?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "This class forwards most calls to another class and adds little or no additional behavior.",
+          "isCorrect": true,
+          "explanation": "Correct. A true Middle Man simply delegates most responsibilities to another class and contributes negligible logic, making it unnecessary."
+        },
+        {
+          "id": "b",
+          "text": "This class duplicates a small part of another class with tight coupling and increases maintenance risk.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect here. Duplication is a maintenance concern, yet the snippet indicates delegation rather than duplicated implementations."
+        },
+        {
+          "id": "c",
+          "text": "This class serves as an explicit API translator converting parameters while centralizing unrelated orchestration logic elsewhere.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect because an API translator changes data contracts; the real smell is minimal added behavior rather than explicit translation."
+        },
+        {
+          "id": "d",
+          "text": "This class isolates a remote dependency behind thin methods to simplify testing and manage lifecycle concerns.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect. Creating a seam for a remote dependency can be intentional; the smell is present only when the layer adds no real value."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In this TypeScript example which specific concern most likely indicates a thin delegation layer that should be reconsidered?",
+      "codeSnippet": "class OrderPresenter {\n  constructor(private repo: OrderRepository, private logger: Logger) {}\n  async fetchOrder(id: string) {\n    this.logger.info('fetching', id);\n    return this.repo.findById(id);\n  }\n}\n\n// Presenter only logs and forwards to repository",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The controller acts as a thin pass through delegating most operations to an underlying collaborator without added value.",
+          "isCorrect": true,
+          "explanation": "Correct. The presenter only logs and forwards to the repository which is characteristic of an unnecessary forwarding layer."
+        },
+        {
+          "id": "b",
+          "text": "The class mixes protocol translation and orchestration causing distributed responsibilities but not necessarily lacking useful abstraction.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect. Mixing responsibilities would show multiple distinct behaviors; here the code simply logs then delegates, not orchestrating multiple collaborators."
+        },
+        {
+          "id": "c",
+          "text": "The object intends to be a facade but still exposes low level details and duplicates error handling logic.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect because duplication or exposed details are not visible; the immediate issue is absence of meaningful behavior in the layer."
+        },
+        {
+          "id": "d",
+          "text": "The service is an anti optimized pipeline adding latency and conditional paths rather than simplifying public behavior.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect. Performance pipeline concerns would be visible as chained conditional processing; this snippet shows a simple forwarder instead."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for reducing unnecessary indirection in a codebase where the intermediary adds no behavior?",
+      "codeSnippet": "// Version A: Controller calls repository directly\nclass UserController {\n  constructor(private repo: UserRepository) {}\n  async getProfile(id: string) {\n    return this.repo.findUser(id);\n  }\n}\n\n// Version B: Controller uses thin service that only forwards to repository\nclass UserService {\n  constructor(private repo: UserRepository) {}\n  async getProfile(id: string) {\n    return this.repo.findUser(id);\n  }\n}\nclass UserControllerV2 {\n  constructor(private service: UserService) {}\n  async getProfile(id: string) {\n    return this.service.getProfile(id);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A reduces indirection by removing a thin forwarding layer and lets callers directly use the repository.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable when the intermediary contributes no behavior. Removing the forwarding layer reduces cognitive overhead and call indirection, simplifies dependency graphs, and avoids having to maintain or test an additional thin layer. Fowler recommends removing such middle men when they do not add responsibility. If future behavior is required, you can reintroduce a meaningful abstraction with clear responsibilities."
+        },
+        {
+          "id": "b",
+          "text": "Version B retains the extra service layer claiming extension flexibility while adding an unnecessary forwarding layer and coupling.",
+          "isCorrect": false,
+          "explanation": "Keeping the thin service can seem to provide extension points, but in practice it introduces extra indirection and coupling without immediate benefit. Over time these forwarding layers accumulate and obscure the true collaborator, increasing maintenance cost. A better alternative is to keep clients talking to the real collaborator until a concrete need for the abstraction emerges, then introduce a well defined facade with real responsibilities. See Martin Fowler on removing superfluous delegation."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 80,
+  "conceptName": "Pull Up Method",
+  "category": "refactoring",
+  "definition": "When two or more subclasses contain identical or very similar methods, move the shared method implementation into their common superclass to avoid duplication and centralize behavior.",
+  "ruleOfThumb": "If the same method implementation appears in multiple subclasses and can operate on superclass state, move it to the base class and keep subclass differences minimal.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Pull Up Method",
+    "page": "150-152",
+    "externalUrl": "https://refactoring.com/catalog/pullUpMethod.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "You see identical method implementations duplicated in two sibling classes. What does this code smell most strongly suggest?",
+      "codeSnippet": "class Customer extends Account {\n  calculateDiscount(order: Order) {\n    const base = order.items.reduce((s, i) => s + i.price, 0);\n    return base > 100 ? base * 0.1 : 0;\n  }\n}\nclass Supplier extends Account {\n  calculateDiscount(order: Order) {\n    const base = order.items.reduce((s, i) => s + i.price, 0);\n    return base > 100 ? base * 0.1 : 0;\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This indicates duplicate method bodies in subclasses that should be moved up to the common base class.",
+          "isCorrect": true,
+          "explanation": "Correct. The exact same implementation in sibling classes is a classic candidate to move into their superclass so the code is not duplicated. Moving the method to the base class centralizes the behavior and reduces maintenance cost. After pulling up the method, subclasses can override only if truly necessary. See Fowler's Pull Up Method for this refactoring."
+        },
+        {
+          "id": "b",
+          "text": "This indicates the method needs extraction into a separate utility module to avoid duplication across unrelated types.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect here. Extracting to a utility can be appropriate when behavior is unrelated to the class responsibilities, but in this example both classes share a logical domain relationship via the base class. Using a utility would move behavior out of the domain model, harming encapsulation and discoverability."
+        },
+        {
+          "id": "c",
+          "text": "This indicates each subclass has different responsibilities so the methods should remain separate without consolidation.",
+          "isCorrect": false,
+          "explanation": "This is a reasonable caution but does not match these identical bodies. If responsibilities truly differed you would see divergent logic, not exact duplication. Keep methods separate only when the behavior belongs specifically to that subclass's role; identical code usually signals a refactoring opportunity."
+        },
+        {
+          "id": "d",
+          "text": "This indicates type-specific behavior should be implemented via interfaces or strategy objects rather than moving code upward.",
+          "isCorrect": false,
+          "explanation": "Using interfaces or strategy pattern is a valid design choice when different algorithms must be selected at runtime. However, when implementations are identical, introducing strategies adds unnecessary indirection. Prefer moving the shared method to the common superclass first, and refactor to strategies only if branching becomes complex."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Two subclasses implement nearly the same computation but one adjusts rounding slightly. Which refactor balances reuse with the small difference?",
+      "codeSnippet": "class OnlineOrder extends Order {\n  computeTotal() {\n    const sum = this.items.reduce((s, i) => s + i.price, 0);\n    return Math.round(sum * 100) / 100; // rounds to cents\n  }\n}\nclass InStoreOrder extends Order {\n  computeTotal() {\n    const sum = this.items.reduce((s, i) => s + i.price, 0);\n    return sum; // no rounding here\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Move shared calculations into the base class and override the small differing portion in subclasses.",
+          "isCorrect": true,
+          "explanation": "This is the recommended approach: pull common computation into the superclass and provide a small overridable hook or protected method for the rounding difference. That preserves reuse and keeps subclass responsibilities clear without duplicating the whole algorithm."
+        },
+        {
+          "id": "b",
+          "text": "Extract the differing bits into a parameterized helper function used by both subclasses to keep the parent free of logic.",
+          "isCorrect": false,
+          "explanation": "A helper function can reduce duplication but pushes domain logic out of the object hierarchy and may complicate access to instance state. Prefer moving core behavior to the superclass when it operates on shared state, using helper functions selectively for pure, stateless utilities."
+        },
+        {
+          "id": "c",
+          "text": "Keep methods duplicated because the differences are business critical and merging risks introducing subtle incorrect behavior.",
+          "isCorrect": false,
+          "explanation": "Conservative but often avoidable. If differences are truly business-critical and tightly coupled to subclass context, duplication might be justified. In this rounding example, the difference is a small variation and a controlled override or hook is safer than wholesale duplication."
+        },
+        {
+          "id": "d",
+          "text": "Introduce an interface to abstract behavior and inject separate strategy implementations for each variant to remove duplication.",
+          "isCorrect": false,
+          "explanation": "Applying strategy can work when multiple interchangeable algorithms exist and selection is dynamic. For small differences in a shared algorithm, injecting strategies can be overengineering and adds indirection. Pulling shared logic into the superclass with a small override often yields clearer code."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better design overall for eliminating duplication while preserving encapsulation and extensibility?",
+      "codeSnippet": "/* Version A */\nclass Order {\n  total() {\n    const base = this.items.reduce((s, i) => s + i.price, 0);\n    return this.applyAdjustments(base);\n  }\n  protected applyAdjustments(amount: number) { return amount; }\n}\nclass OnlineOrder extends Order { protected applyAdjustments(a: number) { return Math.round(a * 100) / 100; } }\nclass InStoreOrder extends Order { protected applyAdjustments(a: number) { return a; } }\n\n/* Version B */\nfunction calculateTotal(order: Order, source: 'online' | 'instore') {\n  const base = order.items.reduce((s, i) => s + i.price, 0);\n  if (source === 'online') return Math.round(base * 100) / 100;\n  return base;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes common behavior in the base class while allowing safe subclass overrides for the small differences.",
+          "isCorrect": true,
+          "explanation": "Version A demonstrates pulling the common algorithm into the superclass and exposing a protected extension point for subclasses to vary only the small part. This preserves encapsulation, keeps behavior related to the object, and supports future extension with minimal coupling. It follows object-oriented design principles and aligns with the Pull Up Method and Template Method patterns described by Fowler and the Gang of Four."
+        },
+        {
+          "id": "b",
+          "text": "Version B hides shared logic in an external utility with type flags that increase coupling and reduce encapsulation.",
+          "isCorrect": false,
+          "explanation": "Version B centralizes logic in an external function that switches on a source flag. That approach couples the caller to formatting rules and scatters behavior outside the domain objects, violating encapsulation and making future extensions awkward. It also encourages switch-based branching which tends to proliferate when more variants appear. Prefer encapsulating behavior in the class hierarchy or using strategies where appropriate. See Fowler on moving behavior to the most natural locus to maintain encapsulation."
+        }
+      ]
+    }
+  ]
+}

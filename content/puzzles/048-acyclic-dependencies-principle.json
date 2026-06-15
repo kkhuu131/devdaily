@@ -1,0 +1,106 @@
+{
+  "id": 48,
+  "conceptName": "Acyclic Dependencies Principle",
+  "category": "solid",
+  "definition": "A guideline that package or module dependency graphs should contain no cycles, so high-level and low-level components can be rearranged without introducing dependency loops.",
+  "ruleOfThumb": "Organize packages so dependencies point in one direction only; if two packages need each other, introduce a stable abstraction both can depend on.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Agile Software Development, Principles, Patterns, and Practices",
+    "chapter": "Package Dependencies",
+    "page": null,
+    "externalUrl": "https://en.wikipedia.org/wiki/Acyclic_dependencies_principle"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at these three service modules. What is the primary structural problem you see?",
+      "codeSnippet": "// userService.ts\nimport { OrderService } from './orderService';\nexport class UserService { constructor(private orders: OrderService) {} }\n\n// orderService.ts\nimport { PaymentService } from './paymentService';\nexport class OrderService { constructor(private payments: PaymentService) {} }\n\n// paymentService.ts\nimport { UserService } from './userService';\nexport class PaymentService { constructor(private users: UserService) {} }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The modules import each other, creating a circular dependency across core service classes and breaking modular layering.",
+          "isCorrect": true,
+          "explanation": "This code forms a cycle: UserService -> OrderService -> PaymentService -> UserService. Such cycles violate acyclic package design and make it hard to change layering, test modules in isolation, or control initialization order. The usual fix is to introduce an abstraction or move shared contracts into a stable package so dependencies point in one direction."
+        },
+        {
+          "id": "b",
+          "text": "These classes expose too many public methods resulting in interface pollution and forcing consumers to depend on irrelevant behavior.",
+          "isCorrect": false,
+          "explanation": "While large public APIs can be a problem, the snippet shows direct imports forming a closed loop rather than merely oversized interfaces. Interface pollution would show many unrelated methods, but the immediate risk here is cyclical module coupling causing build and runtime fragility."
+        },
+        {
+          "id": "c",
+          "text": "The services share mutable global state which creates hidden coupling and unpredictable order dependent runtime failures.",
+          "isCorrect": false,
+          "explanation": "Shared mutable state causes hidden dependencies, but the snippet demonstrates explicit constructor-based imports between services, indicating a dependency cycle rather than global mutable state. Global state issues would be visible as module-level variables or singletons, which are not shown here."
+        },
+        {
+          "id": "d",
+          "text": "There is duplicated business logic across modules causing code churn and inconsistent behavior when making changes.",
+          "isCorrect": false,
+          "explanation": "Duplicated logic leads to maintenance issues, yet the example shows direct mutual imports instead of repeated implementations. The pressing structural fault is cyclic dependency, which will impede refactoring and testing unless the inter-module cycle is broken."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "These package index files use re-exports. What is the central design problem introduced by these exports?",
+      "codeSnippet": "// billing/index.ts\nexport * from '../payments';\nexport * from './billingService';\n\n// payments/index.ts\nexport * from '../reports';\nexport * from './paymentService';\n\n// reports/index.ts\nexport * from '../billing';\nexport * from './reportService';",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The package re-exports create a cycle among billing payments and reports causing package-level cyclic coupling at runtime.",
+          "isCorrect": true,
+          "explanation": "Re-exporting from other package indexes can accidentally create a cyclic dependency graph at the package level, not just individual files. That cycle makes builds brittle, can cause circular initialization problems in some module systems, and violates acyclic package design. Breaking the cycle usually requires moving shared APIs to a neutral package or removing problematic re-exports."
+        },
+        {
+          "id": "b",
+          "text": "Relative path mistakes are causing modules to import incorrect files leading to unexpected exports and broken package boundaries.",
+          "isCorrect": false,
+          "explanation": "Incorrect relative paths can break boundaries, but the pattern shown intentionally re-exports between packages in a loop. The symptom is a structural cycle rather than accidental file resolution errors. Fixing paths would not remove the intentional circular re-exports that cause coupling problems."
+        },
+        {
+          "id": "c",
+          "text": "The issue is excessive public API exposure through index files which increases coupling and reduces encapsulation across packages.",
+          "isCorrect": false,
+          "explanation": "Over-exposing internals via index files does increase coupling and hurt encapsulation, but the concrete risk in this snippet is the creation of a dependency cycle by re-exporting between those specific packages. Addressing overexposure helps, yet it does not by itself resolve a cyclical dependency graph."
+        },
+        {
+          "id": "d",
+          "text": "This is primarily a runtime cyclic initialization problem producing undefined imports rather than a static design level dependency concern.",
+          "isCorrect": false,
+          "explanation": "Circular initialization can be an outcome of package cycles and can produce undefined exports at runtime, but the root problem here is the static package-level cycle caused by reciprocal re-exports. Treating it purely as a runtime issue ignores the higher-level design smell that will reappear across environments and tooling."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two approaches below. Which version is structurally preferable for avoiding coupling cycles?",
+      "codeSnippet": "// Version A: contracts.ts\nexport interface Notifier { notify(message: string): void }\n// billing.ts\nimport { Notifier } from './contracts'\nexport class Billing { constructor(private notifier: Notifier) {} }\n\n// Version B: circular.ts\n// billing.ts imports Payments and Payments imports Billing causing runtime cycle\nimport { Payments } from './payments'\nexport class Billing { constructor(private payments: Payments) {} }\n\n// payments.ts\nimport { Billing } from './billing'\nexport class Payments { constructor(private billing: Billing) {} }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A introduces a stable contracts package that both sides depend on and avoids creating a dependency cycle.",
+          "isCorrect": true,
+          "explanation": "Version A breaks the mutual dependency by extracting a small stable abstraction that higher and lower modules can depend on without depending on each other. This follows the guideline of directing dependencies toward stable abstractions, enabling independent compilation, easier testing, and clearer layering. The contracts package becomes the stable node in the graph, preventing cycles."
+        },
+        {
+          "id": "b",
+          "text": "Version B relies on mutual concrete constructors creating a runtime cycle and brittle dynamic coupling that is hard to maintain.",
+          "isCorrect": false,
+          "explanation": "Version B keeps concrete mutual dependencies between Billing and Payments, which manifests as a true cycle in the dependency graph and often causes initialization order problems or the need for fragile workarounds. This design couples implementation details across layers and prevents clean modularization. A better approach is to depend on abstractions rather than create runtime mutual construction chains."
+        }
+      ]
+    }
+  ]
+}

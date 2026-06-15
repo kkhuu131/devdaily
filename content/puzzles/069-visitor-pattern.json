@@ -1,0 +1,106 @@
+{
+  "id": 69,
+  "conceptName": "Visitor Pattern",
+  "category": "design-pattern",
+  "definition": "A way to separate algorithms from the objects on which they operate by letting an external operation object visit elements and perform behavior.",
+  "ruleOfThumb": "If you need many unrelated operations on a stable object structure, put those operations in external operation objects rather than scattering them on elements.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Visitor",
+    "page": "331-343",
+    "externalUrl": "https://en.wikipedia.org/wiki/Visitor_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the code snippet. Which description most accurately matches the structural intent shown?",
+      "codeSnippet": "interface Element { accept(op: Operation): void }\nclass ElementA implements Element { accept(op: Operation) { op.applyToA(this) } }\nclass ElementB implements Element { accept(op: Operation) { op.applyToB(this) } }\ninterface Operation { applyToA(a: ElementA): void; applyToB(b: ElementB): void }\nclass PrintOperation implements Operation { applyToA(a: ElementA) { console.log('A') } applyToB(b: ElementB) { console.log('B') } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code separates operations from element classes by letting an external operation object perform tasks on elements.",
+          "isCorrect": true,
+          "explanation": "Correct. The snippet centralizes behavior in Operation objects and elements provide accept hooks. This is the canonical structure where element classes expose accept and the external operation object implements per-element methods, achieving double dispatch. See GoF Visitor chapter for rationale."
+        },
+        {
+          "id": "b",
+          "text": "This code encapsulates interchangeable algorithms inside objects that clients choose at runtime to vary behavior.",
+          "isCorrect": false,
+          "explanation": "Plausible but not correct. The Strategy pattern encapsulates algorithms but clients select strategies directly and strategies operate on a single context role, whereas the snippet shows operations dispatched across multiple concrete element types via accept, which is different."
+        },
+        {
+          "id": "c",
+          "text": "This code composes objects into tree structures to treat individual and composite objects uniformly as one interface.",
+          "isCorrect": false,
+          "explanation": "Plausible but off target. The Composite pattern models tree structures and uniform treatment of nodes and leaves. The snippet shows an external operation visiting distinct element types rather than composing them into a tree with child management."
+        },
+        {
+          "id": "d",
+          "text": "This code encapsulates actions as objects so requests can be parameterized, queued, and undone flexibly by clients.",
+          "isCorrect": false,
+          "explanation": "Plausible confusion with Command. Command encapsulates requests to support queuing or undo. The snippet instead dispatches type-specific behavior across element types using per-type callbacks on an operation object, which is structurally different from Command intent."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You must add many new operations across a stable hierarchy of element types. Which guiding choice matters most before refactoring?",
+      "codeSnippet": "interface Shape { /* many concrete shapes */ }\nclass Circle implements Shape { draw() { /* ... */ } }\nclass Square implements Shape { draw() { /* ... */ } }\n// How should we add print, serialize, and analyze functionality across these classes?",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Extract operations into an external operation object when you expect to add many different operations over a stable element hierarchy.",
+          "isCorrect": true,
+          "explanation": "Correct. When the set of element types is stable but you need to add diverse operations, centralizing those operations into external operation objects keeps element classes unchanged and makes adding new operations simpler. This is the classic tradeoff explained by GoF."
+        },
+        {
+          "id": "b",
+          "text": "Keep operations as instance methods on each element class when you expect element types to be added more often than operations.",
+          "isCorrect": false,
+          "explanation": "Reasonable but incorrect for the stated scenario. If you expect the type hierarchy to grow frequently, putting behavior on elements makes it easier to add new types without updating many operation objects. The right choice depends on which axis changes more often."
+        },
+        {
+          "id": "c",
+          "text": "Prefer using a generic reflection based dispatcher to avoid changing class hierarchies when adding new operations frequently.",
+          "isCorrect": false,
+          "explanation": "Plausible tradeoff but risky. Reflection dispatch can centralize operations but introduces runtime brittleness and performance concerns. It hides type structure and often complicates maintenance compared to an explicit operation-object approach."
+        },
+        {
+          "id": "d",
+          "text": "Introduce an external operation object only after you confirm that operations will outnumber future element classes.",
+          "isCorrect": false,
+          "explanation": "Partially sensible but too cautious as a rule. Waiting for operations to outnumber classes may delay needed refactoring. Prefer evaluating expected change frequency and coupling; if operations clearly dominate, extract them proactively."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation should you prefer for adding many new operations while keeping the element hierarchy stable?",
+      "codeSnippet": "// Version A\ninterface Element { accept(op: Operation): void }\nclass ElementA implements Element { accept(op: Operation) { op.visitA(this) } }\nclass ElementB implements Element { accept(op: Operation) { op.visitB(this) } }\ninterface Operation { visitA(a: ElementA): void; visitB(b: ElementB): void }\n\n// Version B\ntype ElementUnion = ElementA | ElementB\nfunction performOp(e: ElementUnion) {\n  if (e instanceof ElementA) handleA(e)\n  else if (e instanceof ElementB) handleB(e)\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes element operations into external operation objects across the hierarchy.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable for the stated goal. Centralizing operations in external operation objects makes adding new operations explicit and localized to operation implementations, without changing element classes. This minimizes invasive edits across the hierarchy and gives compile time checks for per-element methods. See GoF on the Visitor tradeoffs and how it supports adding operations when types are stable."
+        },
+        {
+          "id": "b",
+          "text": "Version B scatters type switches and instanceof checks causing many dispersed changes when adding new operations later.",
+          "isCorrect": false,
+          "explanation": "Version B appears simpler initially but couples operation code to type tests. Each new operation requires finding and updating multiple switch sites, increasing risk of omissions and regressions. This approach also mixes control flow with type discrimination, making it harder to maintain as operation count grows."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 66,
+  "conceptName": "Chain of Responsibility Pattern",
+  "category": "design-pattern",
+  "definition": "A behavioral design that passes a request along a linked sequence of handler objects until one handles it, decoupling senders from receivers.",
+  "ruleOfThumb": "Link small handler objects into a chain so new handlers can be added without changing existing handler code.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns - Chain of Responsibility",
+    "page": "237",
+    "externalUrl": "https://www.amazon.com/Design-Patterns-Elements-Reusable-Object-Oriented/dp/0201633612"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the handler classes and the runtime chain. What best describes the runtime behaviour of this code?",
+      "codeSnippet": "interface Handler { setNext(h: Handler): Handler; handle(req: string): string | null }\nclass AuthHandler implements Handler { private next?: Handler; setNext(h: Handler){ this.next = h; return h }\n  handle(req: string){ if (req === 'auth') return 'auth ok'; return this.next ? this.next.handle(req) : null }\n}\nclass LogHandler implements Handler { private next?: Handler; setNext(h: Handler){ this.next = h; return h }\n  handle(req: string){ if (req === 'log') return 'logged'; return this.next ? this.next.handle(req) : null }\n}\nconst chain = new AuthHandler(); chain.setNext(new LogHandler()); const result = chain.handle('log');",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Requests are passed along a linked series of handlers until one decides it can process and return a response.",
+          "isCorrect": true,
+          "explanation": "This implementation builds a sequence of handler objects where each handler either handles the request or delegates to the next. That routing behavior is precisely the intent here — handlers are linked and responsibility flows along the chain. The handlers remain decoupled from the caller, and extension is achieved by inserting new handler objects rather than modifying existing ones."
+        },
+        {
+          "id": "b",
+          "text": "Each handler encapsulates a strategy and callers choose which handler to invoke directly at runtime.",
+          "isCorrect": false,
+          "explanation": "While both Strategy and a handler chain isolate behavior, this code does not let a caller select a concrete handler at runtime. Instead the handlers are linked and delegation occurs implicitly through the chain. Strategy would typically inject a chosen algorithm into a context rather than chain objects together to forward requests."
+        },
+        {
+          "id": "c",
+          "text": "Handlers subscribe to events and get notified when a request occurs so multiple handlers may react concurrently.",
+          "isCorrect": false,
+          "explanation": "This describes a publish subscribe approach where multiple subscribers are notified and can act independently. The provided code routes a single request along a sequence until one handler responds; it does not broadcast to many listeners nor perform concurrent notification, which is the hallmark of an observer pattern."
+        },
+        {
+          "id": "d",
+          "text": "The chain composes behaviours into a single object so callers interact with one unified handler interface only.",
+          "isCorrect": false,
+          "explanation": "This sounds like a composition or decorator claim where behaviors combine into one object wrapping another. Although the chain yields a single entry point, its goal is incremental responsibility delegation, not composing layered decorators to modify behavior. The distinction matters when handlers decide to pass along versus always invoking wrapped behavior."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given a high-throughput HTTP service that uses sequential handlers, which downside is most likely to surface in production?",
+      "codeSnippet": "class Middleware { constructor(private next?: Middleware) {}\n  handle(req: { path: string }) {\n    if (req.path.startsWith('/api')) { /* do api work */ }\n    return this.next ? this.next.handle(req) : null\n  }\n}\nconst m = new Middleware(new Middleware());\nm.handle({ path: '/api/users' });",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Latency increases because every request may traverse many handlers before reaching the one that can actually process it.",
+          "isCorrect": true,
+          "explanation": "Sequential traversal adds per-request overhead proportional to chain length. In high-throughput systems this can accumulate into significant latency and CPU cost, especially when many handlers only perform small predicate checks. Mitigations include short-circuiting earlier, reordering hot handlers, or introducing routing that narrows candidates before traversal."
+        },
+        {
+          "id": "b",
+          "text": "This structure prevents centralized logging because each handler isolates its operations and no global interceptor can observe all steps.",
+          "isCorrect": false,
+          "explanation": "While decentralized handlers can make collecting consistent cross-cutting concerns harder, many chain implementations support shared context objects, middleware wrappers, or an initial interceptor to perform centralized logging. The claim overstates impossibility; observability can be added without abandoning the chain entirely."
+        },
+        {
+          "id": "c",
+          "text": "Refactoring into a table driven switch is impossible because handlers contain state and vary widely in input requirements.",
+          "isCorrect": false,
+          "explanation": "A table-driven dispatcher may be impractical if handlers hold significant state or require complex initialization, but it is rarely impossible. Often a hybrid approach works: use a dispatcher for simple stateless decisions and delegate complex stateful work to handler objects. The statement is too absolute to be correct in general."
+        },
+        {
+          "id": "d",
+          "text": "Testing becomes trivial because handlers are small and independent requiring only isolated unit tests without integration for chain behavior.",
+          "isCorrect": false,
+          "explanation": "Handlers being small helps unit testing, but chain interactions often require integration tests to verify delegation order, short-circuiting, and shared context behavior. Claiming that integration testing is unnecessary ignores subtle bugs that manifest only when multiple handlers are composed."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two alternatives are proposed for request routing. Which version is structurally superior for extensibility and minimal modification when adding new handlers?",
+      "codeSnippet": "// Version A: composable handler objects\ninterface Handler { setNext(h: Handler): Handler; handle(req: Request): boolean }\nclass BaseHandler implements Handler { private next?: Handler; setNext(h: Handler){ this.next = h; return h }\n  handle(req: Request){ return this.next ? this.next.handle(req) : false }\n}\n// Version B: centralized dispatcher\nfunction dispatch(req: Request) {\n  if (req.type === 'a') return handleA(req)\n  if (req.type === 'b') return handleB(req)\n  return false\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A decouples routing into composable handler objects so adding new handlers requires no core router changes.",
+          "isCorrect": true,
+          "explanation": "Version A follows the idea of delegating responsibility to independent handler objects linked together. New handlers can be created and inserted into the chain without changing existing handler implementations or a central dispatcher, which reduces risk of regression. This approach supports open closed principle for many practical extension scenarios. See Gamma et al. and pragmatic design guidance for behavioral patterns and decoupling."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes conditional routing in one dispatcher forcing frequent edits and risking large switch statements.",
+          "isCorrect": false,
+          "explanation": "A centralized dispatcher often becomes a maintenance hotspot as new cases are added, increasing merge conflicts and growing conditional complexity. That said, for very small, fixed sets of routes a dispatcher can be simpler. The disadvantage here is structural rather than absolute; the dispatcher can be refactored later but initially encourages modification of a single monolithic function rather than adding self-contained handler objects."
+        }
+      ]
+    }
+  ]
+}

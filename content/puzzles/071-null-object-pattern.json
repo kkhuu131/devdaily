@@ -1,0 +1,106 @@
+{
+  "id": 71,
+  "conceptName": "Null Object Pattern",
+  "category": "design-pattern",
+  "definition": "Provide an object with neutral behavior in place of null to avoid conditional checks and make client code simpler.",
+  "ruleOfThumb": "When callers scatter null checks for a dependency, prefer supplying a benign default implementation instead of propagating nulls.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Patterns of Enterprise Application Architecture",
+    "chapter": "Null Object",
+    "page": "n/a",
+    "externalUrl": "https://martinfowler.com/eaaCatalog/nullObject.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given this code snippet, which observation best indicates that a default harmless implementation is being used to simplify callers?",
+      "codeSnippet": "interface Logger {\n  log(msg: string): void\n}\n\nclass ConsoleLogger implements Logger {\n  log(msg: string) { console.log(msg) }\n}\n\nclass NoopLogger implements Logger {\n  log(msg: string) { /* intentionally empty */ }\n}\n\nfunction createLogger(useConsole: boolean): Logger {\n  return useConsole ? new ConsoleLogger() : new NoopLogger()\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code introduces a no-op implementation but it still requires explicit null checks in many places.",
+          "isCorrect": false,
+          "explanation": "The snippet shows a deliberate NoopLogger used as a substitute for missing behavior, but it does not also require callers to check for null. The incorrect option asserts an ongoing need for explicit null checks, which contradicts the pattern illustrated here. The intent of supplying a default logger is to remove null checks from client code by giving a harmless implementation instead of a null reference."
+        },
+        {
+          "id": "b",
+          "text": "This code centralizes logging behavior into a default no-op object so callers never need to perform null checks.",
+          "isCorrect": true,
+          "explanation": "Correct. The snippet returns either ConsoleLogger or NoopLogger rather than a null reference. Supplying a no-op implementation prevents callers from needing to guard every call with null checks. This is the essence of the pattern described by Fowler: provide a neutral object to simplify client code and avoid scattered conditional logic."
+        },
+        {
+          "id": "c",
+          "text": "This code duplicates null checking across callers causing scattered conditional logic rather than single replaceable object.",
+          "isCorrect": false,
+          "explanation": "This option describes the opposite situation where callers repeatedly check for null instead of relying on a default object. The snippet actually centralizes the decision in createLogger and returns a harmless implementation, avoiding per-caller null checks. While duplicated checks are a real concern, they are not what this code demonstrates."
+        },
+        {
+          "id": "d",
+          "text": "This code hides error handling by swallowing calls in a silent implementation which may mask real failures.",
+          "isCorrect": false,
+          "explanation": "Swallowing errors is a legitimate concern when using a no-op implementation, but it is a tradeoff rather than the primary signal in this snippet. The pattern aims to replace nulls with neutral behavior to simplify callers; whether that behavior masks important failures depends on context and logging needs. It is a plausible downside but not the most direct observation of what the code is doing."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this service setup. Which concern is the most relevant tradeoff when a default harmless implementation is substituted for a missing dependency?",
+      "codeSnippet": "interface PaymentGateway {\n  charge(amount: number): boolean\n}\n\nclass RealGateway implements PaymentGateway {\n  charge(amount: number) { /* network call */ return true }\n}\n\nclass NoopGateway implements PaymentGateway {\n  charge(amount: number) { return false }\n}\n\nclass OrderService {\n  constructor(private gateway: PaymentGateway = new NoopGateway()) {}\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This implementation will likely conceal configuration mistakes by providing a silent default instead of failing fast during startup.",
+          "isCorrect": true,
+          "explanation": "Correct. Replacing a missing or misconfigured dependency with a harmless default can prevent early failure and hide deployment or wiring mistakes. In many systems failing fast on misconfiguration is preferable so errors are detected early. Fowler and other practitioners recommend being deliberate when using defaults so you do not accidentally mask configuration issues."
+        },
+        {
+          "id": "b",
+          "text": "This implementation is primarily intended as a testing stub that simplifies unit tests but should not be used in production.",
+          "isCorrect": false,
+          "explanation": "A no-op implementation can be useful as a test double, but the code snippet shows a default used at runtime via the constructor parameter. That usage pattern suggests a runtime substitution rather than only test scaffolding. Treating the default as solely a test stub misses the broader design tradeoffs about production behavior and configuration visibility."
+        },
+        {
+          "id": "c",
+          "text": "This implementation centralizes behavior but it couples callers to an assumed no-op behavior making future changes harder.",
+          "isCorrect": false,
+          "explanation": "Centralizing behavior into a default object does reduce duplicated checks, but it does not necessarily couple callers to a specific no-op contract if the interface remains well defined. The risk described here can happen if callers rely on implicit no-op semantics, yet the primary concern in many deployments is masking configuration errors rather than coupling alone."
+        },
+        {
+          "id": "d",
+          "text": "This implementation improves caller ergonomics but it may hide important error signals when an upstream service fails silently.",
+          "isCorrect": false,
+          "explanation": "Hiding upstream errors is a valid and real concern with no-op defaults because they can swallow failures. However, this is a narrower observation compared to the configuration and fail-fast tradeoff. Depending on context you might prefer explicit failures or monitored defaults; both are related but the concealment of misconfiguration is often the first operational problem encountered with this style."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two implementation variants are shown. Which version is preferable for maintainability and why?",
+      "codeSnippet": "// Version A\nclass OrderProcessorA {\n  constructor(private gateway?: PaymentGateway) {}\n\n  process(amount: number) {\n    if (this.gateway) {\n      this.gateway.charge(amount)\n    } else {\n      // skip payment silently\n    }\n  }\n}\n\n// Version B\nclass NoopGateway implements PaymentGateway {\n  charge(amount: number) { return false }\n}\n\nclass OrderProcessorB {\n  constructor(private gateway: PaymentGateway = new NoopGateway()) {}\n\n  process(amount: number) {\n    this.gateway.charge(amount)\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps explicit null checks in callers which creates duplicated conditional logic and brittle call sites.",
+          "isCorrect": false,
+          "explanation": "Version A forces every caller to deal with presence or absence of the gateway, which scatters conditional logic across the codebase and increases maintenance burden. Even though A makes the absence explicit, it leads to duplication and more places to get the logic wrong. For example, forgotten guards can easily cause runtime failures or behavioral inconsistencies. The preferred approach generally centralizes the behavior to avoid this duplication."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes a harmless default object eliminating null checks for all callers.",
+          "isCorrect": true,
+          "explanation": "Version B is preferable for maintainability because it moves the 'no-op' behavior into a single, replaceable class, allowing callers to invoke the interface without guarding for absence. This reduces duplicated conditional logic, simplifies reasoning about call sites, and makes it easier to swap in a real implementation later. Caveats include consciously deciding whether suppressing operations is acceptable for your domain; if not, a failing default or explicit validation at startup may be better. See Martin Fowler on the Null Object and the GoF catalog for guidance on tradeoffs and intent."
+        }
+      ]
+    }
+  ]
+}

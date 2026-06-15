@@ -1,0 +1,106 @@
+{
+  "id": 79,
+  "conceptName": "Extract Class",
+  "category": "refactoring",
+  "definition": "When a class has multiple responsibilities or clusters of fields and methods, move one responsibility into a new class to improve cohesion and simplify the original class.",
+  "ruleOfThumb": "If you can name a subgroup of methods and fields with its own responsibility, consider moving them into a separate type.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Extract Class",
+    "page": "N/A",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this class. Which symptom most directly indicates splitting responsibilities into separate types?",
+      "codeSnippet": "class OrderProcessor {\n  orders: Order[] = [];\n  calculateTotals(order) { /* totals, taxes, discounts */ }\n  sendInvoice(order) { /* format invoice and email */ }\n  validatePayment(payment) { /* payment gateway interaction */ }\n  formatShippingLabel(order) { /* layout text for carrier */ }\n  scheduleDelivery(order) { /* carrier API */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class contains two cohesive clusters of methods and fields that represent distinct responsibilities that can be separated.",
+          "isCorrect": true,
+          "explanation": "The class shows two clear clusters: billing/invoicing and shipping/scheduling. Those clusters have their own state and behavior and will evolve differently, so splitting them into focused types reduces coupling and improves clarity."
+        },
+        {
+          "id": "b",
+          "text": "This class contains several very long methods that should be refactored into smaller functions to improve readability.",
+          "isCorrect": false,
+          "explanation": "Long methods are a real smell, but here the bigger problem is intermingled responsibilities. Shortening methods without separating responsibilities still leaves a class that is harder to reason about and change."
+        },
+        {
+          "id": "c",
+          "text": "This class contains duplicated fields and logic copied across methods indicating potential duplication across different modules.",
+          "isCorrect": false,
+          "explanation": "Duplication is important to address, but the snippet more strongly signals distinct responsibilities (billing versus shipping). Duplication might be resolved by extracting shared helpers instead of splitting responsibility clusters."
+        },
+        {
+          "id": "d",
+          "text": "This class contains many configuration flags and switches that drive unrelated flow making the behavior difficult to reason about.",
+          "isCorrect": false,
+          "explanation": "Flag-driven behavior can indicate a need for polymorphism or state objects, but the shown methods group around separate domains rather than flag-controlled branches, so splitting responsibilities is a clearer first step."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this view-model style class, what is the primary concern to address when improving the design?",
+      "codeSnippet": "class CustomerViewModel {\n  id: string;\n  name: string;\n  addressLine: string;\n  saveToDatabase() { /* SQL persistence logic */ }\n  toHtml() { /* build HTML for UI */ }\n  calculateLoyaltyDiscount() { /* business rules */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The primary problem is that this class mixes domain business logic with presentation and persistence concerns in the same type.",
+          "isCorrect": true,
+          "explanation": "The view model couples UI rendering, persistence, and business rules. Separating these responsibilities into domain, persistence, and presentation types yields clearer boundaries and easier testing."
+        },
+        {
+          "id": "b",
+          "text": "The primary problem is that the methods use inconsistent naming conventions leading to confusion about intent and harder maintenance over time.",
+          "isCorrect": false,
+          "explanation": "Naming consistency helps, but inconsistent naming is a secondary symptom. The larger design issue is the mixing of responsibilities which impacts modularity and testing more than naming alone."
+        },
+        {
+          "id": "c",
+          "text": "The primary problem is that this class has too many dependencies injected making construction and testing more complex than necessary.",
+          "isCorrect": false,
+          "explanation": "Excessive dependencies are a real concern, but the snippet shows internal mixing of persistence, presentation, and business logic rather than a problematic dependency graph that would suggest a different refactoring."
+        },
+        {
+          "id": "d",
+          "text": "The primary problem is that several methods return raw primitive maps rather than typed objects reducing discoverability and static guarantees.",
+          "isCorrect": false,
+          "explanation": "Using typed return values is valuable, yet the immediate architectural smell is mixed responsibilities. Introducing proper types will help, but separating concerns first will make types clearer and more aligned to each layer."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better structural design for maintainability and future changes?",
+      "codeSnippet": "// Version A\nclass BillingService {\n  charge(order) { /* billing logic */ }\n}\nclass ShippingService {\n  schedule(order) { /* shipping logic */ }\n}\nclass OrderProcessorV1 {\n  constructor(private billing: BillingService, private shipping: ShippingService) {}\n  process(order) { this.billing.charge(order); this.shipping.schedule(order); }\n}\n\n// Version B\nclass MonolithOrderProcessor {\n  process(order) { /* billing, shipping, formatting, and persistence all inside one class */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates responsibilities into focused types improving cohesion and enabling independent evolution.",
+          "isCorrect": true,
+          "explanation": "Version A separates billing and shipping into their own services, so each can change, be tested, and be deployed independently. This reduces coupling between concerns and makes the system easier to extend when business rules diverge."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes unrelated methods behind a facade causing tight coupling and making independent reuse more difficult.",
+          "isCorrect": false,
+          "explanation": "Keeping all behavior in one class may appear simpler initially, but it couples unrelated responsibilities and hinders independent testing, reuse, and targeted changes. Over time this leads to fragile code where a change for one concern risks breaking others."
+        }
+      ]
+    }
+  ]
+}

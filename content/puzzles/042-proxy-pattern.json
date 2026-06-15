@@ -1,0 +1,106 @@
+{
+  "id": 42,
+  "conceptName": "Proxy Pattern",
+  "category": "design-pattern",
+  "definition": "Provide a surrogate object that controls access to another object, enabling lazy loading, caching, logging, or access control without changing client code.",
+  "ruleOfThumb": "When clients must treat a substitute like the real object to add access control, caching, or defer expensive operations, introduce a lightweight wrapper implementing the same interface.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Structural Patterns - Proxy",
+    "page": "pp. 223-230",
+    "externalUrl": "https://refactoring.guru/design-patterns/proxy"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which design idea does the following TypeScript snippet most clearly illustrate?",
+      "codeSnippet": "interface Image { display(): void }\nclass RealImage implements Image {\n  constructor(private url: string) {}\n  display() { console.log('render', this.url) }\n}\nclass ImageProxy implements Image {\n  private real?: RealImage\n  constructor(private url: string) {}\n  display() { if (!this.real) this.real = new RealImage(this.url); this.real.display() }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A surrogate object stands in for another to control or delay access to the real resource.",
+          "isCorrect": true,
+          "explanation": "This snippet delays construction of the heavy RealImage until display is called. The proxy object implements the same interface and defers creation, which is the classic surrogate approach. See GoF Structural Patterns for discussion of deferred access and resource management."
+        },
+        {
+          "id": "b",
+          "text": "A composition wrapper adds additional behavior to an object without changing its interface at runtime.",
+          "isCorrect": false,
+          "explanation": "While composition is present, the intent here is not to layer behavior onto an existing instance but to postpone creation of the heavy object. A decorator would usually receive and wrap an existing component rather than create it lazily."
+        },
+        {
+          "id": "c",
+          "text": "An adapter translates one interface to another so clients can use incompatible services without modification.",
+          "isCorrect": false,
+          "explanation": "An adapter focuses on converting interfaces so incompatible classes can interoperate. This code preserves the interface and delays creation instead of translating method signatures or adapting APIs."
+        },
+        {
+          "id": "d",
+          "text": "A facade offers a simplified combined API to a set of subsystems hiding internal complexity from callers.",
+          "isCorrect": false,
+          "explanation": "A facade aggregates multiple subsystems behind a simpler interface. Here there is a one-to-one relationship between proxy and real object and no aggregation of multiple subsystems, so the facade concept does not match this snippet."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this wrapper around an external service, what primary responsibility has been added by the wrapper?",
+      "codeSnippet": "interface DataService { fetch(id: string): Promise<string> }\nclass RemoteService implements DataService {\n  async fetch(id: string) { return fetch(`/data/${id}`).then(r => r.text()) }\n}\nclass CachingService implements DataService {\n  private cache = new Map<string,string>()\n  constructor(private real: DataService) {}\n  async fetch(id: string) { if (this.cache.has(id)) return this.cache.get(id)!; const v = await this.real.fetch(id); this.cache.set(id, v); return v }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The wrapper transparently caches fetched data to avoid redundant remote requests and return cached responses.",
+          "isCorrect": true,
+          "explanation": "The wrapper stores fetched results in a Map and returns cached values when present. The added behavior is caching to reduce network calls, not primary business logic changes or interface translation."
+        },
+        {
+          "id": "b",
+          "text": "The wrapper augments returned objects with extra logging and side effects while preserving the original interface.",
+          "isCorrect": false,
+          "explanation": "Although wrappers can add logging, this specific implementation demonstrates a Map-based cache and conditional return of stored results rather than instrumentation or side effects on each call."
+        },
+        {
+          "id": "c",
+          "text": "The wrapper enforces access control by checking permissions before delegating calls to the real service implementation.",
+          "isCorrect": false,
+          "explanation": "Access control would manifest as permission checks against an authentication object before delegation. The shown code instead inspects a cache and bypasses the real service when a value exists, which indicates caching rather than authorization."
+        },
+        {
+          "id": "d",
+          "text": "The wrapper lazily constructs the underlying service instance on first use to defer heavy initialization costs.",
+          "isCorrect": false,
+          "explanation": "Lazy construction would defer creating the underlying service instance. Here the underlying service is provided via constructor injection and the code focuses on storing and returning previously fetched values, which is caching behavior."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable to enforce authorization consistently across different order service implementations?",
+      "codeSnippet": "// Version A\ninterface OrderService { placeOrder(o:any): Promise<void> }\nclass RealOrderService implements OrderService { async placeOrder(o:any){ /* send to API */ } }\nclass OrderServiceProxy implements OrderService {\n  constructor(private real: OrderService, private auth: any) {}\n  async placeOrder(o:any){ if (!this.auth.canPlace(o.userId)) throw new Error('forbidden'); await this.real.placeOrder(o) }\n}\n\n// Version B\nclass SecureOrderService extends RealOrderService {\n  constructor(private auth: any){ super() }\n  async placeOrder(o:any){ if (!this.auth.canPlace(o.userId)) throw new Error('forbidden'); return super.placeOrder(o) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A composes authorization as a separate wrapper keeping the service interface intact and reusable.",
+          "isCorrect": true,
+          "explanation": "Version A implements the service interface and composes an existing implementation, so authorization is orthogonal and reusable across any OrderService. This avoids subclass coupling and supports decorating multiple implementations without inheritance. Composition keeps responsibilities separated and makes testing and reuse easier."
+        },
+        {
+          "id": "b",
+          "text": "Version B subclassing mixes authorization into a concrete implementation and prevents applying it across different service implementations uniformly.",
+          "isCorrect": false,
+          "explanation": "Subclassing ties authorization behavior to a particular implementation and forces inheritance to apply the cross cutting concern. That duplicates logic if multiple concrete services exist and makes swapping implementations or layering other wrappers harder. Composition via a wrapper is generally preferred for cross cutting concerns as discussed in GoF and modern design guidance."
+        }
+      ]
+    }
+  ]
+}

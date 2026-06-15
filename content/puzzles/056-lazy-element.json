@@ -1,0 +1,106 @@
+{
+  "id": 56,
+  "conceptName": "Lazy Element",
+  "category": "code-smell",
+  "definition": "A pattern where object fields or UI elements are created on first access via getters, scattering initialization and hiding object construction timing.",
+  "ruleOfThumb": "Prefer explicit construction or clear factory methods for nontrivial fields; avoid hiding initialization in accessors that create mutable hidden state.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Lazy Initialization",
+    "page": null,
+    "externalUrl": "https://refactoring.com/catalog/lazy_initialization.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary behavior shown by this snippet?",
+      "codeSnippet": "class Button {\n  private _root?: HTMLElement;\n  get root(): HTMLElement {\n    if (!this._root) {\n      this._root = document.createElement('button');\n      this._root.textContent = 'Save';\n    }\n    return this._root;\n  }\n  render() { return this.root; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This getter delays creating the UI element until first access to avoid upfront allocation and reduce startup cost.",
+          "isCorrect": true,
+          "explanation": "The getter constructs the DOM element only when accessed, so creation is deferred. This behavior reduces immediate allocation work but centralizes construction logic in the accessor. That leads to less predictable object state and can hide lifecycle concerns, which matters when components need explicit initialization or teardown."
+        },
+        {
+          "id": "b",
+          "text": "This getter hides a memory leak risk because closures can retain DOM nodes after removal leading to unexpected retention.",
+          "isCorrect": false,
+          "explanation": "While deferred creation can interact poorly with lifecycles and accidental retention can occur if references are kept, the snippet itself demonstrates deferred construction rather than proving a memory leak. The leak risk is plausible but secondary to the primary behavior of delayed construction."
+        },
+        {
+          "id": "c",
+          "text": "This getter complicates testing because the element is only created in certain paths making isolation and setup harder.",
+          "isCorrect": false,
+          "explanation": "Testing can indeed be harder when setup is implicit and tied to access paths, but that is a consequence of hidden initialization. The immediate, observable pattern is deferred creation; testability concerns follow and should be considered when choosing an explicit initialization strategy."
+        },
+        {
+          "id": "d",
+          "text": "This technique blocks the caller on first access so user interactions can experience noticeable latency spikes during runtime.",
+          "isCorrect": false,
+          "explanation": "Synchronous work on first access can cause latency, especially for heavy construction. However, the shown example does trivial DOM creation so latency is unlikely here. The core behavior is deferral; potential latency depends on how heavy the initialization actually is."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A service exposes a getter that creates a heavy object on first access. Which concern is the most accurate primary issue?",
+      "codeSnippet": "class ReportService {\n  private _report?: HeavyReport;\n  get report(): HeavyReport {\n    if (!this._report) {\n      this._report = new HeavyReport();\n    }\n    return this._report;\n  }\n  generate() { return this.report.compute(); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It centralizes deferred construction into a private getter making initialization timing part of hidden mutable module state.",
+          "isCorrect": true,
+          "explanation": "The main issue is that construction timing is hidden inside the getter, creating mutable state whose lifecycle is not explicit. This complicates reasoning about when resources are created and released, and spreads implicit initialization logic across call sites rather than keeping it explicit and visible."
+        },
+        {
+          "id": "b",
+          "text": "It provides a clear performance win by eliminating unnecessary work during startup with no runtime tradeoffs.",
+          "isCorrect": false,
+          "explanation": "While deferring expensive work can reduce startup cost, claiming there are no runtime tradeoffs is optimistic. Hidden initialization can introduce unpredictability, complicate lifecycle management, and create test or concurrency concerns that are real tradeoffs for the delayed work."
+        },
+        {
+          "id": "c",
+          "text": "It violates thread safety because lazy initialization will always cause race conditions in concurrent request handling.",
+          "isCorrect": false,
+          "explanation": "Lazy initialization can introduce race conditions in concurrent environments if not synchronized, but this is not an inevitable outcome in single-threaded environments like browser JS or when proper synchronization is applied. The core design smell is hidden initialization rather than automatic thread unsafety."
+        },
+        {
+          "id": "d",
+          "text": "It breaks encapsulation because callers must know when to access the getter rather than interacting through explicit initialization.",
+          "isCorrect": false,
+          "explanation": "Hidden initialization does blur responsibilities, but callers typically do not need to know when to access the getter; they simply call the API. The deeper problem is that construction timing is implicit and can couple callers to side effects, but 'breaking encapsulation' is a related symptom rather than the most precise primary issue."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which implementation is preferable for predictable component lifecycle and why?",
+      "codeSnippet": "// Version A: explicit construction in constructor\nclass ProfileCard {\n  private avatar: HTMLElement;\n  constructor() {\n    this.avatar = document.createElement('img');\n    this.avatar.className = 'avatar';\n  }\n  render() { return this.avatar; }\n}\n\n// Version B: deferred creation in a getter\nclass ProfileCardLazy {\n  private _avatar?: HTMLElement;\n  get avatar(): HTMLElement {\n    if (!this._avatar) {\n      this._avatar = document.createElement('img');\n      this._avatar.className = 'avatar';\n    }\n    return this._avatar;\n  }\n  render() { return this.avatar; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps field construction explicit and predictable during object creation and startup.",
+          "isCorrect": true,
+          "explanation": "Version A performs construction in the constructor, making object state and resource allocation explicit and predictable. This simplifies lifecycle reasoning, testing, and inheritance, and avoids scattering initialization checks. Prefer explicit construction for significant fields unless there is a measured performance need to defer.\n\nReferences: Martin Fowler on lazy initialization; Robert C. Martin on explicitness in Clean Code."
+        },
+        {
+          "id": "b",
+          "text": "Version B hides initialization in a getter causing unpredictable side effects and complicating class inheritance and tests.",
+          "isCorrect": false,
+          "explanation": "Version B defers construction into an accessor, which can introduce hidden side effects when the getter is called, complicate subclassing, and make tests rely on access order. While lazy creation can be useful for very expensive resources, it often trades away clarity and increases coupling between callers and initialization timing.\n\nReferences: \"Refactoring\" by Martin Fowler and \"Clean Code\" by Robert C. Martin discuss tradeoffs of hidden initialization and the benefits of explicit lifecycles."
+        }
+      ]
+    }
+  ]
+}

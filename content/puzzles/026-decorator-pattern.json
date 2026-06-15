@@ -1,0 +1,106 @@
+{
+  "id": 26,
+  "conceptName": "Decorator Pattern",
+  "category": "design-pattern",
+  "definition": "A structural pattern that lets you attach additional responsibilities to objects dynamically by wrapping them in lightweight wrapper objects that conform to the same interface.",
+  "ruleOfThumb": "Prefer small, composable wrappers when you need to add responsibilities to individual objects without changing their classes.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Decorator",
+    "page": "175",
+    "externalUrl": "https://en.wikipedia.org/wiki/Decorator_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given this TypeScript snippet, what design idea does the code most directly demonstrate?",
+      "codeSnippet": "interface Logger {\n  log(msg: string): void\n}\n\nclass ConsoleLogger implements Logger {\n  log(msg: string) { console.log(msg) }\n}\n\nclass TimestampLogger implements Logger {\n  constructor(private wrapped: Logger) {}\n  log(msg: string) { this.wrapped.log(`[${Date.now()}] ${msg}`) }\n}\n\nconst logger = new TimestampLogger(new ConsoleLogger())\nlogger.log('order placed')",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It adds behavior to objects at runtime by wrapping instances with lightweight wrapper classes.",
+          "isCorrect": true,
+          "explanation": "This code wraps an existing Logger with another object that implements the same interface, adding behavior without changing the original class. The wrapper delegates calls to the wrapped instance and augments behavior, which is the core idea described in Gang of Four. The other options describe compile time inheritance changes, crosscutting concerns centralized in a controller, or factory assembly, none of which match the runtime wrapping shown here."
+        },
+        {
+          "id": "b",
+          "text": "It permanently extends object classes at compile time by changing their internal inheritance hierarchy across the codebase.",
+          "isCorrect": false,
+          "explanation": "This describes modifying class inheritance or creating subclasses to add behavior, which is a compile time approach. The snippet shows wrapping an instance rather than altering class hierarchies. Subclassing would require creating a new class that inherits ConsoleLogger, which is not what the example does."
+        },
+        {
+          "id": "c",
+          "text": "It centralizes crosscutting concerns into a single controller to apply behavior to many unrelated classes at once.",
+          "isCorrect": false,
+          "explanation": "Centralizing crosscutting concerns typically refers to aspect oriented or centralized interceptor approaches. The snippet applies behavior per instance by delegation, not through a single controller that routes or applies behavior to many unrelated classes."
+        },
+        {
+          "id": "d",
+          "text": "It creates a factory that constructs configured objects so callers receive preassembled behavior without wrapping responsibilities.",
+          "isCorrect": false,
+          "explanation": "A factory would return preconfigured objects, but the key in the snippet is that behavior is composed by wrapping at runtime. While factories can assemble wrappers, the code shown is specifically demonstrating runtime wrapping rather than hiding wrapping behind a factory."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "When stacking many small wrappers around a core service, which practical risk is most likely to occur in a production system?",
+      "codeSnippet": "class CoreService { handle(req: any) { /* core handling */ } }\nclass AuthWrapper { constructor(private s: any) {}\n  handle(req: any) { /* auth */ return this.s.handle(req) }\n}\nclass CacheWrapper { constructor(private s: any) {}\n  handle(req: any) { /* cache */ return this.s.handle(req) }\n}\nconst svc = new AuthWrapper(new CacheWrapper(new CoreService()))\nsvc.handle({})",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It significantly increases garbage collection pressure because each wrapper allocates extra short lived objects in high throughput services.",
+          "isCorrect": false,
+          "explanation": "While additional objects do exist, modern runtimes optimize short lived objects; GC pressure can be a concern but is often secondary to design complexity. The bigger practical issue with deep wrapper stacks is debugging and understanding behavior flow rather than GC alone."
+        },
+        {
+          "id": "b",
+          "text": "It breaches encapsulation by exposing internal state through wrappers and thereby tightly coupling callers to implementation details.",
+          "isCorrect": false,
+          "explanation": "Wrappers normally delegate and keep the same interface, preserving encapsulation. Exposing internal state is possible if wrappers leak internals, but this is a misuse rather than an intrinsic consequence of wrapping. The more common problem is harder reasoning about composed behavior."
+        },
+        {
+          "id": "c",
+          "text": "It can make debugging and stack traces harder because behavior is split across many small wrapper objects at runtime.",
+          "isCorrect": true,
+          "explanation": "Layering many wrappers distributes behavior across objects, which complicates call stacks, error traces, and understanding of overall flow. This is a typical practical downside in production debugging and testing. Engineers need tracing or clear conventions to mitigate this complexity."
+        },
+        {
+          "id": "d",
+          "text": "It prevents reuse of core components because behavior is hardwired into wrappers instead of being provided as configurable collaboration points.",
+          "isCorrect": false,
+          "explanation": "Wrappers typically increase reuse by allowing different compositions. Hardwiring behavior into wrappers would be a design problem, but wrappers themselves are intended to keep core components reusable. The main operational risk remains comprehension and performance implications of deep stacks."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation better supports modular extension and independent testing for adding many orthogonal behaviors? Review Version A and Version B.",
+      "codeSnippet": "// Version A: compose independent wrappers\ninterface Service { handle(req: any): any }\nclass BaseService implements Service { handle(req: any) { return 'ok' } }\nclass LoggingWrapper implements Service { constructor(private s: Service){}\n  handle(r: any){ console.log('in'); return this.s.handle(r) }\n}\nclass MetricsWrapper implements Service { constructor(private s: Service){}\n  handle(r: any){ /* metrics */ return this.s.handle(r) }\n}\n// Version B: single combined subclass\nclass CombinedService implements Service {\n  constructor(private enableLogging: boolean, private enableMetrics: boolean){}\n  handle(r: any){ /* conditional behavior branches */ return 'ok' }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A composes independent wrapper classes to extend behavior at runtime with clear separation of responsibilities.",
+          "isCorrect": true,
+          "explanation": "Version A composes small wrappers each responsible for a single concern. This keeps responsibilities separated, allows reusing individual wrappers in different combinations, and makes unit testing of each wrapper straightforward. It also avoids combinatorial explosion of conditional branches. This aligns with design guidance from the Gang of Four and clean design principles emphasizing single responsibility and composition."
+        },
+        {
+          "id": "b",
+          "text": "Version B merges multiple behaviors into one monolithic subclass that mixes concerns and complicates future extension.",
+          "isCorrect": false,
+          "explanation": "Version B centralizes behavior with conditional flags, which creates a class that mixes responsibilities and grows complex as features are added. That design makes unit testing harder because behaviors are not isolated, and changes may introduce regressions in unrelated features. For nuanced systems where combinations change frequently, the compositional approach scales better. See Fowler and GoF on composition versus inheritance trade offs."
+        }
+      ]
+    }
+  ]
+}

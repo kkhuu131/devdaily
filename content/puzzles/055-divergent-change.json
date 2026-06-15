@@ -1,0 +1,106 @@
+{
+  "id": 55,
+  "conceptName": "Divergent Change",
+  "category": "code-smell",
+  "definition": "A smell where a single module or class is frequently modified for many different reasons, indicating it holds multiple responsibilities and will cause scattered changes whenever one concern evolves.",
+  "ruleOfThumb": "If a class is changed for multiple independent reasons, split responsibilities so each reason maps to its own module or abstraction.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Code Smells",
+    "page": "88",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Inspect the class below. What is the most likely design problem this class exhibits?",
+      "codeSnippet": "class UserManager {\n  updateEmail(userId, email) { /* validation and persistence */ }\n  updatePassword(userId, password) { /* auth and hashing */ }\n  updateBilling(userId, billingInfo) { /* payment gateway calls */ }\n  sendWelcomeEmail(userId) { /* templating and SMTP */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class changes for multiple unrelated reasons because it mixes user profile updates, authentication, and billing logic in one place.",
+          "isCorrect": true,
+          "explanation": "The class groups responsibilities that evolve for different reasons (profile, auth, billing, notifications). When multiple reasons drive changes, maintenance becomes harder because a single edit may touch unrelated behavior. The refactoring approach is to split responsibilities into focused services or collaborators so each class has a single reason to change."
+        },
+        {
+          "id": "b",
+          "text": "The module is a god object that centralizes too much functionality and therefore likely violates single responsibility at a grand scale.",
+          "isCorrect": false,
+          "explanation": "Calling this a god object is plausible because many responsibilities are present. However god object implies broad coupling and global state; the more precise concern here is that the class changes for distinct reasons. Splitting by reason reduces the god object appearance and makes responsibilities explicit."
+        },
+        {
+          "id": "c",
+          "text": "This code shows feature envy where helper modules are preferred because methods excessively reference data from other objects.",
+          "isCorrect": false,
+          "explanation": "Feature envy describes methods that operate mostly on other objects' data, suggesting the logic should move. The snippet shows responsibilities mixed rather than methods overusing other objects, so feature envy is less likely the root cause than a class with multiple reasons to change."
+        },
+        {
+          "id": "d",
+          "text": "This class exhibits data clumps because related configuration values are passed together instead of being encapsulated as objects.",
+          "isCorrect": false,
+          "explanation": "Data clumps refer to groups of parameters frequently passed together. The example shows high-level responsibilities (auth, billing, notifications) rather than repeated parameter tuples. Addressing data clumps would help parameter handling but would not eliminate the core issue of multiple independent change reasons."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review the OrderService below. Which design concern is most likely causing future maintenance pain?",
+      "codeSnippet": "class OrderService {\n  validate(order) { /* complex business rules */ }\n  calculateDiscount(order) { /* promotional logic */ }\n  persistOrder(order) { /* database interaction */ }\n  sendConfirmation(order) { /* email and notification */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class is likely to require changes for multiple unrelated reasons because it bundles validation, persistence, discount, and notification.",
+          "isCorrect": true,
+          "explanation": "This class groups distinct concerns that change for different reasons: business rules, promotions, storage, and notifications. When a single class has multiple reasons to change, each change risks affecting unrelated behavior. Refactor by extracting well defined collaborators so changes to one concern do not ripple to others."
+        },
+        {
+          "id": "b",
+          "text": "The class likely causes shotgun surgery where a single change requires edits across many classes in unrelated modules.",
+          "isCorrect": false,
+          "explanation": "Shotgun surgery is the opposite symptom where one conceptual change forces edits across many locations. The provided code shows many responsibilities concentrated in one place rather than changes scattered across classes, so shotgun surgery is a less accurate diagnosis here."
+        },
+        {
+          "id": "c",
+          "text": "The class likely suffers from premature optimization because it contains both performance hacks and business logic mixed together.",
+          "isCorrect": false,
+          "explanation": "Premature optimization implies performance-oriented hacks mixed into business logic. The snippet highlights multiple domain responsibilities rather than optimization code. While performance concerns could exist, the immediate design smell is mixed responsibilities leading to multiple reasons for change."
+        },
+        {
+          "id": "d",
+          "text": "The class likely has feature envy because methods unnecessarily access and operate on other objects data rather than their own.",
+          "isCorrect": false,
+          "explanation": "Feature envy occurs when a method uses another object's data more than its own, suggesting the method should move. The example indicates co-located responsibilities rather than methods leaning on external objects, making multiple responsibilities a more likely root problem."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two versions below. Which version better prevents unrelated future changes from colliding during maintenance?",
+      "codeSnippet": "/* Version A */\nclass AccountService {\n  constructor(private billing: BillingService, private notifier: NotificationService) {}\n  updateProfile(id, data) { /* profile logic */ }\n  changeSubscription(id, plan) { this.billing.updatePlan(id, plan); }\n}\n\n/* Version B */\nclass AccountService {\n  updateProfile(id, data) { /* profile logic */ }\n  changeSubscription(id, plan) { /* billing integration directly here */ }\n  sendInvoice(id) { /* email and billing code mixed in */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates responsibilities into focused classes and reduces the surface area affected by unrelated changes during maintenance.",
+          "isCorrect": true,
+          "explanation": "Version A delegates billing and notifications to dedicated collaborators, so a change in billing behavior stays within BillingService and does not force edits to account profile logic. This separation maps different reasons to change onto different modules, lowering risk and simplifying reasoning. Fowler recommends extracting distinct responsibilities into separate abstractions when a class needs to change for multiple reasons."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes many unrelated behaviors in a single class causing changes for distinct reasons to collide and increase risk.",
+          "isCorrect": false,
+          "explanation": "Version B keeps billing, notifications, and account responsibilities together, so a change to invoice formatting or billing integration will require modifying the AccountService and may unintentionally impact profile logic. This tightly coupled design increases the likelihood of regression when different concerns evolve independently."
+        }
+      ]
+    }
+  ]
+}

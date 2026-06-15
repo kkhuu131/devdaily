@@ -1,0 +1,106 @@
+{
+  "id": 45,
+  "conceptName": "Stable Dependencies Principle",
+  "category": "solid",
+  "definition": "A design guideline that modules should depend on modules that are more stable than themselves so changes ripple minimally and high-level policies are protected from volatile implementations.",
+  "ruleOfThumb": "Depend in the direction of stability: put stable abstractions in packages that others can rely on, and let concrete implementations be less stable.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Agile Software Development, Principles, Patterns, and Practices",
+    "chapter": "Package Principles",
+    "page": "264",
+    "externalUrl": "https://cleancoder.com/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary structural problem in this code?",
+      "codeSnippet": "// billing/index.ts\nimport { EmailClient } from \"../infra/email\";\nexport class InvoiceService {\n  private email = new EmailClient();\n  sendInvoice() {\n    this.email.send();\n  }\n}\n\n// infra/email.ts\nexport class EmailClient { send() {} }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code makes high-level business logic directly depend on a concrete infrastructure class used throughout the module.",
+          "isCorrect": true,
+          "explanation": "High-level domain code directly constructing and using a concrete infra class couples business rules to a low-level implementation. That coupling makes core logic sensitive to infra changes and harder to mock for tests. Extracting an abstraction or inverting the dependency reduces this sensitivity and improves testability and maintainability."
+        },
+        {
+          "id": "b",
+          "text": "The code duplicates an EmailClient instance per service which introduces resource waste and inconsistent email configuration handling.",
+          "isCorrect": false,
+          "explanation": "Creating per-service instances can be inefficient and complicate configuration, and it is a real concern here. However, the broader architectural issue is that domain logic depends on the concrete class itself rather than on an abstraction or well-defined port."
+        },
+        {
+          "id": "c",
+          "text": "The code hides the EmailClient behind a class field which complicates lifecycles and masks initialization failures.",
+          "isCorrect": false,
+          "explanation": "Field injection can obscure lifecycle issues, but the primary structural problem in this example is the direct dependency on a concrete infrastructural class from business logic. Addressing the dependency boundary is higher priority than lifecycle style in this context."
+        },
+        {
+          "id": "d",
+          "text": "The code uses relative imports across folders which creates brittle build paths and makes refactoring riskier.",
+          "isCorrect": false,
+          "explanation": "Relative imports can be brittle in large repos, and clearer package boundaries help. Still, the main design smell shown is the high-level module depending on a concrete infra implementation rather than on a stable abstraction."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which statement best captures the package dependency concern shown below?",
+      "codeSnippet": "// packages/core/models/index.ts\nexport interface Order { id: string; total: number }\nexport function formatOrder(o: Order) { return `${o.id}:${o.total}` }\n\n// packages/features/discounts/index.ts\nimport { Order, formatOrder } from \"../../core/models\";\nexport function applyDiscount(order: Order) { /* uses formatOrder */ }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The package holds concrete utility functions, causing many features to couple to its implementation and hinder independent evolution.",
+          "isCorrect": false,
+          "explanation": "A utility package that mixes types and concrete behavior can become a chokepoint that many features import, increasing coupling. While this is a valid concern, it is a symptom of a deeper issue: unstable implementation being relied upon by other packages."
+        },
+        {
+          "id": "b",
+          "text": "The package exposes both types and implementation behavior that many features import across application boundaries.",
+          "isCorrect": true,
+          "explanation": "Exposing both data types and concrete behavior from a widely imported package makes it effectively a stability boundary. When many features import implementation behavior, changes ripple widely. The safer structure is to keep stable, minimal abstractions in a core package and put mutable behavior into less depended upon packages."
+        },
+        {
+          "id": "c",
+          "text": "The package uses relative import pathing that reduces clarity about ownership and increases circular dependency risk during refactoring.",
+          "isCorrect": false,
+          "explanation": "Relative paths can obscure package ownership and raise refactoring risks, which is a practical issue. However, the snippet's stronger architectural concern is that implementation behavior is shared widely across packages, creating dependency stability problems."
+        },
+        {
+          "id": "d",
+          "text": "The package exports overly generic interfaces that permit incompatible changes and obscure true abstraction boundaries between modules.",
+          "isCorrect": false,
+          "explanation": "Overly generic interfaces can indeed hide proper boundaries and allow incompatible changes. In this example the concrete function alongside types is the clearer problem; tightening abstraction responsibilities would address the stability issue more directly."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better aligns package dependency stability for long term evolution?",
+      "codeSnippet": "// Version A\n// app/core/service.ts\nimport { SmtpClient } from \"../infra/smtp\";\nexport class OrderProcessor { private smtp = new SmtpClient(); }\n\n// Version B\n// app/core/service.ts\nimport { EmailPort } from \"../ports/email\";\nexport class OrderProcessor { constructor(private email: EmailPort) {} }\n// infra/smtp.ts\nexport class SmtpClient implements EmailPort { send() {} }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A couples core logic to concrete infrastructure implementations which increases fragility and propagation of changes.",
+          "isCorrect": false,
+          "explanation": "Version A has the core depending directly on concrete infrastructure classes, which ties high-level policies to volatile implementations. That increases the blast radius of changes and makes testing harder. Although simple initially, this structure violates the desirable direction of stable dependencies."
+        },
+        {
+          "id": "b",
+          "text": "Version B locates the stable abstraction in a core package which concrete implementations depend upon.",
+          "isCorrect": true,
+          "explanation": "Version B places the abstraction in a stable core package while concrete implementations live in peripheral packages that depend on that core. This aligns dependency direction toward stability and reduces ripple effects when implementations change. It also supports easier mocking and independent evolution of implementations. See Robert C. Martin on package stability and dependency direction for guidance."
+        }
+      ]
+    }
+  ]
+}

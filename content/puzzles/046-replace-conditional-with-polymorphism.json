@@ -1,0 +1,106 @@
+{
+  "id": 46,
+  "conceptName": "Replace Conditional with Polymorphism",
+  "category": "refactoring",
+  "definition": "When conditional logic branches behavior based on a type or flag, move each behavior into its own class or strategy and delegate to the appropriate object instead of switching on the type.",
+  "ruleOfThumb": "If a type flag or repeated switch drives different behavior across the codebase and changes often, encapsulate each variant in its own class.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Replace Conditional with Polymorphism",
+    "page": "p. 120",
+    "externalUrl": "https://martinfowler.com/bliki/ReplaceConditionalWithPolymorphism.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which code smell best describes the following class?",
+      "codeSnippet": "class Invoice {\n  constructor(public type: string, public amount: number) {}\n  calculateTax() {\n    if (this.type === 'standard') return this.amount * 0.2;\n    if (this.type === 'reduced') return this.amount * 0.1;\n    return 0;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code uses repetitive conditional branching based on a type flag across multiple methods and classes.",
+          "isCorrect": true,
+          "explanation": "The calculateTax method dispatches behavior by inspecting a type field. That pattern is the classic signal that behavior is selected by conditionals rather than by object structure. Replacing the branches with distinct types that implement a common operation makes adding new kinds safer and avoids scattering the logic."
+        },
+        {
+          "id": "b",
+          "text": "This code has scattered business logic in conditionals that will make unit testing and mocking harder later.",
+          "isCorrect": false,
+          "explanation": "This is a plausible concern because conditionals can hide business rules and make tests more verbose, but the primary smell is that behavior is chosen by type checks. Moving logic into separate types improves testability by allowing focused tests per variant."
+        },
+        {
+          "id": "c",
+          "text": "This code shows primitive obsession with string type identifiers that prevent type safety and increase runtime errors.",
+          "isCorrect": false,
+          "explanation": "Primitive obsession is a valid worry here because using raw strings loses compile time checks. However the more specific refactoring target is the conditional dispatch based on that primitive. Introducing polymorphic types also addresses the primitive obsession by giving each variant a concrete class or type."
+        },
+        {
+          "id": "d",
+          "text": "This code contains duplicated conditional calculations which will require edits in multiple places for single rule changes.",
+          "isCorrect": false,
+          "explanation": "Duplication is often correlated with conditional branching, and duplicated arithmetic is a maintenance risk. The root design problem in this snippet is that the branching logic chooses behavior by type, so isolating behavior into distinct implementations prevents duplicated edits across branches."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You have a ShippingCalculator with a switch on shippingType. What refactor is most appropriate next?",
+      "codeSnippet": "class ShippingCalculator {\n  calculate(order: { shippingType: string, weight: number }) {\n    switch (order.shippingType) {\n      case 'standard': return 5 + order.weight * 0.5;\n      case 'express': return 15 + order.weight * 1.0;\n      default: return 0;\n    }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce separate classes that each implement a common interface and delegate selection to object creation.",
+          "isCorrect": true,
+          "explanation": "Moving each shipping calculation into its own class (or strategy) and delegating to the appropriate instance eliminates the switch and localizes behavior. This change improves Open/Closed compliance and makes adding new shipping types straightforward without modifying existing code."
+        },
+        {
+          "id": "b",
+          "text": "Consolidate logic into a single service function and keep the switch to reduce class proliferation risk.",
+          "isCorrect": false,
+          "explanation": "Centralizing the switch in one function reduces scattering but keeps conditional complexity and still requires modification for new types. For growing variant sets, object-based dispatch provides clearer extension points and reduces conditional churn compared with a single monolithic function."
+        },
+        {
+          "id": "c",
+          "text": "Introduce a map of functions keyed by type and call the mapped function without creating classes for each behavior.",
+          "isCorrect": false,
+          "explanation": "A function map removes the switch and is a pragmatic lightweight option, but it keeps behavior as data and can make lifecycle concerns harder to manage. If variants have behavior plus state or require injection, moving to separate classes or strategies is more maintainable."
+        },
+        {
+          "id": "d",
+          "text": "Start adding more condition checks for future types and add tests to ensure each if branch stays correct.",
+          "isCorrect": false,
+          "explanation": "Adding more conditionals and tests will keep the current design working but does not improve extensibility or reduce coupling. That tactic postpones the structural refactor that gives long term benefits when variant count or complexity grows."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version would you prefer for long term maintainability?",
+      "codeSnippet": "// Version A\nclass Order {\n  constructor(public type: string, public amount: number) {}\n}\nclass OrderProcessor {\n  calculateFee(order: Order) {\n    if (order.type === 'standard') return order.amount * 0.05;\n    if (order.type === 'express') return order.amount * 0.1;\n    return 0;\n  }\n}\n// Version B\nabstract class BaseOrder {\n  constructor(public amount: number) {}\n  abstract calculateFee(): number;\n}\nclass StandardOrder extends BaseOrder { calculateFee() { return this.amount * 0.05; } }\nclass ExpressOrder extends BaseOrder { calculateFee() { return this.amount * 0.1; } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps a single class with conditionals and a type field which centralizes but reduces extension flexibility.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes behavior in one place, which may feel simpler initially. However it entangles multiple behaviors behind type checks, making it harder to extend, harder to test variants independently, and prone to errors when new types are added. Over time this leads to conditional sprawl."
+        },
+        {
+          "id": "b",
+          "text": "Version B extracts behavior into subclasses that each override the operation for clearer extension and maintenance.",
+          "isCorrect": true,
+          "explanation": "Version B uses polymorphism to encapsulate each variant's behavior in its own type. That structure adheres to Open/Closed and Single Responsibility: adding a new order kind means adding a new subclass without modifying existing processors. It also isolates state and behavior per variant, simplifying testing and reducing conditional logic.\n\nFor further reading, see Martin Fowler's treatment of this refactoring in Refactoring and the Gang of Four discussion of replacing conditional logic with polymorphic operations for better cohesion and extensibility."
+        }
+      ]
+    }
+  ]
+}
