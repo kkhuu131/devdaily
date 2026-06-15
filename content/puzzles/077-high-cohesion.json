@@ -1,0 +1,106 @@
+{
+  "id": 77,
+  "conceptName": "High Cohesion",
+  "category": "principle",
+  "definition": "A guideline that a module or class should contain closely related responsibilities so it has a single, focused purpose and limited reasons to change.",
+  "ruleOfThumb": "Group related behaviors that change for the same reason; split modules when responsibilities diverge.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Architecture",
+    "chapter": "Component Cohesion Principles",
+    "page": null,
+    "externalUrl": "https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the UserService below. What is the primary design smell shown by this class?",
+      "codeSnippet": "class UserService {\n  constructor(private db: DbClient, private mailer: Mailer) {}\n\n  createUser(data) {\n    const user = this.db.insert(data);\n    this.sendWelcomeEmail(user);\n    this.logCreation(user);\n  }\n\n  sendWelcomeEmail(user) { /* compose HTML and call mailer */ }\n  logCreation(user) { /* write audit to file */ }\n  formatUserForUi(user) { /* UI formatting logic */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class groups unrelated responsibilities that should be split into separate modules for different business concerns.",
+          "isCorrect": true,
+          "explanation": "The class mixes persistence, email formatting, logging, and presentation formatting. Those are different responsibilities that will tend to change for different reasons. High Cohesion recommends grouping code by a single responsibility so changes are localized. Splitting this class into focused modules (persistence, notifications, presentation) will reduce coupling and clarify ownership."
+        },
+        {
+          "id": "b",
+          "text": "The class appears to hide excessive dependencies by reaching into infrastructure and presentation layers within single module.",
+          "isCorrect": false,
+          "explanation": "This is a plausible concern because the constructor shows multiple collaborators, but the core smell here is not merely hidden dependencies. The real problem is mixed responsibilities inside one class rather than only too many injected dependencies. Addressing cohesion by separating responsibilities will also clarify which dependencies belong to which module."
+        },
+        {
+          "id": "c",
+          "text": "This class duplicates logic from other modules and mixes formatting and persistence concerns into one type.",
+          "isCorrect": false,
+          "explanation": "Mixing formatting and persistence is highlighted, and duplication can occur when responsibilities are muddled. However the snippet does not explicitly show duplicated code elsewhere. The more precise diagnosis is that unrelated concerns are co-located in one class, which causes duplication risk and poor maintainability over time."
+        },
+        {
+          "id": "d",
+          "text": "The class exposes many public methods that break encapsulation by revealing internal state and workflow details.",
+          "isCorrect": false,
+          "explanation": "Excessive public surface is a valid design worry and can indicate encapsulation problems. In this example the stronger, more actionable issue is that the class mixes different responsibilities. Reducing the set of responsibilities typically reduces the public surface naturally and improves encapsulation as a secondary benefit."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Examine the PaymentService. Which positive design quality does this implementation primarily demonstrate?",
+      "codeSnippet": "class PaymentService {\n  constructor(private converter: CurrencyConverter, private gateway: PaymentGateway) {}\n\n  process(amount, currency) {\n    const converted = this.converter.convert(amount, currency);\n    const fee = this.calculateFee(converted);\n    this.gateway.charge(converted + fee);\n  }\n\n  calculateFee(amount) { return amount * 0.02; }\n  formatReceipt(tx) { return `Paid ${tx.amount} ${tx.currency}`; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This module keeps payment operations together in one unit for localized payment changes and clearer discoverability.",
+          "isCorrect": true,
+          "explanation": "Keeping related payment behaviors in the same module means changes to payment rules, fees, or processing routes are likely to be made in one place. That concentrated responsibility makes the code easier to understand, test, and evolve. This is the practical benefit associated with promoting cohesion within a domain area."
+        },
+        {
+          "id": "b",
+          "text": "This design hides external dependencies inside the class causing tight coupling that will complicate dependency management long term.",
+          "isCorrect": false,
+          "explanation": "The class does have dependencies, but they are explicit constructor injections which are the opposite of hidden coupling. The real design outcome shown is focused organization of payment behavior. Tight coupling would be a valid concern if dependencies were accessed globally or implicitly."
+        },
+        {
+          "id": "c",
+          "text": "It violates single responsibility by combining business logic, fee calculation, and presentation formatting in the same service class.",
+          "isCorrect": false,
+          "explanation": "This critique points to mixing concerns; however, in many payment modules fee calculation and processing are tightly related domain behaviors and belong together. The presence of formatReceipt could be a smell, but it does not negate the primary characteristic that payment behaviors are grouped and will change together."
+        },
+        {
+          "id": "d",
+          "text": "It creates an anemic domain model by putting behavior in a procedural service rather than inside rich domain objects.",
+          "isCorrect": false,
+          "explanation": "An anemic domain model is a meaningful concern in some architectures, but the snippet shows cohesive payment behaviors grouped logically. Whether logic belongs in domain objects or a service is a stylistic and architectural choice. The clearer observation is that payment responsibilities are collocated, improving locality of change."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B below. Which version better supports localized reasoning and simpler maintenance?",
+      "codeSnippet": "// Version A\nclass PaymentModule {\n  validatePayment(req) { /* validation */ }\n  calculateFee(amount) { /* fee calc */ }\n  processCharge(amount) { /* gateway call */ }\n}\n\n// Version B\nclass Validator { validate(req) {} }\nclass FeeCalc { compute(amount) {} }\nclass GatewayAdapter { charge(amount) {} }\nclass Orchestrator { constructor(v, f, g) {}; handle(req) {} }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A organizes related payment behaviors into a single focused module for payment domain changes.",
+          "isCorrect": true,
+          "explanation": "Version A groups validation, fee calculation, and charging together where payment logic lives. That keeps the reasoning about payment behavior co-located and makes common changes easier to apply and test. While smaller classes can help reuse, scattering related behaviors across many tiny collaborators increases cognitive load and jump-locating responsibilities. The cohesion-first tradeoff is especially valuable when behaviors tend to change for the same domain reasons."
+        },
+        {
+          "id": "b",
+          "text": "Version B splits payment behavior across multiple tiny classes increasing indirection and difficulty tracking where changes belong.",
+          "isCorrect": false,
+          "explanation": "Splitting into many small classes can be useful for single responsibility, but Version B introduces additional indirection and coordination code in an Orchestrator. That can make it harder to find or reason about all parts of a payment flow, especially when they change together. The extra classes create surface area for wiring and make refactoring across related behaviors more invasive."
+        }
+      ]
+    }
+  ]
+}

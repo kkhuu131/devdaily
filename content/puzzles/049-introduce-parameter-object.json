@@ -1,0 +1,106 @@
+{
+  "id": 49,
+  "conceptName": "Introduce Parameter Object",
+  "category": "refactoring",
+  "definition": "When multiple parameters that belong together are frequently passed around, replace them with a single object that groups those values, encapsulating related data and behavior to simplify signatures, centralize validation, and make APIs easier to evolve.",
+  "ruleOfThumb": "If a function has many parameters or repeated parameter groups across call sites, consider grouping them into a dedicated argument type and move related validation or helpers there.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Introduce Parameter Object",
+    "page": "125",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the function signature below. What is the primary design concern visible from the signature?",
+      "codeSnippet": "function createOrder(customerId: string, items: Item[], discount: number, shippingAddress: Address, billingAddress: Address, currency: string, taxRate: number) {\n  // build order\n}\n\n// Called from many places\ncreateOrder('c123', items, 0.1, shipAddr, billAddr, 'USD', 0.07);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function accepts too many parameters which makes it cumbersome to call and fragile to future changes.",
+          "isCorrect": true,
+          "explanation": "The core issue is an overly long parameter list. Grouping related arguments reduces call-site verbosity, centralizes validation, and makes adapters easier to write. Fowler recommends introducing a parameter object when several parameters naturally belong together or when multiple methods share the same parameter group."
+        },
+        {
+          "id": "b",
+          "text": "This function exposes primitive values that should be grouped into domain objects to avoid primitive obsession and scattered logic.",
+          "isCorrect": false,
+          "explanation": "Primitive obsession is a real concern when primitives represent domain concepts, and introducing value objects can help. However, the more immediate smell here is simply the long parameter list across many callers rather than only using primitives. A parameter object can be paired with value objects when appropriate."
+        },
+        {
+          "id": "c",
+          "text": "This function groups unrelated responsibilities leading to a god object pattern that will grow and be hard to test.",
+          "isCorrect": false,
+          "explanation": "Mixing responsibilities can produce large, hard to test functions, but the snippet shows only a long signature without implementation details. The actionable first step is to address the parameter list; separating responsibilities is a different refactoring that may follow after grouping parameters."
+        },
+        {
+          "id": "d",
+          "text": "This function duplicates parameter handling across callers which creates inconsistent calling conventions and increased risk when changing arguments.",
+          "isCorrect": false,
+          "explanation": "Duplicated handling at call sites is a plausible issue when many callers construct similar argument lists. Introducing a shared parameter object can also reduce duplication, but duplication alone does not identify the primary smell visible in the signature compared to the immediate maintenance cost of many parameters."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which specific problem is most likely being signaled by the boolean flags in this API?",
+      "codeSnippet": "class PaymentService {\n  process(amount: number, currency: string, useSavedCard: boolean, applyCoupon: boolean, sendReceipt: boolean) {\n    // process payment\n  }\n}\n\nservice.process(100, 'USD', true, false, true);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This method accepts several boolean flags which makes call sites unclear and behavior combinatorially complex to reason about.",
+          "isCorrect": true,
+          "explanation": "Boolean flags often indicate multiple branching behaviors exposed to callers, making usage ambiguous and combinatorics explode. Grouping flags into a configuration object clarifies intent and supports named parameters, validation, and extension without changing many signatures."
+        },
+        {
+          "id": "b",
+          "text": "This method uses primitive numeric currency and amount instead of a Money value object which can cause rounding and domain leaks.",
+          "isCorrect": false,
+          "explanation": "Using a Money value object is good practice to handle currency and rounding, but the more urgent smell here is the proliferation of boolean flags that hide behavior. Addressing flags improves API clarity even before introducing domain types."
+        },
+        {
+          "id": "c",
+          "text": "This method combines external I O calls with business calculations which makes unit testing difficult and increases coupling to infra.",
+          "isCorrect": false,
+          "explanation": "Mixing I/O and logic harms testability and is worth refactoring, but the snippet shows only the signature and flags. The signature-level concern about flags affecting call clarity is a better immediate target for refactoring than splitting I/O from business logic."
+        },
+        {
+          "id": "d",
+          "text": "This method manages payment, promotions, and notifications in one place which creates multiple responsibilities to change independently.",
+          "isCorrect": false,
+          "explanation": "A single method handling many responsibilities is a valid concern, but the presented surface-level smell arises from multiple boolean flags making behavior unclear. After addressing flags, splitting responsibilities may become clearer and easier to do safely."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better long term design for the public API and why?",
+      "codeSnippet": "/* Version A */\nfunction createInvoice(customerId: string, items: Item[], dueDate: Date, taxIncluded: boolean, currency: string, notes?: string) {\n  // build invoice\n}\n\n/* Version B */\ninterface InvoiceOptions {\n  customerId: string;\n  items: Item[];\n  dueDate: Date;\n  taxIncluded: boolean;\n  currency: string;\n  notes?: string;\n}\nfunction createInvoice(opts: InvoiceOptions) {\n  // build invoice\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps separate primitive parameters which preserves caller simplicity but increases call-site complexity and signature churn risk.",
+          "isCorrect": false,
+          "explanation": "Version A does keep a flat signature which can feel simple initially, but as more parameters are added or validation grows, callers and overloads proliferate. Small changes force many call-site edits and hurt discoverability. Fowler suggests consolidating related parameters to reduce signature fragility."
+        },
+        {
+          "id": "b",
+          "text": "Version B consolidates related parameters into a single cohesive argument type across the API surface.",
+          "isCorrect": true,
+          "explanation": "Version B groups related data into a dedicated argument type, improving readability, enabling centralized validation and transformation, and making future extension nonbreaking. This refactoring reduces call-site clutter and aids maintainability. See Martin Fowler on introducing parameter objects and also Robert C. Martin on expressive function signatures for rationale."
+        }
+      ]
+    }
+  ]
+}

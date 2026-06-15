@@ -1,0 +1,106 @@
+{
+  "id": 75,
+  "conceptName": "Defensive Programming",
+  "category": "principle",
+  "definition": "A development stance that adds runtime checks, validation, and graceful fallbacks to reduce runtime surprises and contain failures.",
+  "ruleOfThumb": "Validate at trusted boundaries, fail fast on developer errors, and avoid duplicating checks across the domain logic.",
+  "citation": {
+    "author": "Andrew Hunt and David Thomas",
+    "bookTitle": "The Pragmatic Programmer",
+    "chapter": "Defensive Programming",
+    "page": "129",
+    "externalUrl": "https://pragprog.com/titles/tpp20/the-pragmatic-programmer-20th-anniversary-edition/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the code. Which statement best describes the practice applied by this function?",
+      "codeSnippet": "function createInvoice(data: any) {\n  if (!data) data = {};\n  if (!Array.isArray(data.items)) data.items = [];\n  const id = typeof data.id === 'string' ? data.id : String(Date.now());\n  return { id, items: data.items };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code adds explicit runtime checks and fallback values to tolerate unexpected input and prevent immediate failures.",
+          "isCorrect": true,
+          "explanation": "The function defends against malformed or missing input by normalizing values early. This is a classic defensive move to keep downstream code simple, but it can also mask why bad data arrived in the first place if not paired with logging or boundaries."
+        },
+        {
+          "id": "b",
+          "text": "This code silently masks underlying errors by coercing values without recording validation failures for later debugging.",
+          "isCorrect": false,
+          "explanation": "While the code normalizes inputs, the concern is valid: quietly coercing or defaulting can hide the original fault. Good defensive practice pairs normalization with logging or validation at the boundary so failures remain observable."
+        },
+        {
+          "id": "c",
+          "text": "This code duplicates validation across call sites which increases maintenance burden and risk of inconsistent checks over time.",
+          "isCorrect": false,
+          "explanation": "Duplicated checks are a real risk when many modules each perform ad hoc normalization. However, the snippet alone shows one function doing validation; duplication would be apparent across multiple callers."
+        },
+        {
+          "id": "d",
+          "text": "This code prefers tolerance of malformed input which may hide failing integrations and shift bugs to downstream services.",
+          "isCorrect": false,
+          "explanation": "Tolerating malformed input can shift failure modes elsewhere. The tradeoff is deliberate: sometimes tolerance improves resilience, but without observability it can complicate diagnosing integration errors."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A TypeScript service performs thorough runtime field checks on objects coming from internal callers. What is the most likely legitimate criticism?",
+      "codeSnippet": "type User = { id: string; email: string; active?: boolean };\nfunction activateUser(u: any) {\n  if (typeof u !== 'object' || typeof u.id !== 'string') throw new Error('invalid user');\n  if (typeof u.email !== 'string') u.email = '';\n  u.active = true;\n  saveUser(u as User);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This approach duplicates compile time guarantees with runtime checks, adding maintenance and performance cost without clear benefit.",
+          "isCorrect": true,
+          "explanation": "When a strong static type system already guarantees shapes for internal callers, repeating those checks at runtime adds cognitive and runtime overhead. Defensive checks are most valuable at external boundaries; duplicate internal checks often signal misplaced responsibility."
+        },
+        {
+          "id": "b",
+          "text": "This approach correctly defends against malformed external inputs and prevents security holes at service boundary layers.",
+          "isCorrect": false,
+          "explanation": "Defending against external inputs is essential, but the snippet indicates checks are applied even for internal callers. The critique is that the protection may be applied in the wrong place, not that validation itself is unnecessary."
+        },
+        {
+          "id": "c",
+          "text": "This approach indicates missing centralized validation, causing inconsistent checks and making it hard to update validation rules.",
+          "isCorrect": false,
+          "explanation": "Centralized validation can reduce duplication and inconsistency. This objection is plausible, but the primary issue in typed code is often unnecessary repetition rather than only lacking centralization."
+        },
+        {
+          "id": "d",
+          "text": "This approach relies on exceptions for control flow which may obscure normal processing and complicate error recovery strategies.",
+          "isCorrect": false,
+          "explanation": "Using exceptions for invalid input is common and appropriate for programmer errors, but the bigger concern here is redundant runtime validation in a typed environment rather than exception usage per se."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two versions. Which design is preferable for clear responsibilities and testability in a services-based codebase?",
+      "codeSnippet": "// Version A\nfunction handleCreate(order: any) {\n  const validated = validateOrder(order);\n  orderService.create(validated);\n}\n\n// Version B\nfunction handleCreate(order: any) {\n  orderService.create(order);\n}\nclass OrderService {\n  create(o: any) {\n    if (!o || !Array.isArray(o.items)) throw new Error('invalid order');\n    // process\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes boundary validation, reducing duplicated checks across services and clarifying where data must be trusted for processing.",
+          "isCorrect": true,
+          "explanation": "Version A validates at the boundary and then hands off a validated object to the service, which keeps service code focused on business logic. This reduces duplication, improves testability, and makes ownership of validation explicit. Centralizing at integration points is a common pragmatic recommendation in architecture literature."
+        },
+        {
+          "id": "b",
+          "text": "Version B embeds validation inside each service method, which increases duplication and blurs responsibility boundaries across the codebase.",
+          "isCorrect": false,
+          "explanation": "Putting checks inside services can make them safer in isolation but leads to repeated validation, harder testing, and unclear ownership of input contracts. It also makes composing services harder because callers cannot rely on a single validated contract. The tradeoff is small when services are independent, but at scale this design complicates maintenance."
+        }
+      ]
+    }
+  ]
+}

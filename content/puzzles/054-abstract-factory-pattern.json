@@ -1,0 +1,105 @@
+{
+  "id": 54,
+  "conceptName": "Abstract Factory Pattern",
+  "category": "design-pattern",
+  "definition": "A creational approach that provides interfaces for creating related product objects without specifying their concrete classes, enabling families of products to vary together.",
+  "ruleOfThumb": "Use when a system must be configured with one of multiple families of related products and keep clients independent of concrete implementations.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Abstract Factory",
+    "page": "pp. 87-96",
+    "externalUrl": "https://refactoring.guru/design-patterns/abstract-factory"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best describes the intent of this creational approach?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "It provides an interface for creating families of related product objects without specifying their concrete classes.",
+          "isCorrect": true,
+          "explanation": "Correct. This approach abstracts object creation for related products so clients depend on interfaces rather than concrete classes. That isolation lets you swap entire families of products together without changing client code."
+        },
+        {
+          "id": "b",
+          "text": "It centralizes all object creation into one monolithic factory class that couples client code to many concrete classes.",
+          "isCorrect": false,
+          "explanation": "Plausible mistake. A naive factory can centralize creation and cause coupling, but the pattern emphasizes interfaces per family rather than a single monolithic factory. The real intent is family-level abstraction, not centralization."
+        },
+        {
+          "id": "c",
+          "text": "It replaces inheritance by copying methods across product classes to avoid using shared base types in client code.",
+          "isCorrect": false,
+          "explanation": "Plausible mistake. Copying methods is an anti-pattern and unrelated to the intent here. The pattern uses object composition and interface abstraction rather than code duplication to manage families of products."
+        },
+        {
+          "id": "d",
+          "text": "It configures runtime behavior by passing strategy objects to algorithms rather than grouping product families into factories.",
+          "isCorrect": false,
+          "explanation": "Plausible mistake. Passing strategy objects changes algorithm behavior, which is different from providing families of related product objects. The two patterns solve different problems and are orthogonal."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the TypeScript example below, what is the primary design trade-off demonstrated by this structure?",
+      "codeSnippet": "interface Button { render(): void }\ninterface Checkbox { check(): void }\ninterface UIFactory { createButton(): Button; createCheckbox(): Checkbox }\nclass LightFactory implements UIFactory { createButton() { return new LightButton() } createCheckbox() { return new LightCheckbox() } }\nclass DarkFactory implements UIFactory { createButton() { return new DarkButton() } createCheckbox() { return new DarkCheckbox() } }\nfunction renderUI(factory: UIFactory) { const b = factory.createButton(); b.render() }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It isolates related product families behind factory interfaces, making adding new families easy but adding new products harder.",
+          "isCorrect": true,
+          "explanation": "Correct. Hiding concrete products behind factory interfaces makes it straightforward to add new families (new factories) but requires changing all factories when introducing a new product type. That is the classic trade-off."
+        },
+        {
+          "id": "b",
+          "text": "It centralizes configuration which increases coupling between UI code and concrete components and complicates DI of instances.",
+          "isCorrect": false,
+          "explanation": "Plausible concern. While factories centralize creation logic, the pattern actually reduces coupling between UI code and concrete components by introducing factory interfaces. Dependency injection of factories is typically straightforward and intended."
+        },
+        {
+          "id": "c",
+          "text": "It duplicates product logic across factories which increases code duplication when similar components need small behavioral differences.",
+          "isCorrect": false,
+          "explanation": "Plausible concern. Bad implementations can duplicate logic across concrete factories, but the pattern itself encourages reusing shared product implementations or factoring common behavior to avoid duplication."
+        },
+        {
+          "id": "d",
+          "text": "It forces client code to know factory interfaces which leads to type leakage and hampers simple object construction in tests.",
+          "isCorrect": false,
+          "explanation": "Plausible concern. Clients must depend on factory interfaces, but that dependency is explicit and testable. Testability is usually improved because factories can be mocked or replaced with test doubles."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better structural choice for maintaining extensible families of products in a large codebase?",
+      "codeSnippet": "// Version A: client chooses concrete factories directly\nfunction createButton(theme: string): Button {\n  if (theme === 'dark') return new DarkButton()\n  return new LightButton()\n}\n\n// Version B: client receives a factory implementing the family creator interface\ninterface UIFactory { createButton(): Button }\nfunction renderUI(factory: UIFactory) {\n  const btn = factory.createButton()\n  btn.render()\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A couples client logic to concrete implementations and will require many conditional branches when adding new families.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Version A hardcodes selection logic in clients, which leads to scattered conditionals and makes adding new families error prone. This increases maintenance burden and violates the open closed principle in practice."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps client code dependent only on family creator interfaces, simplifying extension for new product families.",
+          "isCorrect": true,
+          "explanation": "Correct. Version B abstracts creation behind factory interfaces so clients depend only on abstract creators. That makes introducing new families a matter of supplying a new concrete factory without changing client code. This aligns with GoF recommendations and promotes testability and single responsibility."
+        }
+      ]
+    }
+  ]
+}

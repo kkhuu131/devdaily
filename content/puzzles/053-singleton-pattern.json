@@ -1,0 +1,106 @@
+{
+  "id": 53,
+  "conceptName": "Singleton Pattern",
+  "category": "design-pattern",
+  "definition": "A design approach that ensures a class has only one instance and provides a global point of access to it.",
+  "ruleOfThumb": "Prefer explicit dependency provision or factories for shared services; reserve single-instance enforcement for cases with clear global identity.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Singleton",
+    "page": "127",
+    "externalUrl": "https://www.pearson.com/en-us/subject-catalog/p/design-patterns-elements-of-reusable-object-oriented-software/P200000000321/9780201633610"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which design idiom is implemented by the following TypeScript code?",
+      "codeSnippet": "class Logger {\n  private static instance: Logger | null = null;\n  private constructor() {}\n  static getInstance() {\n    if (!Logger.instance) Logger.instance = new Logger();\n    return Logger.instance;\n  }\n  log(msg: string) { console.log(msg); }\n}\nconst l = Logger.getInstance();\nl.log('hello');",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A single globally accessible instance enforced with a private constructor and a static accessor method for retrieval.",
+          "isCorrect": true,
+          "explanation": "This code enforces a single instance by hiding the constructor and exposing a static accessor. The class holds a private static field for the instance and only creates it when getInstance is called. That implementation creates a globally reachable object with controlled creation semantics."
+        },
+        {
+          "id": "b",
+          "text": "A registry of named services allowing multiple independent implementations to be looked up by string keys at runtime.",
+          "isCorrect": false,
+          "explanation": "A service registry stores multiple named implementations and returns them by key. The shown code only manages one instance internally and does not provide registration or lookup by name, so it is not a registry pattern."
+        },
+        {
+          "id": "c",
+          "text": "A factory object pattern that produces new instances on demand without preserving or sharing any instance state globally.",
+          "isCorrect": false,
+          "explanation": "A factory creates new objects per request and does not inherently preserve a single shared instance. The example preserves and returns the same instance, so it is not a pure factory producing fresh instances each call."
+        },
+        {
+          "id": "d",
+          "text": "A prototype cloning approach where an exemplar is copied to create similar instances with independent mutable state per client.",
+          "isCorrect": false,
+          "explanation": "Prototype cloning duplicates an exemplar to create separate instances. The example returns the same stored instance rather than cloning it, so it does not implement the prototype cloning approach."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary concern with the module-level export used in this code?",
+      "codeSnippet": "class ApiClient {\n  constructor(baseUrl: string) {}\n  fetch(path: string) { /* ... */ }\n}\nconst defaultClient = new ApiClient('https://api.example');\nexport default defaultClient;",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It creates hidden global state making testing and lifecycle control difficult across modules and runtime contexts.",
+          "isCorrect": true,
+          "explanation": "Exporting a single shared instance from a module effectively creates global state that is implicitly referenced by every importer. That makes resetting, configuring, or substituting the instance in tests or different runtime contexts awkward, which is the main practical drawback."
+        },
+        {
+          "id": "b",
+          "text": "It tightly couples callers to a concrete implementation preventing easy substitution with mocks or alternative implementations in tests.",
+          "isCorrect": false,
+          "explanation": "While module exports can cause coupling to a concrete object, the deeper issue is implicit global state and lifecycle control. Coupling is a valid concern but is secondary to the difficulty of managing a single shared instance across consumers."
+        },
+        {
+          "id": "c",
+          "text": "It introduces lazy initialization race conditions when accessed concurrently without explicit synchronization or platform guarantee of module initialization order.",
+          "isCorrect": false,
+          "explanation": "Concurrent initialization can be an issue for lazily created singletons, but this example eagerly constructs the instance at module load time. Thus race conditions from lazy initialization are not the primary concern here."
+        },
+        {
+          "id": "d",
+          "text": "It forces older code to hold long lived resources in memory possibly causing unexpected retention or higher memory usage overall.",
+          "isCorrect": false,
+          "explanation": "Long lived resources are a possible side effect of a shared instance, but the central problem for maintainability and testing is the implicit global nature and control of the instance rather than memory retention alone."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for maintainability and testability in a large codebase?",
+      "codeSnippet": "// Version A\nclass Cache {\n  private static instance: Cache | null = null;\n  private constructor() {}\n  static getInstance() { if (!Cache.instance) Cache.instance = new Cache(); return Cache.instance; }\n  get(key: string) { /* ... */ }\n}\nexport default Cache.getInstance();\n\n// Version B\nfunction createCache(logger: Logger) {\n  return { get(key: string) { /* use logger */ } };\n}\nexport { createCache };",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A hides creation in a private static accessor making testing and dependency substitution more difficult in large systems.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes instance control inside the class and exports the single instance directly, which hides dependencies and prevents easy replacement in tests. This hidden global access pattern also couples code to the implementation and complicates managing lifecycle and configuration across environments."
+        },
+        {
+          "id": "b",
+          "text": "Version B accepts dependencies explicitly or returns factories which makes lifecycle management and testing straightforward and explicit.",
+          "isCorrect": true,
+          "explanation": "Version B favors explicit construction and dependency passing, making it easy to create multiple instances with different collaborators or configurations. This approach supports dependency injection, simplifies unit testing with mocks or fakes, and gives callers control over lifecycle and resource cleanup. Many style guides and refactorings recommend preferring explicit factories or DI over globally enforced single instances for those reasons."
+        }
+      ]
+    }
+  ]
+}

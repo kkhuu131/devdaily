@@ -1,0 +1,106 @@
+{
+  "id": 30,
+  "conceptName": "Principle of Least Astonishment",
+  "category": "principle",
+  "definition": "A design guideline that software should behave in a way that least surprises its users, matching reasonable expectations derived from context and common conventions.",
+  "ruleOfThumb": "Prefer predictable, consistent behavior over clever or surprising shortcuts so callers can rely on stable APIs.",
+  "citation": {
+    "author": "Andrew Hunt and David Thomas",
+    "bookTitle": "The Pragmatic Programmer",
+    "chapter": "Communicate!",
+    "page": "p. 45",
+    "externalUrl": "https://pragprog.com/titles/tpp20/the-pragmatic-programmer-20th-anniversary-edition/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary surprising behavior in this snippet?",
+      "codeSnippet": "type Item = { id: string, name: string };\nconst cart: Item[] = [];\nfunction sendAnalytics(event: string, id: string) { /* network */ }\nfunction addToCart(item: Item) {\n  cart.push(item);\n  sendAnalytics('add', item.id);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function unexpectedly mutates shared cart state causing hidden side effects across unrelated components.",
+          "isCorrect": true,
+          "explanation": "Mutating the shared cart makes the API do more than its name implies and creates implicit coupling. This surprises callers who expect an isolated operation. Following least astonishment, a function called addToCart should either clearly document global mutation or instead return a new state or accept an explicit cart instance."
+        },
+        {
+          "id": "b",
+          "text": "The function name does not reflect asynchronous behavior which could mislead callers about return timing.",
+          "isCorrect": false,
+          "explanation": "While naming asynchronous operations clearly is important, the snippet shows synchronous behavior and a hidden mutation rather than an async mismatch. The real surprise is the global state change, not timing semantics."
+        },
+        {
+          "id": "c",
+          "text": "The implementation performs network IO on every call causing potential performance problems under heavy load.",
+          "isCorrect": false,
+          "explanation": "Sending analytics can impact performance, but that is a secondary operational concern. The more fundamental surprise is that the function both mutates shared state and triggers side effects that callers may not expect."
+        },
+        {
+          "id": "d",
+          "text": "The function lacks input validation leading to possible runtime errors when provided unexpected argument shapes.",
+          "isCorrect": false,
+          "explanation": "Missing validation is a legitimate issue, but nothing in the snippet shows malformed inputs causing errors. The primary design surprise is the implicit global mutation and side effects."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the most surprising API behavior in this formatter?",
+      "codeSnippet": "function formatDate(date: Date): string {\n  date.setHours(0, 0, 0, 0);\n  return date.toISOString().split('T')[0];\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function mutates the caller supplied Date object producing a hidden side effect that surprises callers.",
+          "isCorrect": true,
+          "explanation": "Mutating an argument is a common source of astonishment because callers often assume primitives or objects passed for formatting remain unchanged. A less surprising API would avoid in place mutation or clearly document it."
+        },
+        {
+          "id": "b",
+          "text": "The formatter uses local timezone instead of UTC causing inconsistent date strings across deployments based on server settings.",
+          "isCorrect": false,
+          "explanation": "Timezone handling can indeed cause subtle bugs, but the code explicitly zeroes time and uses toISOString which is UTC based. The mutation of the input Date is the clearer surprise here."
+        },
+        {
+          "id": "c",
+          "text": "The function performs string splitting and allocation causing a minor performance hit for high throughput formatting workloads.",
+          "isCorrect": false,
+          "explanation": "Performance allocations are measurable concerns, but they are an implementation detail. The design surprise affecting caller expectations is the in place mutation of the provided Date object."
+        },
+        {
+          "id": "d",
+          "text": "The API signature returns a plain string which makes localization and future formatting extensions harder to implement cleanly.",
+          "isCorrect": false,
+          "explanation": "Returning a string limits extensibility, but it is an intentional API choice. The actual astonishment comes from the function changing the caller's Date instance unexpectedly."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version produces less surprising behavior for callers that consume the HTTP client?",
+      "codeSnippet": "// Version A\nasync function fetchResource(url: string): Promise<{ ok: boolean; status: number; body: any }> {\n  const res = await fetch(url);\n  const body = await res.json();\n  return { ok: res.ok, status: res.status, body };\n}\n\n// Version B\nasync function fetchResourceThrow(url: string): Promise<any> {\n  const res = await fetch(url);\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A consistently returns a response object on every call making behavior predictable for callers.",
+          "isCorrect": true,
+          "explanation": "Version A presents a uniform return shape so callers handle status and body explicitly without exception control flow. That reduces surprises when non 2xx responses occur and simplifies composition. In contrast, Version B uses exceptions for expected HTTP status variations which forces callers to treat ordinary responses as exceptional flow. This violates the goal of matching typical caller expectations for HTTP APIs and increases cognitive load. See Fowler on returning objects versus using exceptions for flow and Pragmatic Programmer on predictable interfaces."
+        },
+        {
+          "id": "b",
+          "text": "Version B throws on non success responses requiring callers to handle exceptions for ordinary HTTP status codes.",
+          "isCorrect": false,
+          "explanation": "Throwing on non success responses conflates expected HTTP error semantics with exceptional programming errors. While exceptions can be justified for truly exceptional conditions, treating common HTTP status codes as exceptions surprises callers who expect to inspect status values. This makes the API less composable and harder to integrate into middleware that expects response objects."
+        }
+      ]
+    }
+  ]
+}

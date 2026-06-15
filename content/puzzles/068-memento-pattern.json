@@ -1,0 +1,106 @@
+{
+  "id": 68,
+  "conceptName": "Memento Pattern",
+  "category": "design-pattern",
+  "definition": "Encapsulate an object's internal state so it can be saved and restored later without exposing its internals to other objects.",
+  "ruleOfThumb": "Provide originator methods to create and restore opaque snapshots; let a caretaker hold snapshots without inspecting their contents.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns: Memento",
+    "page": null,
+    "externalUrl": "https://refactoring.guru/design-patterns/memento"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this TypeScript excerpt. Which design intent does this code most clearly demonstrate?",
+      "codeSnippet": "class Document {\n  private content: string;\n  constructor(text: string) { this.content = text; }\n  setContent(text: string) { this.content = text; }\n  createSnapshot() { return new DocumentSnapshot(this.content); }\n  restore(snapshot: DocumentSnapshot) { this.content = snapshot.getContent(); }\n}\nclass DocumentSnapshot {\n  constructor(private state: string) {}\n  getContent() { return this.state; }\n}\nclass DocumentHistory { private snapshots: DocumentSnapshot[] = []; push(s: DocumentSnapshot) { this.snapshots.push(s); } pop() { return this.snapshots.pop(); } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It captures and restores object state while preserving encapsulation to support undo and rollback operations reliably.",
+          "isCorrect": true,
+          "explanation": "This code shows an originator producing an opaque snapshot and a caretaker storing it. The snapshot exposes only what the originator permits, enabling state rollback without other objects depending on the originator's internal representation. This aligns with the classic pattern intent described by the GoF and explained in many design pattern texts."
+        },
+        {
+          "id": "b",
+          "text": "It centralizes state changes into a separate history manager intended for auditing and multi step business workflows.",
+          "isCorrect": false,
+          "explanation": "While a history manager is present, the snippet is not primarily focused on audit logging or workflow coordination. The presence of an opaque snapshot class and specific restore method suggests intent around state capture and restore rather than audit semantics."
+        },
+        {
+          "id": "c",
+          "text": "It serializes domain objects to disk as a primary persistence mechanism for long term storage and recovery.",
+          "isCorrect": false,
+          "explanation": "The snippet shows in-memory snapshots and restore methods rather than explicit serialization or durable persistence. Serializing for long term storage is a valid design but not the primary intent demonstrated here."
+        },
+        {
+          "id": "d",
+          "text": "It implements an event sourcing approach to record immutable events for rebuilding state across distributed services reliably.",
+          "isCorrect": false,
+          "explanation": "Event sourcing records domain events rather than opaque state snapshots. The example uses snapshots of complete state and provides direct restoration, which differs from rebuilding state by replaying events."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "This history implementation collects snapshots over time. What is the most immediate maintenance risk introduced by this approach?",
+      "codeSnippet": "class Editor {\n  private state: any;\n  createSnapshot() { return JSON.stringify(this.state); }\n  restore(snapshot: string) { this.state = JSON.parse(snapshot); }\n}\nclass EditorHistory {\n  private snapshots: string[] = [];\n  push(s: string) { this.snapshots.push(s); }\n  get(idx: number) { return this.snapshots[idx]; }\n}\n// No pruning, history grows indefinitely\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This implementation will consume unbounded memory as snapshots accumulate unless pruning or limits are introduced.",
+          "isCorrect": true,
+          "explanation": "Storing serialized snapshots in memory without limits causes growth proportional to usage. A practical mitigation is to bound history length, persist older snapshots to disk, or use differential snapshots. This is a common operational concern when adopting snapshot collection."
+        },
+        {
+          "id": "b",
+          "text": "This design will leak encapsulation because snapshots expose internal types requiring consumers to import domain internals directly.",
+          "isCorrect": false,
+          "explanation": "While exposing internals can be a problem, the example serializes state as JSON strings, which are opaque to consumers. The immediate pressing issue here is resource usage rather than type leakage; encapsulation concerns depend on what is serialized and how it is consumed."
+        },
+        {
+          "id": "c",
+          "text": "This code will make serialization brittle because snapshot classes may diverge across releases causing restore failures in upgrades.",
+          "isCorrect": false,
+          "explanation": "Compatibility between serialized formats is a real risk, but the most immediate operational effect is memory consumption. Serialization brittleness becomes critical during upgrades and requires versioning strategies or transformation logic."
+        },
+        {
+          "id": "d",
+          "text": "This structure will increase coupling between caretaker and originator by embedding restoration logic in the history manager class.",
+          "isCorrect": false,
+          "explanation": "The snippet keeps serialization and restore responsibilities with the originator, and the history manager only stores strings. Coupling is a potential future issue if restoration logic migrates into the caretaker, but memory growth remains the primary maintenance risk as shown."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable when you need safe undo support while preserving encapsulation and minimizing coupling?",
+      "codeSnippet": "class Widget {\n  private state: any;\n  // Version A\n  createSnapshot() { return new WidgetSnapshot(this.state); }\n  restore(snapshot: WidgetSnapshot) { this.state = snapshot.getState(); }\n}\nclass WidgetSnapshot { constructor(private state: any) {} getState() { return this.state; } }\n\n// Version B\nclass WidgetV2 {\n  private state: any;\n  saveState(history: any[]) { history.push(this.state); }\n  restoreState(history: any[]) { this.state = history.pop(); }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A preserves encapsulation by keeping snapshot creation and internal state access within the originator.",
+          "isCorrect": true,
+          "explanation": "Version A gives the originator control over what the snapshot contains and how it is accessed. The caretaker stores opaque snapshot objects and never inspects internals, which keeps coupling low and allows the originator to change its representation without impacting the history storage. This follows the classic guidance for capturing state safely."
+        },
+        {
+          "id": "b",
+          "text": "Version B exposes internal representation by storing raw state externally and couples history to object representation details.",
+          "isCorrect": false,
+          "explanation": "Version B pushes raw internal state into an external list, which couples the history format to the originator's representation. That increases risk when the originator evolves and forces migration or brittle restore code. Although Version B may be simpler to implement initially, it violates encapsulation and raises maintenance costs in medium to long term scenarios."
+        }
+      ]
+    }
+  ]
+}

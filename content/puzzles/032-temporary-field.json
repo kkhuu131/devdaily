@@ -1,0 +1,106 @@
+{
+  "id": 32,
+  "conceptName": "Temporary Field",
+  "category": "code-smell",
+  "definition": "An instance field that is populated only for a limited operation and otherwise unused, indicating the value should be a local variable or passed between methods rather than stored on the object.",
+  "ruleOfThumb": "If a field is only assigned and read during a single operation, prefer local variables or explicit parameters instead of object-scoped mutable state.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Temporary Field",
+    "page": "pp. 60-62",
+    "externalUrl": "https://martinfowler.com/bliki/TemporaryField.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this class. Which observation best describes the likely design problem shown?",
+      "codeSnippet": "class OrderProcessor {\n  private tempDiscount: number | null = null;\n  process(order: any) {\n    this.tempDiscount = this.calculateDiscount(order);\n    order.total -= this.tempDiscount as number;\n    this.tempDiscount = null;\n  }\n  private calculateDiscount(order: any) { return order.items.length * 1; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class has a field used only briefly to hold intermediate calculation state during one operation.",
+          "isCorrect": true,
+          "explanation": "This field is set and cleared within a single method flow, which signals a temporary storage role. The correct fix is to use a local variable or pass the intermediate value directly between helpers rather than keeping it on the object for the lifetime of the instance."
+        },
+        {
+          "id": "b",
+          "text": "The field is a hidden global state that will cause thread safety issues in concurrent request handlers.",
+          "isCorrect": false,
+          "explanation": "While instance fields can cause concurrency problems in shared environments, this specific field is set and cleared per call so the primary issue is design locality, not global concurrency. Concurrency concerns would matter if the field persisted across requests without being reset."
+        },
+        {
+          "id": "c",
+          "text": "The field indicates the class is trying to do too many responsibilities and should be split into smaller cooperating classes.",
+          "isCorrect": false,
+          "explanation": "Overloaded responsibilities can be a real problem, but the snippet shows a field used only to shuttle a temporary value within a single process method. Splitting into classes may be overkill compared to simply using a local variable or refactoring helpers."
+        },
+        {
+          "id": "d",
+          "text": "The field is a disguised cache that will grow uncontrolled and cause memory leaks under heavy load.",
+          "isCorrect": false,
+          "explanation": "A cache that accumulates entries is a serious smell, but this field holds a single scalar value assigned and cleared per operation. The real issue is that the value is incorrectly elevated to object state rather than being local."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "This request handler stores parsed data on an instance field and clears it after use. Which diagnosis is most accurate?",
+      "codeSnippet": "class RequestHandler {\n  private lastPayload: string | null = null;\n  handle(request: any) {\n    this.lastPayload = this.parse(request.body);\n    const result = this.process(this.lastPayload);\n    this.lastPayload = null;\n    return result;\n  }\n  private parse(body: string) { return body.trim(); }\n  private process(payload: string | null) { return payload?.toUpperCase() ?? \"\"; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The private field only shuttles intermediate values between methods during one request and is reset afterward.",
+          "isCorrect": true,
+          "explanation": "This field is used purely as a temporary carrier between helpers in one call. It should be converted to a local variable or passed explicitly to helpers so the object does not maintain per-request transient state."
+        },
+        {
+          "id": "b",
+          "text": "The private field is intended as a simple method-level cache to avoid recomputing expensive values across calls.",
+          "isCorrect": false,
+          "explanation": "A method-level cache would persist values across calls to avoid recomputation, but this field is cleared every call, so it does not act as a cache. Treating it as a cache would change semantics and not solve the locality problem."
+        },
+        {
+          "id": "c",
+          "text": "The private field stores configuration loaded once to be shared across operations and should remain as a field.",
+          "isCorrect": false,
+          "explanation": "Configuration that is loaded once and reused is appropriate as a field, but here the value comes from the request and is transient. Keeping request-specific data on the object risks accidental retention and confused object semantics."
+        },
+        {
+          "id": "d",
+          "text": "The private field supports incremental processing across multiple client events and must persist between method invocations.",
+          "isCorrect": false,
+          "explanation": "If the value were truly incremental state across events, a field would be justified. However the code shows it being set and cleared within a single handler invocation, so persisting it across invocations is not needed and could introduce bugs."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B implementations. Which version is the better design and why?",
+      "codeSnippet": "// Version A\nclass ReportBuilderA {\n  private intermediate: string | null = null;\n  build(data: any) {\n    this.intermediate = this.prepare(data);\n    const part = this.transform();\n    return this.finalize(part);\n  }\n  private prepare(d: any) { return JSON.stringify(d); }\n  private transform() { return this.intermediate ?? \"\"; }\n  private finalize(p: string) { return p.length; }\n}\n\n// Version B\nclass ReportBuilderB {\n  build(data: any) {\n    const prepared = this.prepare(data);\n    const part = this.transform(prepared);\n    return this.finalize(part);\n  }\n  private prepare(d: any) { return JSON.stringify(d); }\n  private transform(p: string) { return p; }\n  private finalize(p: string) { return p.length; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes intermediate values into a single mutable field on the object during processing steps.",
+          "isCorrect": false,
+          "explanation": "Version A stores transient processing data on the instance, which couples unrelated helper methods to object state and risks accidental retention across calls. This design can confuse object responsibilities and hinder concurrency. Fowler advises replacing such temporary fields with local variables or parameters to keep object state meaningful."
+        },
+        {
+          "id": "b",
+          "text": "Version B passes intermediate values explicitly between methods and keeps each object instance free of temporary processing state.",
+          "isCorrect": true,
+          "explanation": "Version B keeps intermediate data as local values and threads them through helpers, making flow explicit and preventing accidental retention on the object. This reduces hidden coupling between methods and clarifies the object's long lived state versus transient data. See Fowler's discussion of the temporary field smell and the refactoring to remove such fields for clearer design."
+        }
+      ]
+    }
+  ]
+}

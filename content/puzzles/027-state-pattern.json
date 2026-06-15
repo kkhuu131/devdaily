@@ -1,0 +1,106 @@
+{
+  "id": 27,
+  "conceptName": "State Pattern",
+  "category": "design-pattern",
+  "definition": "Encapsulate varying behavior for an object based on its internal state by delegating behavior to separate state objects that the context swaps at runtime.",
+  "ruleOfThumb": "When an object has complex conditionals on an internal status and behavior should change with state, extract state-specific classes and delegate.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "State",
+    "page": "259",
+    "externalUrl": "https://refactoring.guru/design-patterns/state"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the following TypeScript snippet, which description best matches the design used by the classes?",
+      "codeSnippet": "interface Mode { handle(ctx: Device): void }\nclass OnMode implements Mode { handle(ctx: Device) { console.log('on'); ctx.setMode(new OffMode()); } }\nclass OffMode implements Mode { handle(ctx: Device) { console.log('off'); ctx.setMode(new OnMode()); } }\nclass Device { private mode: Mode; constructor() { this.mode = new OffMode(); } press() { this.mode.handle(this); } setMode(m: Mode) { this.mode = m } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This encapsulates behavior variations in separate objects and swaps them based on an internal mode field at runtime.",
+          "isCorrect": true,
+          "explanation": "The snippet defines a context (Device) that delegates work to Mode implementations and allows those objects to change the context's current mode. That is the classic approach described by the State concept where behavior is moved into objects representing runtime modes."
+        },
+        {
+          "id": "b",
+          "text": "This encapsulates algorithms as interchangeable strategy objects passed externally to the host class for runtime selection.",
+          "isCorrect": false,
+          "explanation": "Strategy also uses interchangeable objects, but strategies are typically provided or injected from outside and do not usually mutate the host or manage transitions between strategies. Here the mode objects manage transitions by calling setMode on the context, which is a key difference."
+        },
+        {
+          "id": "c",
+          "text": "This encapsulates sequencing steps in an abstract base method with subclasses overriding specific steps to customize behavior.",
+          "isCorrect": false,
+          "explanation": "Template Method uses inheritance and a fixed algorithm structure in a base class with subclass hooks. The snippet uses composition and runtime object swapping rather than subclassing to vary behavior, so Template Method is not the best fit."
+        },
+        {
+          "id": "d",
+          "text": "This encapsulates a chain of handlers that may pass processing along until one handler claims responsibility for a request.",
+          "isCorrect": false,
+          "explanation": "Chain of Responsibility arranges handlers so a request flows along a chain until handled. The code shows explicit swapping of a single active object rather than a chain traversal, so the chain metaphor does not match the structure."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this OrderProcessor class. What is the primary design problem indicated by the implementation?",
+      "codeSnippet": "enum Status { New, Paid, Shipped }\nclass OrderProcessor {\n  private status = Status.New\n  advance() {\n    switch (this.status) {\n      case Status.New: this.charge(); this.status = Status.Paid; break\n      case Status.Paid: this.ship(); this.status = Status.Shipped; break\n      case Status.Shipped: break\n    }\n  }\n  private charge() { /* charge card */ }\n  private ship() { /* create shipment */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class contains multiple switch statements over a status enum instead of delegating behavior to dedicated state objects.",
+          "isCorrect": true,
+          "explanation": "The repeated switch on the status enum centralizes many conditional branches in the context. Extracting per-state behavior into separate classes reduces duplication, makes transitions explicit, and simplifies testing and extension."
+        },
+        {
+          "id": "b",
+          "text": "This class mutates shared status without synchronization making it vulnerable to race conditions in multi threaded environments.",
+          "isCorrect": false,
+          "explanation": "Concurrent access can be a concern, but the snippet shows a single-threaded code example focused on behavioral branching. The primary smell is the conditional dispatch, not concurrency control. Concurrency might be addressed after refactoring behavior."
+        },
+        {
+          "id": "c",
+          "text": "This class mixes UI formatting and business logic causing poor separation and difficulties when writing automated tests.",
+          "isCorrect": false,
+          "explanation": "Mixing UI and business logic is a legitimate smell, but the code demonstrates control flow based on a status enum and internal behavior methods, not presentation code. The pressing issue is conditional complexity, not UI coupling."
+        },
+        {
+          "id": "d",
+          "text": "This class uses primitive status codes and lacks expressive domain methods making the model hard to understand and evolve.",
+          "isCorrect": false,
+          "explanation": "Primitive status codes reduce clarity, but the core maintainability problem here is the branching logic scattered across switches. Replacing primitive switches with polymorphic behavior both improves expressiveness and removes scattered conditionals."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation would you prefer for managing connection behavior and why? Choose the better design.",
+      "codeSnippet": "/* Version A */\ninterface ConnMode { onData(c: Connection, payload: string): void }\nclass Connecting implements ConnMode { onData(c,p){ /* buffer */ } }\nclass Connected implements ConnMode { onData(c,p){ /* process */ } }\nclass Connection { private mode: ConnMode; onData(p){ this.mode.onData(this,p) } setMode(m:ConnMode){ this.mode = m } }\n\n/* Version B */\nclass ConnectionV2 {\n  private status = 'connecting'\n  onData(payload: string){\n    if (this.status === 'connecting') { /* buffer */ }\n    else if (this.status === 'connected') { /* process */ }\n  }\n  private setStatus(s:string){ this.status = s }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates behavior into separate mode classes that the context swaps at runtime for each transition.",
+          "isCorrect": true,
+          "explanation": "Version A moves behavior into small mode classes and keeps transition logic localized to those classes or the context. That reduces conditional scattering and makes testing each mode easier. The context is thin and delegates work — transitions become explicit, and adding a new mode requires adding one class rather than modifying many branches. This is the recommended approach when behavior varies with internal state because it supports open for extension, closed for modification principles."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes conditional branches inside the context causing duplicated logic and scattered transition rules across methods.",
+          "isCorrect": false,
+          "explanation": "Version B keeps behavior as conditionals on a status string which means every behavior needing state will add more branches. Transitions and buffering logic are mixed into the same method bodies, increasing risk of duplication and making it harder to reason about valid transitions. Over time new states create combinatorial complexity — a maintenance liability compared with isolated mode classes."
+        }
+      ]
+    }
+  ]
+}

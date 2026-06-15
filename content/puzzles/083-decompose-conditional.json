@@ -1,0 +1,106 @@
+{
+  "id": 83,
+  "conceptName": "Decompose Conditional",
+  "category": "refactoring",
+  "definition": "Refactor large conditional statements by extracting each branch or decision into separate, well-named functions to clarify intent and separate responsibilities.",
+  "ruleOfThumb": "When a conditional has multiple branches with distinct responsibilities, extract each branch into a separate function with a descriptive name.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Decompose Conditional",
+    "page": "pp. 54-57",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which of the following most directly indicates this function is a candidate for extraction refactoring?",
+      "codeSnippet": "function calculateCharge(order: Order) {\n  let charge = 0;\n  if (order.type === 'premium' && order.items.length > 5) {\n    charge = order.items.reduce((s, i) => s + i.price, 0) * 0.9;\n  } else if (order.type === 'standard') {\n    if (order.customer.vip) charge = 0;\n    else charge = order.items.reduce((s, i) => s + i.price, 0);\n  } else {\n    charge = order.items.reduce((s, i) => s + i.price, 0) + 5;\n  }\n  return charge;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function contains a long conditional block that mixes calculation and decision logic in multiple branches.",
+          "isCorrect": true,
+          "explanation": "The conditional intertwines decision making with domain calculations, which hides intent and makes testing single responsibilities harder. Extracting each branch into a named function clarifies purpose and isolates behavior for unit tests. See Fowler's example on separating logic to improve readability and maintainability."
+        },
+        {
+          "id": "b",
+          "text": "The function contains deeply nested conditionals making complex control flow hard to trace across several small helper variables.",
+          "isCorrect": false,
+          "explanation": "Deep nesting is a real smell but here the primary issue is mixed responsibilities rather than excessive nesting. Nesting can often be reduced as a secondary benefit of extracting branch logic into functions. Clean Code recommends extracting to avoid nested condition complexity."
+        },
+        {
+          "id": "c",
+          "text": "The function contains repeated literal constants inside branches which makes behavior hard to change without widespread edits.",
+          "isCorrect": false,
+          "explanation": "Duplicated literals can be refactored to constants, but they are a narrower issue than mixed decision and calculation logic. Fixing constants does not address the harder problem of unclear branch intent and mixed responsibilities highlighted by Fowler."
+        },
+        {
+          "id": "d",
+          "text": "The function contains branch-specific side effects which couples decision logic to external state and hides implicit dependencies.",
+          "isCorrect": false,
+          "explanation": "Branch-specific side effects are an important concern because they hide dependencies, but the code sample primarily suffers from combined decision and calculation logic. Extracting branches reduces side effects surface area and makes dependencies explicit, which addresses both problems."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which concern is the clearest primary reason to refactor this function now?",
+      "codeSnippet": "function applyDiscount(order: Order, isBlackFriday: boolean) {\n  let discount = 0;\n  if (isBlackFriday) {\n    discount = order.total * 0.3;\n  } else if (order.customer.level === 'gold') {\n    discount = order.total * 0.2;\n  } else {\n    discount = order.total * 0.05;\n  }\n  if (isBlackFriday) logPromo(order);\n  return discount;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code uses boolean flag parameters that change function behavior and cause callers to reason about internal branch behavior.",
+          "isCorrect": false,
+          "explanation": "Flag arguments are a recognized smell because they force callers to think about internal branching. In this example the flag combines with other logic, but the more actionable refactor is to extract branch behaviors into separate functions and replace flag-driven branching with clearer intent-bearing calls."
+        },
+        {
+          "id": "b",
+          "text": "The code repeats large calculations across branches causing duplication that will lead to inconsistent bug fixes later.",
+          "isCorrect": false,
+          "explanation": "Duplication is present, but in this snippet duplicated calculations are simple and not the worst harm. The primary risk is that decision logic and side effects like logging are mixed, which extraction would separate and clarify more effectively than merely deduplicating expressions."
+        },
+        {
+          "id": "c",
+          "text": "The code mixes decision logic with different side effects and should have each responsibility moved to a dedicated function.",
+          "isCorrect": true,
+          "explanation": "This observation targets separation of concerns: discount calculation and logging are coupled by branching. Moving each branch into a named function makes the code easier to test and reason about independently. Fowler recommends extracting condition branches to clarify responsibilities."
+        },
+        {
+          "id": "d",
+          "text": "The code lacks clear naming for branch intentions which obscures why conditions exist and impedes simple refactoring.",
+          "isCorrect": false,
+          "explanation": "Poor naming can obscure intent, however naming alone will not fix the mixed responsibilities. Extracting each decision branch into a well-named function simultaneously documents intent and simplifies the calling code, which is a more effective first step."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version would you choose to improve clarity and testability in a growing codebase?",
+      "codeSnippet": "// Version A: single function with conditional branches\nfunction price(order: Order) {\n  if (order.type === 'A') {\n    return basePrice(order) * 0.9 + rushFee(order);\n  } else if (order.type === 'B') {\n    return basePrice(order) + specialSurcharge(order);\n  }\n  return basePrice(order);\n}\n\n// Version B: extracted branch behaviors\nfunction price(order: Order) {\n  if (order.type === 'A') return priceForTypeA(order);\n  if (order.type === 'B') return priceForTypeB(order);\n  return defaultPrice(order);\n}\n\nfunction priceForTypeA(order: Order) { return basePrice(order) * 0.9 + rushFee(order); }\nfunction priceForTypeB(order: Order) { return basePrice(order) + specialSurcharge(order); }\nfunction defaultPrice(order: Order) { return basePrice(order); }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes all branch logic inside a single function making future changes and tests harder.",
+          "isCorrect": false,
+          "explanation": "Version A keeps all logic inline, which increases cognitive load and makes focused unit testing difficult because each test must exercise the same function to cover different behaviors. The single-function approach can be acceptable for trivial cases, but it does not scale well when branches grow or acquire side effects."
+        },
+        {
+          "id": "b",
+          "text": "Version B extracts each branch into a small well named function which simplifies tests and reading.",
+          "isCorrect": true,
+          "explanation": "Version B follows the principle of extracting conditional branches into named functions, making each behavior explicit and self-contained. This reduces the size of the decision point, improves readability, and enables targeted unit tests for each branch. Fowler and other sources recommend this approach to clarify intent and limit change surface."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 65,
+  "conceptName": "Mysterious Name",
+  "category": "code-smell",
+  "definition": "A code smell where identifiers are vague, non descriptive, or inconsistent, hiding intent and increasing cognitive load for readers.",
+  "ruleOfThumb": "Choose names that reveal intent and behavior; prefer specific nouns and verbs over generic short labels or single letters.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code",
+    "chapter": "Meaningful Names",
+    "page": "35-50",
+    "externalUrl": "https://www.informit.com/store/clean-code-a-handbook-of-agile-software-craftsmanship-9780132350884"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What primary problem is shown by the following snippet?",
+      "codeSnippet": "class InvoiceProcessor {\n  process(data: any) {\n    const v = data.value;\n    const t = this.transform(v);\n    return this.save(t);\n  }\n  transform(x: any) { /* ... */ }\n  save(y: any) { /* ... */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Several identifiers in this snippet are vague and do not express the developer intent clearly.",
+          "isCorrect": true,
+          "explanation": "The snippet uses overly short and ambiguous names like v, t, x, and y which force readers to infer meaning. Good names should communicate role and intent so the code reads like a sentence. Clean Code dedicates a chapter to meaningful names and argues that intent-revealing identifiers greatly reduce the need for comments."
+        },
+        {
+          "id": "b",
+          "text": "The module mixes unrelated responsibilities into a single class which will make testing and reuse harder.",
+          "isCorrect": false,
+          "explanation": "While mixing responsibilities is a real concern, the shown class methods appear cohesive around processing and saving invoices. The more visible problem is the lack of descriptive names rather than boundary violations. If names were clear, the responsibilities would be easier to judge."
+        },
+        {
+          "id": "c",
+          "text": "The function uses any typed parameters that remove type safety and hide calling code contract expectations.",
+          "isCorrect": false,
+          "explanation": "Using any weakens static guarantees and can hide contracts, but the code smell intended here is naming. Replacing any with proper types helps, yet poor names would still impede understanding even with strong types."
+        },
+        {
+          "id": "d",
+          "text": "There is a hidden side effect on global state caused by the method that will break concurrency.",
+          "isCorrect": false,
+          "explanation": "Hidden side effects are serious, but the snippet shows only local calls to transform and save. No global state is referenced in the example. The realistic and immediate issue is that names fail to convey what each operation or value represents."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which concern is most relevant for maintainability in this code sample?",
+      "codeSnippet": "export function sync(items: any[], mode: number) {\n  if (mode === 1) return items.map(i => transform(i));\n  if (mode === 2) return items.filter(i => needsSync(i));\n  return [];\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The numeric mode parameter is ambiguous and hides the different code paths behind unreadable constants.",
+          "isCorrect": true,
+          "explanation": "Using magic numeric flags forces callers and readers to remember what each code means. This is a naming and design problem: replace with descriptive enums or separate functions to make behavior explicit. Fowler and others recommend expressing intent via names and avoiding magic values to reduce cognitive load."
+        },
+        {
+          "id": "b",
+          "text": "The implementation mixes filtering and transforming behavior inside one function which violates single responsibility concerns.",
+          "isCorrect": false,
+          "explanation": "Combining behaviors can be problematic, but here the main maintainability issue is the unnamed numeric modes. Even if behaviors were split, callers would still be confused by the opaque mode parameter. Better naming or separate APIs resolves the more immediate readability problem."
+        },
+        {
+          "id": "c",
+          "text": "The any typed collection removes compile time guarantees and makes the transformations error prone during refactor.",
+          "isCorrect": false,
+          "explanation": "Type safety is important and any weakens it, however the snippet's primary friction is the unclear mode semantics. Adding proper types helps but does not clarify what mode values represent; both issues may deserve attention but the naming of mode is the root maintainability concern here."
+        },
+        {
+          "id": "d",
+          "text": "The return of an empty array on unknown modes hides unexpected inputs and makes failure handling ambiguous later.",
+          "isCorrect": false,
+          "explanation": "Silent failures reduce robustness, but the code explicitly shows fallthrough to an empty array which is a separate error-handling choice. The more pressing, generalizable smell shown is the use of ambiguous mode values; improving naming or API shape will also make error handling clearer."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which design better avoids the subtle naming and intent problems illustrated earlier?",
+      "codeSnippet": "// Version A\nexport class OrderService {\n  placeOrder(order: Order) { /* explicit behavior */ }\n  cancelOrder(orderId: string) { /* explicit behavior */ }\n}\n\n// Version B\nexport class OrderService {\n  handle(action: string, payload: any) { /* switch on action string */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A exposes descriptive methods and parameters that reveal intent and reduce caller guesses.",
+          "isCorrect": true,
+          "explanation": "Version A names operations and parameters to express intent directly. Descriptive method names like placeOrder and cancelOrder make the API self documenting and reduce runtime conditional logic. This follows principles from Clean Code and the broader practice of designing intent-revealing APIs, which lowers cognitive load and improves discoverability and testability."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes multiple behaviors into a generic handler which obscures responsibilities and complicates extensions.",
+          "isCorrect": false,
+          "explanation": "Version B may appear flexible, but a single generic handle method requires callers to know action strings and payload shapes, which reintroduces the same mysterious naming problem at runtime. It also creates a maintenance surface where adding behaviors often results in conditional logic and harder-to-test code. Pattern references include Replace Conditional with Polymorphism and the Single Responsibility Principle."
+        }
+      ]
+    }
+  ]
+}

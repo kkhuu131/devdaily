@@ -1,0 +1,106 @@
+{
+  "id": 25,
+  "conceptName": "Fail Fast Principle",
+  "category": "principle",
+  "definition": "Design approach that detects and reports invalid states or incorrect inputs as early as possible, preventing errors from propagating and becoming harder to diagnose.",
+  "ruleOfThumb": "Validate inputs and critical assumptions at module boundaries or construction time; prefer immediate, explicit failures over hidden or delayed errors.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code",
+    "chapter": "Error Handling",
+    "page": null,
+    "externalUrl": "https://www.oreilly.com/library/view/clean-code/9780136083238/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary problem demonstrated by this function?",
+      "codeSnippet": "function getOrderTotal(order: any): number {\n  if (!order || !order.customerId) return 0;\n  const customer = db.findCustomer(order.customerId);\n  // later we assume order.customerId exists and use order.totalAmount\n  return customer.discount * order.totalAmount;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function defers validation and allows invalid state to propagate making later failures harder to trace to source.",
+          "isCorrect": true,
+          "explanation": "This is a classic example of failing to stop invalid input early. Returning a neutral value hides the root cause and lets downstream code work on invalid state, which makes debugging and root cause analysis more difficult. The Fail Fast approach recommends validating required invariants at the boundary and throwing explicit errors so the problem is obvious where it originates."
+        },
+        {
+          "id": "b",
+          "text": "The function allocates large temporary arrays on each call causing avoidable memory churn under high concurrent workloads.",
+          "isCorrect": false,
+          "explanation": "While memory churn can be a real problem, the snippet does not show heavy allocation patterns. The more immediate issue is that the function returns a neutral value when required data is missing, not memory usage. Focusing on allocation here would misdirect effort away from input validation and error visibility."
+        },
+        {
+          "id": "c",
+          "text": "The function mixes business logic and persistence concerns causing difficulty in testing and future feature changes.",
+          "isCorrect": false,
+          "explanation": "Mixing concerns is a legitimate design smell, but the presented code mostly illustrates how missing early validation causes hidden failures. Separating DB access from business rules would improve testability, yet the pressing issue shown is that invalid inputs are not rejected early and therefore trigger less obvious errors."
+        },
+        {
+          "id": "d",
+          "text": "The function exposes internal data by returning mutable structures enabling callers to unintentionally corrupt shared application state.",
+          "isCorrect": false,
+          "explanation": "Returning mutable structures can cause state corruption, but this snippet returns a numeric total or zero and does not expose internal mutable objects. The concrete problem here is that invalid input is tolerated rather than rejected, which allows erroneous execution paths to continue."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which concern best describes the ambiguity in this service's design?",
+      "codeSnippet": "class PaymentService {\n  constructor(private config: any) {\n    // config is stored but not validated here\n  }\n\n  async processPayment(payload: any) {\n    // assumes config.gatewayKey exists and works\n    const client = new GatewayClient(this.config.gatewayKey);\n    return client.charge(payload.amount);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The service defers critical configuration validation until runtime processing which lets invalid setups surface later unexpectedly.",
+          "isCorrect": true,
+          "explanation": "Delaying validation of essential configuration moves error detection to execution time and to code paths that may be noisy or obscure. A fail fast approach would validate required configuration at construction or startup so misconfiguration is detected early and clearly."
+        },
+        {
+          "id": "b",
+          "text": "The service creates a global mutable configuration object that increases coupling and makes parallel testing more error prone.",
+          "isCorrect": false,
+          "explanation": "Global mutable config can cause coupling and test flakiness, but the code stores config on the instance rather than a global. The more direct ambiguity is whether required keys are validated up front. Addressing global mutability would not resolve the delayed error detection shown here."
+        },
+        {
+          "id": "c",
+          "text": "The service swallows low level errors and returns generic failure codes making fault diagnosis slow for operators.",
+          "isCorrect": false,
+          "explanation": "Swallowing errors and returning generic codes is harmful, yet the snippet surfaces the problem of absent upfront checks rather than explicit error swallowing. Improving error handling is valuable, but the immediate design ambiguity is about when and where configuration is validated."
+        },
+        {
+          "id": "d",
+          "text": "The service performs synchronous blocking IO in hot paths which can cause throughput problems under heavy request traffic.",
+          "isCorrect": false,
+          "explanation": "Blocking IO in hot paths is a performance concern, but the sample uses an async method and a client object; the main design ambiguity shown is that the constructor does not validate important configuration, allowing runtime failures instead of early detection."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better follows a strategy of early error detection at component boundaries?",
+      "codeSnippet": "// Version A: validate at public API boundary\nfunction createUserA(data: any) {\n  if (!data.email) throw new Error('email required');\n  if (!isValidEmail(data.email)) throw new Error('invalid email');\n  db.insert({ email: data.email, name: data.name || '' });\n}\n\n// Version B: validate deep inside downstream behavior\nfunction createUserB(data: any) {\n  db.insert({ email: data.email, name: data.name || '' });\n  sendWelcomeEmail(data.email.toLowerCase());\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A validates inputs at the public boundary and throws immediately on invalid parameters.",
+          "isCorrect": true,
+          "explanation": "Version A checks required preconditions as soon as the public API is invoked and raises explicit errors when invariants are violated. This makes failures fast, localizable, and easier to debug. Failing fast reduces the risk of downstream operations executing with bad data and producing obscure runtime errors. See Robert C. Martin on preferring explicit errors and early validation in error handling."
+        },
+        {
+          "id": "b",
+          "text": "Version B accepts invalid inputs silently and performs checks deep inside operations producing obscure runtime failures later.",
+          "isCorrect": false,
+          "explanation": "Version B defers validation and allows invalid state into the system, which can trigger failures in unrelated code paths and complicate diagnosis. While there are situations where deferred validation is acceptable, in most public APIs you want to catch incorrect usage early. This design tends to increase debugging time and blurs the fault boundary."
+        }
+      ]
+    }
+  ]
+}

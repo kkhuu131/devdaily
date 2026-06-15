@@ -1,0 +1,106 @@
+{
+  "id": 35,
+  "conceptName": "YAGNI",
+  "category": "principle",
+  "definition": "A development principle advising against implementing features until they are actually needed by the product or a demonstrated requirement.",
+  "ruleOfThumb": "Implement the simplest solution that satisfies current requirements; postpone additional features until they have clear, tested demand.",
+  "citation": {
+    "author": "Andrew Hunt and David Thomas",
+    "bookTitle": "The Pragmatic Programmer",
+    "chapter": "Pragmatic Philosophy",
+    "page": null,
+    "externalUrl": "https://pragprog.com/titles/tpp20/the-pragmatic-programmer-20th-anniversary-edition/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the OrderService below. Which description best matches the visible code smell?",
+      "codeSnippet": "// OrderService with a planned export feature\nclass OrderService {\n  process(order: Order) {\n    // current business logic\n  }\n  // Planned feature for exporting orders in multiple formats\n  exportOrders(format: string) {\n    // TODO: implement when requested\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code adds features and scaffolding for functionality that the product does not currently require.",
+          "isCorrect": true,
+          "explanation": "The snippet shows an exportOrders method stubbed out before any consumer exists. That indicates work done for anticipated future demands rather than present needs."
+        },
+        {
+          "id": "b",
+          "text": "The code duplicates similar logic across classes creating unnecessary maintenance burden and potential divergence later.",
+          "isCorrect": false,
+          "explanation": "While duplication is a real smell, the snippet shows a single unused method rather than repeated logic. The primary issue is premature addition of functionality rather than copy/paste duplication."
+        },
+        {
+          "id": "c",
+          "text": "The code exposes internal state through public fields which increases coupling and reduces encapsulation safety.",
+          "isCorrect": false,
+          "explanation": "Exposing internal state is a concern when public fields exist. In this example there are no public fields shown; the concern here is added future functionality rather than loss of encapsulation."
+        },
+        {
+          "id": "d",
+          "text": "The code hides performance bottlenecks in synchronous operations where asynchronous streams would scale better under load.",
+          "isCorrect": false,
+          "explanation": "Performance problems are worth investigating, but the provided code only shows an unimplemented export method. There is no evidence of synchronous bottlenecks in the snippet."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review AnalyticsService. Which statement most accurately identifies the primary design concern here?",
+      "codeSnippet": "class AnalyticsService {\n  private enableAdvanced = false;\n  track(event: string) {\n    // basic tracking\n  }\n  trackDetailed(event: any) {\n    // anticipate richer metrics later\n    if (this.enableAdvanced) { /* complex logic */ }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code implements and preserves functionality for anticipated metrics that currently have no consumers or tests.",
+          "isCorrect": true,
+          "explanation": "The presence of toggled advanced logic and an unexercised detailed tracker suggests work is being preserved for future needs. That increases maintenance burden without current value and risks bit rot."
+        },
+        {
+          "id": "b",
+          "text": "This code leaks internal state through global flags making concurrent behavior hard to reason about and debug.",
+          "isCorrect": false,
+          "explanation": "A global or shared flag can indeed cause concurrency surprises. In this snippet the flag is instance-private and the primary smell is unused advanced code rather than an exposed global concurrency issue."
+        },
+        {
+          "id": "c",
+          "text": "This code violates single responsibility by mixing storage and reporting concerns inside the same class and method.",
+          "isCorrect": false,
+          "explanation": "Mixing responsibilities can be problematic, but the snippet primarily shows additional tracking capability guarded by a flag. There is no clear storage layer mixed in; the greater concern is speculative feature code."
+        },
+        {
+          "id": "d",
+          "text": "This code lacks error handling on external API calls which will cause silent failures when network issues occur in production.",
+          "isCorrect": false,
+          "explanation": "Missing error handling is a valid concern for networked operations. The sample, however, is focused on an unused detailed tracking path and does not show external calls; the main issue is premature implementation of future metrics."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two versions of a notification service are proposed. Which version better follows the principle of implementing only what is needed now?",
+      "codeSnippet": "// Version A\nclass NotificationService {\n  send(email: string, message: string) {\n    // send email only\n  }\n}\n\n// Version B\nclass NotificationServiceV2 {\n  registerChannel(name: string, handler: any) {}\n  send(channel: string, payload: any) {}\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A limits surface area and implements only what the product currently requires.",
+          "isCorrect": true,
+          "explanation": "Version A implements the minimal, tested behavior required today: email sending. That reduces initial complexity and maintenance costs. Deferring a generic plugin or channel registry until a real need appears keeps the codebase simpler and easier to understand. If additional channels become necessary, a focused refactor can introduce extensibility backed by actual requirements and tests."
+        },
+        {
+          "id": "b",
+          "text": "Version B provides many extension points increasing coupling and long term maintenance cost without immediate business benefit.",
+          "isCorrect": false,
+          "explanation": "Version B looks attractive for reuse, but adding a channel registry and generic handlers before any consumers exist expands the public surface and shifts work into infrastructure instead of business features. This can lead to brittle abstractions and higher maintenance burden. That said, if the roadmap has concrete, imminent demands for many channels, Version B may be justified, but not for vague future optimism."
+        }
+      ]
+    }
+  ]
+}

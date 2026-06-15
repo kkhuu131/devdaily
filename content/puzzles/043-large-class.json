@@ -1,0 +1,106 @@
+{
+  "id": 43,
+  "conceptName": "Large Class",
+  "category": "code-smell",
+  "definition": "A class that accumulates many responsibilities, fields, and methods so that it becomes difficult to understand, change, or test.",
+  "ruleOfThumb": "If a class does more than one conceptual job or has more than a handful of responsibilities, consider splitting it.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Large Class",
+    "page": "92",
+    "externalUrl": "https://martinfowler.com/bliki/LargeClass.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the class below. Which observation best describes the primary concern you see in this code?",
+      "codeSnippet": "class OrderService {\n  private orders: Order[] = [];\n  addOrder(o: Order) { this.orders.push(o); }\n  calculateTotal(orderId: string) { /* pricing, tax, discount logic */ }\n  saveOrderToDb(order: Order) { /* SQL queries */ }\n  formatOrderForEmail(order: Order) { /* template logic */ }\n  sendConfirmationEmail(order: Order) { /* SMTP integration */ }\n  applyPromotions(order: Order) { /* promotion rules */ }\n  logOrderActivity(order: Order) { /* logging */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class centralizes many unrelated responsibilities and fields into one monolithic object hindering focused maintenance.",
+          "isCorrect": true,
+          "explanation": "The class mixes domain logic, persistence, formatting, notification, and logging all in one type. Fowler describes this smell as an accumulation of responsibilities that should be split into cohesive roles like repositories, formatters, and notification services to improve readability, testability, and change isolation."
+        },
+        {
+          "id": "b",
+          "text": "This class has inconsistent method naming and mixed abstraction levels making the API confusing for other developers to use.",
+          "isCorrect": false,
+          "explanation": "While inconsistent naming and abstraction can be a problem, the more pressing issue here is the breadth of responsibilities. Renaming methods would not fix the multiple responsibilities that increase coupling and complexity. Addressing cohesion yields greater long term benefits than superficial naming fixes."
+        },
+        {
+          "id": "c",
+          "text": "This class lacks documentation and uses many magic literals which obscures intent and increases onboarding time.",
+          "isCorrect": false,
+          "explanation": "Missing documentation and magic literals are real maintenance concerns, but the code shows distinct responsibilities coexisting. Even well-documented code with the same responsibilities would still suffer from poor cohesion and harder testing. Split responsibilities first, then document interfaces."
+        },
+        {
+          "id": "d",
+          "text": "This class inlines database and HTTP calls inside methods causing resource coupling and making testing difficult without stubs.",
+          "isCorrect": false,
+          "explanation": "Inlining I/O does increase coupling and complicates testing. However, the broader issue is that I/O is only one of many responsibilities here. Extracting persistence and communication behind interfaces will address both the coupling and the overall class bloat more effectively."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this class sketch. Which statement most accurately describes the architectural problem you would address first?",
+      "codeSnippet": "class CustomerManager {\n  createCustomer(data) { /* validation, save, welcome email */ }\n  updateCustomer(id, data) { /* validation and audit */ }\n  exportCustomersCsv() { /* formatting and file IO */ }\n  calculateLoyaltyPoints(customer) { /* business rules */ }\n  formatAddress(customer) { /* presentation formatting */ }\n  sendPromotionalEmail(customer) { /* SMTP */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class mixes business logic, presentation formatting, and persistence tasks in a single type with many unrelated public methods.",
+          "isCorrect": true,
+          "explanation": "The class interleaves validation, persistence, presentation, and notification concerns. That mixture indicates low cohesion and multiple responsibilities within one type. Refactoring into focused services or collaborators for formatting, persistence, and business rules will make behavior clearer and simplify testing."
+        },
+        {
+          "id": "b",
+          "text": "This class is only a thin data transfer object and could be converted to an immutable plain object to simplify usage.",
+          "isCorrect": false,
+          "explanation": "A DTO would typically have few or no methods, but this class contains active business behaviors and I/O. Treating it as a DTO would hide its responsibilities rather than address them. The problem is behavioral concentration rather than merely mutable state."
+        },
+        {
+          "id": "c",
+          "text": "This class intentionally groups customer features as a facade for consumers to reduce the number of collaboration points.",
+          "isCorrect": false,
+          "explanation": "Using a facade to reduce collaboration points can be valid, but a facade should delegate to well-factored collaborators. Here internal mixing of concerns suggests there are no clear delegates to extract, so the facade pattern alone would not solve the underlying cohesion problem."
+        },
+        {
+          "id": "d",
+          "text": "This class appears to be a performance optimization collecting hot paths into one place for fewer allocations.",
+          "isCorrect": false,
+          "explanation": "Centralizing hot paths for performance is a defensible optimization, but premature optimization should not reduce code quality. The code shows distinct conceptual responsibilities rather than micro-optimizations. Profiling should confirm a performance issue before collapsing responsibilities for speed."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two versions below. Which version better addresses maintainability and testability concerns?",
+      "codeSnippet": "// Version A\nclass OrderProcessor {\n  validate(order) { /* validations */ }\n  calculateTotals(order) { /* pricing */ }\n  persist(order) { /* direct SQL */ }\n  notify(order) { /* email logic */ }\n}\n\n// Version B\nclass OrderValidator { validate(o) {} }\nclass OrderCalculator { calculate(o) {} }\nclass OrderRepository { save(o) {} }\nclass OrderNotifier { send(o) {} }\nclass OrderProcessor {\n  constructor(v,c,r,n) { /* compose collaborators */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps everything colocated which increases coupling and makes unit testing many behaviours difficult.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes validation, calculation, persistence, and notification inside one class. That leads to high coupling and makes granular unit testing harder because tests must initialize more behavior and possibly mock external systems. While simpler to read initially, it hinders isolated change and reuse."
+        },
+        {
+          "id": "b",
+          "text": "Version B separates concerns into smaller collaborating types which reduces coupling and improves focused unit testing.",
+          "isCorrect": true,
+          "explanation": "Version B extracts cohesive responsibilities into distinct collaborator classes and composes them in a thin coordinating class. This increases cohesion and reduces coupling, making each piece easier to test in isolation. This aligns with principles from the Single Responsibility Principle and classic refactorings that favor small, focused types (see Fowler and SOLID literature)."
+        }
+      ]
+    }
+  ]
+}

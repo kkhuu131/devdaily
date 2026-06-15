@@ -1,0 +1,105 @@
+{
+  "id": 40,
+  "conceptName": "Long Parameter List",
+  "category": "code-smell",
+  "definition": "A function or method that takes many parameters, often primitives, making call sites hard to read and coupling callers to parameter order.",
+  "ruleOfThumb": "If a routine needs more than three or four parameters, consider grouping related values into a single object or value type.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Introduce Parameter Object",
+    "page": "160",
+    "externalUrl": "https://martinfowler.com/refactoring/introduceParameterObject.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation best identifies the core problem with this signature?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "The function signature lists many unrelated parameters that should be grouped into a single data object.",
+          "isCorrect": true,
+          "explanation": "This captures the smell: unrelated parameters scattered across the signature increase cognitive load at call sites. Grouping related fields into a small value object or DTO reduces positional coupling and clarifies intent. See Fowler's Introduce Parameter Object for the standard refactoring."
+        },
+        {
+          "id": "b",
+          "text": "The function uses many primitive types which increases risk of passing values in the wrong order at call sites.",
+          "isCorrect": false,
+          "explanation": "This is a real and plausible symptom: many primitives raise the chance of swapped arguments. However, it focuses on a consequence of the smell rather than the root issue that related data should be grouped."
+        },
+        {
+          "id": "c",
+          "text": "The function indicates a violation of single responsibility because many parameters suggest it performs multiple distinct tasks inside.",
+          "isCorrect": false,
+          "explanation": "Multiple parameters can reveal SRP violations when they drive different responsibilities, but many parameters alone do not prove multiple responsibilities. Grouping parameters can address clarity even when a single responsibility remains."
+        },
+        {
+          "id": "d",
+          "text": "The function likely suffers from poor naming since many parameters hide intent and make the API difficult to understand.",
+          "isCorrect": false,
+          "explanation": "Poor naming can compound the problem, but naming changes do not remove positional coupling or improve call-site ergonomics as effectively as grouping related parameters into a typed container."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this TypeScript function, which refactoring is the clearest next step to reduce caller friction with minimal breaking changes?",
+      "codeSnippet": "function createOrder(orderId: string, userId: string, couponCode: string | null, shippingAddr: string, billingAddr: string, sendNotification: boolean, priority: number) {\n  // validate and create order\n}\n\n// many call sites pass seven separate arguments",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Wrap related parameters into a single small value object and update callers to pass that object instead of separate arguments.",
+          "isCorrect": true,
+          "explanation": "Introducing a small parameter object groups related fields and makes the signature shorter and more descriptive. Callers change to constructing the object, improving readability and preventing ordering mistakes. This is exactly the refactoring Fowler describes as Introduce Parameter Object."
+        },
+        {
+          "id": "b",
+          "text": "Keep the parameter list and add optional flags to handle special cases while leaving most existing call sites unchanged.",
+          "isCorrect": false,
+          "explanation": "Adding flags keeps the long list and can hide intent behind boolean switches. It reduces immediate churn but preserves positional coupling and often increases conditional complexity inside the function."
+        },
+        {
+          "id": "c",
+          "text": "Provide a factory function that takes the same primitives and returns a configured closure hiding parameter order from callers.",
+          "isCorrect": false,
+          "explanation": "A factory or closure can encapsulate parameters, but this introduces an extra indirection and lifecycle difference for callers. It may hide parameter order but complicates API ergonomics and testing compared with a simple parameter object."
+        },
+        {
+          "id": "d",
+          "text": "Introduce a configuration object typed as any and accept arbitrary key values to avoid changing many call sites.",
+          "isCorrect": false,
+          "explanation": "Using an untyped any map avoids caller changes but sacrifices type safety and discoverability. Prefer a well-typed parameter object so IDEs and type checkers continue to document and validate fields."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable and why for reducing positional coupling and improving call-site clarity?",
+      "codeSnippet": "/* Version A */\nfunction invoiceCustomer(id: string, amountCents: number, billingName: string, billingAddress: string, contactEmail: string, sendReceipt: boolean) {\n  // create invoice\n}\n\n/* Version B */\ntype InvoiceParams = {\n  id: string;\n  amountCents: number;\n  billing: { name: string; address: string };\n  contactEmail: string;\n  sendReceipt: boolean;\n};\n\nfunction invoiceCustomer(params: InvoiceParams) {\n  // create invoice\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps the positional parameters which increases risk of incorrect ordering and makes callers fragile.",
+          "isCorrect": false,
+          "explanation": "Version A leaves many positional primitives in the signature, so callers must remember argument order. This pattern is brittle when parameters share the same type and reduces readability at call sites. It also makes adding related fields harder without API churn."
+        },
+        {
+          "id": "b",
+          "text": "Version B replaces positional parameters with a single typed parameter object to simplify call sites and reduce ordering errors.",
+          "isCorrect": true,
+          "explanation": "Version B groups related data into a typed parameter object, improving expressiveness at call sites and preventing argument-swapping bugs. It also makes extensions simpler because new optional fields can be added to the params object without changing existing call sites. This aligns with Fowler's Introduce Parameter Object and with advice from Clean Code about intention-revealing interfaces."
+        }
+      ]
+    }
+  ]
+}

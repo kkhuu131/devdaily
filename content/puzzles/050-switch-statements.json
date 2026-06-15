@@ -1,0 +1,106 @@
+{
+  "id": 50,
+  "conceptName": "Switch Statements",
+  "category": "code-smell",
+  "definition": "A pattern where a program uses largish branching blocks that dispatch behavior based on a discriminator value, concentrating variant logic in one place.",
+  "ruleOfThumb": "Prefer encapsulating variant behavior behind abstractions or handler maps so adding a new variant rarely requires editing a central branching block.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Conditional with Polymorphism",
+    "page": "216",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary code smell in the following handler function?",
+      "codeSnippet": "type Event = { type: string; payload: any };\n\nfunction handleEvent(e: Event) {\n  switch (e.type) {\n    case 'CREATE':\n      // create logic\n      break;\n    case 'UPDATE':\n      // update logic\n      break;\n    case 'DELETE':\n      // delete logic\n      break;\n    default:\n      throw new Error('Unknown event');\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function centralizes many type specific behaviors into one branching block, making extension difficult without tests.",
+          "isCorrect": false,
+          "explanation": "Concentrating behavior in one branching block makes adding new event kinds require changing this function and potentially adding tests. It is a real maintenance burden because changes to one variant can affect nearby cases. See Fowler on replacing conditionals with polymorphism for alternatives."
+        },
+        {
+          "id": "b",
+          "text": "This function mixes data transformation and control flow into a single block which increases cognitive load for contributors.",
+          "isCorrect": false,
+          "explanation": "Mixing responsibilities is a plausible concern since the function handles many behaviors and might do transformation plus flow control. While true, the primary smell here is the centralized variant dispatch; separating responsibilities could help but does not fully address the branching proliferation."
+        },
+        {
+          "id": "c",
+          "text": "This function concentrates type specific logic into a single large branching block that dominates the module.",
+          "isCorrect": true,
+          "explanation": "The core problem is centralized variant logic: many different behaviors live inside one branching construct. That makes the code harder to extend and reason about. The usual refactor is to move each variant into its own handler or use polymorphism so new variants do not require editing the central dispatch."
+        },
+        {
+          "id": "d",
+          "text": "This function hides performance issues by using a large block instead of profiling targeted hot paths during optimization.",
+          "isCorrect": false,
+          "explanation": "Performance is a reasonable operational concern, but it is secondary here. The snippet shows structural coupling of variant behavior rather than obvious hot path inefficiencies. Addressing structure first improves maintainability and later makes performance fixes safer."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which maintainability risk is most evident in this payment routing code?",
+      "codeSnippet": "enum PaymentType { Card, BankTransfer, Wallet }\n\nfunction routePayment(p: { type: PaymentType, amt: number }) {\n  switch (p.type) {\n    case PaymentType.Card:\n      processCard(p);\n      break;\n    case PaymentType.BankTransfer:\n      processBank(p);\n      break;\n    case PaymentType.Wallet:\n      processWallet(p);\n      break;\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This design will scatter identical branching logic across modules when adding new payment types, causing duplication and errors.",
+          "isCorrect": false,
+          "explanation": "Duplication of branching logic is a likely outcome when the same pattern is used in multiple places. That increases the risk of inconsistent behavior across modules. Refactoring to a single registry or handler abstraction reduces duplication and central points of change."
+        },
+        {
+          "id": "b",
+          "text": "This design forces changes in a central switch every time new variants are added across the codebase.",
+          "isCorrect": true,
+          "explanation": "The code requires editing the central dispatch to add a new payment type, which violates the open closed principle. A better approach is to register handlers or encapsulate behavior behind types so new variants can be introduced without modifying existing dispatch code. Fowler describes related refactorings."
+        },
+        {
+          "id": "c",
+          "text": "This design couples business decision logic to low level controls making isolated unit testing of variants harder to achieve.",
+          "isCorrect": false,
+          "explanation": "Tight coupling between decision logic and control flow does make testing less isolated, and it is a legitimate concern. However the more immediate maintainability risk is the need to edit central dispatch logic for new variants; decoupling helps both testing and extensibility."
+        },
+        {
+          "id": "d",
+          "text": "This design increases compile time complexity because a monolithic conditional block grows and becomes slower to validate in builds.",
+          "isCorrect": false,
+          "explanation": "Build-time complexity is usually not the primary issue with branching on types in most languages. The practical maintenance pain is the recurrent edits to central logic when variants change, rather than compilation performance."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for long term extensibility?",
+      "codeSnippet": "// Version A\nfunction handle(item: Item) {\n  switch (item.kind) {\n    case 'A': doA(item); break;\n    case 'B': doB(item); break;\n    case 'C': doC(item); break;\n  }\n}\n\n// Version B\nconst handlers: Record<string, (i: Item) => void> = {\n  A: doA,\n  B: doB,\n  C: doC,\n};\nfunction handleV2(item: Item) { handlers[item.kind](item); }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes all variant logic into a single branching block making future changes riskier and tests more coupled.",
+          "isCorrect": false,
+          "explanation": "Version A keeps all variant logic inside one dispatch which means adding or changing a variant requires editing this block. That increases the chance of regressions and makes targeted testing harder. Developers sometimes prefer the single location for discoverability, but the cost on change ripples is high. Fowler recommends moving variant behavior into separate entities when appropriate."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates each variant into its own handler object enabling independent changes and simpler targeted testing.",
+          "isCorrect": true,
+          "explanation": "Version B decouples variants by encapsulating behavior in separate handlers or objects. That makes it easy to add a new variant by registering a new handler without modifying existing code, improving extensibility and testability. This follows the open closed principle and aligns with refactorings like Replace Conditional with Polymorphism in Fowler and advice in Clean Code about small cohesive functions."
+        }
+      ]
+    }
+  ]
+}

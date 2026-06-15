@@ -1,0 +1,105 @@
+{
+  "id": 84,
+  "conceptName": "Extract Variable",
+  "category": "refactoring",
+  "definition": "Introduce a well named local to hold the result of a subexpression so the code communicates intent and avoids repeated computation.",
+  "ruleOfThumb": "When an expression is hard to read, repeated, or used in multiple places, compute it once into a clearly named local.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Composing Methods / Introduce Explaining Variable",
+    "page": "40",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary payoff of naming a subexpression with a local variable in a complex calculation?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "It clarifies the calculation intent with a meaningful intermediate name that communicates purpose clearly to readers.",
+          "isCorrect": true,
+          "explanation": "Naming an intermediate value makes the developer intent explicit. This helps reviewers and maintainers understand the business meaning without rederiving the math. Fowler calls this an Explaining Variable; Clean Code recommends meaningful names to express intent."
+        },
+        {
+          "id": "b",
+          "text": "It reduces code size by replacing repeated expressions with one variable but may add an extra local binding.",
+          "isCorrect": false,
+          "explanation": "While reducing duplication can be a side benefit, the main goal is intent and readability. Introducing a local solely to reduce size can produce unnecessary locals without improving clarity."
+        },
+        {
+          "id": "c",
+          "text": "It improves debugger experience by allowing a breakpoint on the intermediate value while preserving original expression structure.",
+          "isCorrect": false,
+          "explanation": "A named local can aid debugging, but that is secondary. Prefer extracting a name when it documents business intent; using it only for breakpoints risks clutter without semantic gain."
+        },
+        {
+          "id": "d",
+          "text": "It prevents expensive re evaluation by storing a computed value once so subsequent uses reuse the cached result.",
+          "isCorrect": false,
+          "explanation": "Caching repeated computation is sometimes important, but extracting a variable for performance should be accompanied by measuring cost and considering laziness. The primary ergonomic benefit is clarity."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which code smell is most likely addressed by introducing a named intermediate for the repeated reduce expression in this snippet?",
+      "codeSnippet": "function summarize(order) {\n  const tax = order.items.reduce((s, it) => s + it.price * it.taxRate, 0);\n  const total = order.items.reduce((s, it) => s + it.price * it.taxRate, 0) + order.shipping;\n  const estimate = order.items.reduce((s, it) => s + it.price * it.taxRate, 0) * 1.1;\n  return { tax, total, estimate };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It addresses unclear calculation intent by making intermediate steps explicit with a descriptive name for part of the expression.",
+          "isCorrect": false,
+          "explanation": "Making intent explicit is a legitimate improvement, but the code shows the identical reduce used multiple times. The most direct problem here is duplicated computation rather than solely unclear intent."
+        },
+        {
+          "id": "b",
+          "text": "It addresses duplicated expression faults by avoiding repeated recalculation of the same sub expression across nearby code paths.",
+          "isCorrect": true,
+          "explanation": "The snippet repeats the same reduce three times. Extracting the reduce into a named local both documents intent and avoids recomputing the same aggregate, removing duplication and potential inconsistency."
+        },
+        {
+          "id": "c",
+          "text": "It addresses long line readability problems by breaking a dense expression into named chunks that are easier to scan.",
+          "isCorrect": false,
+          "explanation": "Breaking dense expressions helps readability, but the primary actionable smell in this example is the identical reduce repeated, which risks inefficiency and duplication rather than just line length."
+        },
+        {
+          "id": "d",
+          "text": "It addresses fragile change surface by isolating a calculation so modifications only touch a single well named local variable.",
+          "isCorrect": false,
+          "explanation": "Isolating change points is a benefit of naming, yet the immediate maintenance risk in this snippet is duplicate computations. Consolidating the reduce reduces change surface, but duplicated expression is the most direct smell."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better demonstrates a maintainable approach for a repeated complex item calculation?",
+      "codeSnippet": "// Version A\nfunction computeTotalA(order) {\n  return order.items\n    .map(i => i.price * (1 + i.taxRate) - i.discount)\n    .reduce((s, v) => s + v, 0);\n}\n\n// Version B\nfunction computeTotalB(order) {\n  return order.items\n    .map(i => {\n      const net = i.price * (1 + i.taxRate) - i.discount;\n      return net;\n    })\n    .reduce((s, v) => s + v, 0);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A contains the complex expression duplicated inline across operations which increases maintenance burden for future edits.",
+          "isCorrect": false,
+          "explanation": "Version A keeps the calculation inline. That keeps code concise but forces every reader to recompute meaning mentally. When requirements change you risk repeating edits and introducing inconsistent fixes. Naming the intermediate improves locateability and documents the business concept."
+        },
+        {
+          "id": "b",
+          "text": "Version B assigns the computed intermediate to a single well named local variable used where needed.",
+          "isCorrect": true,
+          "explanation": "Version B extracts the subexpression into a local 'net', giving a place to document intent and to update the calculation in one place. This reduces cognitive load and the chance of inconsistent changes. Fowler recommends introducing explaining variables for precisely this balance of clarity and maintainability."
+        }
+      ]
+    }
+  ]
+}

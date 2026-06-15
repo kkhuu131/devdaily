@@ -1,0 +1,106 @@
+{
+  "id": 81,
+  "conceptName": "Push Down Method",
+  "category": "refactoring",
+  "definition": "Move a method from a superclass into one or more subclasses when the method is only used by those subclasses, reducing superclass responsibilities and clarifying ownership.",
+  "ruleOfThumb": "If a method in a superclass is only used by some subclasses and not by the superclass itself, move it into the subclasses that actually use it.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Push Down Method",
+    "page": "165",
+    "externalUrl": "https://refactoring.com/catalog/push_down_method.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the class hierarchy. Which refactoring most directly addresses the design smell shown?",
+      "codeSnippet": "class Payment {\n  process(): boolean {\n    return true;\n  }\n  retailSurcharge(amount: number): number {\n    // retail specific calculation\n    return amount * 0.05;\n  }\n}\n\nclass RetailPayment extends Payment {\n  finalAmount(amount: number): number {\n    return amount + this.retailSurcharge(amount);\n  }\n}\n\nclass CorporatePayment extends Payment {\n  finalAmount(amount: number): number {\n    return amount;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Move the retailSurcharge method from the base class into the subclass where it is actually used.",
+          "isCorrect": true,
+          "explanation": "The surcharge method lives in the superclass but is only used by RetailPayment. Moving it down removes irrelevant behavior from Payment, clarifies responsibility, and avoids misleading reuse. This aligns with the refactoring pattern that relocates subclass-specific behavior into the subclasses that need it."
+        },
+        {
+          "id": "b",
+          "text": "Extract retailSurcharge into a new utility module because the calculation may be reused by unrelated classes later.",
+          "isCorrect": false,
+          "explanation": "Extracting to a utility assumes the logic is widely reusable, which is not evident here. That creates a shared dependency and can hide domain intent. If reuse appears later, extraction is reasonable, but premature extraction loses the semantic connection between surcharge and the RetailPayment behavior."
+        },
+        {
+          "id": "c",
+          "text": "Keep retailSurcharge in the base class to avoid breaking subclass implementations that might rely on it unexpectedly.",
+          "isCorrect": false,
+          "explanation": "Keeping the method in the superclass preserves compatibility but keeps irrelevant functionality on Payment, confusing the API and suggesting all payments have this surcharge. Refactoring to move the method clarifies the model while preserving behavior via tests."
+        },
+        {
+          "id": "d",
+          "text": "Make retailSurcharge abstract to force subclasses to provide their own surcharge logic for clarity and extension.",
+          "isCorrect": false,
+          "explanation": "Making the method abstract requires every subclass to implement it, which is heavier than needed for only one subclass. That approach adds boilerplate and forces irrelevant subclasses to implement no-op or pass-through behavior, increasing maintenance burden."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "formatForPrint is used by two subclasses but not by the base. Which is the most appropriate design response now?",
+      "codeSnippet": "class Document {\n  generate(): string { return ''; }\n  formatForPrint(): string {\n    // formatting used by Report and Invoice only\n    return 'formatted';\n  }\n}\n\nclass Report extends Document {\n  print(): void { console.log(this.formatForPrint()); }\n}\n\nclass Invoice extends Document {\n  emailCopy(): void { console.log(this.formatForPrint()); }\n}\n\nclass Memo extends Document {\n  archive(): void {}\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce a shared intermediate subclass for Report and Invoice and move the formatting method there for clear ownership.",
+          "isCorrect": true,
+          "explanation": "When multiple subclasses share behavior not used by the superclass, creating a common intermediate superclass (or mixin) centralizes that behavior without polluting the top-level Document. This reduces duplication while keeping responsibilities properly scoped."
+        },
+        {
+          "id": "b",
+          "text": "Keep formatForPrint in the base Document class to avoid changing many subclasses that may rely on its behavior.",
+          "isCorrect": false,
+          "explanation": "Leaving the method in Document keeps backward compatibility but blurs the base class responsibility, making Document appear to require print formatting for all derivatives. That weakens the model and can mislead future evolution."
+        },
+        {
+          "id": "c",
+          "text": "Extract formatForPrint into a standalone utility function because formatting is a cross cutting concern across types.",
+          "isCorrect": false,
+          "explanation": "A utility extraction treats formatting as generic, which may be acceptable, but it separates behavior from the type that owns the logic. If formatting depends on subclass semantics, moving into a shared subclass preserves cohesion better than a generic helper."
+        },
+        {
+          "id": "d",
+          "text": "Make formatForPrint abstract so each subclass must implement its own formatting logic explicitly and deliberately.",
+          "isCorrect": false,
+          "explanation": "Making the method abstract forces each subclass to implement formatting even when two already share the same implementation. That increases duplication and effort when a shared implementation is appropriate."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which of these two versions is preferable for handling subclass specific formatting logic in this notification example?",
+      "codeSnippet": "// Version A\nclass Notification {\n  formatForEmail(content: string): string {\n    return `<p>${content}</p>`; // email formatting in superclass\n  }\n}\nclass EmailNotification extends Notification {\n  deliver(content: string) { const body = this.formatForEmail(content); }\n}\nclass SMSNotification extends Notification {\n  deliver(content: string) { /* SMS no email formatting */ }\n}\n\n// Version B\nclass NotificationV2 {}\nclass EmailNotificationV2 extends NotificationV2 {\n  private formatForEmail(content: string): string { return `<p>${content}</p>`; }\n  deliver(content: string) { const body = this.formatForEmail(content); }\n}\nclass SMSNotificationV2 extends NotificationV2 {\n  deliver(content: string) { /* SMS no email formatting */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps the method in the superclass to avoid duplication and to anticipate future reuse across subclasses.",
+          "isCorrect": false,
+          "explanation": "Keeping email formatting in the superclass can seem to avoid duplication, but it mixes responsibilities and suggests all notifications support email formatting. If only EmailNotification needs that logic, relocating it prevents accidental use by other subclasses and keeps the abstraction cleaner."
+        },
+        {
+          "id": "b",
+          "text": "Version B moves the method into the Email subclass to localize email specific behavior and reduce superclass responsibility.",
+          "isCorrect": true,
+          "explanation": "Version B isolates email formatting inside the EmailNotification subclass, which prevents the superclass from carrying irrelevant behavior. Localizing behavior improves cohesion and reduces accidental coupling. Fowler recommends moving subclass specific methods down into the subclasses that actually use them, improving clarity and maintainability."
+        }
+      ]
+    }
+  ]
+}

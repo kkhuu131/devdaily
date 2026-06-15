@@ -1,0 +1,106 @@
+{
+  "id": 60,
+  "conceptName": "Iterator Pattern",
+  "category": "design-pattern",
+  "definition": "Provide a way to access the elements of an aggregate object sequentially without exposing its underlying representation.",
+  "ruleOfThumb": "If clients need to traverse a collection but should not depend on its concrete representation, provide a traversal abstraction.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Iterator",
+    "page": "233",
+    "externalUrl": "https://refactoring.guru/design-patterns/iterator"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given this TypeScript fragment, which design goal is the code most directly achieving?",
+      "codeSnippet": "class NumberCollection {\n  private items: number[] = [];\n  add(n: number) { this.items.push(n); }\n  createIterator() {\n    let index = 0;\n    return { next: () => ({ value: this.items[index++], done: index > this.items.length }) };\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It separates traversal from the collection so multiple traversal algorithms can be used independently of collection implementation.",
+          "isCorrect": true,
+          "explanation": "The snippet returns a traversal object rather than exposing the internal array. That separates the logic of walking elements from how the collection stores them, allowing different traversal strategies without changing the collection implementation."
+        },
+        {
+          "id": "b",
+          "text": "It centralizes element access to provide random access operations and constant time indexing into the collection internals.",
+          "isCorrect": false,
+          "explanation": "This option misreads the code. The snippet provides sequential access via a next function rather than enabling random access or indexing semantics. Random access would expose index-based getters or slice operations instead."
+        },
+        {
+          "id": "c",
+          "text": "It enforces immutability of the collection to ensure thread safety by preventing external modification during iteration.",
+          "isCorrect": false,
+          "explanation": "The code does not create defensive copies or freeze data; it yields elements from the live array. Immutability would require returning immutable snapshots or preventing mutations."
+        },
+        {
+          "id": "d",
+          "text": "It encapsulates business rules for element validation so only authorized values are stored inside the collection.",
+          "isCorrect": false,
+          "explanation": "While collections can validate inputs, this snippet shows traversal construction rather than validation logic. Business rule encapsulation would be visible at add or setter boundaries, not in the iterator factory."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Look at this collection implementation. What is the most likely maintenance risk introduced by this design?",
+      "codeSnippet": "class Menu {\n  private items: MenuItem[] = [];\n  add(item: MenuItem) { this.items.push(item); }\n  getItems(): MenuItem[] { return this.items; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It exposes the concrete internal array which couples clients to representation and prevents safe evolution of collection internals.",
+          "isCorrect": true,
+          "explanation": "Returning the internal array ties callers to the collection's representation. Future changes to storage, lazy loading, or access control become breaking changes. A traversal abstraction avoids this coupling."
+        },
+        {
+          "id": "b",
+          "text": "It causes thread safety issues by sharing mutable array references across threads without defensive copying or synchronization.",
+          "isCorrect": false,
+          "explanation": "Sharing the array can create concurrency problems, but this risk depends on the runtime and threading model. The more immediate design smell is the tight coupling between clients and concrete representation."
+        },
+        {
+          "id": "c",
+          "text": "It hides performance costs because callers may frequently copy the returned array causing unexpected memory and CPU overhead.",
+          "isCorrect": false,
+          "explanation": "Copying could be a performance problem if callers copy the array, but that is a secondary consequence. The fundamental issue remains exposing internals rather than providing a controlled traversal."
+        },
+        {
+          "id": "d",
+          "text": "It violates single responsibility by combining storage management and business logic inside the collection class without clear separation.",
+          "isCorrect": false,
+          "explanation": "A collection can reasonably manage storage. Violating single responsibility would be evident if business rules appeared mixed with storage code. The snippet mainly exposes representation rather than mixing responsibilities."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You must pick between two versions for a library that must support concurrent traversals and hide storage details. Which version would you prefer?",
+      "codeSnippet": "// Version A\nclass CatalogV1 {\n  private items: Product[] = [];\n  add(p: Product) { this.items.push(p); }\n  getItems(): Product[] { return this.items; }\n}\n\n// Version B\nclass CatalogV2 {\n  private items: Product[] = [];\n  add(p: Product) { this.items.push(p); }\n  *iterator(): IterableIterator<Product> { for (const i of this.items) yield i; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A returns the internal array reference used directly by callers for traversal and potential modification.",
+          "isCorrect": false,
+          "explanation": "Version A exposes the actual storage. Callers can mutate or rely on array behaviors, making concurrent traversals unsafe and preventing future changes to how items are stored. This breaks encapsulation and makes refactoring risky."
+        },
+        {
+          "id": "b",
+          "text": "Version B returns an encapsulated traversal object used independently for each traversal.",
+          "isCorrect": true,
+          "explanation": "Version B yields a traversal abstraction so each consumer gets its own traversal state and cannot depend on underlying storage. This preserves encapsulation and supports concurrent independent traversals. For deeper reading see GoF Iterator and Refactoring.Guru on iteration abstractions."
+        }
+      ]
+    }
+  ]
+}

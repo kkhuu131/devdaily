@@ -1,0 +1,106 @@
+{
+  "id": 61,
+  "conceptName": "Data Class",
+  "category": "code-smell",
+  "definition": "A class whose primary role is to hold data with getters and setters but contains little or no domain behavior, causing logic to be implemented externally and violating encapsulation.",
+  "ruleOfThumb": "If most operations on a type live outside of it, consider moving related behavior into the type or introducing richer domain objects.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Bad Smells in Code",
+    "page": "p. 38",
+    "externalUrl": "https://martinfowler.com/bliki/DataClass.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which issue best describes the class below?",
+      "codeSnippet": "class Customer {\n  id: string;\n  name: string;\n  address: string;\n  constructor(id: string, name: string, address: string) {\n    this.id = id;\n    this.name = name;\n    this.address = address;\n  }\n}\n\n// No methods implementing business rules",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class only exposes properties and trivial accessors and therefore acts as a passive data holder.",
+          "isCorrect": true,
+          "explanation": "The class contains only state without behavior, so any business rules must live outside it. This scatters logic and breaks encapsulation, making maintenance harder. Fowler describes this as a code smell where objects are merely carriers of data and suggests moving behavior into the class or creating helper objects to restore encapsulation."
+        },
+        {
+          "id": "b",
+          "text": "The class mixes presentation formatting concerns into the model which couples display logic to the data structure.",
+          "isCorrect": false,
+          "explanation": "This is a plausible concern when models include formatting methods, but the snippet shows only fields and a constructor with no formatting logic. The main problem is lack of behavior rather than presentation coupling."
+        },
+        {
+          "id": "c",
+          "text": "The class exposes mutable fields through public properties and therefore breaks encapsulation and allows inconsistent state mutations.",
+          "isCorrect": false,
+          "explanation": "Exposed mutable fields are a real issue, but the snippet focuses on an absence of business methods. While encapsulation could be improved with private fields and getters, the primary smell is that behavior lives elsewhere."
+        },
+        {
+          "id": "d",
+          "text": "The class lacks validation for its fields and therefore allows invalid objects to be constructed by callers across the codebase.",
+          "isCorrect": false,
+          "explanation": "Missing validation is an important defect, but the salient design smell here is that the type carries only data without related behavior. Validation could be added either externally or inside the class; the question targets the structural absence of behavior."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the snippet, what is the most likely maintenance problem that will arise?",
+      "codeSnippet": "export interface OrderDTO {\n  id: string;\n  items: { sku: string; qty: number; price: number }[];\n  customerId: string;\n}\n\nexport function calculateOrderTotal(order: OrderDTO) {\n  return order.items.reduce((s, i) => s + i.qty * i.price, 0);\n}\n\n// calculateOrderTotal is used in multiple modules",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The Order class contains only fields and trivial accessors and so business logic is implemented externally and duplicated.",
+          "isCorrect": true,
+          "explanation": "When the type carries only data and operations are free functions, business rules tend to be duplicated or scattered across modules. This increases coupling between callers and leads to harder changes. Encapsulating behavior in the type or providing a cohesive domain object reduces duplication and keeps invariants local."
+        },
+        {
+          "id": "b",
+          "text": "The Order class is missing typing for nested structures which causes runtime errors when JSON payloads are deserialized across boundaries.",
+          "isCorrect": false,
+          "explanation": "Missing typings for nested structures can indeed cause runtime issues, but the snippet already types items. The test scenario points to procedural logic sitting outside the type rather than missing nested typing."
+        },
+        {
+          "id": "c",
+          "text": "The Order class exposes mutable arrays which leads to concurrent modification bugs when multiple requests process the same instance.",
+          "isCorrect": false,
+          "explanation": "Mutable arrays are a real concern in concurrent contexts, but the code shows a pure DTO pattern where the primary maintenance burden is scattered behavior. Concurrency risks are secondary to the architectural smell present."
+        },
+        {
+          "id": "d",
+          "text": "The Order class is tightly coupled to persistence details causing repository logic to leak into domain classes and hinder reuse.",
+          "isCorrect": false,
+          "explanation": "Coupling to persistence is a common design issue, but the snippet separates DTO and calculation logic. The core problem here is that domain behavior is implemented outside the data holder, not that persistence details are leaking into the model."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better reduces scattered business logic and preserves invariants?",
+      "codeSnippet": "// Version A\nexport type InvoiceData = { items: { price: number; qty: number }[]; taxRate: number };\nexport function invoiceTotal(data: InvoiceData) {\n  return data.items.reduce((s, i) => s + i.price * i.qty, 0) * (1 + data.taxRate);\n}\n// InvoiceData passed around and totals computed in many modules\n\n// Version B\nexport class Invoice {\n  constructor(private items: { price: number; qty: number }[], private taxRate: number) {}\n  total() { return this.items.reduce((s, i) => s + i.price * i.qty, 0) * (1 + this.taxRate); }\n}\n// Invoice instances carry their own behavior",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes plain data objects and keeps domain behavior in services for simpler unit testing.",
+          "isCorrect": false,
+          "explanation": "Keeping pure data and free functions can simplify isolated function testing, but it scatters domain rules across services and callers. This scattering makes it harder to maintain invariants and evolve business rules, and test coverage often ends up duplicated. Richer objects help encapsulate rules and reduce duplication."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates related behavior with its data and therefore keeps invariants local to the type.",
+          "isCorrect": true,
+          "explanation": "Version B places behavior next to the data it concerns, which keeps invariants and logic in one place and reduces duplication across callers. This improves encapsulation and expresses intent in the type itself. Fowler and other design practitioners recommend moving behavior into domain objects when it naturally belongs there to reduce procedural code spread and maintain the Single Responsibility and Encapsulation principles."
+        }
+      ]
+    }
+  ]
+}

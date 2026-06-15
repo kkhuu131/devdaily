@@ -1,0 +1,106 @@
+{
+  "id": 44,
+  "conceptName": "Extract Function",
+  "category": "refactoring",
+  "definition": "Move a fragment of code from a larger routine into a new, well-named function so the original routine becomes shorter and the extracted code can be reused and tested separately.",
+  "ruleOfThumb": "If a contiguous block of code can be described with a clear name, or it appears more than once, pull it into a small focused helper with a descriptive name.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Extract Method",
+    "page": "39",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the snippet. Which code smell is most directly addressed by pulling the repeated block into a shared helper?",
+      "codeSnippet": "function calculateTotal(items: Item[]) {\n  let total = 0;\n  for (const i of items) {\n    total += i.price * i.quantity;\n  }\n  sendAnalytics(total);\n}\n\nfunction invoice(items: Item[]) {\n  let total = 0;\n  for (const i of items) {\n    total += i.price * i.quantity;\n  }\n  return total;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This smells like duplicated code appearing in multiple places, risking inconsistent updates and bugs when requirements change.",
+          "isCorrect": true,
+          "explanation": "The snippet repeats the same price times quantity loop in two places. Extracting that block into one helper removes duplication so fixes and changes only need to be made in a single location, reducing the chance of inconsistent behavior."
+        },
+        {
+          "id": "b",
+          "text": "This smells like a long function doing many unrelated tasks, which makes reasoning and testing more difficult overall.",
+          "isCorrect": false,
+          "explanation": "A genuinely long method doing unrelated tasks would be a different smell. Here the main issue is identical logic duplicated rather than a single function doing many distinct responsibilities, so splitting by responsibility is not the primary fix."
+        },
+        {
+          "id": "c",
+          "text": "This smells like Feature Envy where one object frequently manipulates another objects internals, causing misplaced responsibilities and coupling.",
+          "isCorrect": false,
+          "explanation": "Feature Envy happens when methods on one object overuse another object's data. The snippet shows duplicate algorithmic code, not a method excessively manipulating another object's internals, so this concern is less direct."
+        },
+        {
+          "id": "d",
+          "text": "This smells like Divergent Change where a single class requires modifications for many unrelated reasons, increasing fragility and churn.",
+          "isCorrect": false,
+          "explanation": "Divergent Change refers to many different changes requiring edits in the same class. The immediate symptom in the snippet is repeated calculation logic, which is more clearly addressed by consolidating duplicated code than by reorganizing for divergent change."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the buildReport function below, which rationale best justifies extracting the repeated formatting and logging logic into a helper?",
+      "codeSnippet": "function buildReport(data: Data[]) {\n  const summary = computeSummary(data);\n  if (summary.empty) {\n    const formatted = formatSummary(summary);\n    console.log(\"Empty report\", formatted);\n    return formatted;\n  }\n  const formattedFull = formatSummary(summary);\n  saveReport(formattedFull);\n  console.log(\"Report saved\", formattedFull);\n  return formattedFull;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This extraction would consolidate duplicated formatting and logging steps to reduce code duplication and ease future changes.",
+          "isCorrect": true,
+          "explanation": "Both branches call formatSummary and do logging. Extracting that sequence into a helper centralizes the behavior so formatting or logging changes occur in one place, reducing the chance of diverging implementations across branches."
+        },
+        {
+          "id": "b",
+          "text": "This extraction would isolate side effects which makes testing easier but may hide contextual dependencies on local variables.",
+          "isCorrect": false,
+          "explanation": "Isolating side effects is a valid benefit, but the stated risk about hiding contextual dependencies is a practical concern rather than the primary justification here. The key driver in this code is duplication that extraction directly removes."
+        },
+        {
+          "id": "c",
+          "text": "This extraction would create an API boundary that enables reuse across modules but introduces additional indirection.",
+          "isCorrect": false,
+          "explanation": "Creating a reusable API is a possible outcome, but introducing indirection is a tradeoff. For the provided function the immediate win is removing repeated logic rather than planning cross-module reuse, so this rationale is secondary."
+        },
+        {
+          "id": "d",
+          "text": "This extraction would improve atomization of the function but risks fragmenting control flow and increasing cognitive load.",
+          "isCorrect": false,
+          "explanation": "Breaking a function into smaller pieces can increase clarity, but fragmenting control flow is only likely if extraction is overused. In this case a small helper for formatting and logging reduces duplication without harmful fragmentation, so the risk is overstated."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version shows a structurally preferable extraction for maintainability and why? Consider parameter lists and contextual cohesion.",
+      "codeSnippet": "// Version A\nfunction publish(item, user, config) {\n  const formatted = format(item, config.format);\n  if (!authorize(user, item)) {\n    audit(user, item, 'denied');\n    return;\n  }\n  audit(user, item, 'published');\n  send(formatted, config.destination, user.email);\n}\n\n// Version B\nfunction publish(item, ctx) {\n  const formatted = format(item, ctx.format);\n  if (!authorize(ctx.user, item)) {\n    ctx.audit('denied');\n    return;\n  }\n  ctx.audit('published');\n  send(formatted, ctx.destination, ctx.user.email);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A introduces a helper with many parameters making the call sites harder to read and maintain across the codebase.",
+          "isCorrect": false,
+          "explanation": "Version A passes multiple separate arguments representing related data. That pattern scales poorly as more context is needed because parameter lists grow, call sites become verbose, and it is easy to pass arguments in the wrong order. This reduces clarity and increases maintenance cost when the number of contextual values increases."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps helper usage simple by accepting a single context configuration object that groups related values together.",
+          "isCorrect": true,
+          "explanation": "Version B encapsulates related parameters in a single context object, which reduces call-site clutter and makes future additions nonbreaking. Grouping related data improves cohesion and makes tests and mocking easier. Fowler and others recommend grouping cooperating parameters into a single abstraction when they naturally belong together to keep method signatures stable and intent clear."
+        }
+      ]
+    }
+  ]
+}

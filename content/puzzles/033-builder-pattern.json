@@ -1,0 +1,106 @@
+{
+  "id": 33,
+  "conceptName": "Builder Pattern",
+  "category": "design-pattern",
+  "definition": "Encapsulate the construction of a complex object in a separate component that provides a stepwise, often fluent, interface and then returns a fully assembled instance.",
+  "ruleOfThumb": "Use a separate configurator when object construction requires many optional parameters or complex assembly steps that would clutter the domain constructor.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Builder (Creational Patterns)",
+    "page": "107",
+    "externalUrl": "https://en.wikipedia.org/wiki/Builder_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What primary construction concern does the following TypeScript code demonstrate?",
+      "codeSnippet": "type Line = { desc: string; amount: number };\nclass Invoice {\n  constructor(private lines: Line[], private customer?: string, private notes?: string) {}\n}\nclass InvoiceBuilder {\n  private lines: Line[] = [];\n  private customer?: string;\n  private notes?: string;\n  addLine(line: Line) { this.lines.push(line); return this; }\n  withCustomer(c: string) { this.customer = c; return this; }\n  withNotes(n: string) { this.notes = n; return this; }\n  build() { return new Invoice(this.lines, this.customer, this.notes); }\n}\nconst invoice = new InvoiceBuilder().addLine({ desc: 'Item', amount: 100 }).withCustomer('ACME').withNotes('Urgent').build();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It creates a fluent stepwise API to assemble complex objects with many optional parameters before creation.",
+          "isCorrect": true,
+          "explanation": "This code separates the assembly steps into chainable methods and a final build call. That separation is useful when the number of optional parameters or assembly steps would otherwise produce telescoping constructors or many constructor overloads. The builder-like component centralizes creation code and improves call-site readability while keeping the resulting domain object free of assembly logic."
+        },
+        {
+          "id": "b",
+          "text": "It replaces polymorphism by storing concrete construction logic in separate classes to vary product families at runtime.",
+          "isCorrect": false,
+          "explanation": "This option describes the Abstract Factory or Prototype concerns more than what the example shows. The snippet focuses on assembling a single complex object via a fluent API, not on producing families of related products via interchangeable factories."
+        },
+        {
+          "id": "c",
+          "text": "It encourages immutable value objects by using numerous small constructors to represent all valid parameter combinations.",
+          "isCorrect": false,
+          "explanation": "Using many small constructors is a different approach to immutability and parameter combinations. The example instead shows a separate builder component offering stepwise mutation before producing the final instance, which is not the same as proliferating constructors on the value type."
+        },
+        {
+          "id": "d",
+          "text": "It isolates persistence concerns by mapping object fields directly to database columns inside the construction class.",
+          "isCorrect": false,
+          "explanation": "Persistence mapping would involve ORMs or mappers and is not demonstrated here. The shown code focuses on object assembly through chained setters and a build method, not on mapping properties to storage schemas."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Looking at this chained configuration API for creating a Product, what is the most important runtime risk to mitigate?",
+      "codeSnippet": "class ProductConfig {\n  private color?: string;\n  private warrantyMonths?: number;\n  private tags: string[] = [];\n  setColor(c: string) { this.color = c; return this; }\n  setWarranty(m: number) { this.warrantyMonths = m; return this; }\n  addTag(t: string) { this.tags.push(t); return this; }\n  create() { return new Product(this.color, this.warrantyMonths, this.tags); }\n}\nconst config = new ProductConfig().setColor('red').addTag('sale').create();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Using this API allows creation of invalid or incomplete objects that later require separate validation to ensure domain invariants.",
+          "isCorrect": true,
+          "explanation": "Fluent configurators often decouple assignment from final validation. The main runtime risk is creating instances that violate invariants or omit required data. Mitigations include adding validation in the create/build method, making required fields explicit, or returning a Result/exception when invariants fail."
+        },
+        {
+          "id": "b",
+          "text": "Using this API may introduce thread safety issues when shared mutable configuration state is reused concurrently without synchronization.",
+          "isCorrect": false,
+          "explanation": "Shared mutable state on a single configurator instance can cause race conditions when reused across threads. This is a real concern for concurrent contexts, but it is secondary to the model's risk of producing invalid domain objects unless concurrency is part of your deployment model."
+        },
+        {
+          "id": "c",
+          "text": "Using this API may complicate testing because fluent chains hide intermediate state and require integration style setup to verify behavior.",
+          "isCorrect": false,
+          "explanation": "Fluent chains can make unit tests less explicit about intermediate configuration steps, but this is usually addressed by testing the final object behavior or exposing test hooks. It is a testing ergonomics concern rather than the primary runtime correctness issue."
+        },
+        {
+          "id": "d",
+          "text": "Using this API may increase code size when many small variations require numerous configuration methods for each optional feature.",
+          "isCorrect": false,
+          "explanation": "A large API surface can increase maintenance burden and boilerplate. While valid, this is a tradeoff against clarity at the call site. The more pressing issue for many domains is ensuring constructed objects are valid and conform to invariants."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version would you prefer for constructing a Product with many optional features in a large codebase? Pick the better design.",
+      "codeSnippet": "// Version A: domain object holds construction responsibilities\nclass ProductA {\n  constructor(\n    public name: string,\n    public price: number,\n    public color?: string,\n    public warrantyMonths?: number,\n    public tags: string[] = []\n  ) {}\n  static createWithOptions(opts: Partial<ProductA> & { name: string; price: number }) {\n    // complex assembly logic inside domain class\n    return new ProductA(opts.name, opts.price, opts.color, opts.warrantyMonths, opts.tags || []);\n  }\n}\n\n// Version B: separate configurator handles stepwise assembly\nclass ProductConfigurator {\n  private name!: string;\n  private price!: number;\n  private color?: string;\n  private warrantyMonths?: number;\n  private tags: string[] = [];\n  setName(n: string) { this.name = n; return this; }\n  setPrice(p: number) { this.price = p; return this; }\n  setColor(c: string) { this.color = c; return this; }\n  setWarranty(m: number) { this.warrantyMonths = m; return this; }\n  addTag(t: string) { this.tags.push(t); return this; }\n  build() { return new ProductA(this.name, this.price, this.color, this.warrantyMonths, this.tags); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A puts construction responsibilities inside the entity causing tighter coupling with construction details and reduced modularity.",
+          "isCorrect": false,
+          "explanation": "Embedding complex construction inside the domain type couples assembly logic to the entity, which increases maintenance cost when construction rules change. In large systems this tends to scatter special-case logic across domain classes and makes it harder to evolve assembly steps, compose partial constructions, or provide alternative construction flows."
+        },
+        {
+          "id": "b",
+          "text": "Version B extracts stepwise construction into a separate fluent configurator class implementation.",
+          "isCorrect": true,
+          "explanation": "Extracting construction into a dedicated configurator separates concerns and keeps domain objects focused on behavior rather than assembly. This design improves readability at call sites, centralizes validation and assembly rules, and makes it easier to test construction logic in isolation. It also enables reuse of assembly flows and reduces constructor combinatorial explosion. For further reading see Gamma et al. and Fowler on separating construction from representation."
+        }
+      ]
+    }
+  ]
+}

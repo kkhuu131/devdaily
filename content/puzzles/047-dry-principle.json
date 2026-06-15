@@ -1,0 +1,106 @@
+{
+  "id": 47,
+  "conceptName": "DRY Principle",
+  "category": "principle",
+  "definition": "Avoid repeating the same knowledge or logic in multiple places so changes happen in a single location.",
+  "ruleOfThumb": "If you find the same logic in more than one place, consider extracting a single, well-named abstraction or utility.",
+  "citation": {
+    "author": "Andy Hunt and Dave Thomas",
+    "bookTitle": "The Pragmatic Programmer",
+    "chapter": "Orthogonality and Duplication",
+    "page": "45",
+    "externalUrl": "https://pragprog.com/titles/tpp20/the-pragmatic-programmer-20th-anniversary-edition/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary problem in this snippet?",
+      "codeSnippet": "class OrderService {\n  calculateTotal(items: Item[]) {\n    return items.reduce((s, i) => s + i.price * i.qty, 0);\n  }\n}\n\nclass InvoiceService {\n  calculateTotal(items: Item[]) {\n    return items.reduce((s, i) => s + i.price * i.qty, 0);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code duplicates the same business logic in two places and risks inconsistent behavior when requirements change.",
+          "isCorrect": true,
+          "explanation": "Both services implement the identical total calculation. When business rules change you must update both locations, which causes bugs. Consolidating the calculation into a single shared function or service reduces maintenance surface and keeps behavior consistent."
+        },
+        {
+          "id": "b",
+          "text": "This code centralizes too much responsibility in a single function making it hard to test and maintain.",
+          "isCorrect": false,
+          "explanation": "While centralization can cause large responsibilities, the snippet actually shows the same logic duplicated rather than a single bloated function. The immediate risk is duplicated logic, not an overly large single method."
+        },
+        {
+          "id": "c",
+          "text": "This code leaks internal state across module boundaries causing tight coupling and fragile dependencies between components.",
+          "isCorrect": false,
+          "explanation": "There is no state being shared between modules here; both functions are pure and operate on passed parameters. The main issue is duplication of logic rather than leaked state or coupling via shared mutable data."
+        },
+        {
+          "id": "d",
+          "text": "This code lacks asynchronous error handling which can lead to silent failures and incomplete error recovery logic.",
+          "isCorrect": false,
+          "explanation": "The functions are synchronous pure computations and do not show any async operations to handle. The snippet lacks error handling concerns; the more relevant smell is duplicated implementation."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which observation best describes the design concern in this pair of functions?",
+      "codeSnippet": "function formatDateForApi(d: Date) {\n  return d.toISOString();\n}\n\nfunction formatDateForUi(d: Date) {\n  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 19);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code repeats similar date formatting logic with minor differences and risks behavioral divergence over time.",
+          "isCorrect": true,
+          "explanation": "The functions share the goal of formatting dates but implement slightly different logic. That near duplication tends to drift as each caller changes independently. Extracting common parts and naming differences prevents accidental divergence."
+        },
+        {
+          "id": "b",
+          "text": "This code appropriately separates concerns because different output formats justify keeping two distinct formatting functions in place.",
+          "isCorrect": false,
+          "explanation": "Different outputs can justify separate functions, but here most logic is shared with only a small tweak. When duplication is large with only a minor variation, consolidation with parameters or helpers is usually preferable to keep behavior aligned."
+        },
+        {
+          "id": "c",
+          "text": "This code shows premature abstraction because the functions are used in different layers and do not share the same callers.",
+          "isCorrect": false,
+          "explanation": "Premature abstraction would be creating a shared layer without demand. In this case there is an actual shared intent and repeated logic, so the risk is duplication rather than an unnecessary abstraction. The right refactor might be a small shared utility."
+        },
+        {
+          "id": "d",
+          "text": "This code indicates a performance hotspot and duplication should be solved by caching results rather than consolidating formatting logic.",
+          "isCorrect": false,
+          "explanation": "There is no evidence of heavy computation or repeated intensive calls in the snippet. Caching addresses performance, not duplicated implementation. Consolidation addresses maintainability and correctness risks more directly here."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better long term design for maintaining consistent billing rules?",
+      "codeSnippet": "// Version A\nclass BillingService {\n  calculateInvoice(items: Item[]) {\n    return items.reduce((s, i) => s + applyRules(i), 0);\n  }\n}\n\n// Version B\nfunction calculateInvoiceUi(items: Item[]) { return items.reduce((s, i) => s + i.price * i.qty, 0); }\nfunction calculateInvoiceApi(items: Item[]) { return items.reduce((s, i) => s + i.price * i.qty, 0); }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes billing calculations into one service accessed by callers across the codebase.",
+          "isCorrect": true,
+          "explanation": "Centralizing the billing calculation in a single service reduces the chance that UI and API diverge when requirements change. It creates a single place to apply business rules, simplifies testing, and makes future changes less error prone. This aligns with common engineering practice to keep business logic in a clear authoritative module."
+        },
+        {
+          "id": "b",
+          "text": "Version B duplicates the billing computation in UI and API layers which increases the chance of inconsistent updates later.",
+          "isCorrect": false,
+          "explanation": "Duplicating the same calculation in multiple layers means every change must be applied in several places, raising maintenance cost and error risk. While local copies may feel convenient short term, they make keeping rules consistent across consumers harder and complicate automated testing."
+        }
+      ]
+    }
+  ]
+}

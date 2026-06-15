@@ -1,0 +1,106 @@
+{
+  "id": 57,
+  "conceptName": "Facade Pattern",
+  "category": "design-pattern",
+  "definition": "Provide a simple, higher level interface that encapsulates and coordinates a set of subsystem interfaces to make the subsystem easier to use.",
+  "ruleOfThumb": "When many clients interact with several classes in the same way, offer one coordinating interface to reduce coupling and simplify usage.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Facade",
+    "page": "185",
+    "externalUrl": "https://refactoring.guru/design-patterns/facade"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the TypeScript snippet. What is the most accurate characterization of the central class's role?",
+      "codeSnippet": "class EmailSender { send(msg:string){} }\nclass SmsSender { send(msg:string){} }\nclass Logger { log(msg:string){} }\n\nclass NotificationGateway {\n  notifyAll(msg:string){\n    new Logger().log(msg);\n    new EmailSender().send(msg);\n    new SmsSender().send(msg);\n  }\n}\n\nnew NotificationGateway().notifyAll('Order placed');",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A class that provides a single simplified interface aggregating several subsystem services for a common operation.",
+          "isCorrect": true,
+          "explanation": "This class wraps calls to Logger, EmailSender, and SmsSender behind one method, reducing the burden on callers. The intent is to present a unified API that coordinates multiple collaborators so callers do not need to manage those interactions directly."
+        },
+        {
+          "id": "b",
+          "text": "A class that centralizes configuration and acts primarily as a global service locator for dependent modules.",
+          "isCorrect": false,
+          "explanation": "This is a plausible misread because the class creates subsystem instances internally, which can look like centralized access. However, a service locator typically exposes lookup semantics and encourages direct dependency retrieval rather than orchestration for a single higher level operation."
+        },
+        {
+          "id": "c",
+          "text": "A class that duplicates business logic and couples callers to multiple concrete subsystem implementations directly.",
+          "isCorrect": false,
+          "explanation": "A thoughtful developer might think the class duplicates logic because it invokes many services, but here the class reduces coupling of callers to those services by encapsulating the orchestration rather than pushing subsystem details outward."
+        },
+        {
+          "id": "d",
+          "text": "A class that wraps a single legacy API and exposes identical methods without simplifying cross-service workflows.",
+          "isCorrect": false,
+          "explanation": "This concern fits adapters or thin wrappers that merely rename or forward calls. In contrast, the shown class composes multiple subsystems in one workflow rather than merely exposing the same legacy surface."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the checkout example, what is the primary design observation about the CheckoutFacade usage?",
+      "codeSnippet": "class PaymentGateway { charge(order:any){} }\nclass InventoryService { reserve(items:any){} }\nclass EmailService { send(order:any){} }\n\nclass CheckoutFacade {\n  checkout(order:any){\n    new InventoryService().reserve(order.items);\n    new PaymentGateway().charge(order);\n    new EmailService().send(order);\n  }\n}\n\nclass OrderController { place(order:any){ return new CheckoutFacade().checkout(order); } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code provides a single cohesive API that hides multiple subsystem interactions behind a higher level operation.",
+          "isCorrect": true,
+          "explanation": "The CheckoutFacade consolidates inventory, payment, and email steps into one method, presenting callers a single responsibility and reducing coupling. That makes controller code simpler and centralizes orchestration, which eases changes that affect the overall checkout flow."
+        },
+        {
+          "id": "b",
+          "text": "This code creates a global point of access which can increase coupling and make testing of subsystems harder.",
+          "isCorrect": false,
+          "explanation": "Some developers might conflate the facade with a global access pattern because it instantiates dependencies internally. The real issue would be global singletons or service locators; this facade still encapsulates orchestration and can be refactored to inject mocks for testing."
+        },
+        {
+          "id": "c",
+          "text": "This code violates single responsibility by placing unrelated business rules and persistence in a single method body.",
+          "isCorrect": false,
+          "explanation": "While a long method can signal SRP violations, the shown code coordinates distinct services as a single workflow rather than mixing persistence and business rules. The facade centralizes workflow, which is often the intended responsibility for such an orchestrator."
+        },
+        {
+          "id": "d",
+          "text": "This code leaks implementation details to callers by exposing the concrete subsystem classes instead of abstracting their behavior.",
+          "isCorrect": false,
+          "explanation": "Leaking details would occur if callers needed to know about InventoryService or PaymentGateway. Here the controller delegates to CheckoutFacade and is not exposed to subsystem classes, so the concern is not accurate for this snippet."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B in the snippet. Which design is structurally preferable for maintainability and testability?",
+      "codeSnippet": "// Version A\nclass FileStorageFacade {\n  save(file:any){\n    new VirusScanner().scan(file);\n    new DiskWriter().write(file);\n    new MetadataStore().save(file.meta);\n  }\n}\n\n// Version B\nclass FileController {\n  save(file:any){\n    new VirusScanner().scan(file);\n    new DiskWriter().write(file);\n    new MetadataStore().save(file.meta);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is a cohesive orchestrator that reduces caller coupling and simplifies testing of file storage operations.",
+          "isCorrect": true,
+          "explanation": "Version A groups the orchestration into a dedicated service, which keeps callers focused on intent rather than steps. That centralization makes it easier to mock or stub the facade in tests and to modify the coordination logic in one place. This aligns with established guidance about providing a unified interface to complex subsystems from the Gang of Four and pragmatic sources."
+        },
+        {
+          "id": "b",
+          "text": "Version B is exposing internal steps causing duplication and making cross cutting changes more error prone.",
+          "isCorrect": false,
+          "explanation": "Although giving callers direct control can seem flexible, exposing the sequence of subsystem calls duplicates orchestration in multiple places and scatters responsibility. That increases the surface area for bugs when workflow requirements change and complicates unit testing because callers must configure and coordinate many concrete dependencies."
+        }
+      ]
+    }
+  ]
+}
