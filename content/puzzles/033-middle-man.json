@@ -1,0 +1,106 @@
+{
+  "id": 33,
+  "conceptName": "Middle Man",
+  "category": "code-smell",
+  "definition": "A class that delegates most of its work to another class, adding little or no value beyond forwarding calls.",
+  "ruleOfThumb": "If a class's public methods are thin wrappers that simply forward calls, consider removing the layer or moving logic to the meaningful collaborator.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Middle Man",
+    "page": "117-120",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the TypeScript snippet. Which description best matches the code smell shown?",
+      "codeSnippet": "class UserRepository {\n  getUser(id: string) { /* fetch user */ }\n  updateUser(u: any) { /* update user */ }\n}\n\nclass UserService {\n  constructor(private repo: UserRepository) {}\n  getUser(id: string) { return this.repo.getUser(id); }\n  updateUser(u: any) { return this.repo.updateUser(u); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class is a thin wrapper that forwards almost every call to another collaborator without adding meaningful behavior.",
+          "isCorrect": true,
+          "explanation": "The service methods only call through to the repository without transforming data, enforcing invariants, or adding logic. That indicates an unnecessary delegating layer which can be removed or collapsed to reduce indirection and maintenance overhead."
+        },
+        {
+          "id": "b",
+          "text": "This class is a factory that centralizes object construction and hides complex creation details behind a simple interface.",
+          "isCorrect": false,
+          "explanation": "A factory would encapsulate creation logic and return constructed objects. Here there is no construction responsibility or creation code; the class merely forwards calls to another component, so factory concerns do not explain this shape."
+        },
+        {
+          "id": "c",
+          "text": "This class is an adapter that translates one interface to another to make two incompatible interfaces work together.",
+          "isCorrect": false,
+          "explanation": "An adapter changes or maps interfaces between incompatible components. The code shown does not perform interface translation or mapping; it simply passes parameters through, lacking the transformation typical of an adapter."
+        },
+        {
+          "id": "d",
+          "text": "This class is a facade that aggregates multiple subsystems and provides a higher level simplified interface to clients.",
+          "isCorrect": false,
+          "explanation": "A facade consolidates several subsystems behind a simpler API. The example only forwards to a single repository without aggregating multiple subsystems, so facade responsibilities are not present here."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "The wrapper class below adds a single logging statement before delegating. What is the primary concern about this design?",
+      "codeSnippet": "class OrderService {\n  place(order: any) { /* place order */ }\n}\n\nclass OrderController {\n  constructor(private svc: OrderService) {}\n  place(order: any) {\n    console.log('placing', order.id);\n    return this.svc.place(order);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class provides only thin pass-through methods and trivial logging without any substantial domain logic.",
+          "isCorrect": true,
+          "explanation": "A small amount of logging does not necessarily justify a whole extra layer. If the controller only forwards calls plus trivial logging, consider collapsing the layer or moving logging to a cross cutting concern to avoid unnecessary indirection."
+        },
+        {
+          "id": "b",
+          "text": "This class centralizes cross cutting concerns and therefore improves testability and reduces duplicated logging across controllers.",
+          "isCorrect": false,
+          "explanation": "Centralizing logging can be beneficial, but the snippet shows logging colocated with simple forwarding rather than a reusable cross cutting mechanism. That makes the centralization claim optimistic and may mask an unnecessary wrapper instead of solving duplication."
+        },
+        {
+          "id": "c",
+          "text": "This class simplifies future versioning by isolating downstream API changes behind an intermediate stable adapter interface.",
+          "isCorrect": false,
+          "explanation": "An isolation-for-versioning strategy makes sense when the wrapper encapsulates protocol differences or multiple adaptions. Here the wrapper does not perform adaptation or stabilization; it simply logs then forwards, so versioning benefit is limited."
+        },
+        {
+          "id": "d",
+          "text": "This class could be a performance bottleneck because it adds extra call layers and potential synchronous logging delays.",
+          "isCorrect": false,
+          "explanation": "Additional call layers and synchronous logging can impact performance, but that is a secondary symptom. The primary maintainability concern is the unnecessary forwarding layer which increases code paths and cognitive overhead more than pure runtime cost."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better design overall for this payment integration example?",
+      "codeSnippet": "// Version A: callers use StripeGateway directly\nclass StripeGateway {\n  charge(amount: number) { /* direct implementation */ }\n}\nclass BillingController {\n  constructor(private gateway: StripeGateway) {}\n  pay(amount: number) { return this.gateway.charge(amount); }\n}\n\n// Version B: PaymentService delegates to StripeGateway, controller delegates to service\nclass PaymentService {\n  constructor(private gateway: StripeGateway) {}\n  pay(amount: number) { return this.gateway.charge(amount); }\n}\nclass BillingControllerV2 {\n  constructor(private svc: PaymentService) {}\n  pay(amount: number) { return this.svc.pay(amount); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A reduces indirection by letting callers use the concrete gateway rather than an extra delegating service.",
+          "isCorrect": true,
+          "explanation": "Version A removes an unnecessary forwarding layer, making call paths clearer and reducing maintenance when the intermediary adds no behavior. If the wrapper does not encapsulate distinct responsibilities, replacing callers to use the gateway directly is simpler and reduces surface area. Fowler recommends removing such delegating layers when they do not add value. That said, if future changes require abstraction for multiple implementations, introduce an explicit interface at that time rather than keeping a redundant layer prematurely."
+        },
+        {
+          "id": "b",
+          "text": "Version B preserves the extra forwarding service which centralizes changes but increases coupling and maintenance overhead.",
+          "isCorrect": false,
+          "explanation": "Keeping the extra delegating service can appear to centralize change, but it actually creates another place to maintain and can hide API capabilities behind thin pass-throughs. Over time the forwarding layer tends to grow into a confusing indirection that increases coupling. Prefer removing the layer or applying a targeted abstraction only when you need multiple implementations or a clear behavioral seam."
+        }
+      ]
+    }
+  ]
+}

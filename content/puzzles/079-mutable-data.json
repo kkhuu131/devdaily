@@ -1,0 +1,106 @@
+{
+  "id": 79,
+  "conceptName": "Mutable Data",
+  "category": "code-smell",
+  "definition": "A code smell where objects or data structures are changed after creation, causing shared references to observe unexpected state changes across the system.",
+  "ruleOfThumb": "Prefer producing new values for shared data passed between modules; keep mutations local and explicit or use copies on boundary crossings.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Mutable Data",
+    "page": "N/A",
+    "externalUrl": "https://martinfowler.com/bliki/MutableData.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which symptom best indicates the primary problem in this snippet?",
+      "codeSnippet": "const orders = [{ id: 1, total: 100, lines: [{ qty: 2, price: 50 }] }];\nfunction applyDiscount(order: any, percent: number) {\n  order.total = order.lines.reduce((s, l) => s + l.qty * l.price, 0) * (1 - percent);\n}\napplyDiscount(orders[0], 0.1);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Function directly mutates deep properties on objects passed in by callers across multiple code paths.",
+          "isCorrect": true,
+          "explanation": "The function assigns into the passed object rather than returning a new value. That means callers who share the object observe changes implicitly, creating surprising coupling. This symptom points to shared mutable state rather than I/O, performance, or configuration issues."
+        },
+        {
+          "id": "b",
+          "text": "Function returns a reference to a shared collection allowing callers to change internal state unexpectedly later.",
+          "isCorrect": false,
+          "explanation": "Returning references can expose internal state, but this snippet does not return anything. The real issue is the function mutating the passed object directly, not an exposed return value."
+        },
+        {
+          "id": "c",
+          "text": "Function performs expensive synchronous I/O operations that will block the event loop under heavy load.",
+          "isCorrect": false,
+          "explanation": "Synchronous I/O blocking is a valid concern for Node environments, but this code performs only in-memory calculations and assignments. The visible problem is in-place mutation of input data, not blocking operations."
+        },
+        {
+          "id": "d",
+          "text": "Function depends on implicit global configuration which will make testing and concurrent usage brittle and confusing.",
+          "isCorrect": false,
+          "explanation": "Implicit globals create test pain, yet the snippet shows local object mutation with no global reads. The core smell here is altering caller-owned objects, not relying on external configuration."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What subtle maintenance hazard is most likely caused by the implementation below?",
+      "codeSnippet": "class ProfileService {\n  updateProfile(user: any, changes: any) {\n    Object.keys(changes).forEach(k => {\n      user[k] = changes[k];\n    });\n  }\n}\nconst alice = { name: 'Alice', role: 'user' };\nnew ProfileService().updateProfile(alice, { role: 'admin' });",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Method mutates caller objects through aliasing and insufficient copying across module boundaries during normal update operations.",
+          "isCorrect": true,
+          "explanation": "This method writes directly into the object the caller passed in, creating aliasing where multiple modules can observe and modify the same runtime instance. That leads to surprising side effects and harder reasoning about state over time."
+        },
+        {
+          "id": "b",
+          "text": "Method causes unnecessary deep copies which will degrade performance and increase memory usage under typical high load.",
+          "isCorrect": false,
+          "explanation": "Deep copying can indeed harm performance, but the code here performs in-place writes rather than copying. The maintenance hazard is unexpected external mutation rather than copying overhead."
+        },
+        {
+          "id": "c",
+          "text": "Method introduces potential race conditions because shared objects are modified concurrently without explicit synchronization primitives.",
+          "isCorrect": false,
+          "explanation": "Concurrent modification is a real concern in multithreaded environments, but in single-threaded JavaScript the issue manifests as unpredictable state propagation rather than classical data races. The core problem remains shared mutable objects."
+        },
+        {
+          "id": "d",
+          "text": "Method violates intended API contract because it returns void instead of producing an immutable result as callers expect.",
+          "isCorrect": false,
+          "explanation": "An API that returns a new immutable object is a design choice, but the snippet's immediate hazard is altering the caller's object silently. The symptom is hidden mutation, not only the absence of an immutable return."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for long-lived objects passed across module boundaries?",
+      "codeSnippet": "// Version A\nfunction applyDiscountA(order: Order, percent: number): Order {\n  return { ...order, total: order.total * (1 - percent) };\n}\n\n// Version B\nfunction applyDiscountB(order: Order, percent: number): void {\n  order.total = order.total * (1 - percent);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A returns a new object instance for each update across service and client boundaries.",
+          "isCorrect": true,
+          "explanation": "Version A produces a fresh object and leaves the original untouched, preventing callers from seeing unexpected changes. This approach limits shared mutable state and makes reasoning, caching, and testing easier. Fowler and others recommend converting mutable shared state to values or copying at boundaries to reduce surprising coupling."
+        },
+        {
+          "id": "b",
+          "text": "Version B mutates the same shared object instance for updates across service and client boundaries.",
+          "isCorrect": false,
+          "explanation": "Version B performs an in-place update which is compact but creates hidden coupling: any code holding a reference to that instance will observe the change. Over time this pattern leads to subtle bugs, harder concurrency reasoning, and brittle tests. Use mutation locally and prefer value returns across layers when objects cross module boundaries."
+        }
+      ]
+    }
+  ]
+}

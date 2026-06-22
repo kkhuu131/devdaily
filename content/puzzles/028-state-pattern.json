@@ -1,0 +1,106 @@
+{
+  "id": 28,
+  "conceptName": "State Pattern",
+  "category": "design-pattern",
+  "definition": "A behavioral design approach where an object alters its behavior when its internal state changes by delegating to state-specific objects.",
+  "ruleOfThumb": "When a class uses conditionals on an internal status to change behavior, consider encapsulating those behaviors in separate state-specific objects.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns - State",
+    "page": "263-271",
+    "externalUrl": "https://refactoring.guru/design-patterns/state"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the following TypeScript excerpt. Which design concern does this code most clearly indicate?",
+      "codeSnippet": "class Document {\n  status: 'draft'|'published'|'archived' = 'draft';\n\n  publish() {\n    if (this.status === 'draft') { this.status = 'published'; }\n    else if (this.status === 'archived') { throw new Error('cannot publish archived'); }\n  }\n\n  archive() {\n    if (this.status === 'published') { this.status = 'archived'; }\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class relies on an internal enum with many conditional branches to switch behavior across methods causing scattered logic.",
+          "isCorrect": true,
+          "explanation": "The Document class centralizes behavior decisions by checking its internal status in multiple methods. That scattering of conditional logic is the primary signal that behavior depends on internal state and would benefit from moving those behaviors into state-specific collaborators. Refactoring toward objects that encapsulate each state reduces conditionals and localizes transitions. See Gamma et al. on replacing conditional logic with polymorphic state objects for clearer responsibilities."
+        },
+        {
+          "id": "b",
+          "text": "This class shows premature optimization with inlined fast paths that complicate readability and hinder straightforward refactoring.",
+          "isCorrect": false,
+          "explanation": "While premature optimization can complicate code, the core problem in this snippet is not performance tuning or fast paths. The dominant issue is behavioral branching tied to an internal status value. Addressing scattered conditionals by encapsulating state behaviors will also improve readability and make later optimizations simpler."
+        },
+        {
+          "id": "c",
+          "text": "This code demonstrates anemic domain model where data objects contain no behavior and logic is implemented externally.",
+          "isCorrect": false,
+          "explanation": "An anemic domain model means entities hold data while business logic lives elsewhere. In this snippet the methods live on the same class and contain the branching logic, so it is not anemic domain model. The real smell is behavior varying by an internal status value, not missing behavior on the object."
+        },
+        {
+          "id": "d",
+          "text": "This implementation suffers from tight coupling to concrete types preventing reuse and making unit testing more difficult than necessary.",
+          "isCorrect": false,
+          "explanation": "Tight coupling to concrete types is a real concern in many systems, but this snippet does not show heavy coupling to external concrete collaborators. The more specific issue is conditional logic based on an internal status value that scatters behavior, which suggests reorganizing responsibilities rather than focusing on concrete-type coupling."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In this Account example, what is the most likely design issue to address before adding new status-specific behaviors?",
+      "codeSnippet": "class Account {\n  isLocked = false;\n  isActive = true;\n\n  charge(amount: number) {\n    if (!this.isActive || this.isLocked) { throw new Error('cannot charge'); }\n    if (this.isLocked) { /* retry logic */ }\n    // more conditional branches based on flags\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class encodes behavior with multiple boolean flags and conditional branches that should be encapsulated per state to reduce complexity.",
+          "isCorrect": true,
+          "explanation": "Multiple flags and conditionals indicate behavior varies by state and can quickly become hard to reason about as features grow. Encapsulating behaviors in state-specific objects reduces branching, centralizes transitions, and improves testability. Refactoring toward objects that represent each state can make adding new status-specific behaviors safe and localized."
+        },
+        {
+          "id": "b",
+          "text": "This code violates single responsibility by mixing business rules and persistence concerns inside the same class hindering maintenance.",
+          "isCorrect": false,
+          "explanation": "Mixing business rules with persistence is a common SRP violation, but this snippet shows in-class branching based on flags without persistence calls. The primary issue is behavioral branching driven by flags rather than a separation of persistence concerns. Addressing the branching will yield clearer SRP separation after refactor."
+        },
+        {
+          "id": "c",
+          "text": "This implementation suffers from feature envy because helper utilities perform most business decisions about this object's status and lifecycle.",
+          "isCorrect": false,
+          "explanation": "Feature envy is when another class does most of the work for this object. The Account example keeps decision logic inside the class through flags and conditionals, so feature envy is not the dominant smell. The concrete problem is encoding state transitions and behavior with flags instead of objects."
+        },
+        {
+          "id": "d",
+          "text": "This module creates too many short-lived objects causing allocation churn and unnecessary garbage collection pressure under load.",
+          "isCorrect": false,
+          "explanation": "Excessive allocation can be a realistic performance concern, but this snippet shows branching on booleans rather than creating many short-lived objects. The design cost here is cognitive complexity from conditional branching by state, which should be prioritized over speculative allocation issues unless profiling indicates otherwise."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You must choose between Version A and Version B for connection behavior management. Which design is preferable for long term maintainability?",
+      "codeSnippet": "// Version A: single class with switch-based behavior\nclass ConnectionA {\n  state: 'disconnected'|'connecting'|'connected' = 'disconnected';\n  send(data: string) {\n    switch (this.state) {\n      case 'connected': /* send immediately */ break;\n      case 'connecting': /* queue */ break;\n      default: /* error */ break;\n    }\n  }\n}\n\n// Version B: separate state objects with a shared interface\ninterface ConnState { send(ctx: ConnectionB, data: string): void }\nclass Connected implements ConnState { send(ctx: ConnectionB, data: string) { /* send */ } }\nclass ConnectionB { state: ConnState = new Connected(); send(data: string) { this.state.send(this, data); } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A implements all behaviors with a single class using switch statements on a status enum making extension difficult.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes all behavior and transitions inside one class using switches. That approach makes adding new states or changing transitions require touching one large switch, increasing risk of regressions and scattering of related behavior. It also leads to more conditional logic and harder unit testing for specific state behaviors."
+        },
+        {
+          "id": "b",
+          "text": "Version B uses polymorphism to represent states as distinct objects that the context delegates to directly.",
+          "isCorrect": true,
+          "explanation": "Version B delegates behavior to state-specific objects, keeping the context small and removing switch logic from core methods. This improves encapsulation, makes adding new states straightforward, and localizes transition rules. The tradeoffs include more classes and a need to manage transitions explicitly, but the resulting code is easier to test and extend. See Gamma et al. for the canonical benefits of delegating state-specific behavior to separate classes."
+        }
+      ]
+    }
+  ]
+}

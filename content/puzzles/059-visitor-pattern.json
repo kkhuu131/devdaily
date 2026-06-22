@@ -1,0 +1,105 @@
+{
+  "id": 59,
+  "conceptName": "Visitor Pattern",
+  "category": "design-pattern",
+  "definition": "A way to separate operations from object structure, enabling you to add new operations without changing the element classes.",
+  "ruleOfThumb": "Use when the object structure is stable but you need to add many distinct operations over time.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Visitor",
+    "page": "325",
+    "externalUrl": "https://refactoring.guru/design-patterns/visitor"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What core problem does this design solve for an object model with many operations?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "It separates operations from object structure so new operations can be added without modifying element classes.",
+          "isCorrect": true,
+          "explanation": "Correct. The pattern extracts algorithms into separate visitor objects so you can add new operations by creating new visitors rather than changing every element class. This is useful when the class hierarchy is stable but operations evolve."
+        },
+        {
+          "id": "b",
+          "text": "It centralizes type-specific logic inside element classes which simplifies inheritance but increases modification for each new operation.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect. Centralizing type logic in element classes is the opposite outcome: it forces changes to many element classes when adding new operations. The pattern instead moves algorithms out of elements."
+        },
+        {
+          "id": "c",
+          "text": "It flattens object hierarchies into a single operation class which reduces structure but increases runtime type checks.",
+          "isCorrect": false,
+          "explanation": "This describes a different approach that uses a central switch or type checks. While that can centralize algorithms, it increases runtime checks and couples logic to type tags, unlike the pattern which uses double dispatch to avoid manual type checks."
+        },
+        {
+          "id": "d",
+          "text": "It relies on run-time reflection to discover operations which reduces compile-time safety and hides operation locations.",
+          "isCorrect": false,
+          "explanation": "Reflection-based solutions are a real alternative but have different tradeoffs such as losing static type checks and scattering logic. The pattern achieves operation separation without relying on reflection."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the AST fragment below, what is the most likely benefit of introducing the shown visitor-like structure?",
+      "codeSnippet": "interface Node { accept<R>(visitor: Visitor<R>): R }\ninterface Visitor<R> { visitLiteral(n: Literal): R; visitBinary(n: Binary): R }\nclass Literal implements Node { constructor(public value: number) {} accept(v: Visitor<any>) { return v.visitLiteral(this) } }\nclass Binary implements Node { constructor(public left: Node, public right: Node) {} accept(v: Visitor<any>) { return v.visitBinary(this) } }\nclass Eval implements Visitor<number> { visitLiteral(n: Literal) { return n.value } visitBinary(n: Binary) { return this.visitBinary(n) } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It centralizes algorithms for each element type so adding new operations avoids modifying many element classes.",
+          "isCorrect": true,
+          "explanation": "Correct. The shown structure routes operations through visitor implementations, so new analyses or transforms are added by creating new visitors instead of altering element classes. This reduces churn when operations change frequently."
+        },
+        {
+          "id": "b",
+          "text": "It decreases element interface complexity by moving methods out of elements which reduces element method count but not operation growth.",
+          "isCorrect": false,
+          "explanation": "Partially true but misleading. While the elements end up with a single accept method, the overall number of operations still grows; the benefit is maintenance locality for operations, not a reduction in conceptual operation count."
+        },
+        {
+          "id": "c",
+          "text": "It guarantees operations remain compile-time independent from element implementations which eliminates all forms of coupling across modules.",
+          "isCorrect": false,
+          "explanation": "Incorrect. The visitor approach improves separation of concerns but does not eliminate coupling between operation code and element interfaces. Elements must still expose an accept method and concrete visit methods are coupled to element types."
+        },
+        {
+          "id": "d",
+          "text": "It reduces memory usage by sharing a single operation handler instance instead of per-element closures which lowers heap allocations.",
+          "isCorrect": false,
+          "explanation": "This can be a side effect in some implementations, but it is not the primary benefit. The main aim is extensibility of operations, not memory optimization; memory concerns are secondary and contextual."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "For a compiler AST where node classes are stable but analyses change often, which version is preferable?",
+      "codeSnippet": "// Version A\ninterface Node { accept<R>(v: Visitor<R>): R }\ninterface Visitor<R> { visitLiteral(n: Literal): R; visitBinary(n: Binary): R }\nclass Literal implements Node { accept(v){ return v.visitLiteral(this) } }\nclass Binary implements Node { accept(v){ return v.visitBinary(this) } }\n// Version B\nclass LiteralV { value:number; typeCheck(){ /* type logic */ } prettyPrint(){ /* print logic */ } }\nclass BinaryV { left:any; right:any; typeCheck(){ /* type logic */ } prettyPrint(){ /* print logic */ } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps node classes unchanged when adding new operations across the compiler codebase consistently.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable. By routing algorithms through visitor objects, you can introduce new analyses by adding visitors only, leaving the node hierarchy untouched. This minimizes invasive changes when operations evolve and keeps node classes focused on structure. The tradeoff is you must update the visitor interface if the node model itself changes."
+        },
+        {
+          "id": "b",
+          "text": "Version B places operation logic inside node classes forcing node modifications for each new analysis and spreading changes widely.",
+          "isCorrect": false,
+          "explanation": "Version B embeds each operation inside node classes, so adding a new analysis requires touching every node subtype to add that operation. That approach increases change surface and makes the codebase harder to extend for new operations. It can be acceptable if operations are few and nodes change constantly, but for stable nodes and evolving operations it causes excessive churn."
+        }
+      ]
+    }
+  ]
+}

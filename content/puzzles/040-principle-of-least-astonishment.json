@@ -1,0 +1,105 @@
+{
+  "id": 40,
+  "conceptName": "Principle of Least Astonishment",
+  "category": "principle",
+  "definition": "Design APIs and behavior so they match reasonable user expectations and avoid surprising callers with hidden side effects or unexpected return values.",
+  "ruleOfThumb": "Make the common case obvious, keep side effects explicit, and prefer predictable return types over implicit surprises.",
+  "citation": {
+    "author": "Andy Hunt and Dave Thomas",
+    "bookTitle": "The Pragmatic Programmer",
+    "chapter": "Orthogonality",
+    "page": "72",
+    "externalUrl": "https://pragprog.com/titles/tpp20/the-pragmatic-programmer-20th-anniversary-edition/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which of the following clearly demonstrates an API surprising callers by doing work they would not reasonably expect?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "A function named getUser silently modifies global cache while returning a copy of the user object to the caller.",
+          "isCorrect": false,
+          "explanation": "Mutating global cache inside getUser is surprising because a getter-style name implies no mutation. This breaks locality and can produce hard-to-find bugs when other code relies on cache state changes. It is a real violation but not the clearest violation compared to property accessors doing IO."
+        },
+        {
+          "id": "b",
+          "text": "A function called calculateTotal logs to console and also alters the input order array before computing the sum.",
+          "isCorrect": false,
+          "explanation": "calculateTotal combining logging and in-place mutation is surprising because callers typically expect pure calculations. The mutation of the input array creates coupling and test fragility. This is a plausible mistake a developer could pick as the worst offender."
+        },
+        {
+          "id": "c",
+          "text": "A property accessor named isEmpty performs network IO and waits for a response before returning a boolean value.",
+          "isCorrect": true,
+          "explanation": "Property accessors are commonly expected to be cheap and side-effect free; doing network IO inside an accessor most directly violates caller expectations. This pattern creates latent latency and hidden failures tied to what should be an instant property read, and it is the best example of surprising behavior among the options."
+        },
+        {
+          "id": "d",
+          "text": "A method named saveUser returns null on success and throws exceptions only when verbose debugging is enabled at runtime.",
+          "isCorrect": false,
+          "explanation": "Returning null for success while throwing only in debug mode is very surprising because it reverses normal success/failure semantics and makes behavior environment-dependent. It is a legitimate and confusing design problem but less immediately illustrative than an accessor doing IO."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this PaymentService code, which redesign most effectively reduces surprising coupling between payment processing and other system concerns?",
+      "codeSnippet": "class PaymentService {\n  processPayment(order: Order) {\n    order.status = \"paid\";\n    this.logger.log(\"paid\", order.id);\n    return order;\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Refactor to return a new Order instance instead of mutating the passed Order and keep logging externally.",
+          "isCorrect": true,
+          "explanation": "Returning a new Order avoids surprising in-place mutations, which makes callers' object identity and lifecycle explicit. Moving logging out separates concerns and reduces implicit coupling so side effects are predictable and testable."
+        },
+        {
+          "id": "b",
+          "text": "Refactor to accept an immutable Order value and produce a PaymentResult object while performing logging as a side effect.",
+          "isCorrect": false,
+          "explanation": "Producing a PaymentResult is reasonable, but retaining logging as an internal side effect keeps an implicit concern inside the method. This still surprises callers about what the method touches and complicates testing and observability."
+        },
+        {
+          "id": "c",
+          "text": "Refactor to document mutation clearly and leave existing behavior to avoid breaking many callers that rely on side effects.",
+          "isCorrect": false,
+          "explanation": "Documenting the mutation acknowledges the behavior but does not remove the surprise for callers that expect immutability. Relying on documentation rather than structural change tends to produce recurring bugs and brittle clients."
+        },
+        {
+          "id": "d",
+          "text": "Refactor to separate logging into decorator and keep mutation because transactional atomicity depends on in place status change.",
+          "isCorrect": false,
+          "explanation": "Using a decorator for logging helps, but keeping in-place mutation still surprises callers and forces them to reason about shared mutable state. If atomicity truly requires mutation, make that explicit in the API and tests rather than leaving implicit side effects."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better matches caller expectations and reduces surprising behavior for library consumers?",
+      "codeSnippet": "// Version A: explicit result object\nasync function fetchUserA(id: string): Promise<{ user?: User; notFound: boolean }> {\n  const u = await db.find(id);\n  return { user: u ?? undefined, notFound: u == null };\n}\n\n// Version B: nullable return plus selective throws\nasync function fetchUserB(id: string): Promise<User | null> {\n  try {\n    return await db.find(id);\n  } catch (e) {\n    if (e.code === 'TIMEOUT') throw e;\n    return null;\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A returns a clear result object that keeps success and failure explicit.",
+          "isCorrect": true,
+          "explanation": "Version A provides an explicit, predictable contract: callers always receive a structured result that distinguishes missing users from other errors. That reduces surprises for consumers and simplifies handling of both success and 'not found' cases. The tradeoff is a slightly larger return type but much clearer semantics and fewer ambiguous nulls or unexpected exceptions."
+        },
+        {
+          "id": "b",
+          "text": "Version B mixes null returns and thrown exceptions, creating ambiguity about flow and surprising failure modes.",
+          "isCorrect": false,
+          "explanation": "Version B conflates nominal absence with exceptional conditions by returning null for some failures while rethrowing others. Callers must remember which errors come back as null and which throw, increasing cognitive load and the chance of incorrect error handling. This is a common source of astonishment in APIs and a maintenance hazard."
+        }
+      ]
+    }
+  ]
+}

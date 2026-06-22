@@ -1,0 +1,106 @@
+{
+  "id": 32,
+  "conceptName": "Encapsulate What Varies",
+  "category": "principle",
+  "definition": "Identify aspects of the system that change and isolate them behind stable interfaces so changes do not ripple through unrelated code.",
+  "ruleOfThumb": "When you see conditionals or duplicated code to handle variation, extract the varying behavior behind a focused abstraction.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Composing Methods / Organizing Data",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary design problem in the following code?",
+      "codeSnippet": "class Order {\n  constructor(public amount: number, public customerType: string) {}\n\n  calculateDiscount() {\n    if (this.customerType === 'vip') {\n      return this.amount * 0.2;\n    }\n    if (this.customerType === 'employee') {\n      return this.amount * 0.5;\n    }\n    return 0;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Multiple discount algorithms are implemented inline inside the Order class rather than extracted into interchangeable strategy objects.",
+          "isCorrect": true,
+          "explanation": "The code places all discount variations directly inside Order, coupling selection with behavior. Extracting each discount into its own class or function behind a common interface separates the varying algorithms from order orchestration and makes adding new discounts straightforward."
+        },
+        {
+          "id": "b",
+          "text": "The switch on customer level causes duplicated conditional logic across methods making maintenance harder as cases proliferate over time.",
+          "isCorrect": false,
+          "explanation": "This identifies a real symptom: conditionals can leak into other methods and create duplication. However the deeper issue is that the variation (discount algorithms) is not encapsulated as interchangeable behavior, which is the more actionable design change."
+        },
+        {
+          "id": "c",
+          "text": "Order class mixes monetary calculation details with formatting responsibilities preventing separation of numeric logic and presentation code.",
+          "isCorrect": false,
+          "explanation": "Mixing calculation and formatting is a legitimate code smell, but the snippet shows only algorithmic branches for discount calculation. The pressing problem is the inlined varying algorithms rather than presentation concerns in this example."
+        },
+        {
+          "id": "d",
+          "text": "The method mutates shared global state during calculation which can cause race conditions in concurrent request processing.",
+          "isCorrect": false,
+          "explanation": "Concurrent mutation is a concrete concern, but this snippet uses only local properties and pure computations. The real architectural issue is that multiple algorithms are embedded in the class instead of being isolated behind interchangeable components."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which change would most directly make it easier to add support for new external payment gateways in this code?",
+      "codeSnippet": "class PaymentService {\n  pay(provider: string, amount: number) {\n    if (provider === 'stripe') { /* stripe call */ }\n    else if (provider === 'paypal') { /* paypal call */ }\n    else if (provider === 'square') { /* square call */ }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Move provider-specific logic into separate classes implementing a common gateway interface to allow independent provider additions.",
+          "isCorrect": true,
+          "explanation": "Extracting each gateway behind a common interface isolates variation and follows the open/closed idea. New gateways become new classes rather than edits to a central conditional blob, reducing risk of regressions and improving testability."
+        },
+        {
+          "id": "b",
+          "text": "Add a global configuration flag to toggle provider selection at runtime without extracting provider behavior into discrete modules.",
+          "isCorrect": false,
+          "explanation": "A config flag centralizes selection but does not remove provider logic from the conditional structure. This reduces convenience but still couples all gateway code together and makes adding providers error prone."
+        },
+        {
+          "id": "c",
+          "text": "Replace conditional branches with reflection-based dynamic invocation of provider functions discovered by name at runtime for flexibility.",
+          "isCorrect": false,
+          "explanation": "Reflection can reduce explicit conditionals but introduces runtime fragility and weaker type safety. It hides behavior behind naming conventions rather than creating a clear abstraction and still leaves implementation concerns scattered."
+        },
+        {
+          "id": "d",
+          "text": "Centralize all payment code into a single utility class to share helpers across providers and reduce duplication.",
+          "isCorrect": false,
+          "explanation": "Centralizing helpers can reduce duplication but tends to grow a god class that mixes concerns. It does not isolate the varying gateway implementations and therefore does not substantially ease adding new providers."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better supports adding new image transform algorithms with minimal risk and clear testing?",
+      "codeSnippet": "// Version A: each transformer is a small class implementing a shared interface\ninterface ImageTransformer { transform(img: Image): Image }\nclass GrayscaleTransformer implements ImageTransformer { transform(img: Image) { /*...*/ } }\nclass ResizeTransformer implements ImageTransformer { transform(img: Image) { /*...*/ } }\nclass ImageProcessorV1 {\n  constructor(private transformer: ImageTransformer) {}\n  process(img: Image) { return this.transformer.transform(img); }\n}\n\n// Version B: one class with conditionals for each transform type\nclass ImageProcessorV2 {\n  process(img: Image, type: string) {\n    if (type === 'grayscale') { /* grayscale code */ }\n    else if (type === 'resize') { /* resize code */ }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates each transform behind a small interface and supports independent extension and testing.",
+          "isCorrect": true,
+          "explanation": "Version A separates varying behavior into discrete, testable units. New transforms are added as new classes without modifying existing processors, minimizing regression risk and enabling focused unit tests. This follows the idea of isolating change points to keep the rest of the system stable."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes all transform logic in one class, causing increasing method size and risky conditional proliferation.",
+          "isCorrect": false,
+          "explanation": "Version B puts every transform into conditionals inside a single class, which leads to larger methods and tangled responsibilities. Adding a new transform requires edits across the same class and increases the chance of breaking unrelated code, making maintenance harder over time."
+        }
+      ]
+    }
+  ]
+}

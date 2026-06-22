@@ -1,0 +1,106 @@
+{
+  "id": 73,
+  "conceptName": "Loose Coupling",
+  "category": "principle",
+  "definition": "A design approach that minimizes direct dependencies between modules so changes in one area have minimal impact on others.",
+  "ruleOfThumb": "Depend on abstractions, not concrete implementations; prefer clear boundaries and inject collaborators rather than construct them internally.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Architecture",
+    "chapter": "Boundaries",
+    "page": "45-52",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-architecture/9780134494272/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given this TypeScript controller, what best describes its dependency relationship?",
+      "codeSnippet": "interface UserRepository {\n  save(user: User): Promise<void>;\n}\n\nclass UserController {\n  constructor(private repo: UserRepository) {}\n  async create(u: User) { await this.repo.save(u); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The controller depends on an abstraction interface instead of directly instantiating a concrete repository implementation.",
+          "isCorrect": true,
+          "explanation": "The controller receives UserRepository as a constructor dependency and calls its methods without knowing concrete classes. This reduces direct coupling and makes substituting mocks or alternate storage implementations straightforward."
+        },
+        {
+          "id": "b",
+          "text": "The controller creates its own repository instances, which could cause tight runtime coupling and make tests harder.",
+          "isCorrect": false,
+          "explanation": "If the controller constructed repositories itself it would embed construction details and create runtime dependencies that are hard to replace in tests. That is not the case here because an interface is injected."
+        },
+        {
+          "id": "c",
+          "text": "The controller receives a factory object with strong knowledge of implementation details, risking duplicated construction logic across code.",
+          "isCorrect": false,
+          "explanation": "A factory passed into the controller could still leak implementation details if it required callers to know which concrete to request. Here the controller accepts a repository abstraction directly, so the factory concern does not apply."
+        },
+        {
+          "id": "d",
+          "text": "The controller calls global service locator functions, which hides dependencies and increases runtime dependency ambiguity and testing friction.",
+          "isCorrect": false,
+          "explanation": "Using a global service locator makes dependencies implicit and harms testability. In the snippet the dependency is explicit via constructor injection, so the service locator concern does not match this code."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary coupling concern in this order/payment integration?",
+      "codeSnippet": "class StripePayment {\n  constructor(public token: string) {}\n}\n\nclass PaymentGateway {\n  process(p: StripePayment) { /* vendor logic */ }\n}\n\nclass OrderService {\n  constructor(private gateway: PaymentGateway) {}\n  placeOrder(data: any) { const p = new StripePayment(data.token); this.gateway.process(p); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code uses a concrete payment class across modules, which creates compile time dependency on a specific provider.",
+          "isCorrect": false,
+          "explanation": "Tying types across modules to a vendor-specific class forces the compiler and runtime to rely on that provider, making provider changes invasive. The code shows concrete StripePayment flowing through the API."
+        },
+        {
+          "id": "b",
+          "text": "The PaymentGateway exposes process that accepts vendor-specific objects, which leaks implementation details across module boundaries.",
+          "isCorrect": false,
+          "explanation": "Accepting vendor-specific objects from callers leaks the payment provider into higher-level logic, which couples modules. This is accurate but overlaps with the more general observation that the service depends on a concrete payment type."
+        },
+        {
+          "id": "c",
+          "text": "OrderService depends on a concrete payment type instead of a payment interface, tying business logic to a vendor.",
+          "isCorrect": true,
+          "explanation": "OrderService constructs and passes a StripePayment instance, meaning business logic is directly coupled to the Stripe type. Introducing a payment interface and using that would decouple the order logic from vendor specifics."
+        },
+        {
+          "id": "d",
+          "text": "The code constructs payment instances inline, which duplicates construction details and spreads provider knowledge across services.",
+          "isCorrect": false,
+          "explanation": "Inline construction does duplicate provider-specific creation code and distribute provider knowledge, but the core coupling issue is that the business layer depends on the concrete payment type rather than an abstraction."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better design for supporting multiple storage backends and automated testing?",
+      "codeSnippet": "// Version A\ninterface UserRepo { save(u: User): Promise<void>; }\nclass UserServiceA {\n  constructor(private repo: UserRepo) {}\n  async register(u: User) { await this.repo.save(u); }\n}\n\n// Version B\nclass SqlUserRepo { save(u: User) { /* SQL code */ } }\nclass UserServiceB {\n  private repo = new SqlUserRepo();\n  async register(u: User) { await this.repo.save(u); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A depends on an abstraction rather than a concrete storage class.",
+          "isCorrect": true,
+          "explanation": "Version A accepts a UserRepo abstraction in its constructor so the service code is unaware of specific storage implementations. This explicit boundary makes it straightforward to substitute different repositories for testing or alternate backends without changing service logic."
+        },
+        {
+          "id": "b",
+          "text": "Version B creates the SQL repository inside the service, which prevents swapping implementations and complicates tests.",
+          "isCorrect": false,
+          "explanation": "Embedding SqlUserRepo construction inside UserServiceB ties the service to a specific persistence mechanism and duplicates construction logic if other services need SQL access. This design blocks simple substitution for tests and forces higher coupling when adding other storage backends."
+        }
+      ]
+    }
+  ]
+}

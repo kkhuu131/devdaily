@@ -1,0 +1,106 @@
+{
+  "id": 64,
+  "conceptName": "Postel's Law",
+  "category": "principle",
+  "definition": "A robustness guideline advising systems to be conservative in what they emit and liberal in what they accept, aiming for interoperability while risking ambiguity at boundaries.",
+  "ruleOfThumb": "Validate at your boundary, fail fast for protocol errors, and keep outputs strict and well specified to avoid ambiguity later.",
+  "citation": {
+    "author": "Jon Postel",
+    "bookTitle": "RFC 793 (TCP)",
+    "chapter": "Robustness principle",
+    "page": null,
+    "externalUrl": "https://tools.ietf.org/html/rfc793"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches the behavior of the handler below?",
+      "codeSnippet": "app.post('/users', (req, res) => {\n  const body = req.body;\n  const name = body.name || '';\n  const age = Number(body.age || body.years || 0);\n  // silently normalize and accept many shapes\n  db.save({ name, age });\n  res.status(200).send({ ok: true });\n});",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The handler tolerates varied input shapes and silently normalizes invalid fields before returning a successful response.",
+          "isCorrect": true,
+          "explanation": "This is a classic liberal-acceptance approach: the handler coerces and normalizes many input shapes without rejecting malformed input. That behavior eases interoperability with imperfect clients but can mask client bugs and create inconsistent persisted data. In many systems that trade strictness for compatibility this is intentional, but it also shifts responsibility for correctness away from the source of the data."
+        },
+        {
+          "id": "b",
+          "text": "The handler should reject any input that deviates from the schema to prevent subtle corruption of internal state.",
+          "isCorrect": false,
+          "explanation": "Rejecting deviating input is a reasonable defensive stance and would prevent many classes of data corruption. However, it is a prescriptive recommendation rather than a description of the code shown. The snippet currently normalizes rather than rejects, so this option describes a different implementation choice."
+        },
+        {
+          "id": "c",
+          "text": "The handler should log and reject unexpected fields immediately to force clients to correct protocol violations promptly.",
+          "isCorrect": false,
+          "explanation": "Logging and immediate rejection enforces strict contracts and speeds detection of client bugs, which is often desirable for internal APIs. This option is a plausible alternative design concern, but it does not reflect the existing code, which accepts and normalizes inputs instead of rejecting them."
+        },
+        {
+          "id": "d",
+          "text": "The handler should accept everything to maximize compatibility and add defensive normalization layers downstream to handle errors.",
+          "isCorrect": false,
+          "explanation": "Accepting everything and normalizing downstream is a defensible compatibility strategy for public-facing services, but it increases coupling and moves validation out of the boundary. This describes a possible architecture trade-off rather than accurately naming the current handler behavior, which already normalizes eagerly at the boundary."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the main operational risk introduced by this snippet?",
+      "codeSnippet": "function processOrder(payload: any) {\n  const amount = Number(payload.amount);\n  const user = payload.user || { id: 'guest' };\n  db.save({ amount, userId: user.id });\n  return { status: 'ok' };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This implementation allows unexpected types to be stored which may create downstream financial reconciliation failures.",
+          "isCorrect": false,
+          "explanation": "Storing unexpected types is a real concern—if numeric fields are coerced from strings or invalid values they can distort accounting and reconciliation. This is a plausible consequence, but it is a narrower characterization than the broader tracing and debugging problems caused by silent coercion."
+        },
+        {
+          "id": "b",
+          "text": "The fallback to a guest user value masks authentication failures and can silently attribute orders to anonymous accounts.",
+          "isCorrect": false,
+          "explanation": "Defaulting to a guest user can indeed hide auth errors and incorrectly attribute activity to anonymous users. That is a concrete, operationally significant problem, but it focuses only on identity handling while the snippet also silently coerces types, which has broader data integrity and observability implications."
+        },
+        {
+          "id": "c",
+          "text": "Silent coercion of input fields hides client bugs and results in incorrect persisted values that are hard to trace.",
+          "isCorrect": true,
+          "explanation": "The core issue is silent normalization: using Number(...) and lax defaults allows malformed inputs to pass and be stored as apparently valid data. That behavior masks client-side bugs and makes root cause analysis difficult because the system does not fail fast or produce clear validation errors. In practice you want validation at the boundary and explicit error signals rather than silent coercion."
+        },
+        {
+          "id": "d",
+          "text": "The code increases the attack surface by accepting inconsistent input and could enable injection via loose parsing of strings.",
+          "isCorrect": false,
+          "explanation": "Looser parsing can increase security surface area in some contexts, especially if parsing feeds into query construction. This is a reasonable security concern, but the snippet's immediate operational risk is primarily data integrity and observability loss from silent coercion rather than a specific injection vector."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You are designing a new microservice. Which version is preferable for long-term maintainability and clearer contracts?",
+      "codeSnippet": "// Version A: permissive\napp.post('/orders', (req, res) => {\n  const body = req.body;\n  const amount = Number(body.amount || body.total || '0');\n  const customerId = body.customerId || body.user?.id || 'anonymous';\n  saveOrder({ amount, customerId });\n  res.status(200).send({ ok: true });\n});\n\n// Version B: strict\napp.post('/orders', validateSchema(orderSchema), (req, res) => {\n  const { amount, customerId } = req.body;\n  saveOrder({ amount, customerId });\n  res.status(200).send({ ok: true });\n});",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A accepts many input variants and centralizes normalization, which increases coupling and hides client contract violations.",
+          "isCorrect": false,
+          "explanation": "Version A prioritizes compatibility by normalizing varied inputs at the handler. While it lowers immediate friction for clients, it conflates multiple responsibilities at the service boundary and creates implicit expectations about acceptable inputs. Over time this leads to fragile integrations, unclear error origins, and harder evolution because normalization rules become embedded in business services rather than at the protocol boundary."
+        },
+        {
+          "id": "b",
+          "text": "Version B enforces strict input validation at the service boundary to prevent ambiguous downstream behavior.",
+          "isCorrect": true,
+          "explanation": "Version B keeps the contract explicit by validating requests against a schema before business logic runs. This pattern reduces ambiguity, improves observability, and makes clients fix their own data issues rather than letting errors propagate silently. In most microservice and internal-API contexts, explicit validation and strict outputs yield clearer invariants and simpler reasoning about system behavior. For balanced interoperability you'd handle transformation in contained adapters or API gateways rather than embedding permissive normalization in core services—this aligns with modern guidance on fail-fast boundaries and well-defined interfaces (see Fowler on patterns of integration and RFC 793's original robustness discussion)."
+        }
+      ]
+    }
+  ]
+}

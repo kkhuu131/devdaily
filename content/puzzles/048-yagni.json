@@ -1,0 +1,105 @@
+{
+  "id": 48,
+  "conceptName": "YAGNI",
+  "category": "principle",
+  "definition": "An engineering principle that advises against implementing functionality until it is actually required by users or a validated requirement.",
+  "ruleOfThumb": "Build the simplest thing that delivers current business value; defer abstractions and features until they are needed.",
+  "citation": {
+    "author": "Kent Beck",
+    "bookTitle": "Extreme Programming Explained",
+    "chapter": "Principles and Practices",
+    "page": null,
+    "externalUrl": "https://en.wikipedia.org/wiki/You_aren%27t_gonna_need_it"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best matches the development stance a seasoned team should take when a speculative feature is proposed?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Implement only features that are currently required by known user needs and iteration scope and delivery planning.",
+          "isCorrect": true,
+          "explanation": "This captures the core idea: prioritize current, validated requirements and avoid building speculative features. Implementing only what is needed reduces wasted effort, lowers maintenance surface area, and keeps feedback loops short. The principle emphasizes waiting for evidence or direct business need before investing in additional functionality."
+        },
+        {
+          "id": "b",
+          "text": "Prebuild flexible infrastructure for possible future features to avoid repeated refactoring when requirements change across teams.",
+          "isCorrect": false,
+          "explanation": "This is a plausible approach aiming to reduce future refactor cost, but it presumes the future need will arrive and justify the upfront cost. Overengineering infrastructure for hypothetical features often increases complexity prematurely and hides present business value under speculative design work."
+        },
+        {
+          "id": "c",
+          "text": "Delay adding a requested feature until business validates it and ROI is confirmed through experiments and metrics.",
+          "isCorrect": false,
+          "explanation": "Waiting for validation is prudent, but this phrasing emphasizes experiment-driven confirmation which might be impractical for small obvious needs. It also suggests postponing all requests until formal ROI, which can slow delivery for clear high-value work and is not always necessary."
+        },
+        {
+          "id": "d",
+          "text": "Estimate large future requirements early to reserve budget and schedule for future product expansion planning.",
+          "isCorrect": false,
+          "explanation": "Reserving budget and schedule for likely future work can be useful at portfolio level, but applying that practice to engineer-level design leads to premature complexity. Engineering-level decisions should favor concrete, current needs rather than speculative large-scope estimations."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this billing code added to accommodate many hypothetical pricing rules. What is the primary concern?",
+      "codeSnippet": "class InvoiceService {\n  createInvoice(order: Order) {\n    const invoice = new Invoice();\n    // support multiple tax rules, coupons, loyalty points, giftcards\n    applyTax(invoice, order);\n    applyCoupons(invoice, order);\n    applyLoyalty(invoice, order);\n    applyGiftCard(invoice, order);\n    // TODO: handle international VAT and future promotions\n    save(invoice);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The implementation includes added complexity anticipating future needs that are not currently required by customers.",
+          "isCorrect": true,
+          "explanation": "This code shows multiple feature hooks and TODOs for requirements that are not present now. That represents speculative implementation and scaffolding prior to confirmed need. The risk is added maintenance and harder reasoning without delivering current business value. Prefer implementing the simplest path and refactoring when actual needs arise."
+        },
+        {
+          "id": "b",
+          "text": "This design duplicates tax and discount rules across methods making consistency and maintenance difficult across services in time.",
+          "isCorrect": false,
+          "explanation": "Duplication is a real maintainability concern, and adding many payment rules could cause inconsistent logic. However, in this snippet the primary smell is speculative hooks rather than obvious duplication across modules. The duplicate-concern argument misses the immediate overengineering evidence in the code."
+        },
+        {
+          "id": "c",
+          "text": "The code lacks clear separation of concerns and will make testing each pricing rule in isolation harder if it grows.",
+          "isCorrect": false,
+          "explanation": "Separation of concerns and testability are valid concerns because tightly coupled rule applications can complicate unit tests. Still, the most direct problem here is premature expansion for hypothetical requirements. Separation could be addressed later when real requirements force modularization."
+        },
+        {
+          "id": "d",
+          "text": "Hardcoded rule calls prevent configuring available payment flows at runtime without large refactoring work across modules and teams.",
+          "isCorrect": false,
+          "explanation": "This notes the operational inflexibility of embedding rule calls, which can be painful if runtime configuration is later required. While important, the immediate issue shown is speculative complexity. If a runtime configuration requirement appears, refactoring then is a reasonable cost compared with preemptive complexity."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two versions are proposed for making the billing pipeline extensible. Which version is preferable now and why?",
+      "codeSnippet": "// Version A\nclass BillingV1 {\n  process(order: Order) {\n    const invoice = computeBase(order);\n    if (order.couponCode) invoice.apply(discountFor(order.couponCode));\n    save(invoice);\n  }\n  // Add real extension hooks when customers request tangible variations\n}\n\n// Version B\ninterface DiscountProvider { apply(invoice: Invoice): void }\nabstract class BillingV2 {\n  protected providers: DiscountProvider[] = [];\n  process(order: Order) {\n    const invoice = computeBase(order);\n    this.providers.forEach(p => p.apply(invoice));\n    save(invoice);\n  }\n  // scaffolding for many future plugin implementations\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps implementation focused and adds extension points only after a concrete customer need appears.",
+          "isCorrect": true,
+          "explanation": "Version A follows the principle of implementing the simplest thing that satisfies current requirements. It avoids upfront scaffolding and the cognitive cost of unused abstractions. When a real need emerges, you can extract interfaces or add provider hooks with guided requirements. This is consistent with pragmatic refactoring and emergent design practices described by Kent Beck and later reinforced by refactoring literature."
+        },
+        {
+          "id": "b",
+          "text": "Version B introduces multiple abstract extension interfaces and heavy scaffolding before any user need legitimizes them.",
+          "isCorrect": false,
+          "explanation": "Version B is seductive because it appears flexible, but creating extension infrastructure before use increases code surface area, complicates testing, and commits teams to an unvalidated architecture. The cost of maintaining unused abstractions often outweighs the hypothetical benefit; refactoring to add real extensibility later is typically cheaper and clearer."
+        }
+      ]
+    }
+  ]
+}

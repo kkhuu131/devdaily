@@ -1,0 +1,106 @@
+{
+  "id": 25,
+  "conceptName": "Fail Fast Principle",
+  "category": "principle",
+  "definition": "A design approach that detects and signals erroneous conditions as early as possible to prevent error propagation and make defects easier to diagnose.",
+  "ruleOfThumb": "Validate inputs and preconditions immediately and stop processing when invariants are violated instead of letting errors appear later.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code",
+    "chapter": "Chapter 9: Error Handling",
+    "page": "103",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-code/9780136083238/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the snippet. Which description best matches the validation style shown?",
+      "codeSnippet": "function createUser(payload: any) {\n  if (!payload.email) {\n    throw new Error('Missing email');\n  }\n  // proceed with new user creation\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This example immediately validates input and throws an error to stop processing invalid data early.",
+          "isCorrect": true,
+          "explanation": "The snippet checks the required field and throws immediately. That prevents downstream code from running with invalid input, making bugs visible closer to their origin. This reduces cascading failures and simplifies debugging."
+        },
+        {
+          "id": "b",
+          "text": "This example defers validation and accumulates errors to report all problems only after processing completes.",
+          "isCorrect": false,
+          "explanation": "Deferring validation would involve collecting multiple issues and surfacing them together later. The snippet throws right away instead, so it does not match an accumulate-and-report strategy. Accumulation may be useful for batch validation but increases risk of later failures."
+        },
+        {
+          "id": "c",
+          "text": "This example logs the missing field and continues execution with default values instead of halting processing.",
+          "isCorrect": false,
+          "explanation": "Logging and continuing with defaults is a tolerant approach that trades safety for availability. The code shown throws an exception and halts, so it is not a tolerant defaulting strategy. Silent continuation can hide root causes and introduce subtle bugs."
+        },
+        {
+          "id": "d",
+          "text": "This example centralizes error handling in a downstream middleware to convert exceptions into user friendly responses.",
+          "isCorrect": false,
+          "explanation": "Centralized middleware handling converts and formats errors, but it does not describe the act of immediate input validation. The snippet demonstrates an early throw at the point of invalid input, not deferred centralized conversion."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review the parser function and usage. What is the most concerning interpretation of this pattern?",
+      "codeSnippet": "function parseOrder(raw: any): Order | null {\n  if (!raw.id || !raw.items) return null;\n  return { id: raw.id, items: raw.items } as Order;\n}\n\nconst order = parseOrder(input);\nprocessOrder(order.items);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function hides invalid input by returning null and lets errors surface later from unexpected null dereferences.",
+          "isCorrect": true,
+          "explanation": "Returning null defers the failure to the caller, which may forget to check the result and later dereference it. That yields runtime exceptions far from the original invalid data and makes the bug harder to diagnose. A fail-early approach would throw or validate at the parse boundary."
+        },
+        {
+          "id": "b",
+          "text": "This function intentionally soft-fails to preserve system availability by skipping invalid entries and continuing processing.",
+          "isCorrect": false,
+          "explanation": "Soft-failing by skipping entries can be a deliberate design for tolerant systems, but the snippet returns null for one item and the caller dereferences it, which is an accidental crash rather than a controlled skip. The risk is about hidden errors, not availability preservation."
+        },
+        {
+          "id": "c",
+          "text": "This function centralizes validation responsibility on callers to allow flexible handling of invalid data across different contexts.",
+          "isCorrect": false,
+          "explanation": "Centralizing validation on callers is a valid pattern if callers always check results. However, the usage in the snippet shows a missing check leading to immediate failure, indicating the pattern is unsafe here rather than a deliberate design choice for flexibility."
+        },
+        {
+          "id": "d",
+          "text": "This function returns a sentinel to make caller decisions explicit and avoid throwing during batch processing of orders.",
+          "isCorrect": false,
+          "explanation": "Returning a sentinel can make flow explicit when callers are disciplined about checking it. In the snippet, the caller does not check the sentinel and dereferences the result, which shows the sentinel approach is being misused rather than intentionally avoiding exceptions for batch processing."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Both versions handle missing configuration differently during startup. Which version would you choose for a critical service and why?",
+      "codeSnippet": "// Version A\nfunction initService(config: any) {\n  if (!config.apiKey) {\n    throw new Error('Missing apiKey');\n  }\n  // start services\n}\n\n// Version B\nfunction initService(config: any) {\n  if (!config.apiKey) {\n    console.warn('Missing apiKey, using fallback default');\n    config.apiKey = 'default';\n  }\n  // start services\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A stops startup immediately on invalid configuration to avoid running in a compromised state.",
+          "isCorrect": true,
+          "explanation": "Stopping startup prevents the system from operating with a hidden or incorrect dependency, which limits blast radius and surfaces the problem at its origin. For critical services, failing early promotes correctness and predictable behavior. Version A enforces an invariant at startup time, making misconfiguration visible to operators and enabling immediate corrective action. See Clean Code and error-handling guidance on preferring explicit failures over allowing invalid state to propagate."
+        },
+        {
+          "id": "b",
+          "text": "Version B logs configuration errors and continues startup with defaults allowing the service to reach operational state.",
+          "isCorrect": false,
+          "explanation": "Continuing with defaults may allow availability but can mask serious configuration problems, leading to subtle runtime faults and harder-to-diagnose behavior. In distributed systems this can create inconsistent states across instances. A nuanced failure mode is that defaults might be silently incorrect for production use, causing data corruption or security exposure. For critical components, the risk of running in a compromised state outweighs the benefit of immediate availability. References: Martin Fowler on failing fast and Robert C. Martin on error handling."
+        }
+      ]
+    }
+  ]
+}

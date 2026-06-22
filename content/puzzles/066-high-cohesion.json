@@ -1,0 +1,106 @@
+{
+  "id": 66,
+  "conceptName": "High Cohesion",
+  "category": "principle",
+  "definition": "A design goal where a module or class groups closely related responsibilities so it is focused, understandable, and easier to change.",
+  "ruleOfThumb": "Keep related behaviors together; if a class name describes what it does, its methods should all belong to that description.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Extract Class",
+    "page": "N/A",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which class in the snippet most clearly groups closely related behavior and keeps a focused responsibility?",
+      "codeSnippet": "class PaymentService {\n  processPayment(order) { /* validate and charge card */ }\n  refund(paymentId) { /* process refund */ }\n}\n\nclass AppUtilities {\n  queryDatabase(sql) { /* raw SQL */ }\n  log(message) { /* write to file */ }\n  formatDate(date) { /* localized formatting */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The PaymentService class contains only payment related methods and focuses on a single responsibility for payments.",
+          "isCorrect": true,
+          "explanation": "PaymentService groups payment-specific operations only. That focused grouping keeps behavior cohesive, easier to reason about, and simpler to test. Methods relate to the same conceptual area so changes to payment rules stay localized to this class."
+        },
+        {
+          "id": "b",
+          "text": "The AppUtilities class mixes database, logging, and formatting functions and exposes multiple unrelated responsibilities across application concerns.",
+          "isCorrect": false,
+          "explanation": "AppUtilities is a grab bag of unrelated helpers. It violates focused grouping because persistence, logging, and formatting are separate concerns and will tend to change for different reasons, increasing the blast radius of modifications."
+        },
+        {
+          "id": "c",
+          "text": "The OrderController class mixes HTTP handling, business rules, and data access creating cross-cutting responsibilities in one class.",
+          "isCorrect": false,
+          "explanation": "This option describes a common anti-pattern where controllers take on too many roles. Mixing transport, business logic, and persistence reduces clarity and makes unit testing and reuse harder."
+        },
+        {
+          "id": "d",
+          "text": "The ReportGenerator class encapsulates data fetching, formatting, and writing to disk combining unrelated responsibilities in a single module.",
+          "isCorrect": false,
+          "explanation": "ReportGenerator here bundles fetching, formatting, and IO. Each of those responsibilities may need to change for different reasons, so splitting them into focused components improves maintainability and testability."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the ProductService below, which observation best captures whether its responsibilities are well organized or mixed?",
+      "codeSnippet": "class ProductService {\n  fetchProduct(id) { /* DB query */ }\n  calculateDiscount(product) { /* domain rule */ }\n  renderProductHtml(product) { /* returns HTML string */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class mixes data access, business rules, and presentation logic into a single module creating unclear responsibility boundaries.",
+          "isCorrect": false,
+          "explanation": "This blunt assessment is valid when persistence, domain logic, and UI are all in one class. It highlights a clear mixing of layers, which can be refactored by extracting presentation or persistence responsibilities."
+        },
+        {
+          "id": "b",
+          "text": "The class groups related domain operations but exposes some UI rendering which moderately blurs its primary purpose and intent.",
+          "isCorrect": true,
+          "explanation": "This nuanced observation recognizes that most methods are domain-focused, but the presence of rendering pulls the class toward presentation concerns. A small UI responsibility can degrade focus and should be extracted for clearer module boundaries."
+        },
+        {
+          "id": "c",
+          "text": "The class focuses purely on business concerns and keeps presentation and persistence delegated to other layers cleanly.",
+          "isCorrect": false,
+          "explanation": "This statement is not supported by the snippet because renderProductHtml and fetchProduct indicate the class handles presentation and persistence. Treating it as purely business-focused would be incorrect here."
+        },
+        {
+          "id": "d",
+          "text": "The class is a thin facade coordinating domain services and therefore maintains a focused responsibility without unrelated tasks.",
+          "isCorrect": false,
+          "explanation": "Calling it a thin facade is misleading because it contains concrete rendering and DB access logic, not just coordination. That indicates mixed responsibilities rather than a focused coordinator role."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better organizes responsibilities to keep modules focused and easier to change?",
+      "codeSnippet": "// Version A\nclass OrderRepository { save(order) { /* persist */ } }\nclass OrderCalculator { totals(order) { /* compute totals */ } }\nclass OrderNotifier { notify(order) { /* send email */ } }\nclass OrderService {\n  constructor(repo, calc, notifier) { this.repo = repo; this.calc = calc; this.notifier = notifier }\n  placeOrder(order) { this.repo.save(order); this.calc.totals(order); this.notifier.notify(order); }\n}\n\n// Version B\nclass OrderManager {\n  placeOrder(order) {\n    /* persist order, compute totals, and send notifications all here */\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A organizes distinct order behaviors into dedicated classes each owning a single focused responsibility.",
+          "isCorrect": true,
+          "explanation": "Version A splits concerns into small, focused classes responsible for one area each, improving readability, testability, and reuse. This makes it easier to modify persistence, calculation, or notification behavior independently. See Fowler on Extract Class and cohesion strategies, and Robert C. Martin on component cohesion for guidance."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes data access, business logic, and notifications into one class increasing coupling and reducing testability.",
+          "isCorrect": false,
+          "explanation": "Version B creates a large God object that mixes unrelated responsibilities. That increases coupling between concerns, hinders unit testing of individual aspects, and makes future changes riskier and more error prone. Refactoring into smaller focused classes helps preserve modularity and lowers change impact."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 44,
+  "conceptName": "Facade Pattern",
+  "category": "design-pattern",
+  "definition": "Provide a simple unified interface to a set of interfaces in a subsystem, decoupling clients from subsystem details.",
+  "ruleOfThumb": "Introduce a facade when many clients need a simpler, stable entry point to coordinate multiple cooperating subsystems.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Facade",
+    "page": "185",
+    "externalUrl": "https://refactoring.guru/design-patterns/facade"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this TypeScript snippet. What design problem does this code illustrate?",
+      "codeSnippet": "// Inventory, Payment, Shipping subsystems\nclass Inventory { reserve(itemId: string) { /*...*/ } }\nclass PaymentGateway { process(amount: number) { /*...*/ } }\nclass Shipping { schedule(orderId: string) { /*...*/ } }\nclass OrderFacade {\n  constructor(private inv: Inventory, private pay: PaymentGateway, private ship: Shipping) {}\n  placeOrder(order: any) { this.inv.reserve(order.item); this.pay.process(order.total); this.ship.schedule(order.id); }\n}\nconst facade = new OrderFacade(new Inventory(), new PaymentGateway(), new Shipping());\nfacade.placeOrder({ id: 'o1', item: 'sku1', total: 199 });",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code provides a single simple interface that coordinates multiple subsystem classes for common client operations.",
+          "isCorrect": true,
+          "explanation": "The OrderFacade consolidates calls to Inventory, PaymentGateway, and Shipping into one method that clients call. This is the classic intent: offer a higher level API so callers do not need to manage many subsystem interactions themselves. It reduces client-side coupling and simplifies common workflows."
+        },
+        {
+          "id": "b",
+          "text": "This code centralizes business logic into one class causing ballooning responsibilities and hard to test methods.",
+          "isCorrect": false,
+          "explanation": "While centralizing logic can be a real smell, the snippet shows thin delegation to subsystems rather than embedding domain rules. The class coordinates subsystems rather than owning business invariants, so the primary issue is interface simplification rather than a god object that contains all domain logic."
+        },
+        {
+          "id": "c",
+          "text": "This code demonstrates tight coupling due to direct subsystem access from many clients leading to fragile change propagation.",
+          "isCorrect": false,
+          "explanation": "Tight coupling is a concern when clients call subsystems directly, but here the facade reduces that exposure by providing one entry point. The snippet shows reduced client knowledge of individual subsystem calls rather than many clients invoking those subsystems directly."
+        },
+        {
+          "id": "d",
+          "text": "This code hides subsystem details behind a coordinating object but may obscure error handling and limit extensibility.",
+          "isCorrect": false,
+          "explanation": "Hiding details is part of the facade trade off and can introduce challenges like error mapping or extension hooks. However the primary pattern demonstrated is the introduction of a simplified interface for coordination, not necessarily the secondary risks which depend on how errors and extension points are designed."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this wrapper class. What is the most significant risk or smell in this implementation?",
+      "codeSnippet": "class BillingFacade {\n  constructor(private gateway: PaymentGateway) {}\n  charge(order: Order): PaymentResult { return this.gateway.processPayment(order.total); }\n  refund(txId: string): PaymentResult { return this.gateway.refund(txId); }\n}\n// Client code expects PaymentResult and interacts with gateway types directly",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The wrapper only delegates calls and exposes underlying types, offering no meaningful abstraction or stability guarantee to clients.",
+          "isCorrect": true,
+          "explanation": "This implementation merely forwards calls and preserves the gateway types in its surface. That leaks the subsystem's contract to callers and provides little protective abstraction. A useful facade should present stable, domain oriented types or hide volatile details to reduce client coupling and provide encapsulation."
+        },
+        {
+          "id": "b",
+          "text": "The wrapper duplicates gateway method signatures, which is acceptable but increases surface area and testing overhead unnecessarily.",
+          "isCorrect": false,
+          "explanation": "Duplicating signatures is a practical cost, but not the deepest problem here. The bigger issue is that the facade exposes the same low level types and semantics, so it gives a false sense of abstraction and fails to decouple callers from gateway changes."
+        },
+        {
+          "id": "c",
+          "text": "The wrapper centralizes external calls making retry and logging uniform but introducing a single point of failure risk.",
+          "isCorrect": false,
+          "explanation": "Centralizing cross cutting behavior can be beneficial for retries and logging, and it does create an operational chokepoint. In this code the more pressing architectural smell is the lack of abstraction and type leakage rather than just the operational centralization."
+        },
+        {
+          "id": "d",
+          "text": "The wrapper hides critical payment errors and returns raw gateway results without translating errors into domain level failures.",
+          "isCorrect": false,
+          "explanation": "Returning raw gateway results can be problematic if domain code requires translated errors. The snippet does return gateway results directly, but the encompassing concern is that the facade does not define a domain boundary or stable contract for callers, which is a broader abstraction flaw than just error translation."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two design versions are proposed for a growing system. Which version is preferable for long term maintainability?",
+      "codeSnippet": "// Version A: big coarse gateway\nclass BigGateway {\n  placeOrder(order: Order) { /* ... */ }\n  cancelOrder(id: string) { /* ... */ }\n  refundPayment(id: string) { /* ... */ }\n  trackShipment(id: string) { /* ... */ }\n}\n\n// Version B: small focused interfaces and a coordinator\ninterface OrderApi { place(order: Order): PaymentResult }\ninterface ShippingApi { track(id: string): ShipmentStatus }\nclass OrderCoordinator {\n  constructor(private orderApi: OrderApi, private shippingApi: ShippingApi) {}\n  placeOrder(order: Order) { return this.orderApi.place(order); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A places many responsibilities in one coarse gateway which increases coupling and slows independent changes.",
+          "isCorrect": false,
+          "explanation": "A single coarse gateway tends to become a god object that many teams depend on, making it risky to change and harder to reason about. It centralizes responsibilities that naturally belong to different bounded contexts, which increases coordination cost and reduces component autonomy."
+        },
+        {
+          "id": "b",
+          "text": "Version B reduces coupling and enables independent subsystem evolution through small focused interfaces.",
+          "isCorrect": true,
+          "explanation": "Keeping small, role focused interfaces and composing them with a thin coordinator promotes the single responsibility principle and allows each subsystem to evolve independently. This supports separate release cycles, clearer contracts, and easier testing. Fowler and other design authorities recommend keeping facades focused and avoiding one massive gateway that becomes a maintenance bottleneck."
+        }
+      ]
+    }
+  ]
+}

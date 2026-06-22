@@ -1,0 +1,106 @@
+{
+  "id": 42,
+  "conceptName": "Move Method",
+  "category": "refactoring",
+  "definition": "Relocating a method from one class to another when the method uses more data or behavior from the other class, improving cohesion and reducing inappropriate coupling.",
+  "ruleOfThumb": "If a method accesses more data or collaborators from another class than from its own, consider relocating it to the class it best serves.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Moving Features Between Objects",
+    "page": "p. 189",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the snippet. What best describes the design smell here?",
+      "codeSnippet": "class Order {\n  customer: Customer;\n  items: Item[];\n\n  customerAddress(): string {\n    return `${this.customer.street}, ${this.customer.city}`;\n  }\n}\n\nclass Customer {\n  street: string;\n  city: string;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This method depends primarily on the other class's data and likely belongs with that other class.",
+          "isCorrect": true,
+          "explanation": "The method pulls multiple fields directly from Customer, so it has stronger affinity to Customer than to Order. Moving the method to Customer improves cohesion and reduces Order reaching into Customer data. This is a canonical spot to apply the refactoring described by Fowler for relocating behaviors to their data owners."
+        },
+        {
+          "id": "b",
+          "text": "This code duplicates domain logic across classes and should be consolidated to avoid diverging behavior in future.",
+          "isCorrect": false,
+          "explanation": "While duplication is a real concern, the snippet shows a single location referencing Customer fields rather than duplicated logic. The primary issue is misplaced behavior, not duplication. Consolidation would help only if there were actually multiple copies of the same logic."
+        },
+        {
+          "id": "c",
+          "text": "This method exposes internal details and violates encapsulation by reaching into another class to fetch state.",
+          "isCorrect": false,
+          "explanation": "Reaching into another object can indicate encapsulation problems, but the core smell here is that the method's responsibility aligns with Customer. Encapsulation concerns might be secondary; the clearer fix is to attach the behavior to the Customer so it controls its own representation."
+        },
+        {
+          "id": "d",
+          "text": "This method has an unclear single responsibility and should be split to separate calculation from data access.",
+          "isCorrect": false,
+          "explanation": "Splitting responsibilities is a useful tactic when a method mixes concerns, but the shown method simply formats address parts from Customer. The method is cohesive; its responsibility is better served by changing its location rather than splitting its logic."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the interaction below, which refactoring choice is the most appropriate next step?",
+      "codeSnippet": "class PricingService {\n  calculateFinalPrice(product: Product, qty: number) {\n    return product.basePrice * qty * (1 - product.discountRate);\n  }\n}\n\nclass Product {\n  basePrice: number;\n  discountRate: number;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Place the calculation method on the class that holds most of the required state for computations.",
+          "isCorrect": true,
+          "explanation": "The computation uses product fields directly; co-locating the logic with Product improves cohesion and hides implementation details. Moving the method reduces the need for PricingService to reach into Product internals and simplifies future changes to discount rules."
+        },
+        {
+          "id": "b",
+          "text": "Create a mediator helper object to perform the computation and keep both original classes unchanged.",
+          "isCorrect": false,
+          "explanation": "A mediator would centralize logic but adds another abstraction and indirection. When one object clearly owns the data, introducing a helper can increase coupling and make behavior discoverability harder compared to placing the logic with the data owner."
+        },
+        {
+          "id": "c",
+          "text": "Duplicate the computation into both classes and adapt each copy to local data contexts to avoid coupling.",
+          "isCorrect": false,
+          "explanation": "Duplication prevents coupling in the short term but leads to maintenance burden and inconsistent behavior over time. Keeping a single authoritative implementation near the owning data is generally preferable to duplicating domain calculations."
+        },
+        {
+          "id": "d",
+          "text": "Extract a small accessor function for remote data and retain the calculation where it currently lives.",
+          "isCorrect": false,
+          "explanation": "Extracting accessors hides some details but leaves the core calculation in a context that is less connected to Product's invariants. This keeps behavior fragmented; moving the calculation often yields clearer ownership and easier evolution."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version would you prefer for long term maintainability, and why?",
+      "codeSnippet": "// Version A\nclass Customer {\n  orders: Order[];\n  loyaltyPoints(): number {\n    return this.orders.reduce((s, o) => s + o.pointsEarned(), 0);\n  }\n}\n\n// Version B\nclass Order {\n  customer: Customer;\n  pointsEarned(): number {\n    return Math.floor(this.customer.totalSpend() / 10);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A consolidates the calculation with the object that owns the related collection and domain intent.",
+          "isCorrect": true,
+          "explanation": "Version A places the aggregate operation on Customer, which owns the orders collection and the concept of total loyalty points. This reduces remote data access and keeps high-level domain logic where it is discoverable. Fowler advocates moving behavior to the class that has the strongest data affinity; this improves cohesion and lowers coupling between Order and Customer."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps the computation on the lower level object and prevents the aggregate owner from knowledge of individual calculations.",
+          "isCorrect": false,
+          "explanation": "Version B pushes calculation into Order and makes Order depend on Customer details, which inverts natural ownership. That design increases coupling and scatters aggregate logic across objects, making it harder to change aggregation rules. In aggregate operations, owning entities should typically orchestrate or host the logic rather than requiring children to query parent state."
+        }
+      ]
+    }
+  ]
+}

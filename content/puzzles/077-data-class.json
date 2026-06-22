@@ -1,0 +1,106 @@
+{
+  "id": 77,
+  "conceptName": "Data Class",
+  "category": "code-smell",
+  "definition": "An object that holds fields and exposes them through trivial getters and setters but contains little or no business behavior, pushing logic into external modules.",
+  "ruleOfThumb": "If most of the class methods are simple accessors and meaningful operations live outside the class, consider moving behavior into the object or combining responsibilities.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Data Class",
+    "page": "p. 88",
+    "externalUrl": "https://martinfowler.com/bliki/DataClass.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which of the following class descriptions most closely matches the code snippet shown below?",
+      "codeSnippet": "class Shipment {\n  id: string;\n  address: string;\n  weightKg: number;\n  getId() { return this.id; }\n  setId(v: string) { this.id = v; }\n  getAddress() { return this.address; }\n  setAddress(v: string) { this.address = v; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Shipment is a passive container exposing only fields and trivial getters and setters without any business behavior.",
+          "isCorrect": true,
+          "explanation": "This snippet shows a class with fields and only trivial accessors and mutators, with no domain methods. That pattern leaves business logic elsewhere, making the object just a carrier of data. Fowler identifies this as a smell because behavior should usually travel with the data that it operates on."
+        },
+        {
+          "id": "b",
+          "text": "Shipment is a cohesive behavior-rich module coordinating multiple services and enforcing complex business invariants globally.",
+          "isCorrect": false,
+          "explanation": "This option describes a class that contains coordination logic and enforces invariants, but the snippet lacks any coordinating methods or validation. A behavior-rich module would include methods implementing domain rules rather than only accessors."
+        },
+        {
+          "id": "c",
+          "text": "Shipment is a serialization DTO meant only for transport between layers with no logic or validation responsibilities.",
+          "isCorrect": false,
+          "explanation": "A DTO is plausible because DTOs often contain only data and are used for transport. The difference is intent: a DTO is intentionally passive for serialization boundaries, while the smell arises when such passive objects leak into domain logic rather than being limited to transport."
+        },
+        {
+          "id": "d",
+          "text": "Shipment is a concurrency coordinator owning threads and locks to manage background tasks and scheduling operations.",
+          "isCorrect": false,
+          "explanation": "This option describes a concurrency-focused object which would include thread management and synchronization primitives. The snippet shows no such code; it only shows state accessors, so concurrency concerns are not present here."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary design problem with the Product class shown below?",
+      "codeSnippet": "class Product {\n  id: string;\n  name: string;\n  priceCents: number;\n  getId() { return this.id; }\n  setPrice(cents: number) { this.priceCents = cents; }\n}\n\nfunction calculateTotal(product: Product, tax: number) {\n  return product.priceCents * (1 + tax);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It exposes internal fields via accessors so domain behavior is implemented externally thereby preventing proper encapsulation.",
+          "isCorrect": true,
+          "explanation": "The class exposes its state through accessors and lets external functions implement business logic, which breaks encapsulation. Encapsulation groups data with the operations that use it, helping maintain invariants and reducing procedural coupling. Moving calculation behavior into the domain object or introducing a richer interface restores encapsulation."
+        },
+        {
+          "id": "b",
+          "text": "It mixes persistence concerns into the model which couples storage format with business logic and hinders effective unit testing.",
+          "isCorrect": false,
+          "explanation": "Mixing persistence would present methods or annotations tied to storage, which the snippet does not show. The main issue here is not persistence coupling but the lack of behavior on the object itself, which leads to logic being placed externally."
+        },
+        {
+          "id": "c",
+          "text": "It uses primitive numeric representation for money which risks rounding errors and loses domain expressiveness for currencies.",
+          "isCorrect": false,
+          "explanation": "Representing money with primitives can be a real problem, but the snippet's central smell is that calculations are outside the class. Addressing numeric types is an orthogonal improvement; encapsulating monetary behavior into a value object is a complementary refactor."
+        },
+        {
+          "id": "d",
+          "text": "It offers mutable setters that allow invalid intermediate states requiring wide validation logic spread across the entire codebase.",
+          "isCorrect": false,
+          "explanation": "Mutable setters are a concern because they can allow invalid states, but the critical design smell in this example is the class providing only accessors while domain operations live externally. Validation could be added either in setters or by encapsulating behavior to enforce invariants."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation is the preferable design for keeping domain behavior coherent?",
+      "codeSnippet": "// Version A\nclass LineItem {\n  constructor(public qty:number, public priceCents:number) {}\n  amount() { return this.qty * this.priceCents; }\n}\nclass InvoiceV1 {\n  constructor(public items: LineItem[]) {}\n  totalCents() { return this.items.reduce((s,i) => s + i.amount(), 0); }\n}\n\n// Version B\nclass LineItem2 {\n  constructor(public qty:number, public priceCents:number) {}\n}\nclass InvoiceV2 { constructor(public items: LineItem2[]) {} }\nfunction invoiceTotalV2(inv: InvoiceV2) { return inv.items.reduce((s,i) => s + i.qty * i.priceCents, 0); }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A encapsulates domain calculations within objects so behavior accompanies state and enforces invariants.",
+          "isCorrect": true,
+          "explanation": "Version A puts the amount calculation on the LineItem and the Invoice's total delegates to those objects. This keeps behavior next to the data it uses, making it easier to add validation, override behavior, and reason about invariants. Encapsulating behavior reduces procedural coupling and follows object-oriented cohesion—recommendations aligned with Fowler and classic OO principles."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes calculations in free functions which leaves state passive and scatters domain knowledge across modules.",
+          "isCorrect": false,
+          "explanation": "Version B works and is simple for small utilities, but by keeping objects passive it centralizes domain logic in procedural code. That scattering makes it harder to evolve domain behavior, increases the chance of duplicated logic, and complicates enforcing invariants. In cases where items have richer behavior or rules, the procedural approach becomes brittle compared to encapsulation."
+        }
+      ]
+    }
+  ]
+}

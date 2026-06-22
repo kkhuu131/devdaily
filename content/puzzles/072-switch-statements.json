@@ -1,0 +1,106 @@
+{
+  "id": 72,
+  "conceptName": "Switch Statements",
+  "category": "code-smell",
+  "definition": "A cluster of conditional case branches that routes behavior by explicit case labels rather than encapsulating behavior, often growing into a maintenance hotspot.",
+  "ruleOfThumb": "If you find many case labels handling domain-specific behavior, prefer extracting handlers or objects so adding a case avoids editing central code.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Replace Conditional with Polymorphism",
+    "page": "180-186",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this handler function. What is the most immediate maintainability problem you should flag?",
+      "codeSnippet": "type Order = { type: string; payload: any };\nfunction handleOrder(order: Order) {\n  switch (order.type) {\n    case 'create': return createOrder(order.payload);\n    case 'update': return updateOrder(order.payload);\n    case 'cancel': return cancelOrder(order.payload);\n    default: throw new Error('Unknown');\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function centralizes many distinct behavior paths in a single procedural block across multiple domain cases.",
+          "isCorrect": true,
+          "explanation": "The code keeps multiple domain behaviors together in one procedural switch. That centralization makes the method a frequent touch point for changes and increases coupling between unrelated flows. Extracting handlers reduces the need to modify this function when adding new behavior, improving extensibility and testability."
+        },
+        {
+          "id": "b",
+          "text": "The code increases test complexity because validating each branch requires constructing specific inputs and duplicated fixture setup.",
+          "isCorrect": false,
+          "explanation": "This is a real concern: many branches often mean many test cases with slightly different fixtures. However the root maintainability issue is centralizing behavior in one place; tests are a symptom rather than the primary architectural smell."
+        },
+        {
+          "id": "c",
+          "text": "The implementation forces edits inside the same function for each new case which breaks open closed expectations across features.",
+          "isCorrect": false,
+          "explanation": "This option identifies the violation of the Open/Closed idea, which is accurate. It is closely related to the correct answer, but it frames the problem as a principle violation rather than the concrete symptom of centralized conditional routing that developers will encounter first."
+        },
+        {
+          "id": "d",
+          "text": "The branch structure scatters related logic and duplicates implementation details across cases creating greater maintenance burden over time.",
+          "isCorrect": false,
+          "explanation": "Scattered logic and duplication are plausible consequences of many case branches. They are important to address, but they follow from the more immediate issue of centralized conditional routing that makes the code hard to evolve."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this event dispatcher, which concern should you prioritize when planning a short-term refactor?",
+      "codeSnippet": "type Event = { kind: 'create' | 'update' | 'delete'; data: any };\nfunction dispatch(e: Event) {\n  switch (e.kind) {\n    case 'create': return handleCreate(e.data);\n    case 'update': return handleUpdate(e.data);\n    case 'delete': return handleDelete(e.data);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code is fine for now because cases are simple and unlikely to change frequently in production environments.",
+          "isCorrect": false,
+          "explanation": "Choosing to postpone refactoring is sometimes pragmatic when cases are stable. But this answer downplays risks like future growth or missed exhaustiveness checks which could become costly later."
+        },
+        {
+          "id": "b",
+          "text": "The code risks runtime errors because the switch lacks exhaustive handling for newly added discriminated union variants in the future.",
+          "isCorrect": true,
+          "explanation": "In TypeScript, nonexhaustive switches can silently ignore new union members if not checked. Prioritizing exhaustiveness or using type-checked handlers prevents subtle runtime gaps when the domain evolves."
+        },
+        {
+          "id": "c",
+          "text": "The code will cause performance bottlenecks under high concurrent load due to many sequential conditional evaluations in critical paths.",
+          "isCorrect": false,
+          "explanation": "Performance of a small switch is rarely the bottleneck. While a concern in extreme hotspots, it is less likely than correctness issues around missing cases or maintainability when planning a short-term refactor."
+        },
+        {
+          "id": "d",
+          "text": "The code prevents reliable unit testing because each branch requires different heavy external setup to validate behavior across scenarios.",
+          "isCorrect": false,
+          "explanation": "Branch-specific external setup can hurt testing, but this dispatcher delegates to thin handlers, so the bigger immediate priority is ensuring coverage and exhaustiveness rather than costly test setup."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better design for a domain that will need many distinct case-specific behaviors over time?",
+      "codeSnippet": "/* Version A */\nclass OrderProcessorA {\n  process(order: any) {\n    switch (order.type) {\n      case 'simple': return handleSimple(order);\n      case 'complex': return handleComplex(order);\n      case 'premium': return handlePremium(order);\n    }\n  }\n}\n\n/* Version B */\ninterface OrderHandler { canHandle(o:any): boolean; handle(o:any): any }\nconst handlers: OrderHandler[] = [];\nfunction processOrderB(order: any) {\n  const h = handlers.find(x => x.canHandle(order));\n  return h!.handle(order);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A concentrates many case branches inside one method causing frequent edits and higher risk when adding behavior later.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes routing logic, which means every new behavior requires touching the same method. That increases merge conflicts and the chance of regressions. For a growing domain this becomes a scalability and maintenance problem compared with handler-based approaches."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates each behavior into its own handler allowing new behaviors to be added by registration without modifying central logic.",
+          "isCorrect": true,
+          "explanation": "Version B follows the Replace Conditional with Polymorphism refactoring: behaviors are encapsulated, the central processor is closed to modification, and new handlers can be added without editing existing code. This improves extensibility, enables focused testing, and reduces merge contention. See Fowler's discussion on replacing conditionals with polymorphic handlers for details."
+        }
+      ]
+    }
+  ]
+}

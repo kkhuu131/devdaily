@@ -1,0 +1,106 @@
+{
+  "id": 57,
+  "conceptName": "Separation of Concerns",
+  "category": "principle",
+  "definition": "Divide a system so that each module, class, or function has a focused responsibility and does not mix unrelated concerns.",
+  "ruleOfThumb": "If you change code for two different reasons, it probably belongs in two different modules; prefer small focused components.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Architecture",
+    "chapter": "The SOLID Principles",
+    "page": "p. 47",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-architecture/9780134494272/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the handler below. What is the primary problem you would identify at a glance?",
+      "codeSnippet": "function handleOrder(req: Request) {\n  const payload = JSON.parse(req.body);\n  if (!isValid(payload)) throw new Error('bad');\n  const order = mapToOrder(payload);\n  db.save(order);\n  emailService.sendReceipt(order);\n  analytics.track('order', order.id);\n  return { status: 'ok' };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function mixes validation logic, business rules, and data persistence responsibilities within a single implementation block.",
+          "isCorrect": true,
+          "explanation": "The handler is doing input validation, mapping, persistence, notification, and analytics all inline. That conflation is the root issue because multiple reasons to change are collocated, making testing and maintenance harder. Splitting validation, mapping, persistence, and messaging into separate components clarifies ownership and enables focused tests."
+        },
+        {
+          "id": "b",
+          "text": "This function leaks low level database details into higher layers making it difficult to swap persistence implementations later.",
+          "isCorrect": false,
+          "explanation": "Leaking DB details is a real concern here because db.save is called directly from the handler, which couples the handler to the persistence API. However, the more immediate smell is that many distinct responsibilities are combined; decoupling persistence helps but does not by itself restore clear responsibilities."
+        },
+        {
+          "id": "c",
+          "text": "This function performs synchronous blocking I O and will cause throughput problems under concurrent request load in production.",
+          "isCorrect": false,
+          "explanation": "Blocking I/O or sync calls can indeed be a scalability problem, but the snippet is primarily demonstrating mixed responsibilities rather than explicit blocking patterns. Addressing I/O async behavior helps performance but does not solve the maintenance and testing costs created by the mixed concerns."
+        },
+        {
+          "id": "d",
+          "text": "This function constructs UI output directly and mixes presentation code with core domain calculations, reducing reuse and readability.",
+          "isCorrect": false,
+          "explanation": "Mixing presentation with domain logic is a plausible diagnosis because presentation is present in the return value. In this example the bigger issue is that validation, persistence, and notification are also mixed together. Separating presentation is useful but splitting responsibilities more broadly yields greater benefits."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review the service below. Which structural problem best explains why this class will become hard to evolve?",
+      "codeSnippet": "class OrderService {\n  constructor(private repo: OrderRepo, private notifier: EmailClient, private logger: Logger) {}\n  async create(dto: OrderDto) {\n    const errors = this.validate(dto);\n    const entity = this.mapDto(dto);\n    await this.repo.save(entity);\n    await this.notifier.send(entity.customerEmail, 'receipt');\n    this.logger.info('order.created', entity.id);\n    return entity.id;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This service combines input validation, DTO mapping, persistence, and notification responsibilities within a single class.",
+          "isCorrect": true,
+          "explanation": "The service acts as validator, mapper, repository caller, and notifier. That clustering of unrelated duties means a change in any one concern forces edits to the same class, increasing coupling and causing churn. Extracting mapping, validation, and notification clarifies responsibilities and allows independent evolution and testing."
+        },
+        {
+          "id": "b",
+          "text": "This service depends on concrete repository implementations and makes unit testing harder due to the introduced tight coupling.",
+          "isCorrect": false,
+          "explanation": "Tight coupling to concrete repositories is a valid testing concern, but the constructor already allows replacing repo with a test double. The larger issue is the single class handling many roles. Improving abstractions around responsibilities has more impact than only changing repository injection patterns."
+        },
+        {
+          "id": "c",
+          "text": "This service performs network retries and long running work directly causing potential thread starvation and unclear failure handling.",
+          "isCorrect": false,
+          "explanation": "Directly embedding retry and long running logic can cause robustness issues, yet the snippet does not show explicit retry loops. The most evident structural problem is multiple responsibilities in one class; extracting long running or retry logic is a follow up after separating concerns."
+        },
+        {
+          "id": "d",
+          "text": "This service exposes rich domain objects to the API layer and risks leaking internal invariants and unsafe client usage.",
+          "isCorrect": false,
+          "explanation": "Exposing domain objects to external layers can be risky, but the primary maintainability concern in this code is that the class handles validation, mapping, persistence and notification responsibilities together. Wrapping domain objects for API safety is beneficial but secondary here."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation would you prefer for long term maintainability in a product that will add features rapidly?",
+      "codeSnippet": "// Version A\nclass PaymentService {\n  process(payment) {\n    if (!this.validate(payment)) throw new Error('invalid');\n    const record = this.map(payment);\n    db.save(record);\n    notifier.sendReceipt(payment);\n    analytics.track('payment', record.id);\n  }\n  validate() { /* ... */ }\n  map() { /* ... */ }\n}\n\n// Version B\nclass Validator { validate(p) { /* ... */ } }\nclass Repository { save(r) { /* ... */ } }\nclass Notifier { sendReceipt(p) { /* ... */ } }\nclass PaymentOrchestrator {\n  constructor(v, r, n) { this.v=v; this.r=r; this.n=n }\n  process(payment) { this.v.validate(payment); this.r.save(this.map(payment)); this.n.sendReceipt(payment); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes many behaviors in a single class increasing accidental coupling and making targeted unit tests harder to write.",
+          "isCorrect": false,
+          "explanation": "Version A bundles validation, mapping, persistence, notification, and analytics into one class. That centralization increases accidental coupling and makes it difficult to write focused unit tests or to evolve one behavior without risk to others. It can be quicker initially but becomes costly as features accumulate."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates distinct responsibilities into small collaborating classes for clearer ownership and easier targeted testing.",
+          "isCorrect": true,
+          "explanation": "Version B separates validation, persistence, and notification into dedicated components and uses a thin orchestrator. This yields clearer ownership boundaries, smaller focused tests, and safer evolution at scale. The tradeoff is more classes and indirection, but that complexity pays off when features multiply and responsibilities diverge."
+        }
+      ]
+    }
+  ]
+}

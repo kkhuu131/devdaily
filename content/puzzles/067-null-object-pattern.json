@@ -1,0 +1,106 @@
+{
+  "id": 67,
+  "conceptName": "Null Object Pattern",
+  "category": "design-pattern",
+  "definition": "Provide an object with neutral behavior that adheres to an expected interface so clients can treat absence uniformly without scattered null checks.",
+  "ruleOfThumb": "Prefer a do-nothing implementation when clients would otherwise need repetitive null checks; use it when absence can be represented safely by no-op behavior.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Introduce Null Object",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/eaaCatalog/nullObject.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the Logger types. Which description best characterizes the technique used by ConsoleLogger and NullLogger?",
+      "codeSnippet": "interface Logger {\n  log(msg: string): void;\n}\nclass ConsoleLogger implements Logger {\n  log(msg: string) { console.log(msg); }\n}\nclass NullLogger implements Logger {\n  log(msg: string) { /* no-op */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It provides a do-nothing substitute object that avoids scattered null checks and centralizes empty behavior for clients.",
+          "isCorrect": true,
+          "explanation": "The NullLogger is a harmless implementation that conforms to Logger and removes the need for clients to check for null before calling log. This is the classic neutral-object approach — supply an implementation that does nothing instead of using null values. It simplifies client code and keeps behavior explicit."
+        },
+        {
+          "id": "b",
+          "text": "It defers creation of Logger instances until first use to reduce startup cost and minimize unnecessary allocations at runtime.",
+          "isCorrect": false,
+          "explanation": "This option describes lazy instantiation. While lazy initialization can reduce startup overhead, the code shows two concrete implementations used interchangeably rather than deferring creation. There is no factory or lazy holder here; the focus is on a harmless substitute rather than allocation timing."
+        },
+        {
+          "id": "c",
+          "text": "It wraps the logger with synchronization to make logging thread-safe across concurrent threads without changing any caller code.",
+          "isCorrect": false,
+          "explanation": "Thread-safety wrappers introduce locking or concurrency controls. The snippet provides a no-op implementation rather than synchronization mechanics. There are no synchronized calls or locks present, so thread-safety is not the primary concern shown."
+        },
+        {
+          "id": "d",
+          "text": "It serializes log messages and queues them for asynchronous delivery to remote storage to prevent blocking producers during high load.",
+          "isCorrect": false,
+          "explanation": "Asynchronous buffering and remote delivery are about decoupling producers from IO latency. The snippet shows direct ConsoleLogger and a no-op implementation instead of any queuing, serialization, or async transport. Thus this concern is not what the code illustrates."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What primary design problem is the DiscountProvider with NoDiscount addressing in clients that use it?",
+      "codeSnippet": "interface DiscountProvider {\n  getDiscount(amount: number): number;\n}\nclass RealDiscount implements DiscountProvider {\n  getDiscount(amount:number) { return amount > 100 ? 10 : 0; }\n}\nclass NoDiscount implements DiscountProvider {\n  getDiscount(amount:number) { return 0; }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It supplies a harmless default implementation to avoid null checks and standardize behavior when no discount applies.",
+          "isCorrect": true,
+          "explanation": "NoDiscount is a neutral implementation that returns zero, allowing callers to assume a DiscountProvider exists and call getDiscount without conditional checks. This centralizes the absent-case behavior and reduces conditional logic scattered across the codebase."
+        },
+        {
+          "id": "b",
+          "text": "It centralizes business rules by converting conditional discount logic into a strategy object to enable runtime swapping of policies.",
+          "isCorrect": false,
+          "explanation": "While Strategy is about swapping algorithms at runtime, the example focuses on representing the absence of a discount rather than providing multiple interchangeable policies. Although both use the same interface shape, the intent here is to provide a safe default, not to enable policy switching."
+        },
+        {
+          "id": "c",
+          "text": "It uses a sentinel numeric return value to represent missing discount which can confuse consumers and hide implementation errors.",
+          "isCorrect": false,
+          "explanation": "A sentinel value approach would return special values that consumers must interpret. In this code the NoDiscount returns 0 which is a meaningful value for no discount, but the point is that consumers do not need special handling; the goal is preventing null checks, not introducing ambiguous sentinel semantics."
+        },
+        {
+          "id": "d",
+          "text": "It adapts external discount services into a common interface to decouple third-party APIs from internal pricing logic dependencies.",
+          "isCorrect": false,
+          "explanation": "Adapter objects translate external APIs to an internal interface. The snippet shows a simple default implementation rather than adapting a foreign API. Decoupling third-party specifics would involve translation logic, not a trivial zero-returning provider."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which version is preferable for avoiding null checks while keeping code maintainable and testable?",
+      "codeSnippet": "// Version A\ninterface MessageSender { send(msg: string): void }\nclass NoopSender implements MessageSender { send(msg:string) { /* no-op */ } }\nclass Notifier {\n  constructor(private sender: MessageSender) {}\n  notify(m:string){ this.sender.send(m) }\n}\n\n// Version B\nclass NotifierB {\n  constructor(private sender?: MessageSender) {}\n  notify(m:string){ if (this.sender) { this.sender.send(m) } }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes absent sender handling into a single harmless implementation that removes repetitive null checks from callers.",
+          "isCorrect": true,
+          "explanation": "Version A injects a concrete no-op sender that implements the required interface so callers never need to branch on presence. This keeps client code simple and predictable, makes unit testing easier by swapping implementations, and avoids conditional proliferation. The neutral-object approach encourages explicit behavior instead of scattered runtime checks."
+        },
+        {
+          "id": "b",
+          "text": "Version B scatters conditional presence checks through callers which increases code duplication and makes testing and reuse harder.",
+          "isCorrect": false,
+          "explanation": "Version B requires every caller to check for sender presence, which leads to duplicated conditionals and subtle differences in how absence is handled. Tests must exercise both branches more frequently, and future changes to absent-case behavior require touching many locations. This scattered-check design increases maintenance cost compared with a single harmless implementation."
+        }
+      ]
+    }
+  ]
+}

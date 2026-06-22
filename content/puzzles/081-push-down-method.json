@@ -1,0 +1,106 @@
+{
+  "id": 81,
+  "conceptName": "Push Down Method",
+  "category": "refactoring",
+  "definition": "When a method on a superclass is used only by one or some subclasses, move that method from the superclass into the appropriate subclass(es).",
+  "ruleOfThumb": "If a method only makes sense for specific subclasses, relocate it to those subclasses to improve cohesion and reduce accidental coupling.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Move Method",
+    "page": "160-164",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "In the snippet below, which issue is most clearly present?",
+      "codeSnippet": "class Employee {\n  name: string;\n  sales?: number;\n  calculateBonus() {\n    if (this.sales && this.sales > 100000) return this.sales * 0.1;\n    return 0;\n  }\n}\nclass SalesEmployee extends Employee { sales = 150000; }\nclass Engineer extends Employee { /* no sales */ }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The base class defines a method that depends on subclass state and should be moved into the subclass.",
+          "isCorrect": true,
+          "explanation": "The calculateBonus method inspects sales, a field only meaningful for SalesEmployee. Keeping the method in Employee exposes unrelated subclasses to behavior they do not need, weakens cohesion, and risks runtime misuse. The refactoring is to relocate the method to the subclass(es) that actually use sales, typically SalesEmployee. This is exactly the situation described by Fowler as a candidate for moving a method down into subclasses."
+        },
+        {
+          "id": "b",
+          "text": "The method duplicates logic across subclasses and should be extracted into a shared helper to avoid repetition.",
+          "isCorrect": false,
+          "explanation": "This is a plausible misreading if you expect multiple subclasses to require similar bonus logic. However the snippet shows only SalesEmployee has sales data and uses the calculation. Extracting a helper would centralize behavior rather than localize it, which leaves unrelated subclasses with irrelevant functionality still present on the base type."
+        },
+        {
+          "id": "c",
+          "text": "The base class has too many responsibilities and this method should be split into smaller focused functions.",
+          "isCorrect": false,
+          "explanation": "Splitting a method into smaller functions can help complex implementations, but here calculateBonus is small and not widely shared. The core problem is ownership of the behavior, not method complexity. Splitting would not fix the fact that only one subclass needs this behavior."
+        },
+        {
+          "id": "d",
+          "text": "The method introduces tight coupling to concrete subclass behavior and the hierarchy should be collapsed into composition.",
+          "isCorrect": false,
+          "explanation": "Collapsing the hierarchy into composition is an aggressive change and could be justified in some designs. In this specific case the simpler and more targeted refactoring is to move the method to the subclass that requires it. Collapsing to composition addresses a different structural issue and is overkill for a single misplaced method."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this Invoice hierarchy, what is the most appropriate immediate refactoring step?",
+      "codeSnippet": "class Invoice {\n  id: string;\n  printToPrinter() {\n    console.log(\"Printing invoice\", this.id);\n  }\n}\nclass PaperInvoice extends Invoice { paperFormat = \"A4\"; }\nclass EInvoice extends Invoice { emailAddress = \"cust@example.com\"; }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Move the printing method out of the base class into the PaperInvoice subclass to localize printer behavior.",
+          "isCorrect": true,
+          "explanation": "The printToPrinter method is only relevant for PaperInvoice. Moving it into PaperInvoice reduces the public surface of Invoice, prevents electronic invoices from exposing printer behavior, and improves cohesion. This targeted refactoring minimizes risk while clarifying ownership of responsibilities."
+        },
+        {
+          "id": "b",
+          "text": "Extract a printing helper function and call it from both subclasses to avoid duplicating printing implementation across types.",
+          "isCorrect": false,
+          "explanation": "Extracting a helper makes sense when multiple subclasses need the same operation. In this example only PaperInvoice needs printing; extracting a helper still leaves the base class with an irrelevant method or requires additional indirection. It postpones fixing misplaced ownership and can increase indirection without benefit."
+        },
+        {
+          "id": "c",
+          "text": "Keep the method in the base class but guard it with a type check to prevent calling it for electronic invoices.",
+          "isCorrect": false,
+          "explanation": "Adding runtime guards keeps the behavior centralized but increases conditional complexity and leaks knowledge of concrete types into the base class. It is a defensive workaround that preserves the smell rather than removing it, and it makes the base class responsible for subclass-specific behavior."
+        },
+        {
+          "id": "d",
+          "text": "Make the method abstract in the base class and force each subclass to provide its own printing implementation explicitly.",
+          "isCorrect": false,
+          "explanation": "Making the method abstract enforces subclass implementation but is heavier than necessary if only one subclass actually performs printing. It forces EInvoice to implement or provide a no-op, which may be noisy. Moving the concrete method only to PaperInvoice is a simpler and clearer first step."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for long term maintainability?",
+      "codeSnippet": "// Version A\nclass Invoice {\n  id: string;\n  type: \"paper\" | \"electronic\";\n  print() {\n    if (this.type === \"paper\") console.log(\"Printing on paper\", this.id);\n  }\n}\nclass PaperInvoice extends Invoice { type = \"paper\"; }\nclass EInvoice extends Invoice { type = \"electronic\"; }\n\n// Version B\nabstract class BaseInvoice { id: string; abstract print(): void; }\nclass PaperInvoice2 extends BaseInvoice { print() { console.log(\"Printing on paper\", this.id); } }\nclass EInvoice2 extends BaseInvoice { print() { /* no-op */ } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes the printing method in the base class while using runtime checks for different invoice types.",
+          "isCorrect": false,
+          "explanation": "Centralizing behavior in the base class with runtime type checks avoids some duplication initially, but it accumulates conditional logic as new types and behaviors are added. The base class becomes a dispatcher full of conditionals, violating the open closed principle and making maintenance harder. This choice may seem pragmatic early but degrades design over time."
+        },
+        {
+          "id": "b",
+          "text": "Version B confines the printing method to the specific subclass that owns printing behavior.",
+          "isCorrect": true,
+          "explanation": "Version B assigns responsibility to the concrete type that actually performs printing, improving cohesion and making each subclass responsible for its own behavior. This reduces conditional branching in the base class and makes future changes localized to the relevant subclass. Fowler and classic OO guidance recommend moving behavior to the class that needs it when a method is only used by that subclass."
+        }
+      ]
+    }
+  ]
+}

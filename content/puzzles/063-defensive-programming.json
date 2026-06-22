@@ -1,0 +1,106 @@
+{
+  "id": 63,
+  "conceptName": "Defensive Programming",
+  "category": "principle",
+  "definition": "A development approach that anticipates likely faults and validates or restricts inputs and states early to reduce surprising failures later.",
+  "ruleOfThumb": "Validate inputs and invariants at clear boundaries, fail fast with clear errors, and centralize rules where ownership is important.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code: A Handbook of Agile Software Craftsmanship",
+    "chapter": "Error Handling",
+    "page": "163",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-code/9780136083238/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the most accurate high-level description of the programmer intent in this snippet?",
+      "codeSnippet": "function createUser(data: any) {\n  if (!data) throw new Error('missing data');\n  const name = data.name || 'unknown';\n  if (typeof name !== 'string') throw new Error('invalid name');\n  return saveToDb({ name });\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function validates incoming data and throws immediately to prevent invalid values from propagating further into the system.",
+          "isCorrect": true,
+          "explanation": "This is a classic fail-fast style: the function checks for missing or malformed inputs and raises errors early so invalid state does not travel deeper into the application. That intent is visible from the early throws and simple guards."
+        },
+        {
+          "id": "b",
+          "text": "The function is attempting to sanitize user data by replacing missing fields with defaults and logging corrective actions later.",
+          "isCorrect": false,
+          "explanation": "This interpretation is plausible because the code applies a default for name, but there is no logging or corrective bookkeeping shown. The strong throwing behavior contradicts a pure sanitization strategy."
+        },
+        {
+          "id": "c",
+          "text": "The code is trying to be resilient by swallowing exceptions and continuing processing when fields are malformed or absent.",
+          "isCorrect": false,
+          "explanation": "This concern could be raised when functions handle errors silently, but here the code throws on invalid input rather than swallowing exceptions. The behavior is defensive failure, not silent resilience."
+        },
+        {
+          "id": "d",
+          "text": "The author is deferring all validation to storage layer and relying on downstream constraints to enforce data integrity.",
+          "isCorrect": false,
+          "explanation": "Deferring validation to storage is a reasonable architecture in some systems, but this snippet performs explicit checks and throws before persistence, which contradicts deferral to a later layer."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the most likely runtime risk introduced by this error handling pattern?",
+      "codeSnippet": "async function fetchProfile(id: string) {\n  try {\n    const res = await http.get(`/profiles/${id}`);\n    return res.data;\n  } catch (err) {\n    console.error('fetch failed', err);\n    return null;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code hides failures by returning null and removes actionable error context from callers who need to react differently.",
+          "isCorrect": true,
+          "explanation": "Returning null converts rich failure information into an ambiguous value. Callers lose stack and error type details and must infer cause from null checks, which makes correct remediation harder and can mask systemic issues."
+        },
+        {
+          "id": "b",
+          "text": "It creates tight coupling between API client and consumers who must check for null at every call site instead of handling errors directly.",
+          "isCorrect": false,
+          "explanation": "This is a valid concern because returning sentinel values pushes complexity to callers. However, the primary risk here is loss of error context and masking of problems rather than just coupling alone."
+        },
+        {
+          "id": "c",
+          "text": "The catch block may swallow transient network errors and prevent retry logic from executing at higher layers that expect thrown errors.",
+          "isCorrect": false,
+          "explanation": "Swallowing transient errors is a real possibility and would break retry mechanisms that rely on exceptions. Still, the most immediate issue is the loss of actionable error information through nullification."
+        },
+        {
+          "id": "d",
+          "text": "Returning null standardizes error shape but forces all callers to adopt null checks instead of structured exception handling patterns.",
+          "isCorrect": false,
+          "explanation": "Standardizing on null is a tradeoff some teams choose for simplicity. This option points out a real consequence, but it describes a stylistic shift rather than the more critical practical problem of hidden failure signals."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation is preferable in a growing codebase that cares about validation ownership and testability?",
+      "codeSnippet": "// Version A: inline guards\nfunction submitOrderA(order: any) {\n  if (!order) throw new Error('order missing');\n  if (!order.items || order.items.length === 0) throw new Error('no items');\n  if (typeof order.total !== 'number') throw new Error('invalid total');\n  return saveOrder(order);\n}\n\n// Version B: centralized validator\nfunction submitOrderB(order: any) {\n  const result = OrderValidator.validate(order);\n  if (!result.ok) throw new Error(result.message);\n  return saveOrder(order);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is preferable because local guards make each function self-contained and reduce cross-module dependencies for quick fixes.",
+          "isCorrect": false,
+          "explanation": "Inline guards can feel simpler initially and reduce indirection, but they scatter validation rules across call sites. That scattering hinders consistent rule evolution, duplication increases, and unit testing of validation rules becomes fragmented as the codebase grows."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes validation and enables clearer ownership along with straightforward focused unit testing of rules.",
+          "isCorrect": true,
+          "explanation": "Centralizing validation gives a single place to express and evolve domain rules, improving maintainability and ownership. Validators can be exercised independently in unit tests, reused across call sites, and evolved without touching every caller."
+        }
+      ]
+    }
+  ]
+}

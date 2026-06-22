@@ -1,0 +1,105 @@
+{
+  "id": 39,
+  "conceptName": "Stable Dependencies Principle",
+  "category": "solid",
+  "definition": "A design guideline that packages should only depend on packages that are more stable than themselves, so that less stable components depend on more stable ones, minimizing ripple effects when changes occur.",
+  "ruleOfThumb": "Point dependencies toward the code that changes least; keep stable abstractions at the center and unstable implementations at the edges.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "bliki",
+    "chapter": "Stable Dependencies Principle",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/StableDependenciesPrinciple.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best captures when a package should depend on another package?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "A package may depend on another package only when the depended package is significantly more stable than the dependent.",
+          "isCorrect": false,
+          "explanation": "This identifies the importance of relative stability, but it overstates 'only when significantly more stable' without clarifying stability metrics. Stability is about likelihood of change and reuse, and dependencies should point toward the more stable side, not merely \"significantly\" so. Practical decisions also consider abstraction and versioning, not a binary condition."
+        },
+        {
+          "id": "b",
+          "text": "A package may always depend on any package as long as the dependency simplifies local implementation details and tests.",
+          "isCorrect": false,
+          "explanation": "This is tempting because convenience matters, but it ignores long term maintenance costs. Depending on unstable external packages can cause frequent refactoring of the local package as those dependencies evolve. A short term simplification can create brittle architecture and cascade changes."
+        },
+        {
+          "id": "c",
+          "text": "A package should avoid depending on packages that change frequently because such dependencies raise integration and maintenance risk.",
+          "isCorrect": false,
+          "explanation": "This is correct about risk from volatile dependencies, but it frames the guidance as avoidance rather than dependency direction. The practical remedy is to invert dependencies toward stable abstractions, not just avoid all changing packages, since some change-prone components must exist at the edges."
+        },
+        {
+          "id": "d",
+          "text": "A package should depend only on packages with lower likelihood of change to minimize ripple effects from upstream modifications.",
+          "isCorrect": true,
+          "explanation": "This captures the core observation: dependencies should point to code that is less likely to change so modifications do not cascade. It focuses on change likelihood rather than coupling metrics alone, which aligns with architectural goals of minimizing broad refactorings when implementations evolve."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In the code below, what is the primary architectural concern?",
+      "codeSnippet": "// core/OrderProcessor.ts\nimport { EmailClient } from '../infrastructure/EmailClient';\nexport class OrderProcessor {\n  constructor(private email: EmailClient) {}\n  process(order: Order) {\n    // core business logic\n    this.email.send(order.customerEmail, 'Order confirmed');\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The core domain depends on a concrete infrastructure module causing fragile core layer when infrastructure implementation changes frequently.",
+          "isCorrect": false,
+          "explanation": "This points to a real problem: tying domain logic to a concrete implementation can force domain changes when infrastructure evolves. It is a plausible misdiagnosis, but the more precise architectural concern is dependency direction relative to package stability rather than just concreteness."
+        },
+        {
+          "id": "b",
+          "text": "The module creates a runtime cycle because order processing immediately instantiates infrastructure leading to circular initialization at startup.",
+          "isCorrect": false,
+          "explanation": "A runtime cycle is a legitimate concern in some designs, but the provided code only shows a dependency on an infrastructure type, not an immediate circular import or initialization cycle. This distractor confuses circular dependencies with stability and change propagation issues."
+        },
+        {
+          "id": "c",
+          "text": "The code lacks interface segregation so callers must depend on methods they do not use causing broad coupling.",
+          "isCorrect": false,
+          "explanation": "Interface Segregation is a reasonable concern in API design, but this snippet shows a domain class depending on an infrastructure client, not an overly broad interface. The issue here is about dependency direction toward a volatile package, not about large interfaces."
+        },
+        {
+          "id": "d",
+          "text": "A stable core package depends on an unstable infrastructure package creating reversed dependency that risks widespread change propagation.",
+          "isCorrect": true,
+          "explanation": "This identifies the core architectural smell: the central, relatively stable core depends on a less stable infrastructure module, which reverses the desired dependency direction. When infrastructure changes, the core faces ripple effects and higher maintenance cost. Preferred refactoring moves abstractions into the core and lets infrastructure implement those abstractions."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better follows architectural guidance for minimizing change propagation?",
+      "codeSnippet": "// Version A\n// core/OrderProcessor.ts\nimport { EmailClient } from '../infrastructure/EmailClient';\nexport class OrderProcessor {\n  constructor(private email: EmailClient) {}\n  process(order: Order) { this.email.send(order.customerEmail, 'Confirmed'); }\n}\n\n// Version B\n// core/ports/EmailSender.ts\nexport interface EmailSender { send(to: string, body: string): void; }\n// infrastructure/EmailAdapter.ts\nimport { EmailSender } from '../core/ports/EmailSender';\nexport class EmailAdapter implements EmailSender { send(to: string, body: string) { /* send via SMTP */ } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A ties the core to concrete infrastructure causing the core to change whenever infrastructure evolves.",
+          "isCorrect": false,
+          "explanation": "Version A makes the core layer depend directly on an infrastructure implementation, which couples business logic to a volatile component. That coupling forces the core to adapt to infrastructure changes, increasing ripple effects. It also blocks treating the core as a stable base for multiple implementations."
+        },
+        {
+          "id": "b",
+          "text": "Version B places a stable abstraction in the core and lets infrastructure depend on that abstraction.",
+          "isCorrect": true,
+          "explanation": "Version B defines the abstraction inside the core and has the infrastructure implement that abstraction, so dependencies point to the more stable package. This reduces change propagation because infrastructure can vary without forcing core changes. This aligns with component-level stability guidance and is a common refactoring when applying dependency inversion and stability principles. See Martin Fowler on dependency direction and Uncle Bob on component principles for practical patterns and examples."
+        }
+      ]
+    }
+  ]
+}

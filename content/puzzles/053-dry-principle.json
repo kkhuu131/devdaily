@@ -1,0 +1,106 @@
+{
+  "id": 53,
+  "conceptName": "DRY Principle",
+  "category": "principle",
+  "definition": "The practice of ensuring each piece of knowledge or logic has a single, unambiguous representation in a codebase to avoid duplication and divergence.",
+  "ruleOfThumb": "When you find duplicated logic, consolidate into a single abstraction that expresses the shared intent, but only after aligning semantics.",
+  "citation": {
+    "author": "Andy Hunt and Dave Thomas",
+    "bookTitle": "The Pragmatic Programmer",
+    "chapter": "Don't Repeat Yourself",
+    "page": "p. 50",
+    "externalUrl": "https://pragprog.com/titles/tpp20/the-pragmatic-programmer-20th-anniversary-edition/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best describes the immediate problem in the snippet below?",
+      "codeSnippet": "export function calculateUserScore(user: any) {\n  const base = user.orders.length * 10;\n  const bonus = user.reviews.length * 2;\n  return base + bonus;\n}\n\nexport function calculateAdminScore(admin: any) {\n  const base = admin.orders.length * 10;\n  const bonus = admin.reviews.length * 2;\n  return base + bonus;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Two functions duplicate identical calculation logic across modules instead of sharing a single implementation across different modules.",
+          "isCorrect": true,
+          "explanation": "The two functions perform the same computation with identical constants and structure. This is classic duplication of business logic that will diverge if one copy changes and the other does not. Consolidation into a single function or service expressing the calculation intent will make future changes safer. See The Pragmatic Programmer on avoiding duplicated knowledge and Fowler on the same smell leading to refactoring opportunities."
+        },
+        {
+          "id": "b",
+          "text": "The duplicated logic prevents centralizing domain rules and will complicate future changes to scoring behavior across services.",
+          "isCorrect": false,
+          "explanation": "This is a plausible concern, but it frames the symptom as only a deployment boundary problem. While duplication does complicate changes, the immediate issue is the duplicated implementation itself rather than solely where the code is deployed. The correct first step is to identify the single authoritative representation of the rule before moving code across service boundaries."
+        },
+        {
+          "id": "c",
+          "text": "The functions violate single responsibility because they mix data retrieval concerns and calculation logic in the same code paths across modules.",
+          "isCorrect": false,
+          "explanation": "Blurring responsibilities can be an issue, but here both functions focus on a single calculation and do not obviously mix unrelated responsibilities. The clearer smell is duplicated calculation logic rather than SRP violation. Refactoring to a shared calculation provider preserves SRP by giving calculation its own module."
+        },
+        {
+          "id": "d",
+          "text": "This is acceptable duplication for performance reasons so leaving two specialized implementations may be justified under heavy load conditions.",
+          "isCorrect": false,
+          "explanation": "Performance-based duplication can be valid, but there is no evidence in the snippet of differing optimizations or profiling data to justify it. Premature duplication for hypothetical performance is risky. If performance truly demands separate implementations, that decision should be explicit and documented with benchmarks."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the most likely structural problem shown by these two validators?",
+      "codeSnippet": "export function validateOrderV1(order: any) {\n  if (!order.id) throw new Error('missing id');\n  if (order.items.length === 0) throw new Error('no items');\n  if (!order.customerEmail.includes('@')) throw new Error('bad email');\n}\n\nexport function validateOrderV2(order: any) {\n  if (!order.id) throw new Error('missing id');\n  if (order.items.length === 0) throw new Error('no items');\n  if (!order.email || !order.email.includes('@')) throw new Error('bad email');\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The duplicated checks indicate that data access layer leak is causing business logic to replicate in repository code.",
+          "isCorrect": false,
+          "explanation": "A data access leak is a reasonable concern, but the snippet shows two validators duplicating rule checks with slight field-name differences. The root issue is duplication of validation logic with divergent semantics, not specifically a repository leak. The proper fix is consolidating validation intent into one shared module or agreed contract."
+        },
+        {
+          "id": "b",
+          "text": "The validators are too small and should be merged into a single giant function for simplicity and reuse across services.",
+          "isCorrect": false,
+          "explanation": "Merging into a single giant function may reduce duplication but risks creating an ungainly monolith that mixes responsibilities. The better option is extracting a clear validation abstraction or shared schema that both callers can use, preserving clarity and testability rather than simply creating a larger function."
+        },
+        {
+          "id": "c",
+          "text": "Two validators implement nearly identical checks with subtle differences, indicating duplicated rule implementations across modules.",
+          "isCorrect": true,
+          "explanation": "This correctly identifies that the two functions perform the same validations but use slightly different field names and conditions, which is a textbook duplicated-rule problem. Such divergence causes subtle bugs when one validator evolves and the other does not. Consolidate validation rules into a single implementation or shared schema to keep rules consistent."
+        },
+        {
+          "id": "d",
+          "text": "The duplication is a versioning concern that requires central API versioning rather than code reuse to preserve backward compatibility.",
+          "isCorrect": false,
+          "explanation": "API versioning can be a valid strategy when behaviour must differ across clients, but the snippet shows near-duplicate logic with only accidental field-name differences. Treating this as a versioning problem risks overcomplicating the design. First align the validation semantics and extract a shared rule set before introducing versioned APIs."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which design is preferable for keeping a single authoritative implementation while preserving clear domain intent?",
+      "codeSnippet": "// Version A: small shared helper reused across modules\nexport function calcDiscountA(price: number, tier: string) {\n  if (tier === 'GOLD') return price * 0.8;\n  if (tier === 'SILVER') return price * 0.9;\n  return price;\n}\n\n// Version B: focused domain service encapsulating discount behavior\nexport class DiscountService {\n  apply(price: number, tier: string) {\n    if (tier === 'GOLD') return price * 0.8;\n    if (tier === 'SILVER') return price * 0.9;\n    return price;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes the logic in a tiny shared helper with leaky abstraction and tight coupling across modules.",
+          "isCorrect": false,
+          "explanation": "A small helper can reduce duplication but often becomes a leaky abstraction when different callers need slightly different behavior. It couples unrelated modules to low-level implementation details and makes it harder to evolve domain rules. The helper is fragile if domain intent is not explicitly modeled, which leads to conditional sprawl and misuse."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates the behavior in a focused domain service with a single authoritative implementation.",
+          "isCorrect": true,
+          "explanation": "Encapsulating domain behavior in a dedicated service preserves intent and creates a clear single source of truth for the rule. This design supports dependency injection, easier unit testing, and controlled evolution of business logic. Fowler and other refactoring authorities recommend modeling domain concepts rather than exposing low level helpers that hide intent."
+        }
+      ]
+    }
+  ]
+}

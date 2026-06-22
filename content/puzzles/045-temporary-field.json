@@ -1,0 +1,105 @@
+{
+  "id": 45,
+  "conceptName": "Temporary Field",
+  "category": "code-smell",
+  "definition": "A class contains a field that is used only for a short-lived calculation or single operation, rather than representing enduring object state.",
+  "ruleOfThumb": "Prefer local variables for per-call values; promote fields only when the value represents sustained object state or shared responsibility.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Temp Field with Query",
+    "page": "120",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which symptom most clearly suggests a class holds a field only for a single operation?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "The class contains a field that is set and used only during a single operation and then ignored.",
+          "isCorrect": true,
+          "explanation": "This directly describes the smell: a field whose lifecycle maps to one operation instead of the object's lifecycle. That indicates the value belongs as a local variable or method return rather than persistent object state."
+        },
+        {
+          "id": "b",
+          "text": "The class has many getters and setters managing unrelated state across different operations causing unclear responsibilities.",
+          "isCorrect": false,
+          "explanation": "Many accessors and muddled responsibilities is a valid design concern but it describes a broader cohesion problem rather than the narrow case of a field used only during one operation."
+        },
+        {
+          "id": "c",
+          "text": "The class uses nullable fields to hold temporary results across methods, making invariants hard to validate.",
+          "isCorrect": false,
+          "explanation": "Nullable fields holding transient results point at the same family of problems, but this option emphasizes nullability and invariants rather than the central issue that the value is per-operation rather than per-object."
+        },
+        {
+          "id": "d",
+          "text": "The class exposes mutable fields publicly and callers rely on changing them to control behavior during single calls.",
+          "isCorrect": false,
+          "explanation": "Public mutable fields and callers controlling behavior are important problems, yet they focus on encapsulation and API design instead of the simpler smell where a field's purpose is only transient."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Inspect the code. What is the primary problem with this class?",
+      "codeSnippet": "class Invoice {\n  private tempNet?: number;\n  calculate(items: Item[]) {\n    this.tempNet = items.reduce((s, i) => s + i.price, 0);\n    const tax = computeTax(this.tempNet);\n    const total = this.tempNet + tax;\n    this.tempNet = undefined;\n    return { total };\n  }\n  print() { /* may read other fields */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A private field is assigned and only used inside one method then reset, indicating ephemeral per-call storage.",
+          "isCorrect": true,
+          "explanation": "The field tempNet exists only to carry a value through a single calculation and is cleared immediately. That indicates the value should be a local variable inside calculate rather than a field on the instance."
+        },
+        {
+          "id": "b",
+          "text": "This is a race condition risk because the field is mutated without synchronization across asynchronous operations in the class.",
+          "isCorrect": false,
+          "explanation": "Mutating an instance field across async boundaries can be a real concern, but the snippet shows the field assigned and cleared synchronously within one method, so the primary smell is local-scoped state placed on the instance, not concurrency."
+        },
+        {
+          "id": "c",
+          "text": "It signals an improperly applied single responsibility because temporary value propagation mixes calculation and presentation concerns in the class.",
+          "isCorrect": false,
+          "explanation": "Mixing responsibilities could be present in larger examples, but here the immediate issue is that a transient computed value is stored as a field rather than being confined to the computing method."
+        },
+        {
+          "id": "d",
+          "text": "This indicates a memory leak possibility because fields accumulate state across calls rather than being garbage collected promptly.",
+          "isCorrect": false,
+          "explanation": "Fields holding growing collections or long-lived references can cause leaks, but the code explicitly clears the field. The real problem is misplacing a per-call variable on the object."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better design for handling a per-operation intermediate value shown below?",
+      "codeSnippet": "// Version A\nclass ReportBuilder {\n  build(data: Data) {\n    const subtotal = data.items.reduce((s, i) => s + i.price, 0);\n    const tax = calculateTax(subtotal);\n    return { subtotal, tax, total: subtotal + tax };\n  }\n}\n\n// Version B\nclass ReportBuilder {\n  private subtotal?: number;\n  build(data: Data) {\n    this.subtotal = data.items.reduce((s, i) => s + i.price, 0);\n    const tax = calculateTax(this.subtotal);\n    const result = { subtotal: this.subtotal, tax, total: this.subtotal + tax };\n    this.subtotal = undefined;\n    return result;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps the intermediate value local to the method and avoids introducing shared mutable state on the object.",
+          "isCorrect": true,
+          "explanation": "Version A confines the computed value to the method scope, which preserves object invariants and avoids accidental coupling across methods or threads. Storing per-call values on the instance increases cognitive load and the risk of misuse, and it complicates testing and concurrency reasoning. Fowler and other refactoring sources recommend preferring local variables for values that do not represent object state."
+        },
+        {
+          "id": "b",
+          "text": "Version B stores the intermediate value on the instance and therefore risks accidental reuse, threading issues, and harder reasoning about object state.",
+          "isCorrect": false,
+          "explanation": "While Version B may look convenient for sharing data between helper methods, it introduces shared mutable state that callers or future methods might accidentally read or mutate. This pattern complicates the object's lifecycle, increases test surface, and can cause subtle bugs in concurrent or reentrant usage. Prefer local variables or explicit parameter passing unless the value is genuinely part of the object's state."
+        }
+      ]
+    }
+  ]
+}

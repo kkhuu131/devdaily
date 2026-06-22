@@ -1,0 +1,106 @@
+{
+  "id": 49,
+  "conceptName": "Inline Function",
+  "category": "refactoring",
+  "definition": "Move a function's implementation into its callers when the function only delegates to another function and adds no meaningful abstraction.",
+  "ruleOfThumb": "If a function only forwards arguments and provides no behavior, replace its uses with the callee to reduce needless indirection.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Inline Function",
+    "page": "88",
+    "externalUrl": "https://refactoring.com/catalog/inlineFunction.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the wrapper function below. Which description best identifies the primary issue in this code?",
+      "codeSnippet": "function sendWelcomeEmail(user: User) {\n  return emailService.sendWelcome(user.email);\n}\n\n// many callers just call sendWelcomeEmail(user)\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This wrapper function merely forwards its parameters to a lower level call and provides no added behavior.",
+          "isCorrect": true,
+          "explanation": "The function simply delegates to another service without transformation or abstraction. In such cases, replacing calls with the callee removes an unnecessary layer and simplifies the call graph. Fowler lists this as the classic trigger for this refactoring: when a function adds no value, inline it to callers."
+        },
+        {
+          "id": "b",
+          "text": "This function is an important abstraction that isolates callers from implementation details and protects from future changes.",
+          "isCorrect": false,
+          "explanation": "This objection is plausible when the wrapper expresses domain intent or shields callers from frequent change. However, in the snippet the wrapper does not translate parameters or encapsulate behavior, so it is not providing a meaningful abstraction and offers little protection."
+        },
+        {
+          "id": "c",
+          "text": "This wrapper exists to keep call sites simple and to centralize logging or validation responsibilities in one place.",
+          "isCorrect": false,
+          "explanation": "Centralizing cross cutting concerns is a valid reason to keep a wrapper. The snippet shows none of those concerns though. If logging or validation were present here, keeping the wrapper would be justified; without them the wrapper is redundant."
+        },
+        {
+          "id": "d",
+          "text": "This function helps with testing by allowing injection of mocks and decoupling test setups from production code.",
+          "isCorrect": false,
+          "explanation": "Using a wrapper to facilitate mocking can be valid when the wrapper is the seam tests rely on. In many modern setups dependency injection or interface seams already provide that ability, and the example shows a thin pass through that likely does not justify its own wrapper solely for testing."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the small wrapper below, what is the strongest reason to replace its uses with the underlying implementation now?",
+      "codeSnippet": "export function priceForOrder(order: Order) {\n  return priceEngine.compute(order.items, order.customer.region, order.coupon);\n}\n\n// called from several service methods\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Replacing the wrapper with the callee implementation reduces an unnecessary level of indirection and clarifies the actual computation at call sites.",
+          "isCorrect": true,
+          "explanation": "If the wrapper only delegates and does not express domain intent, inlining reduces cognitive load at the caller and makes dependencies explicit. That improves readability and aids callers that need different parameter permutations."
+        },
+        {
+          "id": "b",
+          "text": "Replacing the wrapper would leak internal parameter ordering and tie callers to current engine signatures making future API changes harder.",
+          "isCorrect": false,
+          "explanation": "This is a valid concern when the wrapper encapsulates a stable boundary. If parameter ordering or engine signatures are volatile, the wrapper protects callers from churn. Evaluate stability before inlining to avoid coupling callers to unstable APIs."
+        },
+        {
+          "id": "c",
+          "text": "Replacing the wrapper removes a convenient location for cross cutting concerns like logging or metrics that many callers depend on.",
+          "isCorrect": false,
+          "explanation": "Centralizing logging or metrics can justify keeping a wrapper. If the wrapper is the single place where such concerns are implemented, inlining would scatter those concerns and complicate maintenance."
+        },
+        {
+          "id": "d",
+          "text": "Replacing the wrapper can increase duplication at call sites and make maintenance harder when business rules need centralized updates.",
+          "isCorrect": false,
+          "explanation": "When a wrapper consolidates business logic shared by many callers, inlining creates duplication and maintenance pain. If the wrapper carries business rules, keep it; if it is only a delegate, inlining is preferable."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which version is the better design here and why?",
+      "codeSnippet": "// Version A\n// billing.ts\nexport function createInvoice(order: Order) {\n  return invoiceService.generate(order.id, order.items);\n}\n\n// orderProcessor.ts\nimport { createInvoice } from './billing';\nexport function processOrder(order: Order) {\n  const invoice = createInvoice(order);\n  notify(order.customer, invoice);\n}\n\n// Version B\n// orderProcessor.ts\nimport { invoiceService } from './services';\nexport function processOrder(order: Order) {\n  const invoice = invoiceService.generate(order.id, order.items);\n  notify(order.customer, invoice);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A retains a trivial pass through wrapper and keeps an unnecessary indirection in the call path.",
+          "isCorrect": false,
+          "explanation": "Version A keeps a wrapper that simply forwards to invoiceService.generate. When the wrapper is only used by one caller and adds no translation, it is unnecessary indirection. Keeping it adds an extra level to navigate when reading call sites."
+        },
+        {
+          "id": "b",
+          "text": "Version B eliminates an unnecessary wrapper used by a single caller and makes the call site clearer.",
+          "isCorrect": true,
+          "explanation": "Version B is preferable because the wrapper is a trivial pass through and is only used in one place. Inlining removes indirection, clarifies dependencies, and simplifies code navigation. If the wrapper later needs to encapsulate behavior or become a stable API, it can be reintroduced. This follows Fowler's guidance to prefer the simpler form when a function merely delegates."
+        }
+      ]
+    }
+  ]
+}

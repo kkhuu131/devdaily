@@ -1,0 +1,105 @@
+{
+  "id": 56,
+  "conceptName": "Parallel Inheritance Hierarchies",
+  "category": "code-smell",
+  "definition": "A code smell where two or more class hierarchies mirror each other so that adding a subclass in one requires adding a corresponding subclass in the other.",
+  "ruleOfThumb": "If you find yourself making matching subclasses across different hierarchies for the same conceptual variant, refactor to remove the duplication.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Parallel Inheritance Hierarchies",
+    "page": "p. 162",
+    "externalUrl": "https://martinfowler.com/bliki/ParallelInheritanceHierarchies.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which symptom most strongly indicates this code smell in a TypeScript codebase?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Duplicate subclass families exist where one change in one hierarchy requires matching change in another parallel hierarchy.",
+          "isCorrect": true,
+          "explanation": "This symptom is the hallmark: two hierarchies change together. When subclasses are mirrored, modifications ripple across both trees and maintenance cost rises. Fowler recommends looking for opportunities to consolidate responsibilities or use delegation to remove the mirrored structure."
+        },
+        {
+          "id": "b",
+          "text": "A single class has too many responsibilities and mixes business logic and persistence concerns in one place.",
+          "isCorrect": false,
+          "explanation": "This describes a God Object or Single Responsibility violation, which is a real issue but distinct. It points to one class doing too much rather than two hierarchies mirroring each other. The correct remediation would be splitting responsibilities inside that class, not necessarily restructuring paired hierarchies."
+        },
+        {
+          "id": "c",
+          "text": "Deep inheritance with many levels where subclasses rarely override base behavior and only add data fields.",
+          "isCorrect": false,
+          "explanation": "This describes deep inheritance or data-only subclasses, which can be a smell, but it does not by itself indicate mirrored hierarchies across different responsibilities. The maintenance problem and fix differ: you might prefer composition over deep inheritance rather than consolidating parallel hierarchies."
+        },
+        {
+          "id": "d",
+          "text": "Many unrelated utility functions grouped under one static class causing tight coupling and poor testability.",
+          "isCorrect": false,
+          "explanation": "This is a utility class or procedural grouping smell and affects coupling and testability. It is a plausible distractor for developers seeing many classes, but it does not capture the paired-subclass mutation pattern that defines the parallel hierarchy smell."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the code below, what is the most likely maintenance burden when adding a new delivery channel?",
+      "codeSnippet": "abstract class OrderProcessor {\n  abstract process(order: Order): void;\n}\nclass OnlineOrderProcessor extends OrderProcessor { process(o: Order) { /* ... */ } }\nclass OfflineOrderProcessor extends OrderProcessor { process(o: Order) { /* ... */ } }\n\nabstract class OrderValidator {\n  abstract validate(order: Order): boolean;\n}\nclass OnlineOrderValidator extends OrderValidator { validate(o: Order) { return true; } }\nclass OfflineOrderValidator extends OrderValidator { validate(o: Order) { return true; } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Adding a new channel forces creation of corresponding subclasses in both hierarchies for each new channel.",
+          "isCorrect": true,
+          "explanation": "The code shows two hierarchies that vary together: processors and validators. Adding a new channel like Mobile typically requires implementing both MobileOrderProcessor and MobileOrderValidator, duplicating structural work. Fowler suggests collapsing or composing responsibilities to avoid this duplicated expansion."
+        },
+        {
+          "id": "b",
+          "text": "Merging validator logic into processor classes will improve cohesion but risks mixing responsibilities across unrelated concerns.",
+          "isCorrect": false,
+          "explanation": "Merging might be a tempting quick fix but it trades one smell for a Single Responsibility violation. This is a plausible distraction because developers often consider collapsing classes, yet the better fix is to refactor the parallel hierarchies via composition or strategy patterns to keep concerns separated."
+        },
+        {
+          "id": "c",
+          "text": "Using composition instead of inheritance is unnecessary here because subclasses are small and change rarely across channels.",
+          "isCorrect": false,
+          "explanation": "This defends keeping inheritance, but it downplays the coupling between the two hierarchies. Even small subclasses can cause duplicated work across hierarchies when new variants are added. Composition or delegation often reduces the coupling more sustainably than continuing mirrored inheritance."
+        },
+        {
+          "id": "d",
+          "text": "The immediate problem is lack of interfaces for processors causing compile errors when introducing new concrete implementations.",
+          "isCorrect": false,
+          "explanation": "Missing interfaces could be an issue in some designs, but the snippet uses abstract base classes already. This distractor targets compile-time structure rather than the maintenance cost of mirrored subclass expansion, which is the real concern in this example."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version would you prefer for long-term maintainability and why?",
+      "codeSnippet": "// Version A\ninterface PaymentMethod { pay(amount: number): void; }\ninterface PaymentLogger { log(id: string): void; }\nclass CardPayment implements PaymentMethod {\n  constructor(private logger: PaymentLogger) {}\n  pay(amount: number) { this.logger.log('card'); }\n}\nclass PaypalPayment implements PaymentMethod {\n  constructor(private logger: PaymentLogger) {}\n  pay(amount: number) { this.logger.log('paypal'); }\n}\n\n// Version B\nabstract class Payment { abstract pay(amount: number): void; }\nclass CardPaymentB extends Payment { pay(a: number) { /* ... */ } }\nclass PaypalPaymentB extends Payment { pay(a: number) { /* ... */ } }\nabstract class PaymentLoggerB { abstract log(id: string): void; }\nclass CardPaymentLoggerB extends PaymentLoggerB { log(id: string) { /* ... */ } }\nclass PaypalPaymentLoggerB extends PaymentLoggerB { log(id: string) { /* ... */ } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is preferable because it uses composition and avoids creating mirrored subclass families across responsibilities.",
+          "isCorrect": true,
+          "explanation": "Version A applies composition: payment implementations take a logger dependency rather than creating a parallel logger class hierarchy. This eliminates the need to create matching subclasses when a new payment type is added, keeping behavior changes localized and reducing duplication. Fowler and other refactoring authorities recommend replacing parallel hierarchies with delegation or composition to lower maintenance cost."
+        },
+        {
+          "id": "b",
+          "text": "Version B is preferable because keeping separate hierarchies isolates concerns and makes each hierarchy independently extensible.",
+          "isCorrect": false,
+          "explanation": "At first glance, separate hierarchies look cleaner because responsibilities appear isolated. However, Version B creates mirrored subclass families: every new Payment requires a matching PaymentLogger subclass. That symmetry causes duplicated behavior and coordinated changes across hierarchies, increasing maintenance cost. The nuanced failure mode is not isolation per se but the coupling of variants across parallel trees, which composition in Version A avoids."
+        }
+      ]
+    }
+  ]
+}

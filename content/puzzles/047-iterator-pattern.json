@@ -1,0 +1,106 @@
+{
+  "id": 47,
+  "conceptName": "Iterator Pattern",
+  "category": "design-pattern",
+  "definition": "Provide a separate object to traverse a collection without exposing its internal representation, enabling multiple traversal strategies.",
+  "ruleOfThumb": "Return fresh traversal objects that hide internal structure so callers can iterate independently without manipulating indexes.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Iterator",
+    "page": "233-242",
+    "externalUrl": "https://en.wikipedia.org/wiki/Iterator_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches what this code exposes to callers?",
+      "codeSnippet": "class SimpleList {\n  private items: number[] = [1, 2, 3];\n  iterator() {\n    let index = 0;\n    const items = this.items;\n    return {\n      next() {\n        if (index >= items.length) return { done: true };\n        return { value: items[index++], done: false };\n      },\n      hasNext() { return index < items.length; }\n    };\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code returns a dedicated traversal object that encapsulates list navigation without exposing internal array structure.",
+          "isCorrect": true,
+          "explanation": "Correct. The snippet constructs and returns a traversal object with its own index closure, keeping the underlying array private. That is the essence of providing an external iterator object so callers can navigate without direct access to the collection internals."
+        },
+        {
+          "id": "b",
+          "text": "This code exposes the internal array directly and relies on callers to manage numeric indices during traversal operations.",
+          "isCorrect": false,
+          "explanation": "Incorrect. The code does not hand out the internal array reference; it closes over it and advances an internal index inside the returned object. A true exposure would return the array itself or an index for callers to manage."
+        },
+        {
+          "id": "c",
+          "text": "This code implements a callback-based visitor where a function is applied to each element during iteration.",
+          "isCorrect": false,
+          "explanation": "Incorrect. The snippet returns an object with next and hasNext methods rather than accepting a callback to apply to each element. Visitor-style code would typically accept a function and invoke it for each element."
+        },
+        {
+          "id": "d",
+          "text": "This code is effectively returning the collection itself and delegating iteration responsibilities to the caller without helpers.",
+          "isCorrect": false,
+          "explanation": "Incorrect. The code returns a helper object that advances an internal index; it does not return the collection instance. The returned object supplies iteration behavior rather than delegating raw access to the caller."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary problem with this iterator factory implementation?",
+      "codeSnippet": "class ProductList {\n  private products: string[] = ['a', 'b', 'c'];\n  private sharedIter = {\n    index: 0,\n    next: () => {\n      const i = (this as any).sharedIter.index;\n      if (i >= this.products.length) return { done: true };\n      (this as any).sharedIter.index = i + 1;\n      return { value: this.products[i], done: false };\n    }\n  };\n  getIterator() { return this.sharedIter; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The implementation returns a single shared traversal object so concurrent traversals will interfere with each other statefully.",
+          "isCorrect": true,
+          "explanation": "Correct. Returning a single shared iterator instance causes traversals started at different times to share the same index state, producing interference and unpredictable results. The safe approach is to create a new iterator per request."
+        },
+        {
+          "id": "b",
+          "text": "The implementation exposes the internal array reference allowing callers to mutate the product list and break collection invariants.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect here. The code does not give out the products array reference; it returns an iterator object that accesses the array. The real issue is shared iterator state rather than direct exposure of the array."
+        },
+        {
+          "id": "c",
+          "text": "The implementation captures the outer scope causing a memory leak when large arrays are iterated and closures retain references.",
+          "isCorrect": false,
+          "explanation": "This is a conceivable concern but not the primary problem in typical languages with garbage collection. The closure does reference the array, but that is intentional for iteration; the more pressing design flaw is the single shared iterator instance."
+        },
+        {
+          "id": "d",
+          "text": "The implementation violates synchronous iteration expectations by returning an asynchronous-style result and complicates simple for-each loops.",
+          "isCorrect": false,
+          "explanation": "Not applicable. The iterator returns synchronous {value, done} objects and does not introduce asynchronous behavior. The main defect is state sharing across iterators, not an async/sync mismatch."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better public API design for supporting multiple independent traversals and preserving encapsulation?",
+      "codeSnippet": "/* Version A */\nclass CatalogA {\n  private items: string[] = ['x','y','z'];\n  iterator() {\n    let idx = 0;\n    const items = this.items;\n    return {\n      next() { return idx >= items.length ? { done: true } : { value: items[idx++], done: false }; }\n    };\n  }\n}\n\n/* Version B */\nclass CatalogB {\n  private items: string[] = ['x','y','z'];\n  private index = 0;\n  getNext() { return this.index >= this.items.length ? { done: true } : { value: this.items[this.index++], done: false }; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A cleanly returns new traversal objects per call, preserving encapsulation and supporting multiple independent traversals.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable. It creates a fresh iterator object each time so callers can traverse concurrently or nested without interfering with each other. The iterator hides the index and does not add traversal state to the collection, preserving encapsulation and allowing multiple strategies. This follows the canonical design described by the Gang of Four and supports reentrancy and testability."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes traversal state inside the collection so parallel traversals will collide and mutate a shared index.",
+          "isCorrect": false,
+          "explanation": "Version B stores the traversal pointer on the collection itself, which prevents multiple independent traversals and couples iteration state to the collection lifecycle. That design forces consumers to manage reset semantics and causes surprising interactions in concurrent or nested iteration scenarios. Prefer separate iterator objects for cleaner APIs and fewer hidden coupling issues."
+        }
+      ]
+    }
+  ]
+}

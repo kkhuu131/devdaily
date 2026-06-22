@@ -1,0 +1,105 @@
+{
+  "id": 37,
+  "conceptName": "Information Hiding",
+  "category": "solid",
+  "definition": "A design principle that keeps module implementation details private so other modules depend only on stable abstractions, minimizing coupling and easing change.",
+  "ruleOfThumb": "Expose behaviors and abstract types, not concrete representations or mutable state.",
+  "citation": {
+    "author": "David L. Parnas",
+    "bookTitle": "On the Criteria To Be Used in Decomposing Systems",
+    "chapter": "Module Design Principles",
+    "page": null,
+    "externalUrl": "https://dl.acm.org/doi/10.1145/362179.362183"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which symptom most directly indicates a module is exposing its implementation details to callers?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "The module exposes internal data structures and fields through public types, tying callers to representation details.",
+          "isCorrect": true,
+          "explanation": "Exposing internal structures binds clients to representation choices. Parnas argued modules should hide such decisions so implementations can change without widespread ripple effects."
+        },
+        {
+          "id": "b",
+          "text": "The module duplicates business rules across services, creating many inconsistent implementations and redundant validation code.",
+          "isCorrect": false,
+          "explanation": "Duplication is a real maintenance problem, but it is a symptom of poor abstraction reuse rather than direct leakage of a module's internal representation."
+        },
+        {
+          "id": "c",
+          "text": "The module depends on global state and mutable singletons that allow other areas to read or write internals.",
+          "isCorrect": false,
+          "explanation": "Global mutable state increases coupling and can leak behavior across boundaries, yet the root issue differs from exposing concrete type details through APIs."
+        },
+        {
+          "id": "d",
+          "text": "The module defines overly specific interfaces that force callers to orchestrate steps that should remain encapsulated.",
+          "isCorrect": false,
+          "explanation": "Overly chatty interfaces break abstraction barriers and can reveal protocol details, but they are a related design flaw distinct from returning internal representation objects directly."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary design problem in the PaymentLedger implementation below?",
+      "codeSnippet": "class PaymentLedger {\n  private transactions: Transaction[] = [];\n\n  add(t: Transaction) {\n    this.transactions.push(t);\n  }\n\n  getTransactions(): Transaction[] {\n    return this.transactions;\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class returns internal array references directly, allowing callers to mutate the ledger's private collection.",
+          "isCorrect": true,
+          "explanation": "Returning the internal array exposes the ledger's representation so external code can alter it. Safer alternatives are immutable snapshots or iterators."
+        },
+        {
+          "id": "b",
+          "text": "The class uses a mutable DTO for transactions, which might cause threading issues under concurrent access patterns.",
+          "isCorrect": false,
+          "explanation": "Mutable DTOs can cause concurrency problems, but the code sample specifically leaks the internal collection reference; threading concerns are secondary here."
+        },
+        {
+          "id": "c",
+          "text": "The class mixes persistence concerns with domain logic, coupling storage details to ledger operations and tests.",
+          "isCorrect": false,
+          "explanation": "Persisting domain objects in the same class is a valid smell, but this snippet only shows an exposed collection rather than explicit persistence coupling."
+        },
+        {
+          "id": "d",
+          "text": "The class lacks input validation, permitting invalid transaction amounts and corrupting the ledger over time in production.",
+          "isCorrect": false,
+          "explanation": "Missing validation is a practical risk, but the primary structural problem shown is returning the mutable internal array; validation is a separate responsibility."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Below are two versions of an AccountService. Which version better protects the module's internal state from external mutation?",
+      "codeSnippet": "// Version A\nclass Account { public balance: number; }\nclass AccountServiceA {\n  private acct = new Account();\n  getAccount(): Account { return this.acct; }\n}\n\n// Version B\nclass AccountSnapshot { constructor(public readonly balance: number) {} }\nclass AccountServiceB {\n  private acct = new Account();\n  deposit(amount: number) { this.acct.balance += amount; }\n  getSnapshot(): AccountSnapshot { return new AccountSnapshot(this.acct.balance); }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A leaks its mutable Account object to callers, allowing external code to alter internal balances directly.",
+          "isCorrect": false,
+          "explanation": "Version A returns the actual Account instance, so callers can write to balance and bypass service invariants. That creates tight coupling and breaks encapsulation."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates account state behind an operational API that forbids external code from mutating balances.",
+          "isCorrect": true,
+          "explanation": "Version B exposes behavior and immutable snapshots rather than the mutable object. This keeps the representation private and preserves invariants. Parnas and later Clean Code guidance recommend exposing operations and stable abstractions instead of concrete mutable data."
+        }
+      ]
+    }
+  ]
+}

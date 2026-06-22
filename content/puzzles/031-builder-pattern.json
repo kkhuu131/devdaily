@@ -1,0 +1,106 @@
+{
+  "id": 31,
+  "conceptName": "Builder Pattern",
+  "category": "design-pattern",
+  "definition": "Separate object that incrementally constructs a complex product, decoupling creation steps from the product representation.",
+  "ruleOfThumb": "Use when object construction requires many optional parts or complex assembly that should be reusable and readable.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Builder",
+    "page": "107",
+    "externalUrl": "https://refactoring.guru/design-patterns/builder"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the code. Which description best matches the overall construction approach shown?",
+      "codeSnippet": "class Product { constructor(public name: string, public price: number) {}\n}\n\nclass ProductBuilder {\n  private name = '';\n  private price = 0;\n  setName(n: string) { this.name = n; return this; }\n  setPrice(p: number) { this.price = p; return this; }\n  build() { return new Product(this.name, this.price); }\n}\n\nconst p = new ProductBuilder().setName('S').setPrice(10).build();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A separate fluent construction helper object assembles complex Product instances through chained setters and a final build method.",
+          "isCorrect": true,
+          "explanation": "This implementation shows an auxiliary object with chainable setters and a terminal build method that returns the product. The helper isolates assembly logic and allows readable incremental configuration. It is useful when many optional parts or complex setup are required."
+        },
+        {
+          "id": "b",
+          "text": "A factory method that returns different concrete types based on parameters without supporting incremental chained configuration of fields.",
+          "isCorrect": false,
+          "explanation": "A factory method typically returns a fully constructed object in one call and does not expose chained setters for incremental configuration. The shown code instead exposes a stepwise fluent API, so treating it as a plain factory would miss the incremental configuration intent."
+        },
+        {
+          "id": "c",
+          "text": "A telescoping constructor strategy using many overloads and parameter lists that leads to confusing call sites and duplication.",
+          "isCorrect": false,
+          "explanation": "Telescoping constructors use multiple overloaded constructors or long parameter lists on the product itself. The snippet uses a separate builder-like helper and fluent setters, avoiding the combinatorial explosion associated with telescoping constructors."
+        },
+        {
+          "id": "d",
+          "text": "An abstract factory approach where multiple factory classes hide configuration details and create tight coupling across modules.",
+          "isCorrect": false,
+          "explanation": "Abstract factories produce families of related objects and often return different types via polymorphism. The code demonstrates a single configurable assembly helper for one product rather than a family of factories, so this critique conflates different responsibilities."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which is the most accurate criticism of a fluent construction helper that exposes many setters and returns a final product without validation?",
+      "codeSnippet": "class ReportBuilder {\n  public title = '';\n  public content = '';\n  setTitle(t: string) { this.title = t; return this; }\n  setContent(c: string) { this.content = c; return this; }\n  build() { return new Report(this.title, this.content); }\n}\n\n// client may call setContent before setTitle and build without checks",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The construction helper exposes intermediate mutable state resulting in possible invalid products unless build enforces invariants.",
+          "isCorrect": true,
+          "explanation": "Exposing mutable fields during assembly allows clients to leave the object in an invalid state before build is called. The build step should validate or produce immutable objects to avoid runtime invariants being violated. Consider defensive checks or hide intermediate state."
+        },
+        {
+          "id": "b",
+          "text": "The pattern hides dependency injection and makes mocking difficult because construction is split across chained calls and concrete types.",
+          "isCorrect": false,
+          "explanation": "While chained assembly can complicate testing, the primary issue in this snippet is lack of validation and exposed mutable state. Dependencies can still be injected into the builder or provided via factory wrappers, so hiding DI is not the most accurate critique here."
+        },
+        {
+          "id": "c",
+          "text": "The approach unnecessarily duplicates configuration code and encourages multiple tiny classes increasing file churn and cognitive overhead.",
+          "isCorrect": false,
+          "explanation": "Adding separate builders can increase code volume, but that tradeoff is acceptable when it improves clarity for complex construction. The more pressing concern in this example is unsafe intermediate state rather than mere class count."
+        },
+        {
+          "id": "d",
+          "text": "The fluent API forces clients to understand complex assembly order creating a fragile public contract for callers.",
+          "isCorrect": false,
+          "explanation": "Order sensitivity can be a problem, yet many builders are designed to be order-agnostic or to validate at build time. The snippet's immediate risk stems from unguarded mutable fields and missing invariant checks rather than only assembly order."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which implementation is preferable for creating safe, testable immutable products in a complex domain?",
+      "codeSnippet": "// Version A\nclass ProductA {\n  constructor(public readonly name: string, public readonly price: number) {}\n}\nclass ConfiguratorA {\n  private name = '';\n  private price = 0;\n  setName(n: string) { this.name = n; return this; }\n  setPrice(p: number) { this.price = p; return this; }\n  build() { /* validate then */ return new ProductA(this.name, this.price); }\n}\n\n// Version B\nclass ProductB {\n  constructor(public name: string, public price: number) {}\n  setName(n: string) { this.name = n; }\n  setPrice(p: number) { this.price = p; }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A produces immutable objects and encapsulates assembly steps in a separate fluent configuration helper for reuse.",
+          "isCorrect": true,
+          "explanation": "Version A separates construction concerns and returns immutable product instances after validation. This makes objects safer to share, easier to reason about in tests, and avoids accidental mutation. The dedicated configurator isolates assembly logic and can centralize validation rules."
+        },
+        {
+          "id": "b",
+          "text": "Version B uses a large monolithic constructor that mixes configuration and construction, producing mutable objects with brittle initialization.",
+          "isCorrect": false,
+          "explanation": "Version B exposes mutation directly on the product and conflates construction with runtime behavior. This design leads to objects whose state can change unexpectedly and complicates reasoning about invariants and tests. Prefer isolating construction and returning immutable results."
+        }
+      ]
+    }
+  ]
+}
