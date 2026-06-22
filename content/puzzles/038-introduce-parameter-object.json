@@ -1,0 +1,106 @@
+{
+  "id": 38,
+  "conceptName": "Introduce Parameter Object",
+  "category": "refactoring",
+  "definition": "Refactor by grouping a set of parameters that are frequently passed together into a single object or value type, improving readability, reducing duplication, and capturing domain intent.",
+  "ruleOfThumb": "When a method has more than three parameters or several callers pass the same subset of parameters together, consider grouping them into a typed object.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Introduce Parameter Object",
+    "page": "p. 88",
+    "externalUrl": "https://martinfowler.com/bliki/IntroduceParameterObject.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which code smell does the following TypeScript function most likely demonstrate?",
+      "codeSnippet": "function calculateOrderTotal(orderId: string, taxRate: number, discountRate: number, customerRegion: string, isPremiumCustomer: boolean, includeShipping: boolean) {\n  // compute total\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A long parameter list that passes many related values making calls verbose and error prone at call sites.",
+          "isCorrect": true,
+          "explanation": "This function shows a classic long parameter list smell: many related parameters are passed together. Grouping related parameters into a single object clarifies intent and reduces the chance of passing arguments in the wrong order. Fowler recommends this refactoring when argument lists grow and callers become hard to read."
+        },
+        {
+          "id": "b",
+          "text": "A primitive obsession where low level values are passed instead of meaningful types making intent hard to discover.",
+          "isCorrect": false,
+          "explanation": "Primitive obsession is when basic types are overused instead of domain types. While related, the snippet more clearly shows many parameters passed together rather than abuse of primitives; wrapping into domain types could help, but the primary smell is the long parameter list."
+        },
+        {
+          "id": "c",
+          "text": "A god function that performs many unrelated tasks causing high coupling and hiding responsibilities across the module.",
+          "isCorrect": false,
+          "explanation": "A god function performs many responsibilities. The snippet only shows a long parameter list and no evidence of mixed responsibilities. Breaking responsibilities is important, but here the immediate improvement is to consolidate related parameters rather than split behavior."
+        },
+        {
+          "id": "d",
+          "text": "A feature envy case where the function mostly manipulates data owned by other modules instead of modeling its own data.",
+          "isCorrect": false,
+          "explanation": "Feature envy is about one object frequently using another object's data. The code shown does not demonstrate that ownership pattern; instead it exposes multiple parameters at the call site, which suggests grouping parameters rather than addressing feature envy."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this API used in many places, what is the strongest justification for refactoring the parameters into a grouped type?",
+      "codeSnippet": "function sendInvoice(clientId: string, billingStreet: string, billingCity: string, billingZip: string, shippingStreet: string, shippingCity: string, shippingZip: string, items: InvoiceItem[]) {\n  // send invoice\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "To reduce cognitive load at call sites by encapsulating related address fields into a single domain type for clarity.",
+          "isCorrect": false,
+          "explanation": "Encapsulating address fields does reduce cognitive load and improves readability, which is a valid benefit. However the strongest justification here is eliminating repeated argument groups across call sites so the address concept becomes explicit and reusable across the codebase."
+        },
+        {
+          "id": "b",
+          "text": "To eliminate repeated argument groups across the codebase by creating a reusable object that represents billing and shipping addresses.",
+          "isCorrect": true,
+          "explanation": "This is the most compelling reason: multiple callers repeatedly pass the same address fields together. Creating a reusable address type removes duplication, centralizes validation, and expresses domain intent. Fowler highlights reuse and reducing duplication as primary motivations for this refactoring."
+        },
+        {
+          "id": "c",
+          "text": "To improve performance by replacing multiple small arguments with a single object to reduce parameter copying in hot paths.",
+          "isCorrect": false,
+          "explanation": "Performance is rarely the main driver for this refactor in typical managed languages; the cost of passing a small number of parameters is negligible. The main benefits are clarity, reuse, and validation, not micro-optimizations that add complexity."
+        },
+        {
+          "id": "d",
+          "text": "To defer validation until inside the function so undecorated primitive values are preserved for flexible caller logic.",
+          "isCorrect": false,
+          "explanation": "Deferring validation is a behavioral choice but not a strong reason to group parameters into an object. In fact, introducing a typed parameter object often enables earlier, centralized validation which reduces duplicated checks across callers rather than deferring them."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for evolving a frequently used API that passes many address fields together?",
+      "codeSnippet": "/* Version A */\nfunction createShipment(orderId: string, shipStreet: string, shipCity: string, shipZip: string, contactName: string, contactPhone: string) {\n  // create shipment\n}\n\n/* Version B */\ninterface ShippingAddress { street: string; city: string; zip: string; }\nfunction createShipment(orderId: string, address: ShippingAddress, contact: { name: string; phone: string }) {\n  // create shipment\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps parameters explicit but creates duplication and fragile call sites when related fields evolve.",
+          "isCorrect": false,
+          "explanation": "Version A keeps everything explicit at the call site, which can feel simple at first. However, when address shape changes or validation is needed, callers must be updated everywhere. This leads to duplicated validation and higher maintenance cost. The fragility becomes evident as the domain model evolves."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes related fields in a typed parameter object improving reuse, validation, and call-site readability.",
+          "isCorrect": true,
+          "explanation": "Version B groups related fields into explicit types, which makes intent clear at call sites and enables centralized validation, conversion, and reuse. While it introduces small DTO types, it prevents widespread changes when the shape evolves and encourages treating the address as a domain concept. Fowler and other practitioners recommend this shape when argument groups repeat or need shared behavior."
+        }
+      ]
+    }
+  ]
+}

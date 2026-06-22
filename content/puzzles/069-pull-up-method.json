@@ -1,0 +1,106 @@
+{
+  "id": 69,
+  "conceptName": "Pull Up Method",
+  "category": "refactoring",
+  "definition": "Move a method from two or more subclasses into their common superclass to remove duplicated code and centralize behavior.",
+  "ruleOfThumb": "When two or more subclasses contain identical or nearly identical method bodies, consolidate the method into the superclass and provide minimal extension points.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Pull Up Method",
+    "page": "pp. 129-131",
+    "externalUrl": "https://refactoring.com/catalog/pullUpMethod.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation best indicates this code should be refactored?",
+      "codeSnippet": "class Employee {\n  calculatePay() {\n    // complex salary calculation\n  }\n}\n\nclass Manager extends Employee {\n  calculatePay() {\n    // identical complex salary calculation\n  }\n}\n\nclass Engineer extends Employee {\n  calculatePay() {\n    // identical complex salary calculation\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Both subclasses implement an identical method body that duplicates logic which belongs in their common superclass.",
+          "isCorrect": true,
+          "explanation": "Correct. When subclasses duplicate method implementations, the duplicated behavior belongs in the superclass to avoid divergence and maintenance overhead. Moving the shared method up centralizes the logic so fixes and enhancements happen in one place. See Fowler's Pull Up Method for the canonical refactoring."
+        },
+        {
+          "id": "b",
+          "text": "Subclass method names match but their internal algorithms differ substantially so duplication may be coincidental.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect here. This concern matters when implementations are different; however the snippet indicates identical bodies rather than algorithmic differences. If algorithms truly differed, other refactorings like Strategy or Template Method might suit better."
+        },
+        {
+          "id": "c",
+          "text": "Superclass lacks state needed by methods so moving them would create awkward coupling to subclass fields.",
+          "isCorrect": false,
+          "explanation": "This is a valid worry when methods rely on subclass state. The right response is to inspect required state: if common logic needs state, consider promoting that state or adding protected accessors rather than leaving duplicated code. Avoid premature coupling but do not ignore clear duplication."
+        },
+        {
+          "id": "d",
+          "text": "The methods are small and trivial so extracting a shared helper or leaving duplication may be acceptable.",
+          "isCorrect": false,
+          "explanation": "Small, trivial methods can sometimes be left duplicated to avoid unnecessary inheritance changes. But the snippet shows a complex calculation; when complexity is nontrivial, centralizing the logic reduces errors and cognitive load. Evaluate cost versus benefit for very small helpers."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the exporters below, which assessment most accurately guides whether to move export logic to the base class?",
+      "codeSnippet": "class HtmlExporter extends Exporter {\n  export(data) {\n    const header = this.commonHeader(data);\n    const body = this.formatHtmlBody(data);\n    return header + body;\n  }\n}\n\nclass PdfExporter extends Exporter {\n  export(data) {\n    const header = this.commonHeader(data);\n    const body = this.formatPdfBody(data);\n    return header + body;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The core export procedure is identical and should be moved into their common superclass immediately.",
+          "isCorrect": true,
+          "explanation": "Correct. The sequence and orchestration are the same across subclasses; centralizing the shared export procedure in the superclass prevents duplicated control flow. Subclasses can then implement the small formatHtmlBody and formatPdfBody hooks. This is the essence of pulling up the method."
+        },
+        {
+          "id": "b",
+          "text": "The small variations indicate a Template Method is required and the base should define algorithm skeleton.",
+          "isCorrect": false,
+          "explanation": "Reasonable but narrower. Suggesting a Template Method is related: after pulling up the method you often provide subclass hooks which yields a Template Method structure. However the immediate actionable assessment is that the common orchestration should be centralized first, then template hooks added as needed."
+        },
+        {
+          "id": "c",
+          "text": "Extracting a shared helper function and keeping subclass delegation preserves flexibility without changing inheritance structure.",
+          "isCorrect": false,
+          "explanation": "This is a pragmatic alternative when you want to avoid touching inheritance. A shared helper reduces duplication but can leave orchestration duplicated. If the orchestration is identical, moving the method to the superclass is clearer and reduces duplicated call patterns across subclasses."
+        },
+        {
+          "id": "d",
+          "text": "Do nothing and accept duplication because performance concerns or coupling risks outweigh small maintenance gains.",
+          "isCorrect": false,
+          "explanation": "Conservative but often costly long term. Performance or coupling can justify deferring refactorings, but identical orchestration across subclasses is a maintenance smell. Measure coupling risks and performance impact before choosing to preserve duplication by default."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version represents a better refactoring of duplicated behavior while still allowing subclass customization?",
+      "codeSnippet": "/* Version A */\nclass Account {\n  calculateFee(amount) {\n    const base = this.baseFee(amount);\n    return base + this.extraFee(amount);\n  }\n  baseFee(amount) { return amount * 0.01; }\n  extraFee(amount) { return 0; }\n}\n\nclass PremiumAccount extends Account {\n  extraFee(amount) { return amount * 0.005; }\n}\n\n/* Version B */\nclass AccountV2 {\n  calculateFee(amount, type) {\n    if (type === 'premium') return amount * 0.015;\n    return amount * 0.01;\n  }\n}\n\nclass PremiumAccountV2 extends AccountV2 {\n  // no override available for parts of algorithm\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes the shared algorithm in the superclass while subclasses customize only small extension points.",
+          "isCorrect": true,
+          "explanation": "Correct. Version A moves the common calculation into the superclass and exposes a minimal hook for subclass variation. This keeps the orchestration single-sited and avoids runtime type checks. Subclasses remain focused on behavior differences and the base class controls the template of the algorithm."
+        },
+        {
+          "id": "b",
+          "text": "Version B hides subclass differences behind runtime type checks in the superclass and mixes responsibilities messily.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Version B centralizes logic but uses type switches to handle variations, which couples the superclass to subclass identities and prevents safe extension. It violates open closed principles and makes future variants harder to add without modifying the base class."
+        }
+      ]
+    }
+  ]
+}

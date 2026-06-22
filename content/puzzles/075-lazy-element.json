@@ -1,0 +1,106 @@
+{
+  "id": 75,
+  "conceptName": "Lazy Element",
+  "category": "code-smell",
+  "definition": "An object or class that defers creation or responsibility for a rarely used subcomponent, adding indirection and hidden dependencies that increase complexity and reduce clarity.",
+  "ruleOfThumb": "If a lazily created part is rarely used or muddles the primary class purpose, extract it into a dedicated collaborator and inject it.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Lazy Class",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/LazyClass.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best describes the primary problem in this snippet?",
+      "codeSnippet": "class Report {\n  private _chart?: Chart;\n  constructor(private data: Data) {}\n\n  render(): string {\n    if (!this._chart) this._chart = new Chart(this.data);\n    return this._chart.render();\n  }\n\n  summary(): string { return `Rows: ${this.data.rows}`; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class lazily constructs an expensive subobject while most operations never require it, adding unnecessary complexity.",
+          "isCorrect": true,
+          "explanation": "The class postpones creation of a heavy Chart object though the class primary responsibility is reporting. That hidden responsibility increases coupling and makes the code harder to reason about and test."
+        },
+        {
+          "id": "b",
+          "text": "This code shows premature optimization of object creation that reduces predictability and makes unit testing harder.",
+          "isCorrect": false,
+          "explanation": "While lazy creation may feel like optimization, the real problem is mixing a rare, heavy responsibility into the main class rather than simply premature optimization. The testability complaint is valid but not the root design flaw."
+        },
+        {
+          "id": "c",
+          "text": "This design creates a hidden dependency that couples view rendering to expensive construction details and hurts cohesion.",
+          "isCorrect": false,
+          "explanation": "This is a reasonable observation and points at hidden dependency and cohesion problems, but it frames the issue as view rendering coupling specifically. The broader smell is misplaced, rarely used responsibility inside the class."
+        },
+        {
+          "id": "d",
+          "text": "This pattern postpones errors from construction until first use, making failure modes less obvious and debugging harder.",
+          "isCorrect": false,
+          "explanation": "Delaying construction can indeed move failures to runtime and obscure their origin. That is a secondary downside; the primary maintenance cost is the class carrying an unrelated, seldom-used responsibility."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which refactor most directly addresses the design problem shown earlier without merely masking symptoms?",
+      "codeSnippet": "class Dashboard {\n  private _cache?: Cache;\n  private _analytics?: Analytics;\n  constructor(private config: Config) {}\n\n  get cache() { if (!this._cache) this._cache = new Cache(this.config); return this._cache; }\n  get analytics() { if (!this._analytics) this._analytics = new Analytics(this.config); return this._analytics; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Eagerly instantiate those subobjects in the constructor to simplify logic and see errors at creation time proactively.",
+          "isCorrect": false,
+          "explanation": "Eager construction makes failures obvious and simplifies reasoning, but it forces creation of heavy objects for all use cases and can worsen startup cost without addressing misplaced responsibilities."
+        },
+        {
+          "id": "b",
+          "text": "Move the lazily created responsibilities into a dedicated collaborator and inject it via constructor for clarity.",
+          "isCorrect": true,
+          "explanation": "Extracting responsibilities into a separate collaborator clarifies boundaries, reduces hidden dependencies, and makes each unit independently testable. Injection keeps composition explicit and avoids concealing construction logic."
+        },
+        {
+          "id": "c",
+          "text": "Replace lazy initialization with a global service locator to centralize construction and avoid passing dependencies explicitly.",
+          "isCorrect": false,
+          "explanation": "Service locators centralize creation but reintroduce hidden dependencies and global state. This masks the problem rather than creating clear ownership and testable boundaries."
+        },
+        {
+          "id": "d",
+          "text": "Keep lazy initialization but add runtime instrumentation and metrics to justify the complexity before any refactor.",
+          "isCorrect": false,
+          "explanation": "Instrumentation is useful to measure usage, but adding metrics alone does not improve design or testability. It may inform a decision but does not resolve the coupling and responsibility issues."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the cleaner long term choice for maintainability and testing?",
+      "codeSnippet": "/* Version A */\nclass OrderProcessor {\n  private _invoice?: InvoiceGenerator;\n  constructor(private order: Order) {}\n\n  generateInvoice() {\n    if (!this._invoice) this._invoice = new InvoiceGenerator(this.order);\n    return this._invoice.build();\n  }\n}\n\n/* Version B */\nclass OrderProcessor {\n  constructor(private order: Order, private invoiceGenerator: InvoiceGenerator) {}\n  generateInvoice() { return this.invoiceGenerator.buildFor(this.order); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A reduces constructor parameter count but preserves hidden dependencies and makes unit testing and reuse harder.",
+          "isCorrect": false,
+          "explanation": "Version A hides the creation of the InvoiceGenerator inside the processor which keeps the constructor smaller but buries dependency boundaries. Tests must either trigger lazy paths or use intrusive setup, and reuse of invoice logic remains entangled."
+        },
+        {
+          "id": "b",
+          "text": "Version B extracts rare responsibilities into a focused collaborator and simplifies the primary class for testing.",
+          "isCorrect": true,
+          "explanation": "Version B clearly separates responsibilities and expresses dependencies explicitly. This improves cohesion, makes substitution for tests straightforward, and avoids hidden construction logic. It also enables independent evolution of the invoice concerns and clearer composition at the application level."
+        }
+      ]
+    }
+  ]
+}

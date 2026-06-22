@@ -1,0 +1,105 @@
+{
+  "id": 51,
+  "conceptName": "Flyweight Pattern",
+  "category": "design-pattern",
+  "definition": "A structural pattern that minimizes memory use by sharing immutable intrinsic state across many fine-grained objects and separating extrinsic state.",
+  "ruleOfThumb": "When many objects differ only by some external context and share substantial immutable state, share that intrinsic state centrally.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Flyweight",
+    "page": "195",
+    "externalUrl": "https://refactoring.guru/design-patterns/flyweight"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation most strongly indicates this pattern is appropriate in a system of many small objects?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Many small objects contain large amounts of identical immutable state that could be shared to reduce memory usage.",
+          "isCorrect": true,
+          "explanation": "Correct. The core opportunity is identical immutable data repeated across many instances. Sharing that intrinsic state reduces memory footprint without changing object semantics."
+        },
+        {
+          "id": "b",
+          "text": "High object creation cost from complex construction logic suggests caching whole objects to avoid expensive instantiation each time.",
+          "isCorrect": false,
+          "explanation": "This is plausible but different. Caching whole objects addresses construction cost but does not separate intrinsic and extrinsic state. It risks higher memory if entire objects are duplicated rather than sharing immutable parts."
+        },
+        {
+          "id": "c",
+          "text": "Frequent runtime behavior variation across instances suggests attaching behavior dynamically rather than sharing static internal data.",
+          "isCorrect": false,
+          "explanation": "Behavioral variation points to strategy or stateful composition concerns, not to sharing immutable intrinsic state. If instances truly differ in behavior, sharing the same intrinsic state may be inappropriate."
+        },
+        {
+          "id": "d",
+          "text": "Need for thread local state per instance indicates avoiding shared state and preferring independent object graphs for safety.",
+          "isCorrect": false,
+          "explanation": "Thread-local mutability implies each instance needs private mutable data, which contradicts the sharing premise. The pattern expects immutable intrinsic state so thread-safety is simpler."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this TypeScript snippet creating many characters with repeated font data, what is the most appropriate optimization?",
+      "codeSnippet": "class Glyph {\n  constructor(public char: string, public fontFamily: string, public fontSize: number) {}\n}\n\nconst doc: Glyph[] = [];\nfor (let i = 0; i < 100000; i++) {\n  doc.push(new Glyph('a', 'Roboto', 12));\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Extract identical immutable state into sharable intrinsic objects and reuse them instead of creating duplicate state per instance.",
+          "isCorrect": true,
+          "explanation": "Correct. The font properties are intrinsic and immutable across many Glyphs; extract them into shared objects and keep Glyph instances as lightweight contexts that reference the shared intrinsic state."
+        },
+        {
+          "id": "b",
+          "text": "Introduce a pool to reuse whole mutable character instances across usages which risks incorrect shared mutation.",
+          "isCorrect": false,
+          "explanation": "Pooling whole mutable instances can reduce allocations but introduces strong risks of accidental mutation and complex lifecycle management. It is not as safe as sharing immutable intrinsic parts."
+        },
+        {
+          "id": "c",
+          "text": "Replace class with a compact bitfield storing properties to reduce memory but complicate future extensibility and readability.",
+          "isCorrect": false,
+          "explanation": "A bitfield may compress memory but sacrifices clarity and flexibility. It addresses storage at a low level rather than expressing the higher-level sharing of intrinsic state, making maintenance harder."
+        },
+        {
+          "id": "d",
+          "text": "Cache serialized blobs of characters to avoid allocation at runtime but increase deserialization complexity and coupling.",
+          "isCorrect": false,
+          "explanation": "Serializing and caching blobs avoids per-instance construction cost but trades it for complexity and coupling. It does not separate intrinsic versus extrinsic state as cleanly as sharing immutable parts."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better balances memory reuse, clarity, and safety for many value-like objects with shared immutable parts?",
+      "codeSnippet": "// Version A: each instance stores full state\nclass ItemA {\n  constructor(public id: number, public color: string, public textureData: Uint8Array) {}\n}\n\n// Version B: shared intrinsic object via factory, instances keep only extrinsic id\nclass SharedVisual { constructor(public color: string, public textureData: Uint8Array) {} }\nclass VisualFactory { private cache = new Map<string, SharedVisual>(); /* returns shared visuals */ }\nclass ItemB { constructor(public id: number, public visual: SharedVisual) {} }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A stores full state inside every instance which duplicates identical immutable data and wastes memory overall.",
+          "isCorrect": false,
+          "explanation": "Version A keeps a full copy of the visual data on every instance. For large numbers of items with identical visuals this duplicates immutable data and increases memory usage, making it a poor structural choice when sharing is possible."
+        },
+        {
+          "id": "b",
+          "text": "Version B extracts shared intrinsic objects and returns them from a factory, keeping instances as small contexts.",
+          "isCorrect": true,
+          "explanation": "Version B is the better design. It separates immutable intrinsic data into shared objects managed by a factory, while each Item holds only extrinsic context. This minimizes memory, centralizes shared data lifecycle, and keeps per-instance objects small and thread-friendly. See the Flyweight discussion in Gamma et al. and practice notes in Refactoring Guru for tradeoffs and implementation details."
+        }
+      ]
+    }
+  ]
+}

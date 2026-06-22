@@ -1,0 +1,106 @@
+{
+  "id": 76,
+  "conceptName": "Alternative Classes with Different Interfaces",
+  "category": "code-smell",
+  "definition": "A situation where multiple classes play the same conceptual role but expose different public APIs, preventing polymorphism and leading to duplicated client logic or type checks.",
+  "ruleOfThumb": "If two or more classes are used interchangeably by clients, give them a common interface or adapt them so callers can treat them uniformly.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Alternative Classes With Different Interfaces",
+    "page": "pp. 114-117",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the payment classes used in client code. What is the simplest characterization of the smell shown here?",
+      "codeSnippet": "class CreditCardPayment {\n  pay(amount: number) { /* process credit card */ }\n}\n\nclass PaypalPayment {\n  send(amount: number) { /* process PayPal */ }\n}\n\nconst cc = new CreditCardPayment();\nconst pp = new PaypalPayment();\ncc.pay(100);\npp.send(200);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This shows two classes provide similar roles but expose incompatible public methods that hinder polymorphism and reuse.",
+          "isCorrect": true,
+          "explanation": "The two classes represent the same conceptual operation (sending a payment) but use different method names. That prevents the client from treating them polymorphically and often results in duplicated client code or type checks. The usual refactor is to introduce a common interface or adapter so clients call a single method."
+        },
+        {
+          "id": "b",
+          "text": "This indicates a naming inconsistency that only affects readability and can be solved by renaming methods consistently across classes.",
+          "isCorrect": false,
+          "explanation": "Renaming can help, but the core problem is incompatible interfaces, not just names. If classes come from different modules or external libraries renaming may be impossible. The broader issue is lack of a shared contract rather than cosmetic naming alone."
+        },
+        {
+          "id": "c",
+          "text": "This suggests duplicated implementation details between these classes causing maintenance burden rather than interface mismatch concerns.",
+          "isCorrect": false,
+          "explanation": "Duplication can coexist, but the snippet shows differing public APIs rather than duplicated internals. Focusing only on duplicated implementation would miss the need to unify how clients call the behavior."
+        },
+        {
+          "id": "d",
+          "text": "This implies a missing factory abstraction that prevents centralizing creation logic though it does not prove interface incompatibility.",
+          "isCorrect": false,
+          "explanation": "A factory addresses creation but not the core problem that the runtime behavior is accessed through different method names. While factories can be useful in some designs, they do not by themselves resolve incompatible client-facing APIs."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Client code uses type checks to call different reporting implementations. What is the most appropriate targeted refactor here?",
+      "codeSnippet": "interface Reporter { report(data: any): void }\nclass JsonReporter { writeJson(data: any) { /* ... */ } }\nclass XmlReporter { writeXml(data: any) { /* ... */ } }\n\nfunction sendReport(r: any, d: any) {\n  if (r instanceof JsonReporter) r.writeJson(d);\n  else if (r instanceof XmlReporter) r.writeXml(d);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code requires a common reporting interface so callers can invoke a single method without type checks or instanceof branches.",
+          "isCorrect": true,
+          "explanation": "Introducing a common interface (or making both classes implement Reporter) lets the caller invoke report(data) polymorphically and removes fragile type checks. This is the standard, low-risk refactor when you control the implementations."
+        },
+        {
+          "id": "b",
+          "text": "This code can be fixed by extracting an adapter per legacy class to adapt differing method names into a consistent interface.",
+          "isCorrect": false,
+          "explanation": "Adapters are a valid alternative when you cannot change the implementations directly, such as when they live in third party libraries. This option is plausible but not the primary straightforward refactor if you control the classes."
+        },
+        {
+          "id": "c",
+          "text": "This situation is acceptable as a pragmatic legacy hedge and refactoring would introduce risk and coordination cost across modules.",
+          "isCorrect": false,
+          "explanation": "Keeping instanceof checks might be pragmatic short term, but it perpetuates brittle client logic. The statement is a risk-aware position but does not offer a lasting architectural improvement."
+        },
+        {
+          "id": "d",
+          "text": "This should be solved with a factory that returns unified report objects to avoid conditional branches at the call site.",
+          "isCorrect": false,
+          "explanation": "A factory centralizes creation and can hide selection logic, but it still requires callers to use a unified interface. It is complementary to extracting a common interface or adapters rather than a complete substitute."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You must choose between two refactoring approaches. Which version is the better long term design when dealing with legacy classes in different modules?",
+      "codeSnippet": "// Version A: Change both implementations to share a common method name\nclass LegacyA {\n  processPayload(data: any) { /* original logic */ }\n}\nclass LegacyB {\n  processData(data: any) { /* original logic */ }\n}\n// Edit both classes to expose unified process(data) directly\n\n// Version B: Add small adapter wrappers without editing legacy classes\nclass LegacyAAdapter {\n  constructor(private a: LegacyA) {}\n  process(data: any) { return this.a.processPayload(data); }\n}\nclass LegacyBAdapter {\n  constructor(private b: LegacyB) {}\n  process(data: any) { return this.b.processData(data); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Choosing Version A introduces invasive changes across implementations and increases coupling and migration risk.",
+          "isCorrect": false,
+          "explanation": "Directly changing legacy classes to unify method names can be the cleanest solution when you own all code. However, when those classes live in separate teams, packages, or third party libraries, touching them creates coordination costs, larger review scope, and possible regressions. This makes Version A risky in many real-world scenarios."
+        },
+        {
+          "id": "b",
+          "text": "Choosing Version B isolates legacy differences behind adapters and preserves stable client APIs without invasive changes.",
+          "isCorrect": true,
+          "explanation": "Version B wraps each legacy implementation with a small adapter that provides a unified process(data) method. This is the safer long term design when you cannot reliably change underlying classes or want to minimize risk. Adapters give you a stable abstraction for clients, enable incremental refactoring, and keep coupling localized. For guidance see Fowler on refactoring to adapters and the Adapter pattern in Gamma et al."
+        }
+      ]
+    }
+  ]
+}

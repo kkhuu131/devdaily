@@ -1,0 +1,105 @@
+{
+  "id": 62,
+  "conceptName": "Hollywood Principle",
+  "category": "principle",
+  "definition": "A design approach where a framework or host controls overall flow and calls into user-provided components, inverting traditional control so application code supplies behavior but does not orchestrate when it runs.",
+  "ruleOfThumb": "Let the host call your code, not your code call the host; register behavior and let the framework orchestrate it.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Patterns of Enterprise Application Architecture",
+    "chapter": "Inversion of Control",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/articles/injection.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best describes the architectural relationship demonstrated when a host invokes callbacks you register?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "A framework controls execution flow and invokes application-provided callbacks at runtime to perform domain-specific behavior.",
+          "isCorrect": true,
+          "explanation": "Correct. This describes inversion of control: the framework owns orchestration and calls user callbacks at appropriate times. The host, not the plugin, decides when callbacks run, which keeps application code focused on behavior rather than scheduling."
+        },
+        {
+          "id": "b",
+          "text": "A framework exposes a callback registry and expects the application to explicitly request callbacks when work is needed.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect. This describes a pull or service-locator style where application code asks for work; it does not capture the idea that the host calls the application code to drive behavior."
+        },
+        {
+          "id": "c",
+          "text": "A framework forces application modules to query framework services directly rather than letting framework orchestrate interactions.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect. This describes tight coupling via explicit queries to framework services. The key difference is that the Hollywood-style approach has the framework invoke modules, not modules pulling services."
+        },
+        {
+          "id": "d",
+          "text": "A framework requires global mutable state so application callbacks can be registered and later invoked by framework code.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect. Global mutable state can be an implementation detail for some systems, but the essential idea here is inversion of control, not necessarily global state. You can invert control without globals."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In the following plugin API, what is the primary architectural idea being used?",
+      "codeSnippet": "type Plugin = (ctx: any) => void;\nclass PluginHost {\n  private plugins: Plugin[] = [];\n  register(p: Plugin) { this.plugins.push(p); }\n  start(ctx: any) { this.plugins.forEach(p => p(ctx)); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This API inverts control by letting the framework invoke registered plugin callbacks instead of plugins invoking framework services.",
+          "isCorrect": true,
+          "explanation": "Correct. The host owns the sequence and timing, calling plugins when appropriate. That inversion reduces plugin responsibility for orchestration and centralizes flow control in the framework."
+        },
+        {
+          "id": "b",
+          "text": "This API merely provides a service locator pattern requiring plugins to request framework services from a central registry.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect. A service locator implies plugins pull dependencies. Here the host calls plugins rather than plugins pulling from a registry, so the coupling pattern differs."
+        },
+        {
+          "id": "c",
+          "text": "This API encourages event-driven decoupling where plugins subscribe to events and framework emits state changes to listeners.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect. Event-driven systems also invert control to some degree, but the snippet shows direct invocation of registered callbacks rather than a pub/sub with event topics and asynchronous dispatch semantics."
+        },
+        {
+          "id": "d",
+          "text": "This API creates tight runtime coupling by forcing concrete plugin implementations to know framework internals and scheduling details.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect. The shown API actually hides scheduling from plugins by centralizing start and invocation. Tight coupling would be present if plugins called into host internals directly, which is not the case here."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which design is preferable for a host-plugin architecture and why? Compare the two short versions shown.",
+      "codeSnippet": "// Version A: host invokes simple callback plugins\ntype Plugin = (ctx: any) => void;\nclass Host {\n  private plugins: Plugin[] = [];\n  register(p: Plugin) { this.plugins.push(p); }\n  start(ctx: any) { this.plugins.forEach(p => p(ctx)); }\n}\n\n// Version B: plugins receive host and pull services themselves\ninterface PluginB { run(host: Host): void; }\nclass HostV2 {\n  private plugins: PluginB[] = [];\n  register(p: PluginB) { this.plugins.push(p); }\n  start() { this.plugins.forEach(p => p.run(this)); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is preferable because the host retains orchestration and keeps plugins simple passive callbacks.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable. By keeping orchestration in the host, plugins remain small, focused units with fewer responsibilities and fewer dependencies. This reduces coupling, simplifies testing, and makes it easier to change scheduling or lifecycle concerns in one place. Fowler and other practitioners describe inversion of control as a way to let the framework manage flow while user code supplies behavior."
+        },
+        {
+          "id": "b",
+          "text": "Version B is preferable because giving plugins full host access leads to more flexible control and fewer host constraints.",
+          "isCorrect": false,
+          "explanation": "This is incorrect. While Version B offers flexibility, it forces every plugin to know host internals and scheduling which increases coupling and test complexity. Plugins become responsible for orchestration and may duplicate lifecycle logic, making evolution and reasoning about flow harder. Prefer host-driven invocation for clearer separation of concerns."
+        }
+      ]
+    }
+  ]
+}

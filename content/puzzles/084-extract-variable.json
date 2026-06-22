@@ -1,0 +1,106 @@
+{
+  "id": 84,
+  "conceptName": "Extract Variable",
+  "category": "refactoring",
+  "definition": "Introduce a new local variable to name and hold a subexpression so the code is clearer and duplication is reduced.",
+  "ruleOfThumb": "If a subexpression is complex, repeated, or represents a clear intent, assign it to a well-named local variable.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Introduce Explaining Variable",
+    "page": "pg 26",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary code smell in this TypeScript snippet?",
+      "codeSnippet": "function calculateOrderTotal(items: {price:number,quantity:number}[], discountRate:number) {\n  const total = items.map(i => i.price * i.quantity).reduce((s, n) => s + n, 0);\n  const discounted = total - total * discountRate;\n  return discounted;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code duplicates a complex subexpression and risks inconsistent updates when that calculation must change later.",
+          "isCorrect": true,
+          "explanation": "The total value is computed once and then reused, but the arithmetic appears twice; extracting a named variable avoids future divergence and clarifies intent. This is the classic case for naming the intermediate result so updates occur in one place."
+        },
+        {
+          "id": "b",
+          "text": "The function mixes business logic with presentation concerns leading to unclear responsibilities and harder unit testing.",
+          "isCorrect": false,
+          "explanation": "While separation of concerns matters, this snippet does not render or format output. The primary problem is repeated calculation rather than blending UI and domain logic."
+        },
+        {
+          "id": "c",
+          "text": "The code uses a magic number constant which should be declared with a meaningful name at top level.",
+          "isCorrect": false,
+          "explanation": "No unexplained numeric literal appears here; the numbers relate to arithmetic operations. The maintainability issue comes from duplicated expression rather than an unnamed constant."
+        },
+        {
+          "id": "d",
+          "text": "The method is too long and should be split into smaller functions to improve readability and reuse.",
+          "isCorrect": false,
+          "explanation": "The function is short and focused. Splitting further would not address the duplicated computation. A better refactoring is to name the intermediate value."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the complex boolean expression below, when is introducing a local named value most appropriate?",
+      "codeSnippet": "function canAccess(user: any) {\n  return user.age >= 18 && user.subscription.active && (user.subscription.plan === 'pro' || user.isAdmin);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Always avoid introducing a one-off variable when expression is used only once to reduce unnecessary local state.",
+          "isCorrect": false,
+          "explanation": "Avoiding needless locals is reasonable, but this answer is too absolute. When the expression bundles distinct intent or is cognitively heavy, a named value improves readability and intent documentation."
+        },
+        {
+          "id": "b",
+          "text": "Prefer a local variable when the expression is complex and naming clarifies the business intent for future readers.",
+          "isCorrect": true,
+          "explanation": "Naming the combined condition (for example hasRequiredSubscription) documents intent and reduces mental parsing for future readers, which improves maintainability without adding runtime cost."
+        },
+        {
+          "id": "c",
+          "text": "Extract the variable only if the expression has side effects or heavy computation to avoid repeated evaluation costs.",
+          "isCorrect": false,
+          "explanation": "Performance or side effects can justify extraction, but clarity and intent are equally valid reasons even when evaluation cost is low. This option misses the readability dimension."
+        },
+        {
+          "id": "d",
+          "text": "Extract the variable whenever any expression is longer than one line to maintain consistent line length limits in code.",
+          "isCorrect": false,
+          "explanation": "Line length alone is a weak heuristic. The better rule is whether naming communicates domain intent or reduces cognitive load, not purely formatting constraints."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for maintainability and why?",
+      "codeSnippet": "// Version A\nfunction priceAfterTaxA(product: any) {\n  const tax = product.taxRate;\n  const base = product.basePrice;\n  if (product.onSale) {\n    return base * (1 + tax) * 0.9;\n  }\n  return base * (1 + tax);\n}\n\n// Version B\nfunction priceAfterTaxB(product: any) {\n  const base = product.basePrice;\n  const taxed = base * (1 + product.taxRate);\n  if (product.onSale) {\n    return taxed * 0.9;\n  }\n  return taxed;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps the calculation next to each return which may reduce mental jumps for small functions.",
+          "isCorrect": false,
+          "explanation": "Keeping expressions adjacent to their use can sometimes aid local reading, but here the multiplication is duplicated which increases risk of inconsistent edits. Version A also scatters the calculation sites so future changes require touching multiple lines."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes the intermediate computation into a single named value improving clarity.",
+          "isCorrect": true,
+          "explanation": "Version B removes duplicated arithmetic and gives the intermediate a clear name, making intent explicit and reducing the chance of divergent edits. This aligns with refactorings that favor naming important expressions to communicate intent and ease maintenance. See Martin Fowler on introducing explaining variables and Clean Code on meaningful names for similar guidance."
+        }
+      ]
+    }
+  ]
+}

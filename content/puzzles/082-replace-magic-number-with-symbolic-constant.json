@@ -1,0 +1,106 @@
+{
+  "id": 82,
+  "conceptName": "Replace Magic Number with Symbolic Constant",
+  "category": "refactoring",
+  "definition": "Substitute unexplained numeric literals with named constants to convey intent, reduce duplication, and simplify future changes.",
+  "ruleOfThumb": "Give a name to any nontrivial numeric literal that conveys domain meaning, appears more than once, or risks silent breakage.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Magic Number with Symbolic Constant",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/refactoring/replaceMagicNumber.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Looking at this pricing helper, what is the main code smell?",
+      "codeSnippet": "function calculateTotal(price: number) {\n  const tax = price * 0.0825;\n  const shipping = price > 50 ? 0 : 5;\n  return price + tax + shipping;\n}\n\nconsole.log(calculateTotal(100));",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function relies on unexplained numeric literals instead of descriptive names and reduces code clarity.",
+          "isCorrect": true,
+          "explanation": "The tax rate and shipping threshold appear as raw numbers without names. Naming these constants (for example TAX_RATE and FREE_SHIPPING_THRESHOLD) documents intent and centralizes change. This is especially important when business rules change or when the same values appear in multiple places."
+        },
+        {
+          "id": "b",
+          "text": "This function uses floating point math that will cause precision bugs and requires a numeric tolerance in tests.",
+          "isCorrect": false,
+          "explanation": "Floating point precision can be an issue in monetary calculations, but the immediate smell is unexplained literals. A better fix first names the values and then evaluates numeric representation choices such as integer cents or a decimal library if precision problems appear."
+        },
+        {
+          "id": "c",
+          "text": "This function hardcodes business rules as numbers which may change and hinder future configurability efforts.",
+          "isCorrect": false,
+          "explanation": "Hardcoding business thresholds is a valid concern and closely related to the real issue. The concrete remediation is to introduce named constants or configuration so changing the threshold does not require hunting literals through code."
+        },
+        {
+          "id": "d",
+          "text": "This function uses literals that limit readability and make automated testing and intent verification harder.",
+          "isCorrect": false,
+          "explanation": "Literality harms readability and makes tests less expressive. Naming the values improves test clarity and allows tests to reference descriptive names. However the root identifier here is unexplained numeric literals rather than testing technique itself."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which interpretation best describes the risk in this scheduling code?",
+      "codeSnippet": "function shouldSendReminder(dayOfMonth: number) {\n  // send reminder on the last day of the month\n  return dayOfMonth === 31;\n}\n\nconsole.log(shouldSendReminder(31));",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The conditional uses a numeric literal that encodes a domain rule and should be expressed with a descriptive name.",
+          "isCorrect": true,
+          "explanation": "The literal 31 encodes domain meaning about end-of-month behavior. Replacing it with a named constant like LAST_DAY_OF_MONTH clarifies intent and makes future adjustments easier, especially for months with fewer days or configurable schedules."
+        },
+        {
+          "id": "b",
+          "text": "The numeric literal is acceptable because it is used only once and does not need an added abstraction.",
+          "isCorrect": false,
+          "explanation": "Single occurrences can sometimes be left as literals, but when the number encodes a business rule its meaning is not obvious. Naming improves discoverability even if the literal appears once, and prevents silent bugs if reuse emerges later."
+        },
+        {
+          "id": "c",
+          "text": "The literal likely represents a configuration that should be moved into external settings rather than named in code.",
+          "isCorrect": false,
+          "explanation": "Moving to configuration is a reasonable option for highly variable values, but naming first gives clarity and makes the appropriate future move to configuration explicit. Immediate extraction to a named constant is a lower-risk, high-value change."
+        },
+        {
+          "id": "d",
+          "text": "The comparison with a number indicates an indexing concern and suggests using array enums or positional constants instead.",
+          "isCorrect": false,
+          "explanation": "Indexing concerns are real when numbers represent positions, but here 31 is domain data, not an index. Using a descriptive constant or a small domain object better communicates intent than introducing enums intended for positional semantics."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for maintenance and why? Review both designs.",
+      "codeSnippet": "// Version A\nconst MAX_LOGIN_ATTEMPTS = 5;\nfunction canAttemptLogin(attempts: number) {\n  return attempts < MAX_LOGIN_ATTEMPTS;\n}\n\n// Version B\nfunction canAttemptLoginB(attempts: number) {\n  return attempts < 5;\n}\nfunction resetAttempts() {\n  // other places also check against 5\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes the numeric value into a descriptive constant used consistently across modules and call sites.",
+          "isCorrect": true,
+          "explanation": "Version A extracts the meaning-bearing number into a single named constant. That documents intent, reduces duplication, and makes changes safe and discoverable. Centralization also enables a single point for validation and later extension (for example reading from configuration) without risk of inconsistent updates. This aligns with refactoring guidance from Fowler and with Clean Code practices about meaningful names and reducing scatter of magic values."
+        },
+        {
+          "id": "b",
+          "text": "Version B duplicates the numeric literal at each call site to keep the value local and avoid cross module coupling.",
+          "isCorrect": false,
+          "explanation": "Keeping literals local can seem to reduce coupling but actually increases maintenance cost—changes require edits in multiple places and intent is obscured. Local duplication also makes it easy for slightly different numbers to creep in, causing subtle bugs. Prefer a single named constant for domain numbers unless there is a strong, documented reason for per-site variation. See Martin Fowler on replacing magic numbers and Robert C. Martin on meaningful names for supporting guidance."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 80,
+  "conceptName": "Mysterious Name",
+  "category": "code-smell",
+  "definition": "A naming-related code smell where identifiers are vague, generic, or domain-ambiguous, hiding intent and making code harder to understand.",
+  "ruleOfThumb": "Use precise, domain-oriented names that express intent; prefer explicit naming over terse or generic identifiers.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Bad Smells in Code",
+    "page": "n/a",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches the problem shown in this snippet?",
+      "codeSnippet": "const mgr = getManager();\n\nfunction handle(it: any) {\n  const res = mgr.doSomething(it);\n  return res;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Identifiers are generic and do not convey domain meaning, making the code intent unclear and hard to navigate.",
+          "isCorrect": true,
+          "explanation": "The names mgr, it, doSomething, and res are generic and hide the code's purpose. This forces readers to inspect implementation to learn intent rather than relying on names. Renaming to domain-specific identifiers and methods clarifies responsibility and reduces cognitive load."
+        },
+        {
+          "id": "b",
+          "text": "This code demonstrates primitive obsession through broad types and any usage hiding the domain structure and losing type safety.",
+          "isCorrect": false,
+          "explanation": "While use of any is a problem, the primary issue here is naming. Primitive obsession would be clearer if many primitives were passed instead of domain objects. Improving names is the first step before redesigning types in this example."
+        },
+        {
+          "id": "c",
+          "text": "This shows a long parameter list antipattern with passing ambiguous objects instead of expressive value objects to clarify intent.",
+          "isCorrect": false,
+          "explanation": "There is no long parameter list in the snippet. The concern described could be valid in other code, but here the main smell is poor naming rather than overly long or ambiguous parameter lists."
+        },
+        {
+          "id": "d",
+          "text": "Function and variable names are inconsistent with the business domain causing accidental coupling and confusion for future maintainers.",
+          "isCorrect": false,
+          "explanation": "This option points at naming and coupling, which is related, but it implies inconsistency with a known business domain. The snippet more directly suffers from generic, non-descriptive names rather than mismatches across domain concepts."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which concern best explains the maintainability risk in the following TypeScript sample?",
+      "codeSnippet": "class AccountService {\n  save(data: any) {\n    // persist whatever comes in\n  }\n}\n\nfunction sync(user: any) {\n  const svc = new AccountService();\n  svc.save(user.payload);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Use of broad any types with unclear parameter names hides domain intent and prevents meaningful type-based documentation.",
+          "isCorrect": false,
+          "explanation": "Using any is indeed harmful for type safety and documentation, but the question targets naming and API expressiveness. Types should be improved, but the more immediate maintainability smell is an API that does not express domain intent through naming."
+        },
+        {
+          "id": "b",
+          "text": "Layer boundaries are blurred because storage operation names do not express intent or business semantics clearly for callers.",
+          "isCorrect": false,
+          "explanation": "Blurring layers can happen here, but the core issue is that the save method is named generically and exposes persistence detail rather than domain intent. Layer concerns are secondary to having clearer, domain-aligned names."
+        },
+        {
+          "id": "c",
+          "text": "The service exposes a persistence method with generic naming that couples callers to implementation details rather than the domain.",
+          "isCorrect": true,
+          "explanation": "The AccountService.save method uses a generic name and accepts any, which couples callers to a persistence-oriented API. Renaming to a domain-specific operation and tightening types decouples intent from implementation and improves clarity and testability."
+        },
+        {
+          "id": "d",
+          "text": "This demonstrates overgeneralized APIs where ambiguous identifiers and any types make intent and safety hard to guarantee.",
+          "isCorrect": false,
+          "explanation": "Overgeneralized APIs is a fair characterization and overlaps with the correct answer, but it is broader. The precise maintainability risk is the persistence-focused generic method name that exposes implementation detail to callers."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which design is preferable for clarity and responsibility alignment?",
+      "codeSnippet": "// Version A\nclass Util {\n  save(obj: any) { /* generic save used by many modules */ }\n}\n\nfunction handleOrder(order: any) {\n  Util.save(order);\n}\n\n// Version B\nclass OrderRepository {\n  saveOrder(order: Order) { /* persist order with domain typing */ }\n}\n\nfunction handleOrder(order: Order) {\n  const repo = new OrderRepository();\n  repo.saveOrder(order);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A scatters a generic utility across modules, causing ambiguous responsibilities and increasing accidental coupling risk.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes persistence in a generic utility which appears convenient but hides intent. Callers cannot tell whether saving is a business-level operation or a low-level persistence detail. Over time, this leads to accidental coupling and makes refactoring domain behavior risky."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes domain behavior in a clearly named repository, improving readability and aligning responsibilities.",
+          "isCorrect": true,
+          "explanation": "Version B uses a domain-named repository and explicit method name, which makes intent visible at the call site and separates domain concerns from generic utilities. This reduces accidental coupling and makes future changes and tests easier. See Fowler on naming and refactoring for guidance."
+        }
+      ]
+    }
+  ]
+}

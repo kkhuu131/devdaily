@@ -1,0 +1,106 @@
+{
+  "id": 58,
+  "conceptName": "Boy Scout Rule",
+  "category": "principle",
+  "definition": "A practice of leaving code slightly cleaner than you found it by making small, safe improvements whenever you touch related code.",
+  "ruleOfThumb": "When you change a file, make one small cleanup in the same change so the codebase improves incrementally.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code",
+    "chapter": "Maintaining Clean Code",
+    "page": "n/a",
+    "externalUrl": "https://blog.cleancoder.com/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "You see a commit that renames a local variable and simplifies a return in the same small change. What practice does this show?",
+      "codeSnippet": "// users.ts\nfunction findUser(id: string) {\n  const usr = db.users.find(u => u.id === id);\n  return usr;\n}\n// commit: Renamed usr to user and simplified return",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Regularly make small, incremental cleanups while working on code instead of postponing cleanup to a separate task.",
+          "isCorrect": true,
+          "explanation": "This is the essence of the principle: small, local improvements are made when you are already touching code. It reduces technical debt over time and keeps changes reviewable. The commit shows a focused, low-risk cleanup rather than a broad refactor."
+        },
+        {
+          "id": "b",
+          "text": "Bundle unrelated major refactors into feature branches to reduce review overhead and speed up deployment cycles.",
+          "isCorrect": false,
+          "explanation": "While bundling large refactors can seem efficient, it increases review size and merge risk. Large unrelated changes are harder to review and more likely to introduce bugs, which is why small incremental cleanup is usually preferable in active code."
+        },
+        {
+          "id": "c",
+          "text": "Only commit code if all style violations are fixed across the repository to keep a perfect baseline before changes.",
+          "isCorrect": false,
+          "explanation": "Enforcing a global style perfection before committing is impractical and blocks progress. It creates large, unrelated cleanups and discourages frequent small improvements; incremental fixes applied to touched code are typically a better balance."
+        },
+        {
+          "id": "d",
+          "text": "Defer any naming or formatting changes to a scheduled cleanup sprint to avoid mixing refactor with feature work.",
+          "isCorrect": false,
+          "explanation": "Scheduling separate cleanup sprints can postpone necessary improvements and increase drift. It causes bigger, riskier changes later; making small related cleanups during normal work keeps the codebase healthier and reduces accumulated debt."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A PR renames a public method and updates ten call sites in the same commit. Which interpretation is most reasonable?",
+      "codeSnippet": "// payments.ts\nexport function processCharge(cardId: string) {\n  const card = getCard(cardId);\n  return processPayment(card);\n}\n// PR: Renamed processPayment to processCharge and updated callers across the repo",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The change is a focused, repository-wide cleanup that intentionally updated call sites to keep behavior unchanged and consistent.",
+          "isCorrect": true,
+          "explanation": "Updating a public API and all its callers in one focused PR can be a deliberate cleanup to improve naming or consistency while preserving behavior. This keeps the change reviewable and reduces the chance of breaking backward compatibility across the codebase."
+        },
+        {
+          "id": "b",
+          "text": "The change indicates a fragile breaking refactor that likely introduced behavioral changes and needs an isolated migration plan.",
+          "isCorrect": false,
+          "explanation": "This is a plausible concern when public APIs change, but the presence of coordinated caller updates suggests intent to preserve behavior. If tests and small scope are present, it is more likely a controlled rename rather than an unsafe refactor."
+        },
+        {
+          "id": "c",
+          "text": "The change suggests a feature addition hidden in renaming that requires separate testing for new functional behavior before merging.",
+          "isCorrect": false,
+          "explanation": "Hiding new functionality in a rename is possible, but coordinated renames across call sites usually indicate semantic-preserving cleanup. The right response is to inspect tests and behavior changes rather than assume a hidden feature."
+        },
+        {
+          "id": "d",
+          "text": "The change reflects poor code hygiene where unrelated files were modified to satisfy style checks unrelated to the rename.",
+          "isCorrect": false,
+          "explanation": "Modifying unrelated files for style is a real smell, but this PR specifically updates call sites for a renamed API, which is a different pattern. Verify the diff to distinguish intentional API rename from broad unrelated changes."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better follows the practice of making small continual improvements while minimizing review friction?",
+      "codeSnippet": "// Version A: small, local cleanup inside a feature change\nfunction calculateTotal(items: Item[]) {\n  // renamed subtotal to amount for clarity\n  const amount = items.reduce((s, i) => s + i.price, 0);\n  return amount;\n}\n\n// Version B: separate broad cleanup touching many unrelated modules\n// Renamed amount to total across unrelated modules and updated formatting across repository",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps cleanup scope local to related changes and enables gradual, reviewable improvements across the codebase.",
+          "isCorrect": true,
+          "explanation": "Version A demonstrates making a small, relevant cleanup in the same change that touches the feature. This reduces review friction and integrates improvements incrementally. It aligns with the idea of leaving code slightly improved whenever you modify it, which lowers long term maintenance cost and avoids large risky sweeps."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes many unrelated cleanups into one large change creating bigger reviews and increasing merge conflicts and risk.",
+          "isCorrect": false,
+          "explanation": "Version B appears to aggregate many unrelated modifications into a single large PR. That increases review size, the chance of merge conflicts, and the probability of regressions. Large cleanup sweeps are harder to review and revert if necessary, which makes them a less practical strategy for ongoing maintenance."
+        }
+      ]
+    }
+  ]
+}

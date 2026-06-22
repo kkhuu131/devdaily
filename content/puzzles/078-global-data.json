@@ -1,0 +1,106 @@
+{
+  "id": 78,
+  "conceptName": "Global Data",
+  "category": "code-smell",
+  "definition": "Shared mutable state that is reachable across modules or components, creating hidden coupling and unpredictable interactions at runtime.",
+  "ruleOfThumb": "Prefer explicit ownership and pass state through boundaries instead of relying on process level shared mutable objects.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Encapsulate Global Field",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Scan the snippet. What is the most obvious maintenance smell here?",
+      "codeSnippet": "// cache.ts\nlet sharedCache: Record<string, any> = {}\nexport function getCached(key: string) {\n  return sharedCache[key]\n}\nexport function setCached(key: string, value: any) {\n  sharedCache[key] = value\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This module uses a process level mutable object shared across modules causing hidden coupling and unpredictable state changes.",
+          "isCorrect": true,
+          "explanation": "The snippet exposes a module level mutable object used by multiple functions and potentially other modules. That creates implicit dependencies and makes reasoning about state changes hard. This smell often surfaces as weird test order failures and behavior that depends on usage history. Fowler describes encapsulating such fields to avoid global reachability, and the common refactor is to provide controlled accessors or to move ownership closer to where state is needed."
+        },
+        {
+          "id": "b",
+          "text": "This code uses untyped maps for runtime storage which will cause runtime type errors and brittle serialization in production.",
+          "isCorrect": false,
+          "explanation": "Using untyped maps can cause runtime type issues, but that is a different problem than the key maintenance smell here. The primary risk is not just typing but the implicit shared mutation. Adding types or serialization checks helps safety but does not remove cross module coupling. The priority should be to remove hidden shared state before addressing typing concerns."
+        },
+        {
+          "id": "c",
+          "text": "This pattern centralizes caching in a single file which simplifies changes but creates an invisible test dependency.",
+          "isCorrect": false,
+          "explanation": "Centralizing cache can indeed simplify some changes, yet the concrete risk is the invisible dependency on shared mutable state during tests. This answer points at a real consequence, but it frames the issue as a convenience trade off rather than the root cause: the global mutable object. Tests and design suffer because ownership and lifecycle are not explicit."
+        },
+        {
+          "id": "d",
+          "text": "This style exports functions directly which prevents encapsulation of mutable internals and complicates future refactoring across modules.",
+          "isCorrect": false,
+          "explanation": "Exporting functions without encapsulating internal state is related to the smell because it exposes the mutable cache. The statement is plausible, but it describes a surface symptom. The principal issue is the module level mutable data itself; addressing only function exports without clarifying ownership will not remove hidden coupling between modules."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given a shared settings object used across several modules, what is the primary operational risk you should worry about?",
+      "codeSnippet": "// settings.ts\nexport const settings: any = { mode: 'lite' }\nexport function setMode(m: string) { settings.mode = m }\n\n// moduleA.ts\nimport { settings } from './settings'\nexport function featureA() { if (settings.mode === 'full') doHeavyWork() }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code will make concurrent mutations race prone when multiple asynchronous modules change the same shared settings object.",
+          "isCorrect": false,
+          "explanation": "Concurrent mutation is a real concern when the environment runs asynchronous code or multiple threads. However, in many typical single threaded Node or browser environments the more immediate maintainability problem is the implicit coupling and loss of isolation that this pattern introduces. Concurrency may be secondary depending on runtime, but the shared mutable settings still breaks module encapsulation regardless of threading model."
+        },
+        {
+          "id": "b",
+          "text": "This code creates implicit coupling through a shared mutable settings object which breaks isolation and complicates unit testing.",
+          "isCorrect": true,
+          "explanation": "The main operational risk is the hidden dependency graph created by a shared mutable settings object. Modules become coupled to global state, tests require coordinating global setup and teardown, and refactors become risky because behavior can change depending on previous interactions. Refactoring strategies include passing configuration explicitly or encapsulating the settings behind an interface to make dependencies obvious and testable."
+        },
+        {
+          "id": "c",
+          "text": "This code introduces startup order dependencies so initialization sequencing faults can cause silent failures across modules in production.",
+          "isCorrect": false,
+          "explanation": "Startup order problems are a concrete and plausible failure mode for shared mutable state, especially if modules mutate state during initialization. Still, while important, this is one manifestation of the broader issue of hidden coupling and test fragility. Making initialization robust helps but does not remove the fundamental problem of widely reachable mutable state."
+        },
+        {
+          "id": "d",
+          "text": "This code exposes a mutable global configuration that will make feature toggles hard to reason about under parallel requests.",
+          "isCorrect": false,
+          "explanation": "Feature toggle confusion under parallel requests is a plausible runtime problem for shared mutable configuration. It is, however, a specific symptom that follows from the larger design flaw: nondeterministic shared mutation and unclear ownership. The preferred mitigation is to make configuration immutable per request or pass explicit contexts so toggles are predictable and testable."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You have two alternatives. Which version is preferable for clarity of ownership and safer testing?",
+      "codeSnippet": "// Version A: shared singleton\nconst store: Record<string, any> = {}\nexport function setValue(key: string, v: any) { store[key] = v }\nexport function getValue(key: string) { return store[key] }\n\n// Version B: passed in store\nexport function setValueV2(storeParam: Record<string, any>, key: string, v: any) { storeParam[key] = v }\nexport function getValueV2(storeParam: Record<string, any>, key: string) { return storeParam[key] }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes mutable state in a module which increases initialization order sensitivity and hidden cross module side effects.",
+          "isCorrect": false,
+          "explanation": "This observation is true about Version A but selecting it would be the wrong judgment for maintainability and testability. Centralized mutable singletons make ownership unclear and introduce order dependent behavior and hard to reproduce bugs. A developer might mistakenly prefer the simplicity of a shared store, but that simplicity trades off with brittle integration and increased coupling. Fowler recommends encapsulating such state where possible to restore clear ownership."
+        },
+        {
+          "id": "b",
+          "text": "Version B passes ownership explicitly through boundaries so mutation is localized and dependencies are visible in call sites.",
+          "isCorrect": true,
+          "explanation": "Version B is preferable because it forces explicit ownership and makes mutation local to the context that owns it. This improves testability since callers can provide test doubles or fresh state, and it reduces implicit coupling between modules. While it requires threading the state through call sites, that cost pays off with clearer lifecycle, fewer hidden side effects, and safer refactoring. See Fowler on encapsulating global fields and the pragmatic advice in Clean Code about minimizing widely reachable mutable state for long term maintainability."
+        }
+      ]
+    }
+  ]
+}

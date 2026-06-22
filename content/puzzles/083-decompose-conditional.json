@@ -1,0 +1,106 @@
+{
+  "id": 83,
+  "conceptName": "Decompose Conditional",
+  "category": "refactoring",
+  "definition": "Refactor long conditional expressions by extracting the condition logic and the corresponding actions into clearer, separately named pieces.",
+  "ruleOfThumb": "When a conditional branch contains multiple responsibilities or complex predicates, extract predicate methods and action methods to express intent and reduce cognitive load.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Decompose Conditional",
+    "page": "p. 96",
+    "externalUrl": "https://martinfowler.com/bliki/DecomposeConditional.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the function below. What is the most obvious code smell present?",
+      "codeSnippet": "function calculateCharge(order: any) {\n  let result = 0;\n  if (order.type === 'premium') {\n    if (order.weight > 10) {\n      result = order.weight * 5;\n    } else {\n      result = order.weight * 4;\n    }\n  } else {\n    if (order.weight > 10) result = order.weight * 6;\n    else result = order.weight * 5;\n  }\n  return result;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function uses long chained conditional branches that hide separate rules and should be split into clearer units.",
+          "isCorrect": true,
+          "explanation": "The nested ifs combine multiple distinct decisions (customer type and weight) inside branches. Extracting predicate methods and separate handling clarifies each rule and simplifies testing. Fowler recommends extracting the conditional logic into named functions or replacing it with polymorphism when the branches represent variations with their own behavior."
+        },
+        {
+          "id": "b",
+          "text": "The function likely suffers from duplicated arithmetic logic across branches which will cause maintenance burden when rules change.",
+          "isCorrect": false,
+          "explanation": "While duplication appears, the root issue is that the branching mixes different concerns, not merely repeated expressions. Decomposing the conditional exposes intent and allows sharing of calculation code after intent is clear."
+        },
+        {
+          "id": "c",
+          "text": "The condition ordering likely depends on side effects and could produce subtle incorrect behavior under certain inputs.",
+          "isCorrect": false,
+          "explanation": "There are no evident side effects in this snippet; the primary problem is unclear conditional structure. Side effect ordering is a valid concern in other contexts but not the core smell here."
+        },
+        {
+          "id": "d",
+          "text": "The function appears to embed policy decisions inside control flow which will make adding new rules error prone.",
+          "isCorrect": false,
+          "explanation": "This is a reasonable observation and related to the correct answer, but it is slightly broader. The immediate actionable smell is tangled conditionals; extracting predicates or using polymorphism will address the embedded policy and reduce error risk."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this pricing logic, which refactoring step most directly improves clarity and intent?",
+      "codeSnippet": "function calculatePrice(item: any, customer: any) {\n  let price = item.basePrice;\n  if (customer.isVIP && item.onSale) price *= 0.8;\n  else if (customer.isVIP && !item.onSale) price *= 0.9;\n  else if (!customer.isVIP && item.onSale) price *= 0.95;\n  else price *= 1;\n  return price;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Extract each complicated condition into a well named predicate function to clarify intent and reduce cognitive load.",
+          "isCorrect": true,
+          "explanation": "Extracting predicates like isVipOnSale or isVipNotOnSale gives the conditional branches meaningful names, reducing cognitive effort when reading the logic. After extraction you can consider dispatching to specific handler methods or a table mapping predicates to actions."
+        },
+        {
+          "id": "b",
+          "text": "Convert the nested branches into a table lookup of flags to actions stored in configuration for runtime flexibility.",
+          "isCorrect": false,
+          "explanation": "A table-driven approach can be useful, but it adds indirection and may be premature here. The immediate clarity gain comes from naming predicates; a table is more appropriate once you have well understood, stable rules."
+        },
+        {
+          "id": "c",
+          "text": "Inline all conditions to a single expression and add comments so future readers can follow the composite logic more easily.",
+          "isCorrect": false,
+          "explanation": "Inlining into a single expression increases complexity and brittleness. Comments do not communicate intent as effectively as named predicate functions and can become stale, so this is not the best next step."
+        },
+        {
+          "id": "d",
+          "text": "Introduce a feature flag to toggle branches and gradually move logic into separate services under an operational rollout plan.",
+          "isCorrect": false,
+          "explanation": "Feature flags are an operational tool and do not improve code clarity. They complicate runtime behavior and are not a substitute for refactoring conditional logic into clearer units."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the preferable refactoring for branching by customer type in this billing code?",
+      "codeSnippet": "// Version A: Polymorphic subclasses\nclass Customer { computeBilling(item: any) { return item.base; } }\nclass VipCustomer extends Customer { computeBilling(item: any) { return item.base * 0.9; } }\nclass RegularCustomer extends Customer { computeBilling(item: any) { return item.base; } }\n\n// Version B: Centralized conditional logic\nfunction computeBilling(customer: any, item: any) {\n  if (customer.type === 'vip') return item.base * 0.9;\n  if (customer.type === 'regular') return item.base;\n  return item.base;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A encapsulates variation in subclasses and eliminates conditional branching at the call site.",
+          "isCorrect": true,
+          "explanation": "Version A moves the varying behavior into the class hierarchy, adhering to the open closed principle and making it simple to add new customer types without touching call sites. This is the typical recommendation when the conditional dispatch is based on type or role. Fowler shows that replacing conditional logic with polymorphism reduces branching and centralizes variation into cooperating objects."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes conditional rules and will require modifying the conditional logic whenever a new customer type is added.",
+          "isCorrect": false,
+          "explanation": "Version B is a plausible initial design but becomes brittle as types increase. Adding a new customer type requires editing the central function, risking regressions and violating the open closed principle. The centralized conditional also mixes dispatch logic with billing calculations, making testing and extension harder."
+        }
+      ]
+    }
+  ]
+}

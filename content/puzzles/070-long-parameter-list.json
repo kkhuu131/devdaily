@@ -1,0 +1,106 @@
+{
+  "id": 70,
+  "conceptName": "Long Parameter List",
+  "category": "code-smell",
+  "definition": "A function or method signature that accepts many parameters, often primitives, making it hard to read, call, and evolve.",
+  "ruleOfThumb": "If a routine needs more than three or four parameters, consider grouping related values, introducing a parameter object, or redesigning responsibilities.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Long Parameter List",
+    "page": "pp. 98-101",
+    "externalUrl": "https://refactoring.com/catalog/longParameterList.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this function. Which description best identifies the primary maintenance concern raised by its signature?",
+      "codeSnippet": "function calculateInvoice(userId: string, startDate: string, endDate: string, includeTaxes: boolean, discountCode?: string, currency?: string) {\n  // complex calculation\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function declares many primitive parameters making calls error prone and hard to refactor across modules.",
+          "isCorrect": true,
+          "explanation": "The signature exposes many unrelated primitive values, which increases cognitive load at call sites and complicates refactoring. This is the classic symptom described by Fowler where grouping parameters into an object or preserving whole objects reduces churn and improves readability. Extracting a parameter object or using a domain object clarifies intent and centralizes validation."
+        },
+        {
+          "id": "b",
+          "text": "This function exposes implementation detail by requiring many unrelated values which increases coupling to call sites.",
+          "isCorrect": false,
+          "explanation": "Revealing implementation details via parameters can be a real concern, but the core issue here is the number and awkwardness of parameters rather than only leaking internals. Grouping parameters may hide some details but the primary smell is the overloaded signature that makes usage and evolution harder."
+        },
+        {
+          "id": "c",
+          "text": "This function violates single responsibility because it accepts many values that represent independent behaviors that should be separated.",
+          "isCorrect": false,
+          "explanation": "Accepting many values does not necessarily mean the function has multiple responsibilities. The long signature is often a surface symptom; the better first step is to examine whether parameters naturally form cohesive groups or domain objects before splitting responsibilities."
+        },
+        {
+          "id": "d",
+          "text": "This function indicates primitive obsession because callers pass numerous primitives instead of a cohesive domain object.",
+          "isCorrect": false,
+          "explanation": "Primitive obsession is related and can coexist with many parameters, especially when primitives represent a richer concept. However, the immediate recognition here should be the excessive parameter count. Addressing primitive obsession may be part of the refactor, but the primary actionable smell is the overloaded signature."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A service method below currently accepts seven parameters. Which refactor most directly reduces the maintenance cost while preserving type safety?",
+      "codeSnippet": "function createOrder(userId: string, productId: string, quantity: number, unitPrice: number, discountCode?: string, shippingAddress?: string, notifyUser = true) {\n  // create order logic\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Wrap the parameters into a single typed options object to simplify calls and centralize validation and defaults.",
+          "isCorrect": true,
+          "explanation": "A single typed options or parameter object preserves type safety while grouping related values and default logic. It cleans call sites and makes it easier to extend parameters without changing every call. This refactor aligns with Fowler's recommendation and keeps intent explicit at the API level."
+        },
+        {
+          "id": "b",
+          "text": "Split the function into several smaller functions each taking a subset of parameters to narrow each responsibility.",
+          "isCorrect": false,
+          "explanation": "Splitting into smaller functions can be appropriate if distinct responsibilities exist. However, if the parameters all contribute to the same conceptual action, fragmentation can complicate the flow and duplicate parameter handling. Prefer grouping before splitting unless responsibilities are genuinely separable."
+        },
+        {
+          "id": "c",
+          "text": "Introduce a builder class to construct arguments fluently allowing incremental composition before invoking the action.",
+          "isCorrect": false,
+          "explanation": "A builder solves the problem when construction is complex or you need a fluent API, but it introduces more code and indirection. For many simple service calls, a typed options object is simpler and more idiomatic in TypeScript than a full builder pattern."
+        },
+        {
+          "id": "d",
+          "text": "Leave the parameters as explicit primitives because explicit arguments make dependencies and defaults clearer at call sites.",
+          "isCorrect": false,
+          "explanation": "Keeping explicit primitives can make intent clear for very small signatures, but with many parameters it burdens callers and increases churn. Clear defaults and documentation help, yet grouping related parameters usually yields better long term maintainability than keeping a long primitive list."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which version is structurally preferable for a team-facing service API and why?",
+      "codeSnippet": "// Version A\nfunction scheduleMeeting(title: string, date: string, durationMinutes: number, roomId: string, organizerId: string, notifyAttendees: boolean) {\n  // scheduling logic\n}\n\n// Version B\ninterface MeetingOptions { title: string; date: string; durationMinutes: number; roomId: string; organizerId: string; notifyAttendees?: boolean }\nfunction scheduleMeeting(opts: MeetingOptions) {\n  // scheduling logic\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps call sites explicit but forces many parameters to be passed repeatedly and hinders refactoring across callers.",
+          "isCorrect": false,
+          "explanation": "Version A makes each argument explicit which can seem clearer initially, but it results in brittle call sites and widespread updates whenever the signature changes. The long signature increases duplication of argument ordering and makes adding optional parameters awkward. For a team-facing API that will evolve, this approach scales poorly."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates related parameters in a single typed options object used consistently across callers.",
+          "isCorrect": true,
+          "explanation": "Version B is preferable because it creates a single, discoverable type that documents intent and groups related fields. This reduces signature churn and improves readability at call sites. A typed options object also centralizes validation and defaults, making future extension safer. Fowler recommends preserving whole objects or introducing parameter objects when parameter lists grow; similarly, Clean Code advises reducing cognitive load at call sites."
+        }
+      ]
+    }
+  ]
+}

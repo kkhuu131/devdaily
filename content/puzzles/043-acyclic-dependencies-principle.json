@@ -1,0 +1,106 @@
+{
+  "id": 43,
+  "conceptName": "Acyclic Dependencies Principle",
+  "category": "solid",
+  "definition": "Components in a system should form a directed acyclic graph of dependencies so no circular component-level imports exist.",
+  "ruleOfThumb": "Arrange packages so dependencies only flow in one direction between component boundaries and avoid mutual package imports.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Architecture",
+    "chapter": "Component Principles",
+    "page": "115-123",
+    "externalUrl": "https://blog.cleancoder.com/uncle-bob/2012/08/13/the-component-principles.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the two service files below. What is the primary structural problem in this code?",
+      "codeSnippet": "// File: userService.ts\nimport { OrderService } from \"./orderService\";\nexport class UserService {\n  constructor(private order: OrderService) {}\n  getUserOrders(id: string) { return this.order.forUser(id); }\n}\n\n// File: orderService.ts\nimport { UserService } from \"./userService\";\nexport class OrderService {\n  constructor(private user: UserService) {}\n  forUser(id: string) { return []; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The modules form a cyclic import dependency that creates tight coupling and prevents independent component reuse.",
+          "isCorrect": true,
+          "explanation": "The two files import each other, producing a cycle at the module/component level. That cycle increases coupling, complicates testing and reuse, and may cause initialization or bundling problems. The proper fix is to invert the dependency or extract a shared abstraction so dependencies flow in one direction."
+        },
+        {
+          "id": "b",
+          "text": "The service methods expose internal state directly making the API brittle and violating encapsulation across module boundaries.",
+          "isCorrect": false,
+          "explanation": "While exposing internal state is a valid concern, the snippet shows only constructors passing service references and method calls. The more specific problem is the mutual imports creating a cyclic dependency rather than direct state leakage or API surface issues."
+        },
+        {
+          "id": "c",
+          "text": "The constructors inject concrete classes instead of interfaces making it hard to substitute implementations during testing.",
+          "isCorrect": false,
+          "explanation": "Injecting concretes can hurt testability, but here the immediate structural issue is the bidirectional import between modules. Introducing interfaces could help, but the core problem is the cycle that prevents clear layering and reuse."
+        },
+        {
+          "id": "d",
+          "text": "The files mix business logic with persistence responsibilities creating a hidden dependency on storage details in services.",
+          "isCorrect": false,
+          "explanation": "Mixing concerns is an important smell, but the provided code only shows two services referencing each other. The dominant defect is the cyclic dependency between modules, not evidence of mixed persistence responsibilities."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the package layout below, which concern most directly violates a component dependency rule?",
+      "codeSnippet": "// packages/api/index.ts\nimport { Repo } from \"../persistence/repo\";\nexport function getUser(id: string) { return Repo.find(id); }\n\n// packages/persistence/repo.ts\nimport { ApiTypes } from \"../api/types\";\nexport class Repo { static find(id: string) { return null as any; } }\n\n// packages/domain/models.ts\nexport type User = { id: string; name: string; }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A lower-level module depends on a higher-level module, risking cycles and preventing clear component layering.",
+          "isCorrect": true,
+          "explanation": "Persistence (a lower-level component) importing API types creates a dependency from low-level to high-level. That inverts intended layering and may produce cycles when higher-level modules import lower-level implementations. The remedy is to extract shared abstractions or invert dependencies so lower-level code does not import higher-level packages."
+        },
+        {
+          "id": "b",
+          "text": "The code uses globally shared mutable state causing unpredictable coupling between modules and hidden runtime interactions.",
+          "isCorrect": false,
+          "explanation": "Global mutable state can cause coupling, but the snippet shows package import directions rather than globals. The concrete problem is the directional dependency from persistence to api, not shared mutable state."
+        },
+        {
+          "id": "c",
+          "text": "The persistence class throws network exceptions directly making higher layers handle transport concerns instead of domain logic.",
+          "isCorrect": false,
+          "explanation": "Transport-layer exceptions leaking upward is a legitimate layering smell, but the provided code demonstrates an import dependency in the wrong direction. The primary issue is architectural dependency direction rather than exception handling policy."
+        },
+        {
+          "id": "d",
+          "text": "The API layer returns framework-specific types which leaks implementation details and prevents simple portability across modules.",
+          "isCorrect": false,
+          "explanation": "Leaking framework types is a portability and abstraction concern. In this example, the immediate structural violation is that a lower-level package imports a higher-level package, which threatens acyclic package relationships more directly than leaked types."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two package designs. Which version better avoids package-level import cycles and supports clear dependency direction?",
+      "codeSnippet": "// Version A\n// packages/core/api.ts\nexport interface Notifier { notify(message: string): void; }\n// packages/feature/usecase.ts\nimport { Notifier } from \"../core/api\";\nexport function run(notifier: Notifier) { notifier.notify(\"ok\"); }\n// packages/infra/notifier.ts\nimport { Notifier } from \"../core/api\";\nexport class EmailNotifier implements Notifier { notify(msg: string){ /* send */ } }\n\n// Version B\n// packages/feature/usecase.ts\nimport { EmailNotifier } from \"../infra/notifier\";\nexport function run(){ const n = new EmailNotifier(); n.notify(\"ok\"); }\n// packages/infra/notifier.ts\nimport { User } from \"../feature/types\";\nexport class EmailNotifier { notify(msg: string){ /* uses User type */ } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A places shared abstractions into an independent package consumed by both layers.",
+          "isCorrect": true,
+          "explanation": "Version A extracts the Notifier abstraction into a neutral core package that both feature and infra depend on. That produces a one-way dependency graph and prevents mutual package imports. This aligns with component design guidance to keep dependency graphs acyclic by locating shared interfaces in a stable, independent package."
+        },
+        {
+          "id": "b",
+          "text": "Version B introduces mutual imports between feature and infra packages and creates a component-level import cycle.",
+          "isCorrect": false,
+          "explanation": "Version B has feature importing infra concretes while infra imports feature types, producing a bidirectional dependency between packages. This mutual import creates cycles at component boundaries, which complicates compilation, testing, and deployment ordering. A better approach is to extract shared contracts or invert the dependency so infra implements an abstraction that feature consumes."
+        }
+      ]
+    }
+  ]
+}

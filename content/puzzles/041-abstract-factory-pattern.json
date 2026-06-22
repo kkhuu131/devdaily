@@ -1,0 +1,106 @@
+{
+  "id": 41,
+  "conceptName": "Abstract Factory Pattern",
+  "category": "design-pattern",
+  "definition": "A creational design that provides an interface for creating families of related or dependent objects without specifying their concrete classes.",
+  "ruleOfThumb": "Use when you need to produce multiple related products together and want to ensure client code stays unaware of concrete implementations.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Abstract Factory",
+    "page": "87-93",
+    "externalUrl": "https://refactoring.guru/design-patterns/abstract-factory"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the following TypeScript snippet. Which description best matches the design shown?",
+      "codeSnippet": "interface Button { render(): void }\ninterface Checkbox { render(): void }\ninterface GUIFactory { createButton(): Button; createCheckbox(): Checkbox }\nclass MacButton implements Button { render(){ console.log('mac button') } }\nclass WinButton implements Button { render(){ console.log('win button') } }\nclass MacFactory implements GUIFactory { createButton(){ return new MacButton() } createCheckbox(){ return { render(){ console.log('mac checkbox') } } } }\nclass Client { constructor(private factory: GUIFactory) {} render() { this.factory.createButton().render(); } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code encapsulates families of related products behind factory interfaces that produce interchangeable product variants.",
+          "isCorrect": true,
+          "explanation": "The snippet shows separate product interfaces and a factory interface that returns related products. The concrete factories produce platform-specific variants that the client uses through the factory interface. This keeps the client independent from concrete product classes and ensures related products are created together. See GoF Abstract Factory for rationale and examples."
+        },
+        {
+          "id": "b",
+          "text": "This code centralizes all object creation in a single class and hides complex construction logic from callers.",
+          "isCorrect": false,
+          "explanation": "Centralizing creation in a single class is a different creational approach often called a Simple Factory. The snippet instead exposes a factory interface and multiple concrete factories for families of products, rather than a single class that handles all construction details."
+        },
+        {
+          "id": "c",
+          "text": "This code uses builders to stepwise construct complex objects with many optional parameters and fluent configuration methods.",
+          "isCorrect": false,
+          "explanation": "Builder separates construction from representation and typically exposes stepwise configuration. The example returns different product implementations via factory methods rather than offering a step-by-step construction API, so it does not match the Builder intent."
+        },
+        {
+          "id": "d",
+          "text": "This code relies on dependency injection container registrations to resolve concrete implementations at runtime for decoupling.",
+          "isCorrect": false,
+          "explanation": "Dependency injection focuses on wiring dependencies externally, often using a container. While DI can supply factories, the snippet specifically defines factory interfaces and concrete factory implementations to group related products, which is a different structural intent than DI alone."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this factory-family design, what is the most likely maintenance drawback you should anticipate?",
+      "codeSnippet": "interface Button { render(): void }\ninterface Checkbox { render(): void }\ninterface GUIFactory { createButton(): Button; createCheckbox(): Checkbox }\nclass WinFactory implements GUIFactory { createButton(){ return new WinButton() } createCheckbox(){ return new WinCheckbox() } }\nclass MacFactory implements GUIFactory { createButton(){ return new MacButton() } createCheckbox(){ return new MacCheckbox() } }\n// Client receives GUIFactory and uses its products",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This design requires modifying every concrete factory class when adding a new product type which scatters changes throughout the codebase.",
+          "isCorrect": true,
+          "explanation": "Adding a new product (for example a Slider) forces you to add a new method to the factory interface and implement it in every concrete factory. That change ripples across multiple classes and files, which is the classic maintenance trade-off of this pattern."
+        },
+        {
+          "id": "b",
+          "text": "This design tightly couples clients to concrete product implementations preventing runtime selection of different product families easily.",
+          "isCorrect": false,
+          "explanation": "This is not accurate because clients depend on the factory interface and product interfaces, not concrete classes. The pattern is intended to allow runtime selection of different product families via different factory implementations."
+        },
+        {
+          "id": "c",
+          "text": "This design increases memory footprint because factories eagerly instantiate all product variants instead of creating them on demand.",
+          "isCorrect": false,
+          "explanation": "The pattern itself does not mandate eager instantiation. Concrete factories can create products lazily on demand. Memory overhead is not an inherent consequence of the family abstraction unless factories are implemented to hold pre-instantiated singletons."
+        },
+        {
+          "id": "d",
+          "text": "This design violates single responsibility by placing product creation and family selection logic in the same factory classes.",
+          "isCorrect": false,
+          "explanation": "A factory's responsibility is object creation; grouping family selection into a separate component or configuration is a design choice but not an inherent violation. The primary, widely recognized maintenance cost is the required changes when adding new product types."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You must choose between Version A and Version B for a system that should evolve product families over time. Which version is the better long term choice?",
+      "codeSnippet": "// Version A\nfunction createFactory(platform: string) {\n  if (platform === 'win') return new WinFactory()\n  if (platform === 'mac') return new MacFactory()\n  return new DefaultFactory()\n}\nconst factory = createFactory(config.platform)\nconst button = factory.createButton()\n\n// Version B\nclass FactoryRegistry {\n  private map = new Map<string, GUIFactory>()\n  register(key: string, factory: GUIFactory) { this.map.set(key, factory) }\n  get(key: string) { return this.map.get(key) }\n}\n// registry populated at startup and injected into clients\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes platform checks in one location but still leaks concrete product knowledge into client code.",
+          "isCorrect": false,
+          "explanation": "Version A uses a procedural selector that returns concrete factories based on strings. While it centralizes selection, it couples the selection logic to code that must be updated for each new family and can lead to scattered conditionals over time. The claim that it leaks product knowledge into clients is imprecise because clients still use factory interfaces, but the selector becomes a maintenance hotspot."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates product family creation behind injectable providers that keep clients agnostic of concrete product classes.",
+          "isCorrect": true,
+          "explanation": "Version B offers an extensible registry or provider-based approach that can be configured at startup or via DI. This keeps selection out of business logic, allows adding new families without touching client code, and supports runtime registration and testing. The registry pattern aligns with dependency inversion and reduces conditionals — see GoF discussions and pragmatic design guidance on decoupling creation from use."
+        }
+      ]
+    }
+  ]
+}

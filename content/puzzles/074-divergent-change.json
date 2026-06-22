@@ -1,0 +1,106 @@
+{
+  "id": 74,
+  "conceptName": "Divergent Change",
+  "category": "code-smell",
+  "definition": "A module or class that must be changed for many different reasons because it mixes multiple responsibilities, causing frequent, unrelated edits to the same place.",
+  "ruleOfThumb": "If you often edit the same file for unrelated features, split responsibilities so each change touches a focused module.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Bad Smells in Code",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/DivergentChange.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the class below. Which symptom best indicates the primary design problem in this code?",
+      "codeSnippet": "class AccountManager {\n  updateProfile(userId: string, profile: any) { /* ... */ }\n  chargeCard(userId: string, amount: number) { /* ... */ }\n  generateReport(userId: string) { /* ... */ }\n  sendWelcomeEmail(userId: string) { /* ... */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class often requires unrelated changes when different business features evolve, causing frequent conflicting modifications across releases.",
+          "isCorrect": false,
+          "explanation": "This observation is a close symptom but slightly generic. The class indeed receives edits for multiple unrelated features, which is the hallmark symptom, but the precise issue is that unrelated features converge on one module rather than isolated responsibilities."
+        },
+        {
+          "id": "b",
+          "text": "This class centralizes multiple responsibilities so unrelated feature updates force edits here, increasing risk of accidental breakage.",
+          "isCorrect": false,
+          "explanation": "This is a plausible and specific concern. Centralizing responsibilities raises coupling and risk, though it frames the problem more as centralization rather than the observable pattern of many unrelated reasons to change one file."
+        },
+        {
+          "id": "c",
+          "text": "This class couples unrelated behavior so small requirement tweaks in one feature require developers to modify unrelated methods.",
+          "isCorrect": false,
+          "explanation": "This phrasing correctly identifies that unrelated behaviors are co-located and that edits ripple across methods. It is a valid description but less succinct than the best identification of the smell as multiple independent features touching one module."
+        },
+        {
+          "id": "d",
+          "text": "Multiple independent features require edits in this same module, making changes expensive and error prone during each release.",
+          "isCorrect": true,
+          "explanation": "This succinctly captures the core symptom: the file changes for independent reasons. When features converge on a single module, every release risks unrelated regressions. The recommended fix is to separate responsibilities so each feature's change is localized."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "The following service has become costly to maintain. Which root problem most likely explains the maintenance pain?",
+      "codeSnippet": "class OrderProcessor {\n  process(order) {\n    if (!authorize(order.user)) { /* auth logic */ }\n    validate(order);\n    if (order.type === 'gift') { applyGiftLogic(order); }\n    if (order.total > 1000) { applyDiscount(order); }\n    logMetrics(order);\n    ship(order);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code concentrates many unrelated responsibilities in one module so each feature change forces edits to the same location.",
+          "isCorrect": false,
+          "explanation": "This describes a real maintainability issue and is closely related to the correct answer. It highlights responsibility concentration, but the most precise diagnosis is that unrelated features cause changes for different reasons in the same module."
+        },
+        {
+          "id": "b",
+          "text": "The code duplicates logic across services causing scattered fixes and increasing risk of inconsistent business behavior when requirements change.",
+          "isCorrect": false,
+          "explanation": "Duplication would indeed cause maintenance pain, but the snippet shows a single class handling diverse concerns rather than repeated copies. Duplication is a plausible distraction but not the primary root cause here."
+        },
+        {
+          "id": "c",
+          "text": "The code exposes too many public methods leading to fragile coupling and misuse across the system causing unpredictable modification points.",
+          "isCorrect": false,
+          "explanation": "Excessive public surface can create fragile coupling, and this is a believable concern. However, the snippet indicates feature mixing inside a single processing flow rather than an API surface problem being the central cause."
+        },
+        {
+          "id": "d",
+          "text": "The code groups divergent feature logic in a single module so unrelated feature changes consistently touch the same files.",
+          "isCorrect": true,
+          "explanation": "This pinpoints the root smell: the module changes for multiple unrelated reasons. That leads to high churn and risky edits. The remedy is to split responsibilities so each feature can evolve independently."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better reduces future cross-feature edit conflicts in a codebase that keeps changing for unrelated reasons?",
+      "codeSnippet": "// Version A\nclass AccountService {\n  updateBilling(userId: string) { /* billing and invoice logic */ }\n  generateInvoice(userId: string) { /* invoice logic */ }\n  sendNotification(userId: string, message: string) { /* notification logic */ }\n}\n\n// Version B\nclass BillingService { updateBilling(userId: string) { /* billing logic */ } }\nclass InvoiceService { generateInvoice(userId: string) { /* invoice logic */ } }\nclass NotificationService { sendNotification(userId: string, message: string) { /* notification logic */ } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes handlers into a single class increasing coupling and forcing edits for unrelated feature updates across releases.",
+          "isCorrect": false,
+          "explanation": "Version A concentrates multiple responsibilities in one class. That design reduces duplication but increases the likelihood that a change for one feature will require touching unrelated code. This makes safe, isolated changes harder and raises the chance of regression."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates each feature into its own module with clear change boundaries across the codebase.",
+          "isCorrect": true,
+          "explanation": "Version B separates responsibilities into focused services so each feature change is localized. This minimizes the number of unrelated edits required for new requirements and reduces accidental coupling. The tradeoffs include more small classes and potential need for orchestrating code, but the design scales better when different features evolve independently. See Fowler on Bad Smells in Code and Martin Fowler's guidance on splitting responsibilities for this smell."
+        }
+      ]
+    }
+  ]
+}

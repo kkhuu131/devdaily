@@ -1,0 +1,106 @@
+{
+  "id": 29,
+  "conceptName": "Extract Function",
+  "category": "refactoring",
+  "definition": "Move a section of code from a larger function into a new, clearly named function that has explicit inputs and returns a result, preserving behavior while improving readability and reuse.",
+  "ruleOfThumb": "When a contiguous chunk of code performs a single subtask or is repeated, pull it into its own small function with explicit parameters.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Extract Method",
+    "page": "pp. 39-43",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this function. Which primary smell most directly suggests pulling a contiguous chunk into a new helper?",
+      "codeSnippet": "function processOrder(order) {\n  if (!order.isValid()) { throw new Error('invalid'); }\n  let total = 0;\n  for (const item of order.items) {\n    total += item.price * item.quantity;\n  }\n  const discounted = total * (1 - order.discountRate);\n  db.save({ id: order.id, total: discounted });\n  console.log('saved', order.id);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function mixes multiple responsibilities and levels of abstraction within a single body, across validation, calculation, and persistence steps.",
+          "isCorrect": true,
+          "explanation": "The function interleaves validation, business calculation, persistence, and logging. Extracting the calculation or persistence into a named helper clarifies intent and separates concerns. Fowler describes extracting a method when a chunk performs a distinct task, improving readability and enabling focused testing."
+        },
+        {
+          "id": "b",
+          "text": "This function calls console and database operations in one place, creating hard coupling and making testing more difficult overall.",
+          "isCorrect": false,
+          "explanation": "Calling IO from the same routine is a valid concern because it complicates testing, but the root smell here is broader mixing of responsibilities. Addressing IO alone (for example by mocking) leaves the long body and mixed abstraction levels intact."
+        },
+        {
+          "id": "c",
+          "text": "This function has no comments and long body lines, implying missing documentation but not necessarily the right refactoring choice.",
+          "isCorrect": false,
+          "explanation": "Missing comments can reduce understandability, but comments are not a structural fix. Extracting a focused helper both documents intent via a good name and reduces the need for explanatory comments. Clean Code recommends naming over comments for clarity."
+        },
+        {
+          "id": "d",
+          "text": "This function performs calculations with magic numbers, which suggests extracting constants or clarifying algorithms rather than splitting bodies.",
+          "isCorrect": false,
+          "explanation": "Magic numbers are a concrete maintainability issue that often benefit from named constants. However, when magic numbers appear inside a larger mixed-responsibility function, extracting the calculation into a helper both scopes constants and improves intent."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "The report generator duplicates a short calculation in two places. What is the most appropriate immediate change to reduce duplication?",
+      "codeSnippet": "function generateReport(rows) {\n  let net = 0;\n  for (const r of rows) { net += r.amount - r.discount; }\n  logger.info('net computed', net);\n  // later\n  let total = 0;\n  for (const r of rows) { total += r.amount - r.discount; }\n  return { net, total };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Create a named helper function to encapsulate the duplicated calculation and call that helper from both locations.",
+          "isCorrect": true,
+          "explanation": "A small local helper with explicit parameters centralizes the logic without introducing global state or unnecessary abstractions. This reduces duplication and keeps the change narrowly focused, which is the intent of extracting a function for repeated code segments."
+        },
+        {
+          "id": "b",
+          "text": "Copy the calculation inline in both places and rename local variables to match context for minimal immediate change.",
+          "isCorrect": false,
+          "explanation": "Copying code avoids immediate refactoring risk but preserves duplication and increases maintenance cost. Future fixes would need multiple edits and tests would still need to account for duplicated logic."
+        },
+        {
+          "id": "c",
+          "text": "Move the calculation onto the report object as cached state and reuse the cached value across multiple operations.",
+          "isCorrect": false,
+          "explanation": "Caching on the report object may introduce lifecycle and mutability concerns, and it ties the calculation to object state rather than keeping the logic pure and reusable. This complicates reasoning compared to a simple helper."
+        },
+        {
+          "id": "d",
+          "text": "Extract a generic utility into a shared module so different reports can import the same calculation implementation.",
+          "isCorrect": false,
+          "explanation": "A shared utility can be useful, but prematurely promoting a helper to a shared module increases coupling and API surface. Start with a local helper and promote it only when reuse across modules becomes necessary."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You must isolate a discrete subtask from a long function. Which implementation is the better structural choice: Version A or Version B?",
+      "codeSnippet": "// Version A\nfunction processOrder(items: LineItem[], discountRate: number) {\n  const itemTotals = calculateItemTotals(items);\n  const discounted = applyDiscount(itemTotals, discountRate);\n  saveOrder({ items, total: discounted });\n}\nfunction calculateItemTotals(items: LineItem[]) {\n  return items.reduce((s, i) => s + i.price * i.quantity, 0);\n}\nfunction applyDiscount(total: number, rate: number) {\n  return total * (1 - rate);\n}\n\n// Version B\nfunction processOrder(items: LineItem[], discountRate: number) {\n  let total = 0;\n  for (const i of items) { total += i.price * i.quantity; }\n  const apply = () => { total = total * (1 - discountRate); };\n  apply();\n  saveOrder({ items, total });\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A encapsulates the step as a small pure helper with explicit parameters and no closed-over mutable state.",
+          "isCorrect": true,
+          "explanation": "Version A isolates behavior in small functions with clear inputs and outputs, making them easy to test, reuse, and reason about. Version B's inner function closes over and mutates outer state, which hinders testing and introduces subtle coupling. Prefer explicit parameters and pure helpers as advocated in Fowler's examples of method extraction and in Clean Code guidance."
+        },
+        {
+          "id": "b",
+          "text": "Version B uses a nested function that captures outer mutable variables and mutates shared state, hindering testing and reuse.",
+          "isCorrect": false,
+          "explanation": "Version B keeps the logic physically close, but the nested function mutates outer variables and relies on captured context, increasing coupling and making unit tests harder. This pattern often prevents reasonable reuse and can hide order-of-execution bugs, which is why extracting to a separate function with explicit parameters is preferred."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 34,
+  "conceptName": "Proxy Pattern",
+  "category": "design-pattern",
+  "definition": "A structural wrapper object that controls access to another object, adding responsibilities like lazy initialization, access control, logging, or caching while preserving the original interface.",
+  "ruleOfThumb": "Wrap an object when you need controlled access, deferred creation, or extra behavior without changing the original interface or clients.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Proxy",
+    "page": "224",
+    "externalUrl": "https://refactoring.guru/design-patterns/proxy"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the code, what best describes the wrapper object's role?",
+      "codeSnippet": "interface Service { fetch(): Promise<string> }\n\nclass RealService implements Service {\n  async fetch() { return 'data' }\n}\n\nclass ServiceProxy implements Service {\n  private real?: RealService\n  async fetch() {\n    if (!this.real) this.real = new RealService()\n    return this.real.fetch()\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It delays creating the real service until needed and forwards calls while preserving the service interface.",
+          "isCorrect": true,
+          "explanation": "This proxy defers instantiation of the heavy RealService until fetch is actually called, then forwards the call. That is characteristic virtual-proxy behavior used to reduce startup cost and memory usage without changing client code. The proxy implements the same interface so callers remain unaware of the wrapper."
+        },
+        {
+          "id": "b",
+          "text": "It duplicates service logic locally and executes requests independently to avoid remote network latency in every call.",
+          "isCorrect": false,
+          "explanation": "This option is plausible but incorrect. The proxy does not replicate RealService logic; it holds a reference and forwards calls. Duplicating logic would be a different design concern like caching or an offline gateway, but the snippet shows delegation rather than duplication."
+        },
+        {
+          "id": "c",
+          "text": "It wraps the service to encrypt payloads before transport and performs end to end secure messaging.",
+          "isCorrect": false,
+          "explanation": "Encrypting payloads would require explicit transformation code around request and response. The snippet shows only lazy instantiation and simple delegation, with no cryptographic steps. This answer confuses a transport decorator with the access-control or lazy-initialization responsibilities shown."
+        },
+        {
+          "id": "d",
+          "text": "It observes service calls and emits domain events for auditing without changing the original service implementation.",
+          "isCorrect": false,
+          "explanation": "An observing decorator would log or emit events on each call. The provided code performs lazy creation and forwards the call, not event emission. While a proxy can also log, the snippet demonstrates lazy initialization specifically, not auditing."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Examine the wrapper below. Which primary additional responsibility does it introduce?",
+      "codeSnippet": "interface Repo { get(id:string): Promise<any> }\n\nclass AuthzProxy implements Repo {\n  constructor(private repo: Repo, private user: User) {}\n  async get(id:string) {\n    if (!this.user.hasRole('reader')) throw new Error('Forbidden')\n    return this.repo.get(id)\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It enforces access control by checking caller credentials and rejecting calls when the caller lacks required permissions.",
+          "isCorrect": true,
+          "explanation": "The proxy checks user roles before forwarding to the underlying repository, which is classic protection behavior. It centralizes permission checks outside the core Repo implementation so authorization logic is applied consistently and can be changed independently."
+        },
+        {
+          "id": "b",
+          "text": "It batches multiple client requests into a single call to improve throughput and reduce network overhead under load.",
+          "isCorrect": false,
+          "explanation": "Batching would accumulate requests and issue a combined call. The snippet performs an immediate role check and forwards a single repository call, so it is not implementing batching behavior. This distractor confuses throughput optimization with access validation."
+        },
+        {
+          "id": "c",
+          "text": "It logs every request and response payload to a persistent store for later analysis and debugging of production issues.",
+          "isCorrect": false,
+          "explanation": "Logging proxies attach side effects such as recording inputs or outputs. The presented code performs an authorization check and throws on insufficient roles; it does not record or persist request/response data. Logging is a separate responsibility not implemented here."
+        },
+        {
+          "id": "d",
+          "text": "It lazily initializes a heavy resource only on first use to save memory and startup time for the application.",
+          "isCorrect": false,
+          "explanation": "Lazy initialization would delay creating the resource until first use. While proxies can implement laziness, this snippet explicitly checks user permissions before delegating, not managing resource construction. The distractor confuses two distinct proxy uses."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better preserves separation of concerns and client substitutability?",
+      "codeSnippet": "// Version A: wrapper preserves interface and delegates\nclass PaymentProxy implements Payment {\n  constructor(private real: Payment, private user: User) {}\n  process(amount:number) {\n    if (!this.user.can('pay')) throw new Error('Forbidden')\n    return this.real.process(amount)\n  }\n}\n\n// Version B: core service accepts user directly and performs checks\nclass RealPayment implements Payment {\n  constructor(private user: User) {}\n  process(amount:number) {\n    if (!this.user.can('pay')) throw new Error('Forbidden')\n    // perform payment\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps access checks outside core business code and preserves the original service interface for clients.",
+          "isCorrect": true,
+          "explanation": "Version A encapsulates authorization in a wrapper that implements the same interface as the real service. That preserves client substitutability and avoids coupling the core payment implementation to caller identity or lifecycle concerns. This separation makes testing, reuse, and composition easier — the business code focuses on payments, while cross cutting concerns are layered in proxies."
+        },
+        {
+          "id": "b",
+          "text": "Version B couples service instances to caller identity and forces service implementations to manage user lifecycle and permission checks.",
+          "isCorrect": false,
+          "explanation": "Version B injects User into the core service, binding the service to caller state and mixing authorization into business logic. This makes the service harder to reuse in different contexts, complicates testing because tests must construct users, and scatters cross cutting concerns. While sometimes acceptable for very small systems, this coupling violates separation of concerns compared to the wrapper approach."
+        }
+      ]
+    }
+  ]
+}

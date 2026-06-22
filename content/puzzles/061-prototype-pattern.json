@@ -1,0 +1,106 @@
+{
+  "id": 61,
+  "conceptName": "Prototype Pattern",
+  "category": "design-pattern",
+  "definition": "A creational technique where new objects are created by copying a preconfigured prototype instance rather than constructing from scratch.",
+  "ruleOfThumb": "Use when creating an object is expensive or when many similar instances are needed quickly and share an initial configuration.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Prototype",
+    "page": "109-119",
+    "externalUrl": "https://www.oreilly.com/library/view/design-patterns-elements/0201633612/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given this TypeScript snippet, which description best matches the code's intent?",
+      "codeSnippet": "class Widget {\n  constructor(public size: number, public color: string) {}\n  clone() { return new Widget(this.size, this.color); }\n}\nconst original = new Widget(10, 'red');\nconst copy = original.clone();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code creates new objects by copying an initialized instance to avoid repeating expensive construction logic each time.",
+          "isCorrect": true,
+          "explanation": "The snippet provides a clone method that returns a new instance initialized from the existing one. This avoids re-running the constructor logic when many similar instances are needed. The pattern is useful when object setup is nontrivial or when you want configured instances duplicated quickly without exposing construction details."
+        },
+        {
+          "id": "b",
+          "text": "This code defines a factory method that encapsulates object creation and returns new configured instances on demand for callers.",
+          "isCorrect": false,
+          "explanation": "A factory method typically centralizes construction logic in a separate creator and may accept parameters to vary creation. The snippet shows an instance method cloning itself rather than a static factory constructing new instances from parameters, so it is not a classical factory method scenario even though both patterns address object creation."
+        },
+        {
+          "id": "c",
+          "text": "This code stores global mutable state on a shared instance and returns references leading to unintended cross-instance mutations.",
+          "isCorrect": false,
+          "explanation": "Returning references to shared mutable state is a real risk, but the snippet explicitly constructs a new Widget each time clone is called. The concern would apply if the code returned the original instance or shallow references to internal mutable structures without copying them."
+        },
+        {
+          "id": "d",
+          "text": "This code relies on constructor overloading to produce variant objects with different parameters and avoid copying of instances.",
+          "isCorrect": false,
+          "explanation": "Constructor overloading creates variations by calling different constructors, but the snippet shows an explicit clone method that copies an existing instance rather than invoking alternate constructors. The behavior and intent differ because cloning duplicates a configured object rather than selecting a constructor signature."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "When instances have runtime-configured hooks and expensive initialization, what advantage does cloning a preconfigured instance give compared to always calling the constructor?",
+      "codeSnippet": "class ReportTemplate {\n  constructor(public title: string, public layout: object) {}\n  clone() { return Object.assign(Object.create(Object.getPrototypeOf(this)), this); }\n}\nconst base = new ReportTemplate('Monthly', { columns: 3 });\nconst derived = base.clone();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It preserves runtime-configured prototype behavior while avoiding repeated expensive initialization for each created instance during rapid instantiation.",
+          "isCorrect": true,
+          "explanation": "Cloning an already initialized object keeps any runtime mutations, callbacks, or prototype links intact without re-executing costly setup. That saves time when creating many similar instances quickly. Care is still required to copy or protect mutable substructures that should not be shared across clones."
+        },
+        {
+          "id": "b",
+          "text": "It prevents accidental shared mutations by returning deep independent copies of all nested objects in every new instance created.",
+          "isCorrect": false,
+          "explanation": "Deep copying every nested object is one way to avoid shared state, but cloning via Object.assign or shallow copies does not guarantee deep immutability. The primary benefit of cloning a configured instance is preserving runtime wiring and saving initialization cost, not automatically producing fully deep independent graphs."
+        },
+        {
+          "id": "c",
+          "text": "It improves memory usage by reusing the original object reference instead of allocating fresh objects for each request.",
+          "isCorrect": false,
+          "explanation": "Reusing the same object reference would save allocations but introduces shared mutable state and thread-safety issues. Cloning creates new objects; a naive clone may still share substructures, but the usual goal is independent instances, not sharing the original reference."
+        },
+        {
+          "id": "d",
+          "text": "It simplifies testing by avoiding constructor side effects so test doubles can replace heavy dependencies in cloned instances.",
+          "isCorrect": false,
+          "explanation": "Avoiding constructor side effects can help testing, but cloning is not a substitute for proper dependency management or test-friendly construction strategies. Cloning can copy unwanted state into tests, so explicit injection or builder patterns are often clearer for test setups."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable when building many independent instances from a template in a concurrent server environment?",
+      "codeSnippet": "// Version A\nconst templatesA: { [k: string]: any } = {};\ntemplatesA['invoice'] = { items: [], tax: 0 };\nfunction createInvoiceA(name: string) {\n  return templatesA[name]; // returns shared object\n}\n\n// Version B\nconst templatesB: { [k: string]: any } = {};\ntemplatesB['invoice'] = { items: [], tax: 0 };\nfunction createInvoiceB(name: string) {\n  const proto = templatesB[name];\n  return { ...proto, items: proto.items.slice() }; // returns independent clone\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is preferable when avoiding cloning overhead yields measurable latency improvements on high throughput hot paths.",
+          "isCorrect": false,
+          "explanation": "Version A returns the stored template reference directly which avoids allocation and copying cost. In a single-threaded, read-only scenario that might be acceptable. In a concurrent server with mutations per request, this design leads to shared mutable state and intermittent bugs. If performance truly requires avoiding clones, prefer immutable templates or explicit pooling with documented mutation rules rather than shared mutable templates."
+        },
+        {
+          "id": "b",
+          "text": "Version B returns independent cloned instances and avoids shared mutable state across concurrent requests.",
+          "isCorrect": true,
+          "explanation": "Version B creates a fresh object and copies mutable substructures, preventing requests from interfering with each other. This trades a small allocation and copy for correctness under concurrency and simplifies reasoning about lifecycle and ownership. The former GoF description of prototype usage highlights cloning configured instances to avoid repeating setup work while preserving independence. For high-performance needs, you can optimize cloning or use immutable templates and specialize copy logic for critical fields."
+        }
+      ]
+    }
+  ]
+}

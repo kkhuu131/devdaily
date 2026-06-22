@@ -1,0 +1,106 @@
+{
+  "id": 52,
+  "conceptName": "Chain of Responsibility Pattern",
+  "category": "design-pattern",
+  "definition": "A behavioral design approach where a request is passed along a sequence of handler objects until one handler deals with it, decoupling sender and receiver.",
+  "ruleOfThumb": "Model request processing as a linked sequence of small handlers when multiple handlers might process or pass along requests.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns",
+    "page": "257-267",
+    "externalUrl": "https://www.oreilly.com/library/view/design-patterns/0201633612/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the implementation below. Which description best matches the runtime behavior represented by this code?",
+      "codeSnippet": "interface Handler {\n  setNext(handler: Handler): Handler;\n  handle(request: string): string | null;\n}\nclass ConcreteHandlerA implements Handler {\n  private next: Handler | null = null;\n  setNext(handler: Handler) { this.next = handler; return handler; }\n  handle(request: string) { if (request.includes('A')) return 'A'; return this.next ? this.next.handle(request) : null; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Requests travel through linked handler objects until one handler elects to process the request and return a response.",
+          "isCorrect": true,
+          "explanation": "The code defines handler objects with setNext and handle methods, and each handler passes the request to the next when it cannot process it. This is the classic structure where responsibility is delegated along a chain of handlers rather than handled by a central dispatcher."
+        },
+        {
+          "id": "b",
+          "text": "A central router inspects all message types and dispatches them to matched handlers with tight coupling between router and handlers.",
+          "isCorrect": false,
+          "explanation": "A central router would have a single dispatch point that inspects messages and calls correct handlers directly. The sample shows handlers chaining to one another rather than a separate router object coordinating handler selection, so tight router-handler coupling is not the key behavior here."
+        },
+        {
+          "id": "c",
+          "text": "Each handler exposes multiple public methods that callers invoke directly instead of delegating responsibility along sequential handlers.",
+          "isCorrect": false,
+          "explanation": "If callers invoked specific methods on handlers directly, the caller would control which handler runs. The snippet shows a uniform handle method and next delegation, meaning callers delegate to the chain rather than selectively invoking multiple public handler methods."
+        },
+        {
+          "id": "d",
+          "text": "A global switch statement resides in a single class handling many request types with many conditional branches per request.",
+          "isCorrect": false,
+          "explanation": "A global switch implements conditional branching inside one component. The provided code places conditional logic inside individual handler objects that forward to the next, which distributes condition checks rather than centralizing them in a single switch."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this usage pattern. What is the primary design concern with the way the application composes its handlers?",
+      "codeSnippet": "class HandlerA { next?: any; handle(req: any) { if (req.type === 'a') return 'A'; return this.next?.handle(req); } }\nclass HandlerB { next?: any; handle(req: any) { if (req.type === 'b') return 'B'; return this.next?.handle(req); } }\nconst chain = new HandlerA();\nchain.next = new HandlerB();\nconst result = chain.handle({ type: 'b' });",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This implementation relies on a global mutable next pointer that prevents safely reusing handlers across different request flows.",
+          "isCorrect": false,
+          "explanation": "A global mutable next pointer would be problematic, but the snippet uses per-instance next properties rather than a single global pointer. The real issue here is not a single global pointer but how the chain is assembled and who is responsible for wiring."
+        },
+        {
+          "id": "b",
+          "text": "This implementation requires callers to instantiate and link concrete handler objects before use in each request flow.",
+          "isCorrect": true,
+          "explanation": "The code shows client code creating HandlerA and HandlerB instances and linking them, exposing composition details to callers. That assembly of concrete handlers reduces flexibility and violates dependency inversion. A better approach is to compose handlers through abstractions or a factory so callers are not tied to concrete classes."
+        },
+        {
+          "id": "c",
+          "text": "This implementation iterates over a handler array on every request producing predictable linear processing overhead under heavy load.",
+          "isCorrect": false,
+          "explanation": "Iterating an array per request can be a performance concern in some contexts, but the shown code forwards between linked instances and does not necessarily allocate or iterate an array each time. The performance characteristic may be acceptable and is not the main design concern in this example."
+        },
+        {
+          "id": "d",
+          "text": "This implementation swallows exceptions inside handlers so upstream callers never observe failures making error handling unreliable overall.",
+          "isCorrect": false,
+          "explanation": "Swallowing exceptions would be a serious problem, but there is no exception handling shown in the snippet. The snippet focuses on explicit wiring by the client, which is the primary structural concern rather than hidden exception behavior."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You need a maintainable server request pipeline. Which implementation is preferable and why? Compare the two versions below and choose which design you would adopt.",
+      "codeSnippet": "// Version A: centralized dispatcher\nfunction handleRequest(req: any) {\n  switch (req.type) {\n    case 'a': return 'A';\n    case 'b': return 'B';\n    default: return null;\n  }\n}\n\n// Version B: handler objects linked into a sequence\ninterface Handler { setNext(h: Handler): Handler; handle(req: any): string | null; }\nclass AHandler implements Handler { private next?: Handler; setNext(h: Handler){ this.next = h; return h; } handle(req:any){ if(req.type==='a') return 'A'; return this.next?.handle(req) ?? null; } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes all request logic in a monolithic switch function that becomes hard to extend safely.",
+          "isCorrect": false,
+          "explanation": "Version A puts all request handling logic into a single dispatcher. Adding new request types requires modifying that central switch, which breaches the open closed principle and increases risk of regressions. Centralized dispatchers can be acceptable for tiny systems but scale poorly for evolving requirements."
+        },
+        {
+          "id": "b",
+          "text": "Version B composes handler objects that implement a uniform interface to delegate requests through a linked sequence.",
+          "isCorrect": true,
+          "explanation": "Version B separates concerns into small handler objects that conform to a shared interface and forward requests along a sequence. This design improves modularity and extensibility because new handlers can be added without modifying existing ones. It also supports dynamic composition and better unit testing. See GoF for the behavioral pattern rationale and Fowler on composing responsibilities for maintainability."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 36,
+  "conceptName": "Singleton Pattern",
+  "category": "design-pattern",
+  "definition": "A creational design approach that ensures a class has only one instance and provides a global point of access to it.",
+  "ruleOfThumb": "Prefer explicit dependency provision over implicit global accessors; use single-instance objects sparingly and favor testable injection.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Singleton",
+    "page": "pp. 127-128",
+    "externalUrl": "https://refactoring.guru/design-patterns/singleton"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the snippet, which description best matches the implemented design approach shown?",
+      "codeSnippet": "class Logger {\n  private static instance: Logger;\n  private constructor() {}\n  static getInstance(): Logger {\n    if (!Logger.instance) Logger.instance = new Logger();\n    return Logger.instance;\n  }\n  log(msg: string) { console.log(msg); }\n}\nconst l = Logger.getInstance();\nl.log(\"hi\");",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A class that restricts instantiation to a single shared instance accessed through a global accessor method.",
+          "isCorrect": true,
+          "explanation": "This implementation uses a private constructor and a static accessor to ensure only one instance exists and is returned globally. That matches the canonical intent described by GoF. The risk and benefits of this approach are discussed in the citation."
+        },
+        {
+          "id": "b",
+          "text": "A module providing only stateless utility functions via exported methods without maintaining any shared instance or internal state.",
+          "isCorrect": false,
+          "explanation": "This describes a pure utility module pattern which would not allocate a single shared instance or use a private constructor. The snippet explicitly manages a single instance, so a utility module is not what is shown."
+        },
+        {
+          "id": "c",
+          "text": "A factory object that creates new instances on demand and encapsulates construction logic for callers.",
+          "isCorrect": false,
+          "explanation": "A factory returns new objects per request and encapsulates construction details. The snippet prevents new instances via a private constructor and returns the same instance, so it is not a factory."
+        },
+        {
+          "id": "d",
+          "text": "An object pool that keeps a bounded set of reusable instances and hands out objects to callers.",
+          "isCorrect": false,
+          "explanation": "An object pool manages multiple reusable instances and cycles them to callers. The snippet enforces a single instance rather than managing a pool, so this description does not match."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You find this configuration class used across many modules. What is the biggest practical concern with this design?",
+      "codeSnippet": "class AppConfig {\n  private static instance?: AppConfig;\n  private settings: Record<string,string>;\n  private constructor() {\n    this.settings = { env: process.env.NODE_ENV || 'dev' };\n  }\n  static getInstance(): AppConfig {\n    if (!this.instance) this.instance = new AppConfig();\n    return this.instance;\n  }\n  get(key: string) { return this.settings[key]; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class creates a global mutable dependency that makes testing harder by hiding dependencies behind a global accessor.",
+          "isCorrect": true,
+          "explanation": "The primary pragmatic issue is the implicit global dependency which makes unit testing and dependency substitution harder. Tests must either manipulate global state or use brittle module-level mocking. Fowler and modern DI guidance recommend favoring explicit injection to improve testability."
+        },
+        {
+          "id": "b",
+          "text": "This lazy initialization risks concurrency issues when accessed concurrently without synchronization in multi-threaded or worker scenarios.",
+          "isCorrect": false,
+          "explanation": "While lazy singletons can introduce race conditions in truly concurrent runtimes, JavaScript runtimes are single threaded for typical code. Concurrency can matter in some environments, but it is a secondary concern compared to the global hidden dependency problem in most TypeScript codebases."
+        },
+        {
+          "id": "c",
+          "text": "This design prevents explicit lifecycle management and complicates test setup because instances cannot be cleanly disposed or recreated.",
+          "isCorrect": false,
+          "explanation": "Lack of explicit lifecycle control is a valid concern and related to global state, but it is a narrower symptom. The broader issue is the hidden global dependency that causes lifecycle and testability problems across the system."
+        },
+        {
+          "id": "d",
+          "text": "This implementation tightly couples consumers to a concrete class, reducing flexibility and making future replacement more costly.",
+          "isCorrect": false,
+          "explanation": "Tight coupling to a concrete class is a real drawback, but it stems from the implicit global accessor pattern. The immediate practical pain usually felt by teams is difficulty testing and injecting alternatives, which is the more central issue."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two implementations are proposed for a shared service. Which version should you prefer in a codebase that values testability and explicit dependencies?",
+      "codeSnippet": "// Version A\nexport class PaymentProcessorA {\n  process(amount: number) { /* ... */ }\n}\nexport const paymentProcessor = new PaymentProcessorA();\n\n// Version B\nexport class PaymentProcessorB {\n  private static instance?: PaymentProcessorB;\n  private constructor() {}\n  static getInstance() {\n    if (!this.instance) this.instance = new PaymentProcessorB();\n    return this.instance;\n  }\n  process(amount: number) { /* ... */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A provides an explicit exported instance that is straightforward to inject and replace in tests.",
+          "isCorrect": true,
+          "explanation": "Version A uses an explicit exported instance which makes dependencies visible at module boundaries and simpler to replace during testing or to pass into constructors. Although module exports are still a form of global, they are easier to mock or rewire and fit better with explicit dependency provision patterns recommended by practitioners."
+        },
+        {
+          "id": "b",
+          "text": "Version B hides instantiation behind a static accessor and creates a hidden global dependency that hampers test control.",
+          "isCorrect": false,
+          "explanation": "Version B's static accessor hides the fact that code depends on a global instance and prevents easy substitution in tests. This makes implicit coupling and lifecycle control harder and encourages scattered calls to a global accessor. Such hidden globals are precisely the reason many teams prefer explicit injection or lightweight containers."
+        }
+      ]
+    }
+  ]
+}

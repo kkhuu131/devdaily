@@ -1,0 +1,106 @@
+{
+  "id": 71,
+  "conceptName": "Large Class",
+  "category": "code-smell",
+  "definition": "A class that has grown to hold too many responsibilities, collaborators, or implementation details, making it hard to understand, test, and change.",
+  "ruleOfThumb": "If a class requires separate obvious groupings of methods or collaborators, consider extracting smaller, focused types.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Extract Class",
+    "page": "166",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which symptom best identifies the primary design problem in the class below?",
+      "codeSnippet": "class OrderManager {\n  private orders: Order[] = [];\n  private db: Database;\n  private notifier: Notifier;\n  private taxService: TaxService;\n  constructor(db: Database, notifier: Notifier, taxService: TaxService) {}\n  addOrder(o: Order) { /* persist and notify */ }\n  calculateTax(order: Order) { /* tax logic */ }\n  formatReceipt(order: Order) { /* presentation */ }\n  sendPromotionalEmail(email: string) { /* marketing */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class contains many unrelated responsibilities and helper methods within one module-level type used across features.",
+          "isCorrect": true,
+          "explanation": "The class mixes persistence, tax calculation, presentation, and marketing responsibilities. That accumulation of unrelated behaviors is the hallmark of the smell and indicates opportunities for Extract Class or Extract Module refactorings. Splitting by responsibility reduces cognitive load and improves testability."
+        },
+        {
+          "id": "b",
+          "text": "This class exposes an excessive public API surface that will make unit testing and mocking tedious and brittle.",
+          "isCorrect": false,
+          "explanation": "A large public surface is a valid concern because it often follows from many responsibilities. However, the root issue here is not only surface size but the mixing of unrelated behaviors inside one type. Addressing cohesion yields better test and API improvement opportunities."
+        },
+        {
+          "id": "c",
+          "text": "This class holds numerous mutable fields and flags that increase the risk of state entanglement between workflows.",
+          "isCorrect": false,
+          "explanation": "Mutable state and flags can indeed cause entanglement, and they often occur inside large classes. In this example the fields mainly support different responsibilities rather than a tangled state machine. Extracting responsibilities will usually reduce the mutable surface as a side effect."
+        },
+        {
+          "id": "d",
+          "text": "This class depends on many other modules and services, producing high coupling and making independent reuse difficult.",
+          "isCorrect": false,
+          "explanation": "High coupling to collaborators is a real and important problem. It is plausible here but coupling often results from a class taking multiple roles. The more precise first-step is to separate concerns so each new class has a smaller, clearer set of dependencies."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the BillingProcessor below, which immediate refactoring is the most appropriate first step?",
+      "codeSnippet": "class BillingProcessor {\n  private repo: InvoiceRepo;\n  calculateTotal(items: LineItem[]) { /* totals and taxes */ }\n  applyDiscount(code: string) { /* discount rules */ }\n  generatePdf(invoice: Invoice) { /* presentation formatting */ }\n  sendInvoice(invoice: Invoice, email: string) { /* email delivery */ }\n  save(invoice: Invoice) { /* persistence */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce a facade that wraps the monolithic class and hides complexity behind a simplified API for callers.",
+          "isCorrect": false,
+          "explanation": "A facade can simplify caller usage, but it does not reduce the internal responsibilities of the class. It may delay addressing cohesion problems and can mask ongoing complexity rather than enabling focused tests and maintenance. Prefer refactoring responsibilities first."
+        },
+        {
+          "id": "b",
+          "text": "Extract notification and presentation behaviors into separate collaborator classes owned by the billing domain module.",
+          "isCorrect": true,
+          "explanation": "Moving presentation and delivery responsibilities into collaborators (for example InvoiceFormatter and InvoiceSender) isolates domain calculation and persistence. This Extract Class approach improves cohesion and makes behavior easier to test independently while keeping domain logic focused."
+        },
+        {
+          "id": "c",
+          "text": "Use subclassing to split feature variations into concrete subclasses sharing the original class implementation details.",
+          "isCorrect": false,
+          "explanation": "Subclassing to split behavior can lead to fragile hierarchies and still allow the original class to retain many responsibilities. It tends to increase complexity when responsibilities are orthogonal rather than variant. Composition is usually a better first step."
+        },
+        {
+          "id": "d",
+          "text": "Defer refactoring and instead write characterization tests around the monolithic class to document current behavior first.",
+          "isCorrect": false,
+          "explanation": "Characterization tests are a safe preparatory step, especially for risky refactors. However, they are not directly a refactoring. The most productive immediate change is to extract clear collaborators while protecting behavior with tests if necessary before more invasive restructuring."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better improves maintainability for the account workflow shown in the snippets below?",
+      "codeSnippet": "/* Version A */\nclass AccountService {\n  chargeCard(accountId, amount) { /* card charging, retries, logging */ }\n  updateBalance(accountId, amount) { /* write DB */ }\n  sendReceipt(email, data) { /* format and email */ }\n  deactivate(accountId) { /* checks and notifications */ }\n}\n\n/* Version B */\nclass AccountService {\n  constructor(paymentProcessor, repo, notifier) {}\n  charge(accountId, amount) { paymentProcessor.charge(...); repo.update(...); notifier.send(...); }\n}\nclass PaymentProcessor { charge(...) {} }\nclass Notifier { send(...) {} }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes unrelated responsibilities into one class and mixes I/O with domain logic.",
+          "isCorrect": false,
+          "explanation": "Version A groups charging, persistence, formatting, and notification in a single type. That mixing increases coupling, makes testing harder, and slows independent evolution. It also encourages creeping conditional logic for feature variations. See Fowler's advice on Extract Class for guidance."
+        },
+        {
+          "id": "b",
+          "text": "Version B splits responsibilities into focused collaborators with narrow interfaces for each concern.",
+          "isCorrect": true,
+          "explanation": "Version B decomposes the monolith into collaborators with single responsibilities, improving testability and local reasoning. Smaller types with clear interfaces limit the blast radius of changes and enable independent evolution of payment, persistence, and notification code—precisely the goal of Extract Class and Single Responsibility Principle guidance."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 54,
+  "conceptName": "Mediator Pattern",
+  "category": "design-pattern",
+  "definition": "A behavioral pattern that encapsulates how a set of objects interact by introducing a single coordinating object to manage interactions and reduce direct dependencies between colleagues.",
+  "ruleOfThumb": "If many objects refer to each other explicitly or you see complex many-to-many interaction logic, introduce a single coordinator to simplify communication and dependencies.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns",
+    "page": "p. 293",
+    "externalUrl": "https://www.pearson.com/us/higher-education/program/Gamma-Design-Patterns-Elements-of-Reusable-Object-Oriented-Software/PGM26346.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the following TypeScript snippet, which description best matches the interaction style shown?",
+      "codeSnippet": "class Widget {\n  constructor(private coordinator: any) {}\n  doAction() { this.coordinator.notify(this, 'action'); }\n}\n\nclass Coordinator {\n  notify(sender: any, msg: string) { /* forward to other widgets */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A central coordinator object handles interaction between components to avoid direct coupling between concrete colleagues.",
+          "isCorrect": true,
+          "explanation": "This snippet shows a dedicated object receiving events from widgets and forwarding them to peers. The coordinator centralizes interaction logic so widgets do not hold direct references to each other. That is the defining intent: move complex interaction rules out of many classes into one place to reduce coupling and improve maintainability."
+        },
+        {
+          "id": "b",
+          "text": "Each component publishes events to a shared bus and subscribers independently handle the domain events without central coordination.",
+          "isCorrect": false,
+          "explanation": "A shared bus describes a publish/subscribe architecture where publishers and subscribers are decoupled via topical channels. The snippet, however, shows a single coordinator actively receiving and forwarding messages rather than independent topic subscriptions. This distinguishes central coordination from a generic event broker."
+        },
+        {
+          "id": "c",
+          "text": "Objects derive from a common base and invoke parent methods to coordinate behavior through inheritance hierarchy instead of composition.",
+          "isCorrect": false,
+          "explanation": "Inheritance-based coordination would place interaction logic in a superclass. The example uses composition to delegate to a separate coordinator object, not inheritance. Confusing shared base-class behavior with a centralized coordinator is a plausible misread but not accurate here."
+        },
+        {
+          "id": "d",
+          "text": "A factory constructs related objects together so clients receive fully composed groups ready for immediate use without further orchestration.",
+          "isCorrect": false,
+          "explanation": "A factory handles object creation and assembly, returning composed objects. The code sample demonstrates runtime message routing between existing widgets, not object construction responsibilities, so the factory concern is not the primary match."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What main problem does the coordination style in this snippet aim to solve in a medium-sized application?",
+      "codeSnippet": "class ServiceA {\n  constructor(private serviceB: ServiceB) {}\n  callB() { this.serviceB.perform(); }\n}\n\nclass ServiceB {\n  constructor(private serviceA: ServiceA) {}\n  perform() { /* uses serviceA results */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It reduces direct object-to-object dependencies by moving communication logic into a single coordinating component instance.",
+          "isCorrect": true,
+          "explanation": "The code shows tight bidirectional references between services which creates coupling and testing difficulty. Introducing a coordinator extracts interaction rules out of the services and centralizes them, breaking the cyclical dependency and enabling more focused unit tests and easier evolution."
+        },
+        {
+          "id": "b",
+          "text": "It centralizes configuration and lifecycle management so that object creation and destruction are orchestrated in one place for consistency.",
+          "isCorrect": false,
+          "explanation": "Centralized construction and lifecycle orchestration is a construction concern typically solved by factories or containers. While helpful, this does not directly address the bidirectional runtime interaction problem shown, which is about coupling during message exchange rather than object creation."
+        },
+        {
+          "id": "c",
+          "text": "It provides an asynchronous publish subscribe hub so handlers can be registered without compile time coupling to concrete senders.",
+          "isCorrect": false,
+          "explanation": "A publish/subscribe hub decouples senders and receivers via topics and asynchronous dispatch. That answers a different set of requirements (asynchrony and loose coupling by topic). The snippet highlights direct synchronous mutual calls, where a coordinating object better captures the interaction semantics."
+        },
+        {
+          "id": "d",
+          "text": "It encapsulates complex transaction coordination so multiple collaborators participate under a single transactional controller with rollback semantics.",
+          "isCorrect": false,
+          "explanation": "Transaction coordination addresses atomicity across operations and is often solved by a transaction manager. The example shows tight service-to-service calls rather than multi-step transactional workflows requiring rollback, so transaction control does not match the central coupling issue."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better supports decoupling and unit testing for GUI components interacting frequently? Choose the better design.",
+      "codeSnippet": "/* Version A */\nclass Bus {\n  private widgets: Widget[] = [];\n  register(w: Widget) { this.widgets.push(w); }\n  broadcast(sender: Widget, msg: string) { this.widgets.forEach(w => w.receive(sender, msg)); }\n}\n\nclass Widget {\n  constructor(private bus: Bus) {}\n  click() { this.bus.broadcast(this, 'click'); }\n  receive(sender: Widget, msg: string) { /* react */ }\n}\n\n/* Version B */\nclass WidgetWithRefs {\n  constructor(private peers: WidgetWithRefs[]) {}\n  click() { this.peers.forEach(p => p.receive(this, 'click')); }\n  receive(sender: WidgetWithRefs, msg: string) { /* react */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes coordination in one collaborator to reduce direct coupling and simplify unit testing.",
+          "isCorrect": true,
+          "explanation": "Version A routes interactions through a single Bus instance, so each widget depends only on the bus abstraction. This makes it straightforward to mock or stub the bus in tests, to change routing rules in one place, and to avoid exponential peer references. It improves maintainability for many-to-many interactions and keeps widget classes focused on behavior rather than discovery of peers."
+        },
+        {
+          "id": "b",
+          "text": "Version B scatters peer references across widgets which increases coupling and makes isolated unit testing more difficult to achieve.",
+          "isCorrect": false,
+          "explanation": "Version B requires each widget to know about all peers, producing cascading constructor wiring and tight runtime coupling. Tests must construct full peer graphs or use heavy stubbing, and changes in one widget can force changes across many constructors. This local peer knowledge harms modularity and becomes brittle as the number of participants grows."
+        }
+      ]
+    }
+  ]
+}

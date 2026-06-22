@@ -1,0 +1,106 @@
+{
+  "id": 55,
+  "conceptName": "Memento Pattern",
+  "category": "design-pattern",
+  "definition": "A behavioral pattern that captures and externalizes an object's internal state so it can be restored later without violating encapsulation.",
+  "ruleOfThumb": "Let the originator create immutable snapshots and let a separate caretaker store them without inspecting internal details.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns — Memento",
+    "page": "311",
+    "externalUrl": "https://refactoring.guru/design-patterns/memento"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which design is illustrated by the following TypeScript excerpt?",
+      "codeSnippet": "class Originator {\n  private state: string;\n  constructor(s: string) { this.state = s; }\n  createSnapshot() { return { state: this.state }; }\n  restore(snapshot: { state: string }) { this.state = snapshot.state; }\n}\n\nclass Caretaker {\n  private history: any[] = [];\n  save(o: Originator) { this.history.push(o.createSnapshot()); }\n  restore(o: Originator, i: number) { o.restore(this.history[i]); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code shows an object creating immutable snapshots and a caretaker storing them for later restoration.",
+          "isCorrect": true,
+          "explanation": "The originator produces snapshot objects and a separate caretaker stores them without interpreting their contents. That separation of responsibilities is the core idea: the originator knows how to capture and restore its own state while the caretaker only holds snapshots. See Gamma et al. and practical descriptions at Refactoring Guru for the behavioral intent and encapsulation details."
+        },
+        {
+          "id": "b",
+          "text": "This code shows command objects encapsulating requests and undo logic being recorded for later execution or reversal.",
+          "isCorrect": false,
+          "explanation": "This looks similar to undo functionality, which Command can implement by storing inverse actions. However, the snippet stores raw state snapshots rather than encapsulated execute/undo operations. A Command-based design would encapsulate operations and their inverses rather than state blobs."
+        },
+        {
+          "id": "c",
+          "text": "This code shows objects cloning themselves to provide deep copies for independent modification without affecting original instances.",
+          "isCorrect": false,
+          "explanation": "Cloning produces independent copies but is about duplication semantics. The snippet shows explicit snapshot creation and later restoration, not general-purpose object cloning for branching. Cloning would typically return fully independent instances intended for ongoing use, not short lived restore tokens."
+        },
+        {
+          "id": "d",
+          "text": "This code shows observer subscribers registering callbacks to receive asynchronous notifications about state changes from subjects.",
+          "isCorrect": false,
+          "explanation": "Observer is about notifying interested parties when state changes. Here there is no notification mechanism or subscription list; instead there is explicit snapshot capture and storage. Observers react to changes, whereas the snippet stores state for later rollback."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary design concern in this implementation?",
+      "codeSnippet": "class Originator {\n  private data: any;\n  createSnapshot() { return { data: this.data }; }\n  restore(s: any) { this.data = s.data; }\n}\n\nclass Caretaker {\n  private snapshots: any[] = [];\n  add(o: Originator) { this.snapshots.push(o.createSnapshot()); }\n  // snapshots array grows without bounds\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This implementation risks unbounded memory growth because the caretaker stores full state snapshots for each change without eviction.",
+          "isCorrect": true,
+          "explanation": "Storing full snapshots on every change can quickly consume memory in long-running systems or with large states. Typical mitigations include limiting history length, using incremental diffs, compressing snapshots, or storing them externally. This is a practical operational concern distinct from encapsulation or coupling."
+        },
+        {
+          "id": "b",
+          "text": "This implementation exposes internal fields through snapshot objects, which breaks encapsulation and increases coupling to clients.",
+          "isCorrect": false,
+          "explanation": "Exposing internals is a valid concern if snapshots are plain objects that reveal private structure. However in many correct designs the originator provides opaque snapshot tokens to preserve encapsulation. The snippet uses plain objects, so encapsulation is a concern but not the single dominant operational problem when snapshot volume is large."
+        },
+        {
+          "id": "c",
+          "text": "This implementation couples originator and storage concerns tightly by depending on concrete snapshot structures instead of abstract tokens.",
+          "isCorrect": false,
+          "explanation": "Tight coupling can occur when storage or clients depend on concrete snapshot formats rather than abstract interfaces. That coupling makes refactoring harder. In this snippet the coupling exists, but the immediate practical risk in many deployments is resource consumption from unbounded storage rather than only architectural coupling."
+        },
+        {
+          "id": "d",
+          "text": "This implementation duplicates undo logic that could be implemented as inverse commands, leading to redundant complexity and testing difficulty.",
+          "isCorrect": false,
+          "explanation": "Implementing undo via inverse commands is an alternative, and duplicating logic is a realistic mistake. However the snippet stores state snapshots rather than duplicating inverse operation logic, so the clearer concern is snapshot volume and lifecycle management rather than duplicate undo implementations."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for preserving encapsulation and easing testing?",
+      "codeSnippet": "// Version A\nclass OriginatorA {\n  private state: any;\n  createSnapshot() { return new SnapshotA(this.state); }\n  restore(s: SnapshotA) { this.state = s.getState(); }\n}\nclass CaretakerA { private bank: any[] = []; save(s: any) { this.bank.push(s); } }\n\n// Version B\nclass OriginatorB {\n  private state: any;\n  createSnapshot() { return { state: this.state }; }\n  restore(s: any) { this.state = s.state; }\n}\nclass CaretakerB { private bank: any[] = []; save(s: any) { console.log(s.state); this.bank.push(s); } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A preserves encapsulation by having the originator create opaque snapshot objects and external code remain ignorant.",
+          "isCorrect": true,
+          "explanation": "Version A places responsibility for snapshot creation and state access inside the originator or a tightly controlled snapshot class. The caretaker stores tokens it cannot inspect, keeping internal representation private. This aids refactoring, simplifies tests that mock snapshots, and prevents external modules from depending on internal fields — a key reason to prefer this architecture."
+        },
+        {
+          "id": "b",
+          "text": "Version B exposes internal state in public snapshot objects that external modules store and inspect, breaking originator encapsulation.",
+          "isCorrect": false,
+          "explanation": "Version B uses plain objects for snapshots, allowing external components to read and depend on internal structure. This leaks implementation details, increases coupling, and makes future changes riskier. It may look simpler initially, but testing and maintenance suffer because consumers can assert against internal fields rather than behavior."
+        }
+      ]
+    }
+  ]
+}

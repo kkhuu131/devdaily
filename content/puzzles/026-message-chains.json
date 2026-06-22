@@ -1,0 +1,106 @@
+{
+  "id": 26,
+  "conceptName": "Message Chains",
+  "category": "code-smell",
+  "definition": "A pattern where client code navigates through a sequence of objects to reach a distant collaborator, exposing internal structure and creating brittle coupling.",
+  "ruleOfThumb": "Prefer telling a single object to perform the work or add a small delegating method on the nearer object to hide navigation.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring (and Martin Fowler’s Bliki)",
+    "chapter": "Message Chains",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/MessageChains.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary design problem illustrated by this snippet?",
+      "codeSnippet": "class OrderService {\n  getCustomerStreet(orderId: string) {\n    const order = this.orderRepo.findById(orderId);\n    return order.getCustomer().getAddress().getStreetName().toUpperCase();\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code tightly couples the caller to the internal structure of nested objects across module boundaries.",
+          "isCorrect": true,
+          "explanation": "The snippet shows a caller walking a chain of getters into nested objects. That means callers depend on the internal layout of collaborators, so a change to any intermediate object forces changes in all callers. The usual remediation is to move a small delegating method closer to the needed data or tell a higher-level object to perform the required operation."
+        },
+        {
+          "id": "b",
+          "text": "This code risks null reference exceptions because intermediate getters may return undefined without explicit defensive checks.",
+          "isCorrect": false,
+          "explanation": "Null or undefined checks are a real concern when traversing nested objects, but the snippet's core issue is structural coupling rather than just safety. Defensive checks mitigate runtime failures but do not address the maintenance burden from depending on object internals. Fixing the smell often involves encapsulating navigation rather than sprinkling null checks."
+        },
+        {
+          "id": "c",
+          "text": "This method likely violates single responsibility by performing traversal and data transformation in one place.",
+          "isCorrect": false,
+          "explanation": "Combining traversal and transformation can seem like a responsibility mix, but single responsibility is not the primary smell here. The main problem is that callers reach through multiple collaborators, creating fragile coupling. Addressing that coupling usually reduces incidental responsibility mixing, but SRP alone does not pinpoint this navigation dependency."
+        },
+        {
+          "id": "d",
+          "text": "This implementation may have performance issues because each chained call might trigger remote or lazy loading operations sequentially.",
+          "isCorrect": false,
+          "explanation": "Chained access can surface performance problems when intermediate calls cause remote round trips or lazy loads. While that is an important operational concern, it is a secondary symptom. The primary design problem is the exposure of internal structure to callers; encapsulating navigation both clarifies intent and can help avoid repeated remote calls."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which concern most accurately describes the underlying design problem in this code?",
+      "codeSnippet": "class InvoicePrinter {\n  printCountryCode(invoiceId: string) {\n    const invoice = this.repo.find(invoiceId);\n    return invoice.customer.getAddress().country.code.toUpperCase();\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code directly depends on deep object navigation that couples callers tightly to internal object representation.",
+          "isCorrect": true,
+          "explanation": "This snippet reveals callers reaching into nested collaborators to extract data. That tight coupling to an object's internal structure makes the codebase brittle: refactoring the nested classes requires touching all callers. A common remedy is to add a delegating accessor or a behaviour method on a nearer object so callers interact with a stable API."
+        },
+        {
+          "id": "b",
+          "text": "The code primarily suffers from missing validation because it does not check for nulls or missing address or country fields.",
+          "isCorrect": false,
+          "explanation": "Missing validation is a concrete runtime risk here, and developers often focus on null checks. However, adding checks treats the symptom of traversal fragility rather than the root cause. Encapsulation of navigation reduces the surface area for null checks and centralises validation where the data actually lives."
+        },
+        {
+          "id": "c",
+          "text": "The code is a testing difficulty because nested navigation makes mocking many small objects tedious in unit tests.",
+          "isCorrect": false,
+          "explanation": "Deep navigation does increase mocking and test setup complexity, which makes this point plausible. Still, the testing difficulty is a consequence of the deeper design issue: callers depending on nested structure. Refactoring to a simpler API improves testability by removing the need to construct full object graphs in tests."
+        },
+        {
+          "id": "d",
+          "text": "The code has transactional boundaries problem because chained getters may trigger new database fetches outside expected service scope.",
+          "isCorrect": false,
+          "explanation": "Chained access can inadvertently cause lazy loads or extra database fetches outside intended transactional scopes, creating operational bugs. That is a valid operational concern, but it is secondary: centralising access with a delegating method not only clarifies intent but also allows controlling transactional boundaries explicitly."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better design choice for reducing coupling in callers?",
+      "codeSnippet": "// Version A\nfunction printCountryCodeA(order: Order) {\n  const code = order.getCustomer().getAddress().getCountry().getCode();\n  console.log(code);\n}\n\n// Version B\nclass Order {\n  getCountryCode() { return this.customer.address.country.code; }\n}\nfunction printCountryCodeB(order: Order) {\n  console.log(order.getCountryCode());\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps callers explicit about traversal and avoids adding many delegating methods to domain classes.",
+          "isCorrect": false,
+          "explanation": "Keeping traversal explicit seems appealing because it avoids growing the object's public API. However, this pushes knowledge of internal structure into every caller, increasing coupling and making refactors more costly. Over time many callers will replicate the traversal logic, and any change to the intermediate objects will ripple through the codebase."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates the navigation details into one public method on the aggregate root.",
+          "isCorrect": true,
+          "explanation": "Version B centralises the navigation in a single delegating method on Order, providing a stable API for callers. This reduces the number of places that know the nested structure and makes refactors localized. It also offers a place to enforce invariants, validation, or transactional boundaries. References: Fowler on encapsulating navigation and replacing navigation with simple delegations, and guidance in \"Refactoring\" and \"Clean Code\" about hiding internal structure."
+        }
+      ]
+    }
+  ]
+}

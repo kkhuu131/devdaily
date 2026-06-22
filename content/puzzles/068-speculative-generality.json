@@ -1,0 +1,106 @@
+{
+  "id": 68,
+  "conceptName": "Speculative Generality",
+  "category": "code-smell",
+  "definition": "Adding abstractions, hooks, flags, or extension points that are not needed by current requirements and remain unused, increasing complexity.",
+  "ruleOfThumb": "Delay adding generality until a second use case justifies an abstraction; prefer simple concrete implementations first.",
+  "citation": {
+    "author": "Andrew Hunt and David Thomas",
+    "bookTitle": "The Pragmatic Programmer",
+    "chapter": "You Aren't Gonna Need It (YAGNI)",
+    "page": null,
+    "externalUrl": "https://pragprog.com/book/tpp/the-pragmatic-programmer"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this reporter interface and implementation. What is the most likely code smell present?",
+      "codeSnippet": "interface Reporter {\n  generateCsv(data: any): string;\n  generateJson(data: any): string;\n  generateXml(data: any): string;\n  generateHtml(data: any): string;\n}\n\nclass SalesReporter implements Reporter {\n  generateCsv(data: any) { /* used */ }\n  generateJson(data: any) { /* unused */ }\n  generateXml(data: any) { /* unused */ }\n  generateHtml(data: any) { /* unused */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The interface has many methods implemented but only one implementation is actually used in the codebase today.",
+          "isCorrect": true,
+          "explanation": "The implementation shows multiple unused methods and a single concrete class. That indicates an abstraction added in anticipation of unknown needs rather than current necessity. Unused interface members add maintenance cost without delivering value and are classic speculative generality. Prefer to keep the interface minimal and introduce additional methods when a second consumer or real requirement appears."
+        },
+        {
+          "id": "b",
+          "text": "The code duplicates logic across modules leading to inconsistent behavior when format requirements evolve across different exports.",
+          "isCorrect": false,
+          "explanation": "Duplicated logic is a real concern, but the snippet shows one implementation with unused methods rather than duplicated implementations. Duplication would be visible as repeated code across multiple classes. Here the primary issue is an over-broad interface rather than inconsistent duplication."
+        },
+        {
+          "id": "c",
+          "text": "The implementation mixes formatting and data retrieval which makes unit testing and reuse of the formatter harder in practice.",
+          "isCorrect": false,
+          "explanation": "Mixing concerns can harm testability, but the snippet only illustrates multiple unused format methods on an interface. There is no evidence of data retrieval code in the shown class. The core smell is unused abstraction rather than tangled responsibilities."
+        },
+        {
+          "id": "d",
+          "text": "There is a missing error handling path causing runtime failures when unusual input arrives to the reporter.",
+          "isCorrect": false,
+          "explanation": "Missing error handling is a valid runtime risk, but the sample marks several methods as unused rather than demonstrating absent try/catch or validation. The visible maintenance overhead comes from the unneeded interface surface, not from missing error paths in this snippet."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Examine this notification service configuration. What is the primary maintenance concern introduced here?",
+      "codeSnippet": "class NotificationService {\n  constructor(private options: { email?: boolean; sms?: boolean; push?: boolean; fax?: boolean; webhook?: boolean }) {}\n  send(payload: any) {\n    if (this.options.email) { /* send email */ }\n    if (this.options.sms) { /* not implemented */ }\n    if (this.options.push) { /* not implemented */ }\n    if (this.options.fax) { /* not implemented */ }\n    if (this.options.webhook) { /* not implemented */ }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class contains multiple conditional branches for future channels that are mostly unused and increase maintenance complexity needlessly.",
+          "isCorrect": true,
+          "explanation": "The service declares multiple optional channels and leaves most branches unimplemented, which adds cognitive load and branch churn whenever the class is edited. This is a textbook case of preemptive generality: the code anticipates channels that are not currently required, inflating the public surface and test matrix without delivering benefit."
+        },
+        {
+          "id": "b",
+          "text": "The option object leaks transport details into business logic causing coupling to specific delivery mechanisms across the codebase.",
+          "isCorrect": false,
+          "explanation": "Leaking transport details is a plausible maintenance concern, but the code shows toggles for transports rather than business logic coupling. The immediate problem is the number of unused branches and flags rather than coupling; refactoring toward a strategy abstraction would only be justified after real multiple-transport usage appears."
+        },
+        {
+          "id": "c",
+          "text": "The implementation will create performance regressions because every message must evaluate many dead conditional branches at runtime.",
+          "isCorrect": false,
+          "explanation": "Extra conditionals have some runtime cost, but in typical applications these boolean checks are negligible compared to I/O. The more significant harm here is maintenance cost from unused code paths, not measurable performance regressions. Optimizing for micro-performance would be premature."
+        },
+        {
+          "id": "d",
+          "text": "The code creates confusing public surface area that requires consumers to understand many optional flags they never need.",
+          "isCorrect": false,
+          "explanation": "This is a real usability concern and closely related to the correct answer, but it frames the issue from the consumer's perspective. The root maintenance hazard is the internal proliferation of unused branches and hooks that developers must maintain, which is the stronger characterization of speculative generality in this example."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version would you prefer for long-term maintenance in a single-product codebase with no confirmed second consumer?",
+      "codeSnippet": "// Version A\nabstract class OrderHandler {\n  handle(order: Order) {\n    this.validate(order);\n    this.transform(order);\n    this.persist(order);\n    this.notify(order);\n  }\n  protected validate(order: Order) {}\n  protected transform(order: Order) {}\n  protected persist(order: Order) {}\n  protected notify(order: Order) {}\n}\nclass EcommerceOrderHandler extends OrderHandler {\n  protected persist(order: Order) { /* used */ }\n}\n\n// Version B\nclass SimpleOrderProcessor {\n  process(order: Order) {\n    this.validate(order);\n    this.persist(order);\n  }\n  private validate(order: Order) {}\n  private persist(order: Order) {}\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes extensibility in an abstract base class with many protected hooks for future variations.",
+          "isCorrect": false,
+          "explanation": "Version A offers many protected hooks which can seem attractive for future changes, but they increase the inheritance surface and make reasoning about current behavior harder. In a single-product context without confirmed reuse, this abstraction is likely premature. Subclassing encourages scattered overrides and hidden coupling, which complicates reading, testing, and refactoring when most hooks remain unused."
+        },
+        {
+          "id": "b",
+          "text": "Version B implements a focused concrete class that contains only the behaviors required by current use cases.",
+          "isCorrect": true,
+          "explanation": "Version B is preferable because it keeps the implementation small and aligned with actual requirements. Avoiding an abstract base with unused hooks reduces mental overhead, simplifies tests, and lowers the risk of accidental coupling through protected members. If a genuine second use case appears later, a deliberate refactoring to introduce an abstraction will be cheaper and clearer than maintaining unused extension points from the start. See Pragmatic Programmer on YAGNI and Martin Fowler on refactoring to more general designs when necessity arises."
+        }
+      ]
+    }
+  ]
+}

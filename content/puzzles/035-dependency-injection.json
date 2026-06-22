@@ -1,0 +1,105 @@
+{
+  "id": 35,
+  "conceptName": "Dependency Injection",
+  "category": "solid",
+  "definition": "A technique where an object receives the components it depends on from external code rather than creating them itself, improving modularity and testability.",
+  "ruleOfThumb": "Prefer supplying collaborators from the outside (constructor or setter) so classes declare requirements instead of hiding creation logic.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Patterns of Enterprise Application Architecture",
+    "chapter": "Dependency Injection",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/articles/injection.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which code example best shows the practice where an object's collaborators are provided from outside rather than created inside?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "A class receives its required collaborators through constructor parameters and stores references without constructing them internally.",
+          "isCorrect": true,
+          "explanation": "This is the classic form: the class declares its needs via constructor parameters and does not instantiate dependencies itself. That separation makes substitution and testing straightforward."
+        },
+        {
+          "id": "b",
+          "text": "A class calls new on multiple concrete collaborators inside its methods and hides creation details from callers.",
+          "isCorrect": false,
+          "explanation": "Instantiating concrete collaborators internally couples the class to implementations and makes it harder to replace or mock those dependencies in tests."
+        },
+        {
+          "id": "c",
+          "text": "A factory function builds service instances and returns fully wired objects by creating all their dependencies internally.",
+          "isCorrect": false,
+          "explanation": "A factory centralizes construction and can help, but it still performs creation centrally rather than letting the consuming class declare and receive collaborators directly."
+        },
+        {
+          "id": "d",
+          "text": "A global service locator object exposes getters so classes request dependencies at runtime instead of receiving them.",
+          "isCorrect": false,
+          "explanation": "A service locator hides dependencies behind a global API, which obscures required collaborators and introduces hidden coupling that complicates testing and reasoning."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the main design concern with this controller constructor pattern?",
+      "codeSnippet": "class OrderRepository { save(order: any) { /* ... */ } }\n\nclass OrderController {\n  private repo: OrderRepository;\n  constructor(repo?: OrderRepository) {\n    this.repo = repo ?? new OrderRepository();\n  }\n  placeOrder(order: any) { this.repo.save(order); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The constructor creates a concrete repository when none is supplied, coupling the controller to a specific implementation.",
+          "isCorrect": true,
+          "explanation": "By instantiating OrderRepository inside the constructor the controller becomes tied to that concrete type. This mixes creation concerns with behavior and reduces flexibility for testing or swapping implementations."
+        },
+        {
+          "id": "b",
+          "text": "The constructor provisionally sets a default to preserve runtime behavior when the dependency is missing, which is acceptable.",
+          "isCorrect": false,
+          "explanation": "Providing a default preserves behavior but masks the coupling problem. Defaults can hide the fact that the controller requires a collaborator and make test setup less explicit."
+        },
+        {
+          "id": "c",
+          "text": "The constructor violates single responsibility because it mixes dependency creation with business logic instead of separating creation concerns.",
+          "isCorrect": false,
+          "explanation": "This is a valid concern but describes SRP at a higher level. The more specific issue is coupling to a concrete implementation that prevents easy replacement for tests or alternate implementations."
+        },
+        {
+          "id": "d",
+          "text": "The constructor prevents unit testing because tests cannot substitute a mock without altering controller source code at runtime.",
+          "isCorrect": false,
+          "explanation": "This particular constructor still allows tests to pass a mock via the optional parameter. The real problem is the implicit fallback that encourages production code to prefer the concrete type."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Given the two implementations below, which version is preferable for maintainability and testability?",
+      "codeSnippet": "// Version A\nclass PaymentServiceV1 {\n  private logger = new ConsoleLogger();\n  private gateway = new StripeGateway();\n  pay(amount: number) {\n    this.logger.log('pay', amount);\n    this.gateway.charge(amount);\n  }\n}\n\n// Version B\ninterface ILogger { log(topic: string, data: any): void }\ninterface IGateway { charge(amount: number): void }\n\nclass PaymentServiceV2 {\n  constructor(private logger: ILogger, private gateway: IGateway) {}\n  pay(amount: number) {\n    this.logger.log('pay', amount);\n    this.gateway.charge(amount);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A constructs its own collaborators inside methods which increases coupling and makes tests harder to manage.",
+          "isCorrect": false,
+          "explanation": "Version A hardcodes concrete collaborators, which couples behavior to specific implementations and scatters creation logic. This makes it difficult to swap behaviors and complicates unit testing. In larger systems this pattern yields brittle code where changes ripple across many classes."
+        },
+        {
+          "id": "b",
+          "text": "Version B accepts collaborators through constructor parameters which produces loose coupling and straightforward unit testing.",
+          "isCorrect": true,
+          "explanation": "Version B declares its requirements and receives collaborator implementations from callers. That separation of concerns makes swapping implementations trivial and enables lightweight mocks in tests. This aligns with advice from Fowler and principles in clean code about explicit dependencies and testability."
+        }
+      ]
+    }
+  ]
+}

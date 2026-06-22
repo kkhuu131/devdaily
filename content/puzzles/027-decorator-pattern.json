@@ -1,0 +1,106 @@
+{
+  "id": 27,
+  "conceptName": "Decorator Pattern",
+  "category": "design-pattern",
+  "definition": "A structural technique that lets you attach additional responsibilities to objects at runtime by wrapping them with lightweight, composable objects.",
+  "ruleOfThumb": "Prefer small composable wrappers to subclass explosion when you need optional or combinable behaviors applied dynamically.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Decorator",
+    "page": "175-183",
+    "externalUrl": "https://refactoring.guru/design-patterns/decorator"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the TypeScript snippet. Which description best fits the shown design?",
+      "codeSnippet": "interface Renderer {\n  render(): string\n}\nclass BaseRenderer implements Renderer {\n  render() { return 'base' }\n}\nfunction addBorder(r: Renderer): Renderer {\n  return { render: () => '<b>' + r.render() + '</b>' }\n}\nconst r = addBorder(new BaseRenderer())\nconsole.log(r.render())",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A runtime composition approach that wraps concrete objects to add responsibilities without subclassing original classes.",
+          "isCorrect": true,
+          "explanation": "This example shows wrapping a Renderer instance at runtime to extend behavior instead of creating subclasses. The wrapper implements the same interface and delegates calls to the wrapped object while adding behavior."
+        },
+        {
+          "id": "b",
+          "text": "An inheritance heavy solution that requires creating many subclasses per feature to mix behaviors at compile time.",
+          "isCorrect": false,
+          "explanation": "This is not inheritance based. The code composes behavior by wrapping instances rather than using subclass hierarchies, so it avoids the subclass-per-combination explosion."
+        },
+        {
+          "id": "c",
+          "text": "A global cross cutting interception mechanism applied via configuration to all instances automatically at runtime.",
+          "isCorrect": false,
+          "explanation": "A global interception mechanism would typically use proxies or AOP configured across the system. The snippet shows explicit local wrapping of a single instance, not a global interceptor."
+        },
+        {
+          "id": "d",
+          "text": "A transactional boundary pattern that groups operations to ensure atomic persistence and rollback control across services.",
+          "isCorrect": false,
+          "explanation": "The sample modifies the rendering result by wrapping an object. It does not implement transactional semantics, commit, or rollback behavior, so this transactional interpretation is incorrect."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the notifier composition below, what is the primary tradeoff demonstrated by this approach?",
+      "codeSnippet": "interface Notifier { send(msg: string): void }\nclass EmailNotifier implements Notifier { send(msg: string) { console.log('email:' + msg) } }\nfunction withEncryption(n: Notifier): Notifier { return { send: (m) => n.send('enc:' + m) } }\nfunction withRetry(n: Notifier): Notifier { return { send: (m) => { try { n.send(m) } catch (e) { n.send(m) } } } }\nconst n = withRetry(withEncryption(new EmailNotifier()))\nn.send('hello')",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This approach centralizes error handling across different senders making single point of failure in runtime messaging operations.",
+          "isCorrect": false,
+          "explanation": "While wrapping can centralize some behavior, the example composes concerns per instance. The main tradeoff is flexibility versus indirection, not simply creating a single failure point."
+        },
+        {
+          "id": "b",
+          "text": "Runtime composition permits flexible feature mixing without subclass explosion while adding wrapper complexity and call indirection overhead.",
+          "isCorrect": true,
+          "explanation": "Composing behaviors at runtime allows arbitrary combinations without many subclasses, but it introduces additional layers and indirection that make call stacks and debugging more complex."
+        },
+        {
+          "id": "c",
+          "text": "It forces compile time coupling between concrete notifier implementations and features causing brittle code at build time.",
+          "isCorrect": false,
+          "explanation": "This technique reduces compile-time coupling because features are applied by wrapping at runtime. The concern about compile-time brittleness does not match the shown dynamic composition approach."
+        },
+        {
+          "id": "d",
+          "text": "This pattern guarantees transactional delivery semantics across wrapped senders which complicates asynchronous retry logic significantly.",
+          "isCorrect": false,
+          "explanation": "The snippet shows feature wrapping without any transactional guarantees. Transactional semantics would require additional coordination beyond simple composition, so this option is inaccurate."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two versions show different ways to add features. Which implementation should you prefer for long term extensibility and testability?",
+      "codeSnippet": "// Version A: monolithic feature flags\nclass FormatterA {\n  constructor(private withBorder: boolean, private withUpper: boolean) {}\n  render(s: string) {\n    let out = s\n    if (this.withUpper) out = out.toUpperCase()\n    if (this.withBorder) out = '*' + out + '*'\n    return out\n  }\n}\n\n// Version B: small composable wrappers\ninterface Renderer { render(s: string): string }\nclass Base implements Renderer { render(s: string) { return s } }\nclass Upper implements Renderer { constructor(private r: Renderer) {} render(s: string) { return this.r.render(s).toUpperCase() } }\nclass Border implements Renderer { constructor(private r: Renderer) {} render(s: string) { return '*' + this.r.render(s) + '*' } }\nconst r = new Border(new Upper(new Base()))\nconsole.log(r.render('hi'))",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes all feature flags into a monolithic class making extension risky and tests fragile under change.",
+          "isCorrect": false,
+          "explanation": "Version A couples many features into one class with conditional logic, which increases branching and test cases. It becomes harder to add independent features and to unit test individual behaviors. The composable approach avoids these problems by isolating concerns into small wrappers."
+        },
+        {
+          "id": "b",
+          "text": "Version B composes small behavior wrappers at runtime enabling incremental extension and independent unit testing of features.",
+          "isCorrect": true,
+          "explanation": "Version B favors composition of tiny wrappers that implement the same interface, making it easy to add or reorder features without modifying existing code. This improves extensibility and makes each behavior independently testable. This approach aligns with recommendations in the GoF Design Patterns and common refactorings toward single responsibility and composition over inheritance."
+        }
+      ]
+    }
+  ]
+}

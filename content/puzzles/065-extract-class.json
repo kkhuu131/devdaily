@@ -1,0 +1,106 @@
+{
+  "id": 65,
+  "conceptName": "Extract Class",
+  "category": "refactoring",
+  "definition": "When a single class handles more than one responsibility, split it into smaller classes each with a single responsibility and clear collaboration.",
+  "ruleOfThumb": "If a class has groups of fields and methods that change for different reasons, move one group into a new collaborating type.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Extract Class",
+    "page": "184",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which symptom in the following class most strongly suggests it should be split into focused types?",
+      "codeSnippet": "class CustomerManager {\n  customers: any[];\n  db: Database;\n  formatter: Formatter;\n  reportGenerator: ReportService;\n  validate(customer) { /* validation */ }\n  save(customer) { /* persistence */ }\n  formatCustomer(customer) { /* presentation */ }\n  generateReport() { /* reporting */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class mixes domain logic, persistence, formatting, and reporting responsibilities together in a single large type.",
+          "isCorrect": false,
+          "explanation": "This observation is accurate but broad. The real indicator is lack of cohesion across methods; mixing concerns is the root smell and suggests splitting into focused classes that group related state and behavior."
+        },
+        {
+          "id": "b",
+          "text": "This class only implements a single small responsibility with clear boundaries and minimal private state throughout.",
+          "isCorrect": false,
+          "explanation": "This statement is false for the snippet. If it were true there would be no need to split the class, but the snippet shows multiple unrelated responsibilities and coupled state."
+        },
+        {
+          "id": "c",
+          "text": "This class exposes many unrelated public methods that operate on different subsets of internal fields without cohesion.",
+          "isCorrect": true,
+          "explanation": "Correct. Multiple unrelated public methods that use disjoint sets of fields indicate low cohesion. Splitting those responsibilities into separate collaborating types improves maintainability and testability."
+        },
+        {
+          "id": "d",
+          "text": "This class delegates all behavior to small collaborating classes and contains only a thin coordination layer and no data.",
+          "isCorrect": false,
+          "explanation": "The snippet does not match this description. A thin coordinator is fine, but the shown class contains its own data and logic across multiple domains, which is the opposite of delegation to small collaborators."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the InvoiceProcessor below, which refactor most directly reduces responsibility overlap while preserving the public API surface?",
+      "codeSnippet": "class InvoiceProcessor {\n  invoices: Invoice[];\n  calculateTotals(inv: Invoice) { /* totals */ }\n  validate(inv: Invoice) { /* validation */ }\n  formatAsCsv(inv: Invoice) { /* presentation */ }\n  saveToDb(inv: Invoice) { /* persistence */ }\n  buildReport() { /* reporting */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce dedicated domain classes for calculation, persistence, and presentation to reduce responsibility overlap and increase cohesion.",
+          "isCorrect": true,
+          "explanation": "Splitting responsibilities into separate classes groups related behavior and state, reducing coupling and clarifying ownership. This directly addresses overlapping reasons to change without necessarily changing the external API."
+        },
+        {
+          "id": "b",
+          "text": "Move selected methods into free functions outside the type to reduce file size and keep a thin class wrapper.",
+          "isCorrect": false,
+          "explanation": "Free functions can help, but they often scatter related state and make encapsulation harder. This approach reduces file size but does not give clear, cohesive types owning related data and behavior."
+        },
+        {
+          "id": "c",
+          "text": "Create a facade that delegates to many helper modules while keeping the monolithic class as the public API coordinator.",
+          "isCorrect": false,
+          "explanation": "A facade preserves a single coordinating class but can hide the lack of cohesion. It may postpone the real ownership decisions and keep coupling high, so it is not the most direct fix for overlapping responsibilities."
+        },
+        {
+          "id": "d",
+          "text": "Split the class by visibility so that public API stays small and implementation details move into private nested objects.",
+          "isCorrect": false,
+          "explanation": "Making internals private can reduce perceived surface area but still leaves a class with mixed responsibilities. True improvement comes from giving distinct responsibilities their own explicit types, not merely hiding them."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Review Version A and Version B. Which design better addresses the mixed billing and order responsibilities while keeping code testable and maintainable?",
+      "codeSnippet": "// Version A\nclass Order {\n  items: Item[];\n  total() { /* calc */ }\n}\nclass BillingAccount {\n  charge(order: Order) { /* charge card */ }\n  formatReceipt(order: Order) { /* formatting */ }\n}\n\n// Version B\nclass BigOrder {\n  items: Item[];\n  total() { /* calc */ }\n  charge(cardInfo) { /* charge card */ }\n  formatReceipt() { /* formatting */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A gives each class a single clear responsibility and reduces coupling between billing and order logic.",
+          "isCorrect": true,
+          "explanation": "Version A separates billing from order concerns into distinct types so each class owns related state and behavior. This improves cohesion, makes unit tests focused, and clarifies ownership of changes. Fowler describes extracting collaborating objects when a class has multiple reasons to change. This design also aligns with principles in Clean Code about single responsibility and testability."
+        },
+        {
+          "id": "b",
+          "text": "Version B reduces the number of types which simplifies file layout but increases coupling and obscures responsibility ownership.",
+          "isCorrect": false,
+          "explanation": "Keeping billing and order logic together in one large class can seem simpler because there are fewer files, but it mixes responsibilities and makes testing and evolving either concern harder. The combined class will likely change for unrelated reasons, leading to regressions and brittle tests. Extracting a separate billing type gives clearer boundaries and easier maintenance."
+        }
+      ]
+    }
+  ]
+}

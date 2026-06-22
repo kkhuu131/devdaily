@@ -1,0 +1,105 @@
+{
+  "id": 46,
+  "conceptName": "Composite Pattern",
+  "category": "design-pattern",
+  "definition": "A structural pattern that composes objects into tree structures to represent part-whole hierarchies and let clients treat individual objects and compositions uniformly.",
+  "ruleOfThumb": "Give leaves and containers the same interface so callers can use them interchangeably without type checks.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Composite (Structural Patterns)",
+    "page": "173",
+    "externalUrl": "https://refactoring.guru/design-patterns/composite"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement most accurately describes the intent of this design solution?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "It organizes objects into tree structures so clients can treat individual objects and groups uniformly.",
+          "isCorrect": true,
+          "explanation": "This is the core intent: provide a common abstraction for both primitives and composites so clients use them interchangeably. The pattern models part-whole hierarchies where composites aggregate children and leaves do not, enabling uniform client code and simplified traversal."
+        },
+        {
+          "id": "b",
+          "text": "It encapsulates varying algorithms behind a common interface so interchangeable strategies can be selected at runtime.",
+          "isCorrect": false,
+          "explanation": "This describes the Strategy pattern rather than the composite idea. Strategy focuses on swapping algorithm implementations behind an interface, not on forming tree structures or treating groups and individuals uniformly."
+        },
+        {
+          "id": "c",
+          "text": "It centralizes object creation in factories so callers are decoupled from concrete classes and construction logic.",
+          "isCorrect": false,
+          "explanation": "This option confuses the intent with Factory concerns. Factory patterns deal with instantiation and decoupling creation details, whereas the composite concept is about structuring object relationships and uniform client treatment."
+        },
+        {
+          "id": "d",
+          "text": "It defines a fixed protocol for communication between services to manage distributed message passing and retries.",
+          "isCorrect": false,
+          "explanation": "This describes concerns typical of messaging or middleware design, not of composing objects into hierarchical structures for uniform use by clients."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Examine the code. What is the main design problem hurting maintainability?",
+      "codeSnippet": "interface Component {\n  render(): string\n}\nclass Leaf implements Component {\n  render() { return 'leaf' }\n}\nclass Node implements Component {\n  children: Component[] = []\n  render() { return this.children.map(c => c.render()).join('') }\n}\nfunction clientRender(c: Component) {\n  // Client checks internals instead of using a uniform API\n  if ((c as any).children) {\n    (c as any).children.forEach(child => console.log(child.render()))\n  } else {\n    console.log(c.render())\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code forces clients to branch on concrete component types, preventing uniform treatment of leaves and containers.",
+          "isCorrect": true,
+          "explanation": "Clients inspect internals and branch based on type rather than relying on a common abstraction. That spreads conditional logic across callers and makes adding new component kinds error prone. The remedy is to provide a uniform component interface that hides container details."
+        },
+        {
+          "id": "b",
+          "text": "This code duplicates traversal logic across callers, scattering iteration details and creating fragile duplication across the codebase.",
+          "isCorrect": false,
+          "explanation": "Duplicated traversal is a valid concern, but it is a symptom rather than the primary design fault here. The root issue is lack of a uniform abstraction that would centralize traversal, which in turn reduces duplication."
+        },
+        {
+          "id": "c",
+          "text": "This code exposes internal children arrays publicly, enabling external mutation and breaking encapsulation and invariants.",
+          "isCorrect": false,
+          "explanation": "Exposed internals are harmful and could break invariants, but the sample shows clients type-checking rather than simply mutating children. Encapsulation is related, yet the more specific maintainability problem is client branching on concrete structure."
+        },
+        {
+          "id": "d",
+          "text": "This code relies on runtime casting to access internals, coupling clients to implementation details and hindering refactoring.",
+          "isCorrect": false,
+          "explanation": "Runtime casts do couple clients to details and impede refactoring, and this is indeed happening. However, the broader architectural flaw is the absence of a uniform interface for components so callers avoid those casts entirely."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which design better supports uniform client code and easier extension?",
+      "codeSnippet": "// Version A\ninterface Component { render(): string }\nclass Button implements Component { render() { return 'Button' } }\nclass Panel implements Component {\n  children: Component[] = []\n  add(c: Component) { this.children.push(c) }\n  render() { return this.children.map(c => c.render()).join(',') }\n}\n\n// Version B\nclass Widget {\n  children?: Widget[]\n  render(): string {\n    if (this.children && this.children.length) {\n      return this.children.map(c => c.render()).join(',')\n    }\n    return 'Widget'\n  }\n}\n\nfunction renderAll(items: (Component | Widget)[]) {\n  items.forEach(i => {\n    // Version B usage forces type checks\n    if ((i as any).children) {\n      (i as any).children.forEach((c: any) => console.log(c.render()))\n    } else {\n      console.log((i as any).render())\n    }\n  })\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A gives components a uniform interface that clients can use interchangeably.",
+          "isCorrect": true,
+          "explanation": "Version A separates the abstraction from concrete roles and provides a single Component interface for both leaves and composites. That allows client code to treat every object uniformly and avoids scattered type checks. This aligns with the structural pattern guidance in GOF and common refactorings that promote polymorphism over conditional logic."
+        },
+        {
+          "id": "b",
+          "text": "Version B mixes container behavior into the same class causing clients to perform type checks and branch.",
+          "isCorrect": false,
+          "explanation": "Version B collapses roles into one concrete class with optional children, which leaks implementation details to callers. Clients must inspect internals or use casts to handle containers versus leaves, increasing coupling and making it harder to add new component kinds or traversal behaviors. This pattern of branching undermines extensibility and violates the principle of programming to an interface."
+        }
+      ]
+    }
+  ]
+}

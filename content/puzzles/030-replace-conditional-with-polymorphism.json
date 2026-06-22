@@ -1,0 +1,105 @@
+{
+  "id": 30,
+  "conceptName": "Replace Conditional with Polymorphism",
+  "category": "refactoring",
+  "definition": "Move behavior out of conditionals that dispatch on a type code into variant-specific types that implement the behavior.",
+  "ruleOfThumb": "If you find multiple switches or if chains selecting behavior by type, move the behavior into variant types.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Conditional with Polymorphism",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/ReplaceConditionalWithPolymorphism.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which smell most directly indicates a candidate for this refactoring?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "A long conditional chain that selects different behaviors based on a type field spread across many locations.",
+          "isCorrect": false,
+          "explanation": "This is a strong indicator because the type code controls behavior. It points to duplicated branching but does not by itself prescribe the refactoring urgency relative to other issues."
+        },
+        {
+          "id": "b",
+          "text": "Deeply nested if statements that compute the same result without any clear separation of responsibilities between branches.",
+          "isCorrect": false,
+          "explanation": "Nested conditionals can mean tangled logic and responsibility confusion. They may call for decomposition, but are not always driven by a type code needing polymorphism."
+        },
+        {
+          "id": "c",
+          "text": "Repeated switch or if sequences that must be modified together when adding new domain variants across the codebase.",
+          "isCorrect": true,
+          "explanation": "When multiple switches require coordinated edits to add a variant, moving behavior into variant types reduces duplication and localizes changes to a single new type."
+        },
+        {
+          "id": "d",
+          "text": "Many conditionals guarded by type checks that scatter knowledge about variants instead of encapsulating variant behavior in objects.",
+          "isCorrect": false,
+          "explanation": "Scattered type checks highlight the problem of knowledge leakage across modules. This supports the need for encapsulation but describes the symptom rather than the immediate change surface."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Examine the code. What is the primary problem to address before applying the refactoring?",
+      "codeSnippet": "type Ticket = { kind: 'adult' | 'child' | 'senior'; base: number };\nfunction price(ticket: Ticket) {\n  switch (ticket.kind) {\n    case 'adult': return ticket.base;\n    case 'child': return ticket.base * 0.5;\n    case 'senior': return ticket.base * 0.8;\n    default: throw new Error('unknown kind');\n  }\n}\n\n// This switch appears across cart, reports, and checkout modules.",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Behavior is selected by a type code conditional instead of being owned by variant objects across the codebase.",
+          "isCorrect": true,
+          "explanation": "The switch ties behavior to a primitive type code and duplicates logic across modules. Moving behavior into variant types lets each variant own pricing logic and stops scattered edits for new kinds."
+        },
+        {
+          "id": "b",
+          "text": "The switch statement creates a runtime performance hot spot that will slow down critical request handling under load.",
+          "isCorrect": false,
+          "explanation": "Performance is unlikely to be the main issue here because a few conditionals are cheap. The real maintenance pain is duplicated branching, not runtime cost."
+        },
+        {
+          "id": "c",
+          "text": "The conditional makes it impossible to serialize object behavior for transport because functions are embedded in the control flow.",
+          "isCorrect": false,
+          "explanation": "Serialization concerns are tangential; the snippet shows pure data and a switch. The problem is behavioral distribution rather than function serialization obligations."
+        },
+        {
+          "id": "d",
+          "text": "There is an immediate thread safety issue because the conditional mutates shared state without synchronization across concurrent requests.",
+          "isCorrect": false,
+          "explanation": "Nothing in the shown code mutates shared state. Thread safety could be a concern elsewhere, but it is not the primary reason to remove type-based conditionals here."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better supports adding new variants that require their own data and behavior?",
+      "codeSnippet": "// Version A\nconst paymentHandlers: Record<string, (p: any) => void> = {\n  card: (p) => { /* uses p.cardNumber, shared externally */ },\n  paypal: (p) => { /* uses p.email, shared externally */ }\n};\nfunction processPayment(p: any) { return paymentHandlers[p.type](p); }\n\n// Version B\nabstract class Payment { abstract process(): void }\nclass CardPayment extends Payment { constructor(private cardNumber: string) { super() } process() { /* uses cardNumber */ } }\nclass PaypalPayment extends Payment { constructor(private email: string) { super() } process() { /* uses email */ } }\n\n// Version A centralizes handlers; Version B encapsulates behavior in subclasses.",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes behavior in an external map of functions that keeps variant logic separated from variant data.",
+          "isCorrect": false,
+          "explanation": "Centralizing handlers in a map keeps behavior detached from the data it needs, forcing callers to manage necessary fields and breaking encapsulation when variants need extra state or initialization."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates behavior in dedicated subclasses so each variant owns its logic and required data together.",
+          "isCorrect": true,
+          "explanation": "Encapsulating behavior in subclasses keeps data and related logic together, simplifies adding new variants with unique state, and avoids scattering conditional dispatch. This aligns with object-oriented principles and reduces coupling between callers and variant internals. See Fowler on moving case statements into polymorphic types and GoF for classic polymorphism benefits."
+        }
+      ]
+    }
+  ]
+}

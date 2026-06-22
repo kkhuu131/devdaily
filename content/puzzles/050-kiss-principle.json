@@ -1,0 +1,106 @@
+{
+  "id": 50,
+  "conceptName": "KISS Principle",
+  "category": "principle",
+  "definition": "Favor simple, straightforward designs and implementations. Avoid unnecessary complexity, indirection, or cleverness that does not add clear value.",
+  "ruleOfThumb": "When a design or implementation could be made simpler without losing requirements, prefer the simpler option first.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code",
+    "chapter": "Simple Design",
+    "page": "p. 29-37",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-code/9780136083238/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the function below. Which description best identifies the primary problem you see?",
+      "codeSnippet": "async function processOrder(req: any) {\n  const data = JSON.parse(req.body);\n  if (!data) throw new Error('bad');\n  logger.info('processing', data);\n  const validated = validateOrder(data);\n  const saved = await db.save(validated);\n  notifyWarehouse(saved);\n  return { id: saved.id };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function performs multiple unrelated responsibilities within one body across validation, parsing, logging, and persistence calls.",
+          "isCorrect": true,
+          "explanation": "The function mixes parsing, validation, logging, persistence, and notification in one unit. That makes it harder to test, change, or reuse individual steps. Applying separation of concerns yields smaller functions with clearer responsibilities and simpler tests."
+        },
+        {
+          "id": "b",
+          "text": "This function exposes internal state directly to callers and allows external modules to mutate its internal dependencies.",
+          "isCorrect": false,
+          "explanation": "While exposing internal mutable objects is a real problem, the snippet shows a single procedural flow rather than returning or exposing internal objects. The more pressing issue is the mixed responsibilities in the same function."
+        },
+        {
+          "id": "c",
+          "text": "This function uses deeply nested conditional branches creating tangled control flow that is hard to trace and reason about.",
+          "isCorrect": false,
+          "explanation": "Deep nesting can indeed harm readability, but the snippet mostly shows sequential steps rather than deeply nested conditionals. The dominant smell is the aggregation of different responsibilities into one function."
+        },
+        {
+          "id": "d",
+          "text": "This function relies on a global mutable variable which introduces hidden state and reduces predictability in tests.",
+          "isCorrect": false,
+          "explanation": "Global mutable state is a common source of bugs and test fragility, but the code sample does not reference globals. The immediate concern is the single function doing many unrelated tasks, not hidden mutable state."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which description best captures the design smell in this report-generation helper?",
+      "codeSnippet": "function generateUserReport(userId: string, options: any) {\n  const user = db.find(userId);\n  if (options.includeFormat) formatUser(user, options.format);\n  if (options.includeHistory) user.history = loadHistory(userId);\n  if (options.exportCSV) writeCsv(user);\n  if (options.includeSensitive && !authorized()) throw new Error('unauthorized');\n  return buildReport(user);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function exposes many boolean flags that combine into complex conditional logic and hide separate concerns.",
+          "isCorrect": true,
+          "explanation": "Many boolean flags create combinatorial paths and mix orthogonal responsibilities. Extracting responsibilities into focused functions or composing small tasks reduces conditional complexity and improves clarity."
+        },
+        {
+          "id": "b",
+          "text": "This function is a premature optimization that sacrifices clarity for minor performance gains in typical application flows.",
+          "isCorrect": false,
+          "explanation": "Premature optimization is a valid pitfall, but the code shows configurability-related complexity rather than optimization tricks. The issue is flag-driven branching, not explicit performance-focused code."
+        },
+        {
+          "id": "c",
+          "text": "This function duplicates formatting responsibilities which should be extracted into a dedicated formatter abstraction for reuse and tests.",
+          "isCorrect": false,
+          "explanation": "Extracting formatting could help but the primary smell is the proliferation of flags controlling unrelated behaviors. Formatter extraction addresses one symptom but not the broader combinatorial complexity."
+        },
+        {
+          "id": "d",
+          "text": "This function tightly couples report generation to transport details like HTTP and file writing, reducing modularity and reuse.",
+          "isCorrect": false,
+          "explanation": "Coupling to transport is a real concern, but the snippet shows file writing as one flag-driven side effect. The central problem is the many boolean flags and mixed concerns, which increase coupling internally."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two versions of request handling are shown. Which version better follows the principle of preferring simple, direct designs for maintainability?",
+      "codeSnippet": "// Version A\nfunction handleRequest(req: Request) {\n  const data = parse(req);\n  if (!authorize(req)) throw new Error('unauthorized');\n  const result = process(data);\n  return sendResponse(result);\n}\n\n// Version B\nclass StrategyHandler {\n  register(strategy: Strategy) { /* many registrations */ }\n  handle(req: Request) { /* find strategy, delegate with multiple indirections */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A composes small focused functions with direct control flow and keeps the request path explicit.",
+          "isCorrect": true,
+          "explanation": "Version A presents a straightforward, linear flow where each step is visible and testable. Small focused functions reduce cognitive load and make behavior easier to reason about and modify. Overly generic indirection in Version B can hide the simple happy path and make common changes harder to implement and debug."
+        },
+        {
+          "id": "b",
+          "text": "Version B introduces generic strategy objects and indirection that obscure the simple request processing path.",
+          "isCorrect": false,
+          "explanation": "Version B's generic strategy registration and delegation adds indirection that can be useful for complex, truly variable behavior, but in common request handling it obscures the control flow and increases maintenance cost. This approach tends to require more plumbing and tests for the indirection itself rather than simplifying the core logic."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 60,
+  "conceptName": "Inappropriate Intimacy",
+  "category": "code-smell",
+  "definition": "A code smell where one class knows too much about the internal details of another class, leading to tight coupling and fragile changes when either class evolves.",
+  "ruleOfThumb": "Encapsulate knowledge where it belongs; prefer asking an object for an answer rather than reaching into its internals.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Code Smells",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/refactoring/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation best describes the problem in the snippet below?",
+      "codeSnippet": "class Patient {\n  private insuranceNumber: string;\n  constructor(insuranceNumber: string) { this.insuranceNumber = insuranceNumber; }\n  getInsuranceNumber() { return this.insuranceNumber; }\n}\n\nclass BillingService {\n  charge(p: Patient) {\n    const ins = p.getInsuranceNumber();\n    console.log(\"Charge using id: \" + ins.substring(0,3));\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code tightly couples BillingService to Patient's internal data and relies on its format during billing operation.",
+          "isCorrect": true,
+          "explanation": "BillingService depends on the concrete representation of Patient.insuranceNumber and uses substring positions. That is classic intimate coupling: the service must know the format and thus will break when Patient changes its representation. The usual refactor is to move formatting/behavior into Patient or provide a dedicated accessor that returns a billing-safe value. See Fowler's refactorings for encapsulating data and Clean Code guidance on data hiding."
+        },
+        {
+          "id": "b",
+          "text": "This code violates Single Responsibility by making Patient also responsible for billing formatting logic used by BillingService.",
+          "isCorrect": false,
+          "explanation": "This is a plausible concern because responsibilities look mixed, but the actual problem is not Patient doing too much. The symptom here is the consumer reaching into Patient's internals; the stronger fix is to encapsulate the knowledge in Patient rather than accusing it of having multiple responsibilities. Moving behavior to Patient often reduces the coupling rather than splitting responsibilities further."
+        },
+        {
+          "id": "c",
+          "text": "This code breaks Law of Demeter by reaching through Patient to access data instead of using a higher level method.",
+          "isCorrect": false,
+          "explanation": "Violating the Law of Demeter is a reasonable observation when a class navigates into another object's data. However, the crucial issue is that BillingService interprets the internal format. The Law of Demeter focuses on message chains; here the real smell is exposure and reliance on an internal representation, which calls for encapsulation."
+        },
+        {
+          "id": "d",
+          "text": "This code creates a hidden data format dependency because BillingService depends on substring positions inside insuranceNumber string.",
+          "isCorrect": false,
+          "explanation": "This option correctly points out the data format dependency, which is accurate and closely related. It is a narrower description of the same root cause: the service depends on internal string layout. The preferred fix is to put the formatting or accessor on Patient so the dependency is explicit and robust."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary design issue in this excerpt, and which concern most directly points to the root cause?",
+      "codeSnippet": "class Order {\n  private items: string[] = [];\n  private status: string = 'new';\n  getItems() { return this.items; }\n}\n\nclass InvoiceService {\n  generate(o: Order) {\n    for (const it of o.getItems()) {\n      this.addLine(it, (o as any).status);\n    }\n  }\n  private addLine(item: string, status: string) { /* ... */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code has the billing service depending on Order's internal status representation rather than a clear public abstraction.",
+          "isCorrect": true,
+          "explanation": "The service reaches into Order internals by using a non-public property and assumes specific status semantics. That tight coupling makes both classes fragile. The correct remediation is to give Order a clear public query or DTO that expresses the needed intent instead of exposing its private state."
+        },
+        {
+          "id": "b",
+          "text": "This code violates Single Responsibility because Order holds both item data and billing interpretation logic used elsewhere.",
+          "isCorrect": false,
+          "explanation": "While splitting responsibilities can be valuable, the observable problem here is the consumer interpreting Order internals. SRP is a broader principle; fixing this smell usually means encapsulating the interpretation in Order rather than immediately refactoring responsibilities."
+        },
+        {
+          "id": "c",
+          "text": "This code should expose a sanitized DTO so external services avoid fragile string indexing and implicit status meanings.",
+          "isCorrect": false,
+          "explanation": "Providing a DTO is a common mitigation and would prevent fragile string access. It is a practical workaround, but it may duplicate behavior if not implemented carefully. The deeper solution is to encapsulate the logic where the meaning originates, possibly with meaningful query methods on Order."
+        },
+        {
+          "id": "d",
+          "text": "This code can be fixed by adding an interface to Order that hides status representation behind specific query methods.",
+          "isCorrect": false,
+          "explanation": "Introducing an interface can reduce coupling to a concrete class, but it does not by itself stop consumers from relying on internal semantics. The essential fix is to provide intent-revealing operations (for example isShippable or getBillingStatus) so callers do not interpret raw internal values."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better avoids tight coupling to another object's internals?",
+      "codeSnippet": "// Version A\nclass Customer {\n  private creditScore: number = 700;\n  getCreditScore() { return this.creditScore; }\n}\nclass RiskServiceA {\n  assess(c: Customer) {\n    if (c.getCreditScore() > 600) {\n      // decision logic interprets numeric semantics here\n    }\n  }\n}\n\n// Version B\nclass Customer2 {\n  private creditScore: number = 700;\n  isLowRisk() { return this.creditScore > 600; }\n}\nclass RiskServiceB {\n  assess(c: Customer2) {\n    if (c.isLowRisk()) {\n      // decision uses domain intent without numeric interpretation\n    }\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A forces the service to interpret domain internals and duplicates domain logic across multiple services.",
+          "isCorrect": false,
+          "explanation": "Version A makes each consumer interpret the meaning of creditScore, spreading knowledge about numeric thresholds across the codebase. That increases coupling and duplication and makes changes to risk criteria error prone. It is tempting for reuse, but it violates encapsulation and leads to fragile systems."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates numeric interpretation inside the domain object and keeps service logic unaware of internal representations.",
+          "isCorrect": true,
+          "explanation": "Version B encapsulates the decision about what constitutes low risk within the Customer object, presenting intent-revealing behavior to callers. That isolates domain knowledge, reduces coupling, and centralizes change points. Prefer this pattern when services need a business decision rather than raw data. Refactoring guidance from Fowler recommends moving behavior to the object that owns the data to prevent tight coupling; Clean Code also advocates expressing intent through meaningful methods."
+        }
+      ]
+    }
+  ]
+}
