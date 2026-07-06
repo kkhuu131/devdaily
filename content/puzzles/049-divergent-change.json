@@ -1,0 +1,105 @@
+{
+  "id": 49,
+  "conceptName": "Divergent Change",
+  "category": "code-smell",
+  "definition": "A code smell where a single module must be modified for many different reasons, indicating mixed responsibilities within that module.",
+  "ruleOfThumb": "When you frequently edit the same class for unrelated feature changes, split its responsibilities into smaller, focused modules.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Code Smells",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/DivergentChange.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation best indicates the primary problem shown by this code pattern?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "A single module is frequently edited for many unrelated reasons across several different feature requests.",
+          "isCorrect": true,
+          "explanation": "This observation directly describes the smell where one module accumulates unrelated responsibilities, causing edits for many distinct reasons. The correct identification is that the module mixes responsibilities and should be split so changes are localized."
+        },
+        {
+          "id": "b",
+          "text": "The codebase lacks unit tests and therefore developers change the module to fix failing tests frequently.",
+          "isCorrect": false,
+          "explanation": "Lack of tests is a real problem but describes a symptom that causes brittle changes, not the structural issue of multiple independent reasons for editing one module. Tests and architecture are related but different concerns."
+        },
+        {
+          "id": "c",
+          "text": "High cyclomatic complexity makes the function hard to understand and causes many edits for small changes.",
+          "isCorrect": false,
+          "explanation": "High complexity makes code hard to modify safely, but this explains maintenance difficulty rather than the situation where edits occur for unrelated feature reasons. Complexity can coexist with the actual smell but is not the primary cause."
+        },
+        {
+          "id": "d",
+          "text": "Tight coupling between modules forces changes in one component whenever its dependent components are modified.",
+          "isCorrect": false,
+          "explanation": "Tight coupling causes ripple effects across modules, which is distinct: coupling spreads change across components, while the targeted smell indicates one component contains many different responsibilities needing change for different reasons."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the snippet, which root design problem most likely causes frequent edits for unrelated reasons?",
+      "codeSnippet": "class PaymentProcessor {\n  processPayment(order: Order) {\n    // validate order fields\n    // persist payment record\n    // send confirmation email\n    // write audit log\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class encapsulates multiple independent responsibilities so it requires edits for different unrelated reasons often.",
+          "isCorrect": true,
+          "explanation": "The snippet shows validation, persistence, notification, and logging mixed in one class. That leads to edits when any of those independent concerns change. Refactoring to separate services reduces unrelated change impact."
+        },
+        {
+          "id": "b",
+          "text": "The module lacks an abstraction boundary and therefore every change ripples across unrelated features in the code.",
+          "isCorrect": false,
+          "explanation": "Missing abstractions can cause ripple changes, but the snippet specifically mixes distinct responsibilities inside one class rather than merely exposing a leaky boundary. Abstraction issues are related but not the most precise root cause here."
+        },
+        {
+          "id": "c",
+          "text": "Excessive coupling to infrastructure details forces edits when deployment or persistence strategies are modified by operations.",
+          "isCorrect": false,
+          "explanation": "Coupling to infrastructure is plausible when persistence appears, but the presence of notification and validation logic shows multiple domain responsibilities rather than solely an infrastructure coupling problem."
+        },
+        {
+          "id": "d",
+          "text": "Poor separation of concerns has created a God object that accumulates unrelated logic and requires frequent edits.",
+          "isCorrect": false,
+          "explanation": "This is a closely related observation and could be used interchangeably by some teams. However, the sharper diagnosis is that the single class contains independent responsibilities that change for different reasons, so splitting concerns by role is the targeted fix."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better reduces the chance that a component must be changed for unrelated reasons?",
+      "codeSnippet": "// Version A\nclass OrderService {\n  constructor(private payment: PaymentService, private notify: NotificationService) {}\n  createOrder(o: Order) {\n    this.payment.charge(o);\n    this.notify.emailCustomer(o);\n  }\n}\n\n// Version B\nclass MonolithService {\n  createOrder(o: Order) {\n    this.charge(o);\n    this.updateInventory(o);\n    this.sendEmail(o);\n    this.logAudit(o);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates independent responsibilities into focused services that limit edits to specific single reasons.",
+          "isCorrect": true,
+          "explanation": "Version A separates payment, notification, and order orchestration into distinct services. This isolates reasons to change so a modification in one area impacts only its service. This aligns with refactoring advice to reduce change coupling by splitting responsibilities into cohesive modules. See Martin Fowler on separating concerns and the single responsibility rationale, and Clean Code on cohesive units."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes many unrelated operations into one class causing changes for one feature to touch many areas.",
+          "isCorrect": false,
+          "explanation": "Version B bundles payment, inventory, notification, and auditing into one class, which means a change to any one concern may require edits across the monolith. While simpler initially, it increases the risk of unrelated change and hinders independent evolution and testing. This is typically what the smell warns against."
+        }
+      ]
+    }
+  ]
+}

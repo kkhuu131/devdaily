@@ -1,0 +1,105 @@
+{
+  "id": 50,
+  "conceptName": "YAGNI",
+  "category": "principle",
+  "definition": "A software development principle that recommends implementing only features that are currently required, avoiding speculative additions for hypothetical future needs.",
+  "ruleOfThumb": "Implement the simplest thing that works for the current requirement; postpone abstractions until a clear, immediate need appears.",
+  "citation": {
+    "author": "Kent Beck",
+    "bookTitle": "Extreme Programming Explained: Embrace Change",
+    "chapter": "Principles",
+    "page": "p. 62",
+    "externalUrl": "https://en.wikipedia.org/wiki/You_aren%27t_gonna_need_it"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "A PR adds classes and stubs for many anticipated features that are not wired into production code. What does this most likely indicate?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "The change adds speculative code for anticipated features that increases complexity and provides no immediate value to users.",
+          "isCorrect": true,
+          "explanation": "This is a textbook case of adding code because someone imagines future needs. Such speculative additions create maintenance cost and cognitive load without delivering present value. The better approach is to add only what is needed now and evolve the design when real requirements arrive."
+        },
+        {
+          "id": "b",
+          "text": "The change duplicates existing behavior across modules creating maintenance burden and inconsistent implementations for similar responsibilities.",
+          "isCorrect": false,
+          "explanation": "Duplicated behavior is a real concern, but the snippet describes scaffolding for future features rather than copy-paste duplication. Duplication would be fixed by consolidating implementations, whereas speculative scaffolding should be removed or deferred until needed."
+        },
+        {
+          "id": "c",
+          "text": "The change breaks single responsibility by mixing UI rendering with business rules inside the same class.",
+          "isCorrect": false,
+          "explanation": "Mixing UI and business logic is a maintainability problem, but the PR in the prompt adds unused scaffolding rather than combining responsibilities. SRP violations require refactoring how responsibilities are assigned, which is a different root cause than speculative additions."
+        },
+        {
+          "id": "d",
+          "text": "The change exposes a large public API surface that may be unused and complicates backward compatibility decisions.",
+          "isCorrect": false,
+          "explanation": "An oversized public API is a valid long-term risk, yet the immediate issue in the scenario is speculative implementation that provides no current functionality. API surface concerns matter, but they are a symptom that can result from premature features rather than the fundamental issue described."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "The team creates extension hooks and TODO comments to PaymentService for future providers before any concrete requirement exists. Which is the most accurate concern?",
+      "codeSnippet": "class PaymentService {\n  // TODO: support Stripe and other future providers\n  process(order: Order) {\n    // currently uses internal gateway\n    Gateway.charge(order.amount);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This creates premature abstraction in production code instead of implementing the minimal concrete behavior required right now.",
+          "isCorrect": true,
+          "explanation": "Adding abstraction prematurely tends to hide the real, simple path and increases indirection and complexity. Implementing the minimal needed behavior keeps code straightforward and makes later abstraction decisions informed by actual requirements and tests."
+        },
+        {
+          "id": "b",
+          "text": "This risks hiding current gateway details behind extension points that are unimplemented and will impede immediate testing and debugging.",
+          "isCorrect": false,
+          "explanation": "Hiding implementation behind unimplemented hooks does make testing harder, which is a valid worry. However the primary issue is the premature abstraction itself; the testing difficulty is a downstream effect of that premature abstraction rather than the root cause."
+        },
+        {
+          "id": "c",
+          "text": "This primarily violates separation of concerns by mixing gateway mechanics into service code and increasing the surface area for bugs.",
+          "isCorrect": false,
+          "explanation": "Separation of concerns is important, but the snippet shows planned extension points rather than mixing unrelated responsibilities. The central risk is overengineering abstractions before requirements justify them, which may indirectly affect separation but is distinct."
+        },
+        {
+          "id": "d",
+          "text": "This only introduces configurable extension points that can be removed or refined later without affecting present delivery schedules.",
+          "isCorrect": false,
+          "explanation": "While adding extension points may seem harmless because they can be changed later, they still introduce immediate complexity and maintenance burden. The cost of carrying speculative code through releases is not negligible and can slow feature delivery."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation should the team prefer for now, given uncertain future requirements?",
+      "codeSnippet": "// Version A: add abstraction for future providers\ninterface PaymentProvider { charge(amount: number): Promise<void> }\nclass StripeProvider implements PaymentProvider {\n  charge(amount: number) { /* stripe logic */ }\n}\nclass PaymentService {\n  constructor(private provider: PaymentProvider){}\n  process(order: any) { this.provider.charge(order.amount); }\n}\n\n// Version B: concrete implementation now, refactor only when needed\nclass PaymentServiceV2 {\n  process(order: any) { /* call internal gateway directly for now */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes future provider abstractions early which reduces anticipated refactor cost but increases present complexity.",
+          "isCorrect": false,
+          "explanation": "Choosing Version A to avoid future refactors is a reasonable instinct, but it trades immediate simplicity for speculative benefits. Early abstractions often evolve into leaky or incorrect designs when actual requirements differ, leading to more rather than less rework."
+        },
+        {
+          "id": "b",
+          "text": "Version B implements only the concrete behavior required today without speculative abstractions.",
+          "isCorrect": true,
+          "explanation": "Prefer the simplest implementation that satisfies current requirements. Implementing concrete behavior now keeps the code easy to understand and test, and lets you introduce abstraction later when concrete needs and usage patterns justify the design. This approach reduces unnecessary maintenance and aligns implementation effort with real value."
+        }
+      ]
+    }
+  ]
+}

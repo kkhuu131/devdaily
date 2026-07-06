@@ -1,0 +1,106 @@
+{
+  "id": 60,
+  "conceptName": "DRY Principle",
+  "category": "principle",
+  "definition": "Avoid repeating the same knowledge or logic in multiple places; express each piece of information in a single, unambiguous representation.",
+  "ruleOfThumb": "If you find the same logic or intent repeated, consolidate the shared part into a single place but avoid premature coupling of distinct domains.",
+  "citation": {
+    "author": "Andy Hunt and Dave Thomas",
+    "bookTitle": "The Pragmatic Programmer",
+    "chapter": "Avoiding Duplication",
+    "page": null,
+    "externalUrl": "https://pragprog.com/titles/tpp20/the-pragmatic-programmer-20th-anniversary-edition/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this snippet. What is the most obvious problem a senior dev would recognize at a glance?",
+      "codeSnippet": "function calculatePrice(item) {\n  const base = item.price * (1 - item.discount);\n  const tax = base * 0.08;\n  return Math.round((base + tax) * 100) / 100;\n}\n\nfunction finalAmount(product) {\n  const base = product.price * (1 - product.discount);\n  const tax = base * 0.08;\n  return Math.round((base + tax) * 100) / 100;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This file repeats identical business logic across multiple functions, creating duplicated implementations that increase maintenance cost.",
+          "isCorrect": true,
+          "explanation": "Both functions compute base, tax, and rounding using the same expressions. That is classic duplication of implementation-level knowledge. Consolidating the calculation into one well-named helper reduces the blast radius for changes and makes intent clearer. Note that consolidation should preserve domain intent by keeping mapping and naming appropriate to each caller."
+        },
+        {
+          "id": "b",
+          "text": "This code violates separation of concerns by mixing I/O and computation within single functions, needing layering.",
+          "isCorrect": false,
+          "explanation": "The snippet shows pure computational logic without I/O, so separation of concerns is not the primary issue here. A thoughtful developer might confuse duplicated code with mixed responsibilities, but the core smell is identical computation repeated, not I/O coupling."
+        },
+        {
+          "id": "c",
+          "text": "This module uses inconsistent naming and could benefit from clearer identifiers and a shared naming convention.",
+          "isCorrect": false,
+          "explanation": "Naming differences (calculatePrice vs finalAmount) are present but secondary. The real maintenance risk is duplicated logic; renaming alone would not remove the duplicate implementation. A renaming-first fix misses the opportunity to centralize the calculation."
+        },
+        {
+          "id": "d",
+          "text": "This implementation is missing unit tests for each function and therefore it cannot be safely refactored yet.",
+          "isCorrect": false,
+          "explanation": "Lack of tests is a valid concern, but the immediate, visible issue is duplicated calculation. Tests matter for refactoring safety, yet spotting duplication is about design; the proper next step is to write a focused test for the calculation and then consolidate, not to ignore the duplication."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Two services contain similar validation and summation logic. Which observation best captures the realistic next step?",
+      "codeSnippet": "class OrderService {\n  process(order) {\n    if (!order.items || order.items.length === 0) throw new Error(\"empty\");\n    const total = order.items.reduce((s,i)=>s+i.price*i.qty,0);\n    return { id: order.id, total };\n  }\n}\n\nclass InvoiceService {\n  finalize(invoice) {\n    if (!invoice.items || invoice.items.length === 0) throw new Error(\"empty\");\n    const amount = invoice.items.reduce((s,i)=>s+i.price*i.qty,0);\n    return { id: invoice.id, amount };\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The duplication indicates a small shared helper can handle validation and summation while mapping remains in each service.",
+          "isCorrect": true,
+          "explanation": "The repeated validation and reduction logic are implementation-level concerns that can be factored into a focused helper (validateItems and sumLineItems). Domain-specific mapping (total vs amount and return shapes) differs and should remain local. This approach balances reuse with domain clarity and minimizes coupling."
+        },
+        {
+          "id": "b",
+          "text": "The duplication suggests creating a generic utility and unifying return shapes which may collapse domain distinctions across services.",
+          "isCorrect": false,
+          "explanation": "Making a very generic utility and forcing a unified DTO might seem efficient, but it blurs domain boundaries. Overgeneralization can introduce coupling and future friction when one service needs special behavior."
+        },
+        {
+          "id": "c",
+          "text": "The duplication implies keeping the copy to avoid premature coupling and to preserve domain specific mappings and intent.",
+          "isCorrect": false,
+          "explanation": "Keeping duplication to avoid coupling is sometimes valid, but here the repeated code is mechanical validation and reduction. Leaving it duplicated misses the opportunity to reduce maintenance burden; a small shared helper preserves intent without premature coupling."
+        },
+        {
+          "id": "d",
+          "text": "The duplication indicates building a base class and letting services inherit shared methods, which may increase awkward coupling.",
+          "isCorrect": false,
+          "explanation": "Using inheritance to share behavior often introduces tight coupling and forces unnatural hierarchies. Prefer composition with a small shared helper to avoid brittle base-class relationships and to keep services independent."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which design is the better long-term choice for maintainable, intent-revealing code?",
+      "codeSnippet": "// Version A\nfunction exportData(data, asCsv) {\n  if (asCsv) {\n    // format as CSV\n    return \"csv...\";\n  } else {\n    // format as JSON\n    return JSON.stringify(data);\n  }\n}\n\n// Version B\nfunction formatCsv(data) { /* csv formatting */ }\nfunction formatJson(data) { /* json formatting */ }\nfunction formatShared(data) { /* shared low level helper used by both */ }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A mixes two behaviors behind a boolean argument which obscures intent and hinders reuse.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes behavior with a boolean flag, which can seem DRY but actually couples unrelated behaviors and hides intent. Call sites must remember the flag meaning, and adding formats increases combinatorial complexity. This pattern also makes extracting a single format harder."
+        },
+        {
+          "id": "b",
+          "text": "Version B separates behaviors into explicit functions and shares a focused helper for the common operation.",
+          "isCorrect": true,
+          "explanation": "Version B exposes explicit functions for each behavior and factors only the low-level shared work into a helper. That preserves clear intent at the call site and keeps shared implementation in one place without collapsing distinct responsibilities. This form of reuse keeps code readable and easier to extend, following principles of composition and single responsibility."
+        }
+      ]
+    }
+  ]
+}

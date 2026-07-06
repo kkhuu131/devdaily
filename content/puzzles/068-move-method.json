@@ -1,0 +1,106 @@
+{
+  "id": 68,
+  "conceptName": "Move Method",
+  "category": "refactoring",
+  "definition": "When a method uses more of another class's data or behavior than its own, relocate it to the class it mainly interacts with.",
+  "ruleOfThumb": "If a method accesses more details of another class than its own, move the method to the class it uses most.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Move Method",
+    "page": "72-77",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine this code. Which observation best describes the primary design smell in the getCustomerDisplay method?",
+      "codeSnippet": "class Order {\n  customer: Customer;\n  totalCents: number;\n\n  getCustomerDisplay(): string {\n    return `${this.customer.firstName} ${this.customer.lastName} (${this.customer.loyaltyTier})`;\n  }\n}\n\nclass Customer {\n  firstName: string;\n  lastName: string;\n  loyaltyTier: string;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This method primarily accesses Customer fields and methods instead of Order data, centering logic on Customer details.",
+          "isCorrect": true,
+          "explanation": "The method is reading only Customer properties and formatting customer information. It depends more on Customer internals than on Order state, which is the hallmark of relocating behavior to the class that owns the data. Moving the method reduces coupling and improves cohesion by keeping customer-related logic with Customer."
+        },
+        {
+          "id": "b",
+          "text": "This method primarily performs presentation formatting and mixes display concerns into domain classes instead of a UI layer.",
+          "isCorrect": false,
+          "explanation": "This critique is plausible because the method formats a string for display. However the core issue is that the formatting uses Customer data exclusively; presentation extraction might help, but placing the logic near data ownership is a more direct refactoring. Presentation versus domain separation is a related but different concern."
+        },
+        {
+          "id": "c",
+          "text": "This method primarily depends on external customer service behavior and therefore should be moved to an integration layer module.",
+          "isCorrect": false,
+          "explanation": "This concern would be valid if the method called remote services or adapters. In this example it only accesses in-memory Customer fields, so moving to an integration layer is unnecessary. The real smell is data ownership, not external dependency coupling."
+        },
+        {
+          "id": "d",
+          "text": "This method primarily mutates Order invariants and therefore threatens transactional boundaries and aggregate consistency across operations.",
+          "isCorrect": false,
+          "explanation": "Mutating aggregate invariants is a serious concern, but here the method only reads Customer properties and constructs a string. It does not alter Order invariants. Confusing read-only helper methods with state-changing behavior is a common misdiagnosis."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "The calculateTotal method coordinates items, taxes, and discounts. Which statement most accurately describes where this logic belongs?",
+      "codeSnippet": "class Order {\n  items: CartItem[];\n  customer: Customer;\n  calculateTotal(taxService: TaxService, discountService: DiscountService): number {\n    return this.items.reduce((sum, item) => {\n      const base = item.product.getBasePrice() * item.quantity;\n      const tax = taxService.calculateTax(item.product, this.customer.region);\n      const discount = discountService.getDiscount(this.customer, item.product);\n      return sum + base + tax - discount;\n    }, 0);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The method primarily contains Product pricing logic and should be relocated into Product to preserve pricing encapsulation.",
+          "isCorrect": false,
+          "explanation": "Moving pricing logic into Product can make sense when pricing rules are intrinsic to a product. In this example the method coordinates multiple concerns (items, taxes, discounts, customer region) so relocating only pricing would scatter coordination logic and reduce clarity."
+        },
+        {
+          "id": "b",
+          "text": "The method primarily orchestrates multiple collaborators and centers on Order coordination responsibilities across items, taxes, and discounts.",
+          "isCorrect": true,
+          "explanation": "This is an observation: calculateTotal acts as a coordinator that aggregates behavior from products, tax rules, and discounts using order-level context. When a method's main role is orchestration across collaborators, keeping it on the aggregate makes the design clearer and avoids moving coordinating logic into individual participants."
+        },
+        {
+          "id": "c",
+          "text": "The method primarily relies on tax calculation behavior and should be moved into TaxService to centralize tax rules by region and product.",
+          "isCorrect": false,
+          "explanation": "Centralizing tax rules in TaxService is a reasonable design for tax-specific logic. But calculateTotal both sums items and composes multiple services; extracting tax calculations is useful, yet moving the whole orchestration into TaxService would mix responsibilities and reduce the Order's role as the aggregator."
+        },
+        {
+          "id": "d",
+          "text": "The method primarily depends on customer discounts logic and should be extracted into DiscountService to decouple promotional concerns from Order.",
+          "isCorrect": false,
+          "explanation": "Extracting discounts into a DiscountService is also a valid refactoring to simplify the method. However the method's coordination across several services suggests the core responsibility is aggregation. Pulling only discount logic out helps, but does not fully address whether the orchestration belongs on Order."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two implementations for late-fee calculation are shown. Which version should you prefer for clearer structure and why?",
+      "codeSnippet": "// Version A\nclass Invoice {\n  customer: Customer;\n  amount: number;\n  dueDate: Date;\n  calculateLateFee(today: Date): number {\n    const daysLate = Math.max(0, Math.ceil((today.getTime() - this.dueDate.getTime()) / DAY));\n    return this.customer.lateFeeRate * this.amount * daysLate;\n  }\n}\n\n// Version B\nclass Customer {\n  lateFeeRate: number;\n  calculateLateFeeForInvoice(invoiceAmount: number, dueDate: Date, today: Date): number {\n    const daysLate = Math.max(0, Math.ceil((today.getTime() - dueDate.getTime()) / DAY));\n    return this.lateFeeRate * invoiceAmount * daysLate;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps the calculation on Invoice and increases coupling by scattering customer related rules across classes.",
+          "isCorrect": false,
+          "explanation": "Version A embeds calculation into Invoice while depending on customer internals. That scatters fee rules across the system and requires Invoice to know customer-specific rates. This leads to duplicated or hard-to-find customer policy logic as the codebase grows. Fowler recommends locating behavior near the data it uses to reduce such coupling."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes this behavior inside the class that owns the required customer and invoice data.",
+          "isCorrect": true,
+          "explanation": "Version B places the fee calculation where the rate lives, reducing cross-class data access and clarifying responsibilities. This keeps customer policy with Customer while Invoice supplies only the necessary invoice parameters. In larger systems this reduces duplicated logic, simplifies testing, and improves cohesion. See Fowler's Move Method and Clean Code's emphasis on cohesion and single responsibility for guidance."
+        }
+      ]
+    }
+  ]
+}

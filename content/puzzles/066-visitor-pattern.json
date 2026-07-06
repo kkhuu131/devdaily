@@ -1,0 +1,106 @@
+{
+  "id": 66,
+  "conceptName": "Visitor Pattern",
+  "category": "design-pattern",
+  "definition": "A behavioral design approach that lets you define new operations on a set of object types without changing those object classes, by moving the operations into separate visitor objects that the elements accept.",
+  "ruleOfThumb": "Use when you need many unrelated operations over a stable class hierarchy and want to avoid adding those operations inside the element classes.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns - Visitor",
+    "page": "pp. 331-345",
+    "externalUrl": "https://refactoring.guru/design-patterns/visitor"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the snippet. Which design technique is illustrated by the object structure and accept/visit calls?",
+      "codeSnippet": "interface Expr { accept(v: ExprOperator): number }\nclass Num implements Expr {\n  constructor(public value: number) {}\n  accept(v: ExprOperator) { return v.visitNum(this) }\n}\nclass Add implements Expr {\n  constructor(public left: Expr, public right: Expr) {}\n  accept(v: ExprOperator) { return v.visitAdd(this) }\n}\ninterface ExprOperator { visitNum(n: Num): number; visitAdd(a: Add): number }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Separates operations on an object structure into separate operation objects to avoid modifying element classes.",
+          "isCorrect": true,
+          "explanation": "This code moves operations out of the element classes into operator objects exposing visit methods. The element classes are stable and only forward to the operator, which matches the intent of separating algorithms from the object structure to add operations without touching element implementations."
+        },
+        {
+          "id": "b",
+          "text": "Implements double dispatch to choose specific behavior based on runtime element types without scattered type checks.",
+          "isCorrect": false,
+          "explanation": "This is a plausible observation because the accept/visit pair does perform double dispatch, but the more important characterization is that operations are centralized in separate operator objects. Double dispatch is a mechanism used here, not the higher level intent about separating operations from elements."
+        },
+        {
+          "id": "c",
+          "text": "Provides a centralized traversal and operation mechanism that couples behavior to data structure traversal order.",
+          "isCorrect": false,
+          "explanation": "The code does centralize operations, but this option overstates coupling to traversal order. The pattern focuses on isolating operations rather than enforcing a specific traversal; traversal can be implemented inside the visitors or elements independently."
+        },
+        {
+          "id": "d",
+          "text": "Wraps elements with additional interfaces to add responsibilities dynamically without changing original concrete element classes.",
+          "isCorrect": false,
+          "explanation": "This distractor resembles decorator-style thinking. While the elements expose an interface that operation objects use, the intent is not to dynamically add responsibilities via wrapping, but to provide a separate place for operations to live."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the shape hierarchy and multiple operation objects, what maintenance tradeoff should you expect from this design?",
+      "codeSnippet": "interface Shape { accept(op: ShapeOp): void }\nclass Circle implements Shape { constructor(public r: number) {} accept(op: ShapeOp) { op.visitCircle(this) } }\nclass Rect implements Shape { constructor(public w: number, public h: number) {} accept(op: ShapeOp) { op.visitRect(this) } }\ninterface ShapeOp { visitCircle(c: Circle): void; visitRect(r: Rect): void }\nclass Render implements ShapeOp { visitCircle(){} visitRect(){} }\nclass Serialize implements ShapeOp { visitCircle(){} visitRect(){} }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This design makes adding new operations easy while making adding new element types require modification of every operation object.",
+          "isCorrect": true,
+          "explanation": "The classic tradeoff: visitors (operation objects) centralize behavior so adding a new operation only requires a new visitor. But adding a new element type forces changes to the visitor interface and to every existing visitor implementation, which can be onerous when types evolve frequently."
+        },
+        {
+          "id": "b",
+          "text": "This design couples traversal details with operations which makes changing traversal order require coordinated updates across visitor implementations.",
+          "isCorrect": false,
+          "explanation": "While traversal implementation can be a concern, it is not the central maintenance tradeoff. Traversal can be implemented inside elements or visitors; the primary cost is adding element types, not traversal coordination."
+        },
+        {
+          "id": "c",
+          "text": "This design hides element internals behind accept methods which complicates access when operations require direct element state inspection.",
+          "isCorrect": false,
+          "explanation": "The accept/visit contract does channel access to element internals through the element itself, but visitors typically receive the concrete element reference and can access state via its public API. The main issue remains the difficulty of adding new element types, not state access per se."
+        },
+        {
+          "id": "d",
+          "text": "This design reduces class count but creates many small operation classes which increases cognitive overhead and maintenance burden.",
+          "isCorrect": false,
+          "explanation": "Creating separate operation classes does increase the number of classes, and that can raise cognitive load. However, the recognizable maintenance tradeoff is specifically about extending the element hierarchy versus adding new operations, not only class count."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which design is structurally preferable when you expect frequent new operations but stable element types?",
+      "codeSnippet": "// Version A: operation objects\ninterface Shape { accept(op: ShapeOp): number }\nclass Circle implements Shape { constructor(public r:number){} accept(op){ return op.visitCircle(this) } }\nclass Rect implements Shape { constructor(public w:number, public h:number){} accept(op){ return op.visitRect(this) } }\ninterface ShapeOp { visitCircle(c:Circle): number; visitRect(r:Rect): number }\nclass Area implements ShapeOp { visitCircle(c){ return Math.PI*c.r*c.r } visitRect(r){ return r.w*r.h } }\n\n// Version B: centralized type switch\ntype ShapeTag = { kind: 'circle', r:number } | { kind: 'rect', w:number, h:number }\nfunction area(shape: ShapeTag) {\n  switch(shape.kind) {\n    case 'circle': return Math.PI*shape.r*shape.r\n    case 'rect': return shape.w*shape.h\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates operations into separate operation objects so element classes remain unchanged when new operations are added.",
+          "isCorrect": true,
+          "explanation": "Version A represents operations as objects implementing visit methods. When you need a new operation you add a new operation object without modifying existing element classes. This is ideal when the element type hierarchy is stable but operations change frequently. The cost is that adding a new element type requires updating every operation object."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes logic in type switches which makes adding new element types require modifying many call sites and risks duplication.",
+          "isCorrect": false,
+          "explanation": "Version B keeps logic in centralized functions using type tags and switches. That can be simpler initially, but when operations proliferate you end up duplicating switch logic across many functions or creating large monolithic functions. It also makes extension by type more invasive because every switch-based operation must be changed. This is usually less suitable when operations are the primary axis of change."
+        }
+      ]
+    }
+  ]
+}

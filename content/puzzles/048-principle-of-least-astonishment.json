@@ -1,0 +1,106 @@
+{
+  "id": 48,
+  "conceptName": "Principle of Least Astonishment",
+  "category": "principle",
+  "definition": "Design choices should match users and callers expectations so behavior is predictable and does not surprise experienced users.",
+  "ruleOfThumb": "APIs and code paths should do what their names and context lead a competent caller to expect.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code: A Handbook of Agile Software Craftsmanship",
+    "chapter": "Chapter 2: Meaningful Names",
+    "page": null,
+    "externalUrl": "https://www.oreilly.com/library/view/clean-code-a/9780136083238/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the function below. What is the primary surprise a caller will experience?",
+      "codeSnippet": "const cache = new Map<number, User>();\n\nfunction getUser(id: number) {\n  if (cache.has(id)) return cache.get(id);\n  return fetch(`/users/${id}`).then(r => r.json());\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function sometimes returns a plain user object and sometimes returns a Promise, causing inconsistent return types for callers.",
+          "isCorrect": true,
+          "explanation": "The code returns a cached value directly but returns a Promise when it needs to fetch. Callers must handle both synchronous and asynchronous return styles, which is surprising and error prone. A single consistent return contract should be chosen and enforced, or the cache should store/promote values to the same async shape."
+        },
+        {
+          "id": "b",
+          "text": "The function leaves network errors unhandled so exceptions will propagate and may crash higher level request handlers unexpectedly.",
+          "isCorrect": false,
+          "explanation": "While unhandled network errors are a real concern, the bigger immediate surprise is the inconsistent return type. Adding try catch or handling rejections is important, but callers will first be tripped by the mixed synchronous and asynchronous returns before they notice error propagation."
+        },
+        {
+          "id": "c",
+          "text": "The function uses object identity for cache keys causing missed hits when callers recreate identifier objects instead of reusing references.",
+          "isCorrect": false,
+          "explanation": "Using object identity for keys can cause cache misses, but the snippet uses primitive numeric ids so identity is not the issue here. The observable bug in this code is inconsistent return shape rather than incorrect cache key semantics."
+        },
+        {
+          "id": "d",
+          "text": "The function constructs the fetch URL by concatenating parts incorrectly which can lead to invalid endpoints being requested intermittently.",
+          "isCorrect": false,
+          "explanation": "Incorrect URL construction can break requests, but the snippet shows a straightforward template literal that is likely valid. The primary problem callers will notice is mixed synchronous versus asynchronous returns, not URL formatting errors."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review the sorting utility. Which concern best identifies a surprising behavior for callers?",
+      "codeSnippet": "type User = { name: string; age: number };\n\nfunction sortUsers(users: User[], byName = true) {\n  if (byName) {\n    // mutates input\n    return users.sort((a, b) => a.name.localeCompare(b.name));\n  }\n  // returns new array\n  return [...users].sort((a, b) => a.age - b.age);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function mutates the input array in one branch but returns a new array in another, causing inconsistent side effects for callers.",
+          "isCorrect": true,
+          "explanation": "One branch sorts in place while the other returns a shallow copy sorted. Callers cannot rely on whether their original array will be mutated based on the flag, which is surprising. APIs should be consistent about mutation or clearly document and name mutation behavior."
+        },
+        {
+          "id": "b",
+          "text": "The function uses an unstable comparator which may be nontransitive when comparing nested fields, producing nondeterministic sort order.",
+          "isCorrect": false,
+          "explanation": "Comparator stability can cause subtle ordering differences, but the provided comparators are simple and transitive for these fields. The more direct surprise is inconsistent mutation behavior across branches rather than comparator instability."
+        },
+        {
+          "id": "c",
+          "text": "The function captures a mutable default reference which could cause shared state bugs when callers reuse the same array reference.",
+          "isCorrect": false,
+          "explanation": "Mutable default parameter pitfalls occur when defaults are objects shared across calls. Here the default is a boolean primitive, so shared default mutation is not applicable. The real issue is inconsistent in-place mutation versus returning a copy."
+        },
+        {
+          "id": "d",
+          "text": "The function performs a shallow copy in one branch which may not protect against nested object mutations seen by callers later.",
+          "isCorrect": false,
+          "explanation": "Shallow copying does not guard against nested object mutations, that is true. However, the immediate surprising behavior is the inconsistency between mutating the input and returning a copy. Whether the copy is shallow is a secondary concern compared to the inconsistent API contract."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B below. Which design better reduces surprising behavior for callers?",
+      "codeSnippet": "// Version A\nexport function updateName(userId: string, name: string) {\n  return api.post(`/users/${userId}/name`, { name });\n}\n\nexport function updateEmail(userId: string, email: string) {\n  return api.post(`/users/${userId}/email`, { email });\n}\n\n// Version B\nexport function updateProfile(userId: string, changes: Partial<User>) {\n  return api.post(`/users/${userId}`, changes);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A exposes focused, single purpose functions that behave predictably and avoid surprising multi field side effects for callers.",
+          "isCorrect": true,
+          "explanation": "Version A gives callers explicit, single responsibility operations with clear intent. Each function's effect is narrow and obvious, reducing the chance that a caller will unintentionally modify unrelated fields. This clarity aligns with expectations and makes it easier to reason about effects and permissions compared to a catchall update method."
+        },
+        {
+          "id": "b",
+          "text": "Version B uses a single overloaded update method that applies partial payloads, risking flag dependent behavior and accidental field clearing.",
+          "isCorrect": false,
+          "explanation": "A single partial-update endpoint can be convenient but introduces ambiguity about how omitted fields are treated and can lead to accidental clears or dependent behavior. Callers may be uncertain whether sending partial payloads merges or replaces fields. While not always wrong, Version B increases the chance of surprising behavior compared to explicit single-purpose operations."
+        }
+      ]
+    }
+  ]
+}

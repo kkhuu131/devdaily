@@ -1,0 +1,106 @@
+{
+  "id": 46,
+  "conceptName": "Facade Pattern",
+  "category": "design-pattern",
+  "definition": "Provide a simplified high-level interface that makes a subsystem easier to use by delegating requests to underlying components.",
+  "ruleOfThumb": "Introduce a thin coordinating API when you need to hide subsystem complexity or provide a stable integration surface for clients.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Fa\u0000cade",
+    "page": "185",
+    "externalUrl": "https://refactoring.guru/design-patterns/facade"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "You see the TypeScript class below in an order processing module. What best describes its role?",
+      "codeSnippet": "class PaymentProcessor { charge(amount:number) {} }\nclass InventoryManager { reserve(items:any[]) {} }\nclass OrderFacade {\n  private payment = new PaymentProcessor();\n  private inventory = new InventoryManager();\n  placeOrder(order:any) {\n    this.payment.charge(order.total * 0.9);\n    this.inventory.reserve(order.items);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class provides a simplified interface that delegates client requests transparently to multiple subsystem objects.",
+          "isCorrect": true,
+          "explanation": "This class wraps multiple subsystems and exposes a single higher level method, which is the hallmark of a thin coordinating interface that reduces caller complexity. It does not itself implement the subsystems' logic but forwards requests to them."
+        },
+        {
+          "id": "b",
+          "text": "This class hides important behavior and makes it difficult for callers to access specific subsystem features directly.",
+          "isCorrect": false,
+          "explanation": "While it does hide underlying details, the code is not necessarily harmful; hiding can be intentional to reduce API surface. The real issue would be whether callers actually need the hidden fine-grained features."
+        },
+        {
+          "id": "c",
+          "text": "This class duplicates multiple simplifying responsibilities in one place and creates tight coupling to subsystems.",
+          "isCorrect": false,
+          "explanation": "Centralizing responsibilities can increase coupling, but the snippet shows delegation rather than duplication of subsystem logic. The bigger concern would be whether business rules are being mixed into this coordinator."
+        },
+        {
+          "id": "d",
+          "text": "This class becomes a large God object that contains routing logic and mixes orchestration with business rules.",
+          "isCorrect": false,
+          "explanation": "That is a real risk if the class grows. In this small example the class only orchestrates two calls, but if it later accumulates validation and pricing rules it would become problematic."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A team introduced the wrapper below. Which statement best characterizes the likely architectural concern with this design?",
+      "codeSnippet": "class OrderWrapper {\n  placeOrder(order:any) {\n    if (order.total > 100) order.total *= 0.9; // discount rule\n    this.payment.charge(order.total);\n    this.inventory.reserve(order.items);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This wrapper only translates method names for a third party API and does not simplify multiple subsystems for callers.",
+          "isCorrect": false,
+          "explanation": "If the wrapper merely renames methods it provides little architectural benefit. The code shown does more than translate, though, since it implements a discount rule and coordinates subsystems."
+        },
+        {
+          "id": "b",
+          "text": "This wrapper mixes orchestration with business rules making it a domain service rather than a thin abstraction.",
+          "isCorrect": true,
+          "explanation": "The snippet applies a pricing rule inline and orchestrates subsystem calls. That combination signals the wrapper has evolved into a domain-level service, not a light delegation layer, which affects testing and modularity."
+        },
+        {
+          "id": "c",
+          "text": "This wrapper centralizes unrelated responsibilities which increases coupling and makes individual subsystem testing more difficult.",
+          "isCorrect": false,
+          "explanation": "Centralizing responsibilities can increase coupling, but the specific problem here is the mixing of business logic with orchestration. That nuance changes how you refactor compared to simply splitting responsibilities."
+        },
+        {
+          "id": "d",
+          "text": "This wrapper reduces caller complexity but hides subsystem error semantics causing surprising failure modes during integration.",
+          "isCorrect": false,
+          "explanation": "Hiding error semantics is a plausible concern for any wrapper. In this example the more immediate architectural smell is the presence of business rules inside the wrapper itself, which impacts design decisions differently."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for a large evolving system where domain rules must remain testable and independent?",
+      "codeSnippet": "// Version A\nclass OrderOrchestrator {\n  placeOrder(order:any) {\n    if (!this.validate(order)) throw new Error(\"invalid\");\n    this.payment.charge(order.total * 0.9); // applies discount\n    this.inventory.reserve(order.items);\n    this.shipping.schedule(order);\n  }\n}\n\n// Version B\nclass OrderGateway {\n  placeOrder(order:any) {\n    this.orderValidationService.validate(order);\n    this.paymentService.charge(order.total);\n    this.inventoryService.reserve(order.items);\n    this.shippingService.schedule(order);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes validation and pricing inside the gateway which mixes business rules with orchestration code.",
+          "isCorrect": false,
+          "explanation": "Putting validation and pricing inside the orchestrator couples domain rules to the integration surface. That approach can make rules harder to test in isolation and harder to reuse across different entry points."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes only orchestration and delegates business rules to dedicated domain services.",
+          "isCorrect": true,
+          "explanation": "Version B keeps the integration layer thin and delegates domain responsibilities to other services, improving testability and allowing domain logic to evolve independently. This separation also makes it easier to reuse domain behavior across different clients and reduces coupling at the gateway."
+        }
+      ]
+    }
+  ]
+}

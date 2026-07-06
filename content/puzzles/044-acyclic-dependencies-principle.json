@@ -1,0 +1,106 @@
+{
+  "id": 44,
+  "conceptName": "Acyclic Dependencies Principle",
+  "category": "solid",
+  "definition": "A guideline for package/module dependencies that requires the dependency graph to contain no cycles, enabling independent compilation, clear ownership, and safer modularization.",
+  "ruleOfThumb": "Organize packages so dependencies flow in one direction only; extract stable abstractions to break cycles and allow independent evolution.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Agile Software Development, Principles, Patterns, and Practices",
+    "chapter": "Package Design Principles",
+    "page": null,
+    "externalUrl": "http://www.objectmentor.com/resources/articles/DependencyPrinciples.pdf"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at these two TypeScript files. Which symptom most clearly indicates the core design problem shown here?",
+      "codeSnippet": "// userService.ts\nimport { getOrder } from './orderService';\nexport function getUserOrders(userId: string) {\n  return getOrder(userId);\n}\n\n// orderService.ts\nimport { getUser } from './userService';\nexport function getOrder(userId: string) {\n  const user = getUser(userId);\n  return { userId, user };\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Two modules import each other creating a mutual compile-time dependency that can make build order and reasoning fragile.",
+          "isCorrect": true,
+          "explanation": "The snippet shows a direct mutual import between userService and orderService. That creates a package-level cycle which complicates compilation, testing, and reasoning about ownership. Breaking the cycle usually requires introducing an abstraction or moving shared contracts into a separate stable package so dependencies flow in one direction."
+        },
+        {
+          "id": "b",
+          "text": "A single file exposes implementation details preventing encapsulation and forcing callers to depend on concrete classes instead of abstractions.",
+          "isCorrect": false,
+          "explanation": "While leaking implementation details is a valid concern, the shown code demonstrates circular imports rather than a single file exposing internals. Dependence on concretes can cause fragility, but the immediate symptom here is mutual module dependency."
+        },
+        {
+          "id": "c",
+          "text": "A deeply nested object graph is constructed eagerly causing heavy runtime memory usage and unpredictable initialization order at startup.",
+          "isCorrect": false,
+          "explanation": "Eager construction and memory retention are runtime concerns, but the example shows compile-time import cycles affecting modular structure. Memory problems might appear later, yet they are not the primary structural issue visible in these imports."
+        },
+        {
+          "id": "d",
+          "text": "Multiple modules share global mutable state leading to data races and inconsistent behavior across asynchronous request handlers.",
+          "isCorrect": false,
+          "explanation": "Global mutable state is a real problem, especially in concurrent systems, but the code demonstrates two modules importing each other rather than sharing a global mutable object. Mistaking cycles for shared state can lead to wrong mitigations."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Consider a package graph described in comments below. Which concern best describes the root architectural issue you would prioritize fixing?",
+      "codeSnippet": "// package graph diagram\n// service -> repository -> utils -> service\n\n// service uses repository, repository uses utils, utils imports service types\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The packages form a dependency cycle that prevents independent packaging and makes incremental compilation and separate releases difficult to achieve.",
+          "isCorrect": true,
+          "explanation": "A cycle across packages ties their lifecycles together and prevents clear ownership and independent release. Fixing typically involves moving stable contracts to a lower-level package or inverting dependencies so the graph becomes acyclic."
+        },
+        {
+          "id": "b",
+          "text": "A single package exposes unstable interfaces causing consumers to frequently change and forcing many dependent packages to be updated.",
+          "isCorrect": false,
+          "explanation": "Unstable interfaces are problematic, but the diagram specifically indicates a cyclic dependency among packages. While stabilizing interfaces helps, it will not by itself break the cycle that prevents independent evolution."
+        },
+        {
+          "id": "c",
+          "text": "Circular runtime object references cause garbage collection retention leading to memory leaks under heavy load scenarios in long-lived processes.",
+          "isCorrect": false,
+          "explanation": "Runtime circular references can cause memory retention in some languages, but here the issue is at the package dependency level. The solution should target the static graph rather than only addressing runtime GC behaviors."
+        },
+        {
+          "id": "d",
+          "text": "An ambiguous public API naming makes it unclear which package owns behavior resulting in duplicated implementation and inconsistent behavior.",
+          "isCorrect": false,
+          "explanation": "Ambiguous naming can lead to duplicated responsibilities, yet the central visible problem in the diagram is a dependency cycle. Clarifying ownership helps, but it does not directly resolve cyclic dependencies preventing modular builds."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B below. Which design better addresses package-level cycles while keeping packages independently releasable?",
+      "codeSnippet": "// Version A: extract stable abstractions into core package\n// packages/core/src/types.ts\nexport interface Notifier { notify(message: string): void; }\n\n// packages/notification/src/impl.ts\nimport { Notifier } from '../../core/src/types';\nexport class EmailNotifier implements Notifier { notify(m: string){ /* ... */ } }\n\n// Version B: keep core depending on notification concrete\n// packages/core/src/logger.ts\nexport class Logger { log(s: string) { /* ... */ } }\n\n// packages/notification/src/impl.ts\nimport { Logger } from '../../core/src/logger';\nexport class EmailNotifier { constructor(private logger: Logger) {} notify(m: string){ /* ... */ } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A breaks package cycles by extracting stable abstractions into a separate package that drivers can depend on.",
+          "isCorrect": true,
+          "explanation": "Version A pushes the contract (Notifier interface) into a lower-level, stable package that higher-level modules depend on. That reverses the dependency direction and makes the dependency graph acyclic, enabling independent compilation and releases. This follows the principle of depending on abstractions and isolating stable elements to form a one-way dependency flow."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps concrete modules in the core package causing indirect package cycles and preventing independent compilation and releases.",
+          "isCorrect": false,
+          "explanation": "Version B has the core package depend on concrete notification details (Logger or notifier implementations), which keeps higher-level concerns leaking into lower-level packages. This design preserves or introduces indirect cycles and ties release boundaries together, making independent packaging and safe scaling of teams more difficult."
+        }
+      ]
+    }
+  ]
+}

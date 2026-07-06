@@ -1,0 +1,106 @@
+{
+  "id": 30,
+  "conceptName": "Message Chains",
+  "category": "code-smell",
+  "definition": "A code smell where callers navigate through a series of objects to reach a distant property, exposing internal object structure and coupling clients to the chain.",
+  "ruleOfThumb": "Prefer telling an object what you want rather than asking it to expose its internals; add higher level accessors when callers routinely traverse chains.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Hide Delegate",
+    "page": "n/a",
+    "externalUrl": "https://martinfowler.com/bliki/MessageChains.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the snippet. What is the primary maintainability problem illustrated by the access pattern?",
+      "codeSnippet": "class Order {\n  customer: Customer\n}\nclass Customer {\n  address: Address\n}\nclass Address {\n  city: string\n}\nfunction printCity(order: Order) {\n  console.log(order.customer.address.city)\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Client code navigates through multiple nested objects, coupling the caller tightly to internal object structure and representation.",
+          "isCorrect": true,
+          "explanation": "The snippet shows clients drilling into objects to get a value. That couples callers to internal structure and makes refactoring risky. The usual refactor is to add a higher-level accessor or delegate so the root object controls how its data is exposed."
+        },
+        {
+          "id": "b",
+          "text": "Client code relies on many chained property accesses which makes refactoring nested types risky and tests brittle under change.",
+          "isCorrect": false,
+          "explanation": "This is a valid observation about brittleness, but it restates a symptom rather than identifying the core encapsulation breach. The more targeted problem is that clients depend on navigation responsibility rather than asking a single object for the value."
+        },
+        {
+          "id": "c",
+          "text": "Client code performs long navigation across domain objects which hides responsibilities and spreads coupling across multiple modules.",
+          "isCorrect": false,
+          "explanation": "Also plausible: long navigation can diffuse responsibilities. However the central maintainability issue is that callers know internal structure and perform traversal instead of delegating that responsibility to the owner object."
+        },
+        {
+          "id": "d",
+          "text": "Client code creates deep object traversal sequences which increases knowledge of internals and prevents cleaner encapsulation boundaries.",
+          "isCorrect": false,
+          "explanation": "This describes the encapsulation leak correctly as a symptom, but compared to the correct option it lacks emphasis on the caller performing the traversal rather than the owning object exposing a simple API."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given a stable API with many callers using chained accesses, which refactor minimizes API churn while improving encapsulation?",
+      "codeSnippet": "class Order {\n  customer: Customer\n}\nclass Customer {\n  address: Address\n}\nclass Address {\n  city: string\n}\n// Many callers do: order.customer.address.city",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce a direct accessor on the top-level object that returns the needed field, reducing client navigation and preserving encapsulation.",
+          "isCorrect": true,
+          "explanation": "Adding a small domain-level accessor (for example getCity on Order) hides traversal with minimal impact on callers. This preserves encapsulation and allows internal structure to change without breaking clients."
+        },
+        {
+          "id": "b",
+          "text": "Introduce a utility function that accepts the root object and performs traversal externally to retrieve nested values for calling code.",
+          "isCorrect": false,
+          "explanation": "A utility preserves current call sites but moves traversal logic outside the domain model, leaking domain knowledge into procedural code. That increases coupling and scatters responsibilities across the codebase."
+        },
+        {
+          "id": "c",
+          "text": "Introduce a visitor object requiring all callers to implement traversal logic changes which spreads responsibility and increases coupling across modules.",
+          "isCorrect": false,
+          "explanation": "Using a visitor to centralize traversal is heavyweight and forces callers to change. It transfers complexity to callers and adds structural cost compared to a simple delegation method on the owning object."
+        },
+        {
+          "id": "d",
+          "text": "Introduce an adapter that exposes every intermediate object through the public API so callers can still chain without refactoring.",
+          "isCorrect": false,
+          "explanation": "Exposing intermediates preserves chaining but effectively expands the public API surface and locks in internal structure. That makes future refactors harder and increases the maintenance burden."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is a better long term design choice for hiding traversal while keeping domain responsibilities cohesive?",
+      "codeSnippet": "// Version A\nclass Order {\n  customer: Customer\n  getCity(): string {\n    return this.customer.address.city\n  }\n}\n// Usage: order.getCity()\n\n// Version B\nclass AddressLookup {\n  static cityOf(order: Order): string {\n    return order.customer.address.city\n  }\n}\n// Usage: AddressLookup.cityOf(order)",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A encapsulates traversal by adding a domain-level accessor, keeping clients unaware of internal object structure.",
+          "isCorrect": true,
+          "explanation": "Version A moves traversal responsibility into the owning domain object, preserving encapsulation and making future internal changes easier. Clients call a meaningful method on the object that owns the data. This follows the Law of Demeter and keeps behavior with data, which simplifies testing and refactoring over time."
+        },
+        {
+          "id": "b",
+          "text": "Version B places traversal in an external helper which spreads domain knowledge and increases coupling between unrelated modules.",
+          "isCorrect": false,
+          "explanation": "Version B centralizes traversal in a helper but leaks domain knowledge into procedural code. That helper becomes a dependency for many clients and creates a subtle form of global coupling. Over time it encourages callers to bypass the domain model and makes it harder to evolve object responsibilities and invariants."
+        }
+      ]
+    }
+  ]
+}

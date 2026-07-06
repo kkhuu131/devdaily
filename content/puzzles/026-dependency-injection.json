@@ -1,0 +1,106 @@
+{
+  "id": 26,
+  "conceptName": "Dependency Injection",
+  "category": "solid",
+  "definition": "A technique where an object receives the objects it depends on from external code rather than creating them itself, making dependencies explicit and substitutable.",
+  "ruleOfThumb": "Prefer having collaborators passed in from outside (constructor or setter) instead of looked up or constructed internally.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Inversion of Control Containers and the Dependency Injection pattern",
+    "chapter": "Introduction",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/articles/injection.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "In the snippet below, which line demonstrates the pattern where an object receives its collaborator from outside rather than creating it?",
+      "codeSnippet": "interface Logger { log(msg: string): void }\nclass ConsoleLogger implements Logger { log(msg: string){ console.log(msg) } }\nclass UserService {\n  constructor(private logger: Logger) {}\n  createUser(name: string){ this.logger.log(`create ${name}`) }\n}\nconst logger = new ConsoleLogger()\nconst svc = new UserService(logger)",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The UserService constructor takes a Logger which shows the class expects its collaborator to be supplied externally.",
+          "isCorrect": true,
+          "explanation": "The constructor parameter makes the dependency explicit and injectable, so callers decide which Logger to provide. This enables easier testing and swapping implementations. See Fowler's article on injection for rationale."
+        },
+        {
+          "id": "b",
+          "text": "The new ConsoleLogger() call indicates centralized construction of collaborators managed outside the service rather than inside the class.",
+          "isCorrect": false,
+          "explanation": "This call merely constructs a concrete logger instance; it does not show the service accepting collaborators from outside. The construction here is external but not the pattern itself, because the service would still create internally if it used new inside."
+        },
+        {
+          "id": "c",
+          "text": "The ConsoleLogger class declaration proves external supply because implementing Logger allows swapping implementations at runtime.",
+          "isCorrect": false,
+          "explanation": "Implementing an interface enables substitution, but the class declaration alone does not show how collaborators are provided. The pattern is about how the collaborator is passed in, not about having an interface alone."
+        },
+        {
+          "id": "d",
+          "text": "The TypeScript interface Logger defines the contract that forces consumers to receive concrete implementations from their callers.",
+          "isCorrect": false,
+          "explanation": "An interface defines a contract but does not force how implementations are obtained. Dependencies can still be created internally despite an interface being present, so the interface alone is not sufficient evidence."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this service code. Which problem is most likely present given how collaborators are obtained here?",
+      "codeSnippet": "class ServiceLocator {\n  private static instances: Map<string, any> = new Map()\n  static get(name: string){ return this.instances.get(name) }\n  static register(name: string, instance: any){ this.instances.set(name, instance) }\n}\nclass OrderProcessor {\n  process(order: any){ const logger = ServiceLocator.get('logger'); logger.log(order.id) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class hides its required collaborators by pulling them from a global registry making dependencies implicit and hard to test.",
+          "isCorrect": true,
+          "explanation": "The OrderProcessor calls a global ServiceLocator to obtain its logger, which hides the dependency and couples the class to a global registry. That implicit coupling makes unit tests harder because the required collaborator is not visible on the type."
+        },
+        {
+          "id": "b",
+          "text": "This class violates single responsibility by both locating collaborators and performing business logic in the same method increasing maintenance cost.",
+          "isCorrect": false,
+          "explanation": "While locating collaborators and doing work in one method does mix concerns, the more specific issue is that locating via a global registry hides dependencies. SRP could be a secondary symptom rather than the primary design problem here."
+        },
+        {
+          "id": "c",
+          "text": "This class creates concrete types directly leading to tight coupling that prevents substituting implementations during testing or runtime.",
+          "isCorrect": false,
+          "explanation": "Creating concrete types directly is a common coupling problem, but the snippet uses a registry lookup instead of direct construction. The core problem is the lookup hiding dependencies rather than direct tight coupling via new."
+        },
+        {
+          "id": "d",
+          "text": "This class relies on a factory abstraction which adds indirection and complexity without improving testability for small simple services.",
+          "isCorrect": false,
+          "explanation": "A factory abstraction can add indirection, but the snippet shows a global registry pattern rather than a factory interface. Factories can still make dependencies explicit if injected, so this option is less accurate for the shown code."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B shown below. Which version better exposes and manages required collaborators for testing and maintenance?",
+      "codeSnippet": "// Version A\nclass PaymentServiceA {\n  constructor(private processor: IPaymentProcessor) {}\n  charge(amount:number){ this.processor.charge(amount) }\n}\n\n// Version B\nclass PaymentServiceB {\n  charge(amount:number){\n    const processor = GlobalRegistry.get('paymentProcessor')\n    processor.charge(amount)\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A accepts required collaborators through its constructor at object creation time by callers.",
+          "isCorrect": true,
+          "explanation": "Version A uses constructor injection so the required payment processor is explicit on the service's API. That makes dependencies visible, easier to mock in tests, and keeps object wiring separate from business logic. Constructor injection is the usual recommended approach when collaborator is required for the object's lifetime."
+        },
+        {
+          "id": "b",
+          "text": "Version B pulls collaborators from a global registry inside methods and hides required dependencies from callers which complicates testing.",
+          "isCorrect": false,
+          "explanation": "Version B hides its dependency behind a global registry lookup, which makes it harder to see what the service needs and to provide test doubles. It also couples the code to global state and scatters lookup calls, reducing clarity and maintainability."
+        }
+      ]
+    }
+  ]
+}

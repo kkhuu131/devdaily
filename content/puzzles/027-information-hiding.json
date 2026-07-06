@@ -1,0 +1,106 @@
+{
+  "id": 27,
+  "conceptName": "Information Hiding",
+  "category": "solid",
+  "definition": "Design practice of hiding module implementation details so that other modules depend only on a stable, minimal interface.",
+  "ruleOfThumb": "Expose behavior through a small, stable public surface and keep mutable or structural details private to allow internal change.",
+  "citation": {
+    "author": "David L. Parnas",
+    "bookTitle": "On the Criteria to Be Used in Decomposing Systems into Modules",
+    "chapter": "Design Principles for Modular Systems",
+    "page": "pp. 421-423",
+    "externalUrl": "https://dl.acm.org/doi/pdf/10.1145/361598.361623"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which class design best avoids exposing implementation details for a reusable in-memory buffer component?",
+      "codeSnippet": "class BufferV1 {\n  public data: number[] = [];\n  append(x: number) { this.data.push(x); }\n}\n\nclass BufferV2 {\n  private data: number[] = [];\n  append(x: number) { this.data.push(x); }\n  toArray() { return this.data.slice(); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class exposes only a minimal public API and keeps internal state private behind accessors.",
+          "isCorrect": true,
+          "explanation": "Keeping the internal array private and exposing only append and safe copy operations prevents callers from depending on the concrete representation. This reduces coupling and makes future changes to storage or concurrency handling safer."
+        },
+        {
+          "id": "b",
+          "text": "The class exposes its internal buffer as a public field to allow callers to manage storage directly.",
+          "isCorrect": false,
+          "explanation": "Exposing the internal field permits callers to mutate or inspect internals, creating tight coupling. Changes to the internal representation would ripple to all clients and complicate invariants and thread safety."
+        },
+        {
+          "id": "c",
+          "text": "The class returns mutable internal collections directly so callers can iterate and modify internal state for convenience.",
+          "isCorrect": false,
+          "explanation": "Returning mutable internals is convenient but dangerous; callers can break invariants and tests. A safer approach is to return immutable views or copies and provide explicit mutation methods."
+        },
+        {
+          "id": "d",
+          "text": "The class hides nothing and documents internal structures as part of its public contract for faster integration.",
+          "isCorrect": false,
+          "explanation": "Documenting internals as part of the contract locks you into an implementation and increases integration cost when you need to refactor. Hiding internals keeps the contract stable and easier to evolve."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which module export strategy best balances consumer needs with allowing future internal refactoring without breaking clients?",
+      "codeSnippet": "// user-service.ts\ninterface UserDTO { id: string; name: string }\nfunction createUser(dto: UserDTO) { /* ... */ }\nfunction getUser(id: string): UserDTO { /* ... */ }\n// internal helper not exported: formatInternalRecord(rec) {...}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Export a stable public API with small DTOs and keep helper functions and internal types unexported.",
+          "isCorrect": true,
+          "explanation": "A small, stable API with just the necessary DTOs prevents clients from relying on internal helpers or representations. It minimizes breakage when internal storage or behavior changes."
+        },
+        {
+          "id": "b",
+          "text": "Export concrete classes and internal utility functions so callers can extend behavior by reaching into module internals.",
+          "isCorrect": false,
+          "explanation": "Exporting utilities invites consumers to depend on internal mechanics. While extensibility improves short-term flexibility, it creates brittle dependencies that complicate refactoring and maintenance."
+        },
+        {
+          "id": "c",
+          "text": "Export many granular types and factories so consumers can construct objects exactly like internal representations for flexibility.",
+          "isCorrect": false,
+          "explanation": "Granular exports let callers mimic internal structures and couple to them. That coupling reduces your ability to change the internal model and increases the need for backward compatibility work."
+        },
+        {
+          "id": "d",
+          "text": "Export only primitive values and let callers assemble structures to avoid committing to any internal model shape.",
+          "isCorrect": false,
+          "explanation": "Pushing assembly to callers can prevent you from evolving the model but forces duplication and inconsistent constructions across consumers. It often increases client complexity and bugs."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better prevents clients from depending on internal representation and eases future changes?",
+      "codeSnippet": "/* Version A */\nclass SessionStoreA {\n  private store = new Map<string, any>();\n  getAll() { return this.store; }\n}\n\n/* Version B */\nclass SessionStoreB {\n  private store = new Map<string, any>();\n  getAllKeys() { return Array.from(this.store.keys()); }\n  get(key: string) { return this.store.get(key); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version B exposes behavior-only methods and does not leak internal mutable structures to callers.",
+          "isCorrect": true,
+          "explanation": "Version B provides narrow, behavioral accessors instead of returning the internal Map. That prevents callers from mutating or iterating over the map in ways you did not intend. It preserves the freedom to change the backing structure without breaking clients. Parnas argued for such module boundaries to minimize the impact of change."
+        },
+        {
+          "id": "b",
+          "text": "Version A returns the internal Map directly which lets callers mutate internal state and become tightly coupled.",
+          "isCorrect": false,
+          "explanation": "Returning the internal Map leaks the implementation and allows callers to mutate internal state or rely on Map-specific behavior. That coupling makes refactoring risky and forces coordination for any internal change — a classic maintenance hazard discussed in modularity literature."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 31,
+  "conceptName": "Builder Pattern",
+  "category": "design-pattern",
+  "definition": "A creational design approach that separates the construction of a complex object from its representation so the same construction process can create different representations.",
+  "ruleOfThumb": "Use when an object requires many optional parameters or complex assembly steps that would otherwise produce confusing constructors or many factory variants.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Builder",
+    "page": "107-116",
+    "externalUrl": "https://en.wikipedia.org/wiki/Builder_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the following TypeScript code. Which observation best describes the construction approach used here?",
+      "codeSnippet": "class Car {\n  constructor(public make: string, public model: string, public color?: string) {}\n}\n\nclass CarBuilder {\n  private make!: string\n  private model!: string\n  private color?: string\n\n  setMake(make: string) { this.make = make; return this }\n  setModel(model: string) { this.model = model; return this }\n  setColor(color: string) { this.color = color; return this }\n  build() { return new Car(this.make, this.model, this.color) }\n}\n\nconst car = new CarBuilder().setMake('A').setModel('B').setColor('red').build()",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code separates object assembly into a dedicated configurator with chainable methods and a final build method.",
+          "isCorrect": true,
+          "explanation": "Correct. The CarBuilder class encapsulates stepwise configuration and exposes a chainable API that culminates in a build method. This separates assembly concerns from the Car representation and makes complex creation code more readable and testable. The GoF Builder intent describes this separation of construction from representation."
+        },
+        {
+          "id": "b",
+          "text": "This code implements a simple factory producing preconfigured variants through named factory functions without stepwise configuration.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect. A simple factory would hide concrete classes behind named creation functions, but it would not provide chainable stepwise configuration or a final explicit build step as shown here."
+        },
+        {
+          "id": "c",
+          "text": "This code models immutable value objects constructed directly via numerous constructor parameters without a separate configuration helper.",
+          "isCorrect": false,
+          "explanation": "Not accurate. The presence of a separate CarBuilder configurator and a build method means construction is not done solely via numerous constructor parameters passed directly by callers."
+        },
+        {
+          "id": "d",
+          "text": "This code applies a fluent interface to a service class where each method performs asynchronous side effects instead of building state.",
+          "isCorrect": false,
+          "explanation": "Incorrect. While the API is fluent, the methods here configure internal state and return a constructed Car eventually, rather than performing asynchronous side effects as a service would."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You maintain an Email class with many optional settings like priority, schedule, retry policy, attachments. Which guideline best indicates when to introduce a separate configurator?",
+      "codeSnippet": "class Email {\n  constructor(\n    public to: string,\n    public subject: string,\n    public body?: string,\n    public priority?: number,\n    public scheduleAt?: Date,\n    public retryPolicy?: { attempts: number }\n  ) {}\n}\n\n// Current creation site\nconst e = new Email('u@x.com', 'Hi', undefined, 5, undefined, { attempts: 3 })",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Prefer a parameter object passed to a single constructor to group optional settings and keep creation code concise.",
+          "isCorrect": false,
+          "explanation": "Reasonable choice. A parameter object reduces long constructor signatures and can be a simple improvement. However, it still couples callers to one initializer object and may not address readability for many optional combinations or stepwise construction needs."
+        },
+        {
+          "id": "b",
+          "text": "Prefer a dedicated configurator when the object has many independent optional settings and combinations that are hard to document.",
+          "isCorrect": true,
+          "explanation": "Correct. When many independent optional parameters create combinatorial complexity or unclear caller code, a dedicated configurator provides explicit stepwise assembly and clearer intent at call sites. This reduces errors from passing ordered optional arguments and makes defaults explicit."
+        },
+        {
+          "id": "c",
+          "text": "Prefer multiple named factory methods to expose common presets while avoiding exposing every optional configuration to callers.",
+          "isCorrect": false,
+          "explanation": "Plausible alternative. Named factories work well for common presets, but they do not scale when callers need many distinct combinations or must customize many independent options incrementally."
+        },
+        {
+          "id": "d",
+          "text": "Prefer adding setters to the class itself and mutate after construction to simplify arguments and reduce builder code.",
+          "isCorrect": false,
+          "explanation": "This is a tempting shortcut but lowers encapsulation and thread safety. Mutable setters can lead to invalid intermediate states and make the object harder to reason about, especially in concurrent contexts."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare two refactor approaches for a Payment configuration API. Which version better supports clear, testable construction for many optional fields?",
+      "codeSnippet": "// Version A: large constructor\nclass Payment {\n  constructor(\n    public amount: number,\n    public currency: string,\n    public method?: string,\n    public receiptEmail?: string,\n    public metadata?: Record<string,string>\n  ) {}\n}\n\n// Version B: separate configurator\nclass PaymentBuilder {\n  private opts: Partial<Payment> = {}\n  setAmount(a: number) { this.opts.amount = a; return this }\n  setCurrency(c: string) { this.opts.currency = c; return this }\n  setMethod(m: string) { this.opts.method = m; return this }\n  build() { return new Payment(this.opts.amount!, this.opts.currency!, this.opts.method, this.opts.receiptEmail, this.opts.metadata) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps construction inside the domain class causing heavy constructors and making callers harder to read and test.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes construction on the domain type, which leads to long parameter lists that callers must satisfy. This increases cognitive load and makes unit tests and call sites verbose and fragile when options change."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates construction into a separate fluent configurator producing clearer immutable assembly and easier incremental construction at call sites.",
+          "isCorrect": true,
+          "explanation": "Version B is preferable in this scenario. Isolating construction into a configurator yields clearer intent, supports incremental and readable call-site composition, and preserves the domain object from construction responsibilities. It also makes tests more focused on assembly behavior. For deeper context, see GoF on Builder and Fowler on object construction patterns."
+        }
+      ]
+    }
+  ]
+}

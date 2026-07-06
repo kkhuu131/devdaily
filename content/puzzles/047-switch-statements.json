@@ -1,0 +1,106 @@
+{
+  "id": 47,
+  "conceptName": "Switch Statements",
+  "category": "code-smell",
+  "definition": "A pattern where conditional branching is used to select behavior based on a type or discriminator, often duplicated across the codebase.",
+  "ruleOfThumb": "If adding a new case requires changing multiple conditionals, prefer placing behavior on types or using a handler registry.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Conditional with Polymorphism",
+    "page": "p. 132",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the following function, what is the primary design problem you can spot?",
+      "codeSnippet": "function computePrice(item: any) {\n  switch (item.type) {\n    case 'book':\n      return item.pages * 0.5;\n    case 'membership':\n      return 20;\n    case 'digital':\n      return 5 + item.sizeMb * 0.01;\n    default:\n      throw new Error('Unknown type');\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code centralizes varying behavior into a single branching structure spanning many domain types in practice.",
+          "isCorrect": true,
+          "explanation": "The snippet concentrates different domain behaviors behind a single conditional. That makes adding a new type require edits in this function and any other similar switch sites. A better approach pushes behavior onto the data or into separate handlers so each type owns its own logic."
+        },
+        {
+          "id": "b",
+          "text": "This function duplicates logic in multiple places and will lead to inconsistent behavior across future feature additions.",
+          "isCorrect": false,
+          "explanation": "While duplicated logic is a real maintenance risk, the immediate smell here is a single conditional choosing behavior by type. Duplication may emerge as developers copy the switch to other modules, but the root is centralized conditional branching rather than scattered duplicates alone."
+        },
+        {
+          "id": "c",
+          "text": "This code exposes a large conditional body that will make unit testing individual behaviors more difficult to isolate.",
+          "isCorrect": false,
+          "explanation": "Testing difficulty is a valid concern because the switch bundles many behaviors together. However, the fundamental design issue is that behavior varies by type and is not encapsulated, which leads to both testing and extensibility problems."
+        },
+        {
+          "id": "d",
+          "text": "This implementation mixes decision logic with orchestration code making single responsibility enforcement harder for maintainers.",
+          "isCorrect": false,
+          "explanation": "Mixing decision and orchestration is a plausible criticism, but it is a secondary symptom. The core problem is that decisions are structured as case branches based on type rather than delegated to type-specific behavior holders."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You need to improve maintainability for payment processing. Which change most directly improves extensibility and testability?",
+      "codeSnippet": "interface Payment { method: string; amount: number }\nfunction process(payment: Payment) {\n  switch (payment.method) {\n    case 'card':\n      return chargeCard(payment.amount);\n    case 'paypal':\n      return chargePaypal(payment.amount);\n    case 'wire':\n      return chargeWire(payment.amount);\n    default:\n      throw new Error('Unsupported method');\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Encapsulate each payment method into distinct types with a common interface implementing its charge behavior.",
+          "isCorrect": true,
+          "explanation": "Turning each method into a type with a common interface moves behavior to the domain objects. This follows the Replace Conditional with Polymorphism refactor and reduces the need to modify a central switch when adding methods, improving both extensibility and test isolation."
+        },
+        {
+          "id": "b",
+          "text": "Introduce a lookup table mapping method names to handler functions to keep behavior data driven and compact.",
+          "isCorrect": false,
+          "explanation": "A handler map can reduce conditional code and centralize registration, but it still keeps behavior externalized as function literals and requires global coordination for new methods. It is a pragmatic improvement but does not distribute responsibility to domain types."
+        },
+        {
+          "id": "c",
+          "text": "Extract the switch into a private helper and maintain the current structure to limit changes to one file.",
+          "isCorrect": false,
+          "explanation": "Extracting to a helper reduces surface area but preserves the core branching logic. It delays design pain and leaves extensibility and testing coupling intact, because new methods still require edits to the same conditional helper."
+        },
+        {
+          "id": "d",
+          "text": "Add feature flags per method and toggle implementations at runtime to control rollout and backward compatibility.",
+          "isCorrect": false,
+          "explanation": "Feature flags address rollout concerns but do not solve the structural coupling of behavior by type. They increase runtime complexity and do not meaningfully improve testability or the long term extensibility of new payment methods."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Review two variants. Which version is the better long term design choice for adding new payment types?",
+      "codeSnippet": "// Version A: class per method\ninterface Payment { method: string; amount: number }\ninterface Changer { charge(amount: number): number }\nclass CardChanger implements Changer { charge(a:number){ return a * 1.02 } }\nclass PaypalChanger implements Changer { charge(a:number){ return a * 1.03 } }\n\n// Version B: centralized conditional\nfunction process(payment: Payment){\n  switch(payment.method){\n    case 'card': return chargeCard(payment.amount)\n    case 'paypal': return chargePaypal(payment.amount)\n    default: throw new Error('Unsupported')\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A moves per-type logic into dedicated classes behind a common interface.",
+          "isCorrect": true,
+          "explanation": "Version A encapsulates behavior with polymorphism so adding a new payment type only requires adding a new class that implements the interface. This adheres to the Open/Closed Principle and makes unit testing and deployment of new behavior more isolated. Version A also enables dependency injection and easier mocking for tests."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps one large conditional in a central function making change coordination and testing harder.",
+          "isCorrect": false,
+          "explanation": "Keeping a centralized conditional seems simpler initially but forces every change to touch the same function, increasing merge conflicts and risk. It also makes individual behaviors harder to mock independently and encourages growth of the conditional over time, which impedes maintainability in larger systems."
+        }
+      ]
+    }
+  ]
+}

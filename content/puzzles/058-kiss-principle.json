@@ -1,0 +1,105 @@
+{
+  "id": 58,
+  "conceptName": "KISS Principle",
+  "category": "principle",
+  "definition": "Favor the simplest workable design that meets requirements. Avoid adding abstractions, layers, or configuration unless there is a clear demand for them.",
+  "ruleOfThumb": "If you need a long explanation to justify a design choice, simplify the design until the explanation becomes trivial.",
+  "citation": {
+    "author": "Andy Hunt and Dave Thomas",
+    "bookTitle": "The Pragmatic Programmer",
+    "chapter": "Tracer Bullets and Orthogonality",
+    "page": "71",
+    "externalUrl": "https://pragprog.com"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which immediate code smell best matches this scenario: a service class has many nested conditionals and long methods.",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "The implementation is unnecessarily complex and hard to understand for most team members reading it.",
+          "isCorrect": true,
+          "explanation": "This directly points to needless complexity that increases cognitive load. Simplicity focuses on clearer, smaller units of code. See The Pragmatic Programmer on avoiding needless complexity and preferring straightforward implementations."
+        },
+        {
+          "id": "b",
+          "text": "The design exposes tight coupling between unrelated responsibilities and should be split into smaller cohesive classes.",
+          "isCorrect": false,
+          "explanation": "Tight coupling is a plausible concern because large classes often mix responsibilities, but coupling is a structural relationship rather than the immediate symptom of excessive branching and complexity. Refactoring to cohesion may help but does not directly identify unnecessary overcomplication versus legitimate combined responsibilities."
+        },
+        {
+          "id": "c",
+          "text": "The module appears to violate single responsibility and requires refactoring to separate concerns into distinct components.",
+          "isCorrect": false,
+          "explanation": "Violating single responsibility is a common diagnosis for bulky classes, but the scenario emphasizes nested conditionals and complexity rather than multiple orthogonal responsibilities. Splitting responsibilities might be appropriate but may not be necessary if the logic can be simplified first."
+        },
+        {
+          "id": "d",
+          "text": "The code shows premature optimization and performance tradeoffs that complicate logic without measurable benefits currently.",
+          "isCorrect": false,
+          "explanation": "Premature optimization is a reasonable suspicion when complexity appears unrelated to functionality, yet the scenario describes branchy logic not necessarily introduced for performance reasons. Before attributing intent, prefer simplifying and measuring."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary concern in the following TypeScript snippet?",
+      "codeSnippet": "interface PaymentHandler { handle(amount:number): Promise<void> }\nclass CreditCardHandler implements PaymentHandler { handle(a:number){ /* gateway call */ } }\nclass CashHandler implements PaymentHandler { handle(a:number){ /* ledger update */ } }\nclass CheckoutManager {\n  constructor(private handler: PaymentHandler) {}\n  checkout(amount:number){ return this.handler.handle(amount) }\n}\n// Only two concrete handlers exist and no further variants are expected.",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This structure has excessive abstraction around trivial operations and creates indirection that increases cognitive load and complexity.",
+          "isCorrect": false,
+          "explanation": "Excessive abstraction is a valid concern because tiny interfaces add indirection. However, the snippet could be acceptable if handlers are likely to vary at runtime. Assessing expected variability determines whether the abstraction is justified."
+        },
+        {
+          "id": "b",
+          "text": "This code introduces needless abstraction layers for a use case that is simple and unlikely to be extended.",
+          "isCorrect": true,
+          "explanation": "The snippet wraps trivial behavior behind an interface with no foreseeable extensions, which matches unnecessary abstraction. Prefer direct functions or a simple switch unless there is a real need for runtime substitution."
+        },
+        {
+          "id": "c",
+          "text": "This implementation couples domain logic to transport concerns and mixes responsibilities across different classes inappropriately.",
+          "isCorrect": false,
+          "explanation": "Coupling domain logic to transport is a plausible worry, but the snippet separates a handler abstraction from manager usage. The main issue here is likely over-abstraction rather than mixed transport and domain responsibilities."
+        },
+        {
+          "id": "d",
+          "text": "This pattern may cause runtime overhead through extra objects and indirection that could hurt hot-path performance.",
+          "isCorrect": false,
+          "explanation": "Runtime overhead is a realistic concern with extra objects, yet such overhead is usually negligible compared to maintainability costs. The more pertinent design critique is about unnecessary complexity when extension is unlikely."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Given the two versions below, which design should you prefer for long-term maintainability of the report generator?",
+      "codeSnippet": "// Version A\nclass ReportGeneratorA {\n  constructor(private format: 'pdf' | 'csv', private includeHeader = true) {}\n  generate(data:any[]) {\n    if (this.format === 'pdf') {\n      // build PDF with header, pagination, footers\n    } else {\n      // build CSV inline\n    }\n    if (this.includeHeader) { /* add header */ }\n  }\n}\n\n// Version B\ntype Formatter = (data:any[]) => string\nconst pdfFormatter: Formatter = data => { /* build PDF */ }\nconst csvFormatter: Formatter = data => { /* build CSV */ }\nclass ReportGeneratorB {\n  constructor(private formatter: Formatter) {}\n  generate(data:any[]) { return this.formatter(data) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This version fragments logic into many tiny functions and increases conceptual overhead for new readers.",
+          "isCorrect": false,
+          "explanation": "Fragmentation can be a downside when tiny pieces are poorly named or scattered. However, Version B composes clear, testable formatters which reduce conditional complexity. The real tradeoff is granularity versus discoverability; choose composition only when it yields clarity and testability."
+        },
+        {
+          "id": "b",
+          "text": "This version reduces coupling and makes the code easier to read and test.",
+          "isCorrect": true,
+          "explanation": "Version B favors composition and separates formatting concerns into small, focused functions. That reduces branching and conditional logic inside the generator, making behavior easier to reason about and unit test. Favor this style when format strategies are independent or likely to change. See Martin Fowler on composition and separation of concerns for maintainability guidance."
+        }
+      ]
+    }
+  ]
+}

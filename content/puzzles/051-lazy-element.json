@@ -1,0 +1,106 @@
+{
+  "id": 51,
+  "conceptName": "Lazy Element",
+  "category": "code-smell",
+  "definition": "An element (class, module, or function) that provides little or no meaningful behavior, acting as a trivial pass-through or unused holder and adding unnecessary indirection to the codebase.",
+  "ruleOfThumb": "If an element only forwards calls, holds trivial state, or is rarely used, consider inlining it or removing it to reduce indirection.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Lazy Class",
+    "page": "151-153",
+    "externalUrl": "https://martinfowler.com/bliki/LazyClass.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the TypeScript class below. What is the primary code-quality problem demonstrated?",
+      "codeSnippet": "class AddressDTO {\n  constructor(public street: string, public city: string) {}\n}\n\nclass AddressWrapper {\n  constructor(private dto: AddressDTO) {}\n  getStreet() { return this.dto.street }\n  getCity() { return this.dto.city }\n}\n\nconst wrapper = new AddressWrapper(new AddressDTO('Main', 'Metropolis'))",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class only delegates to other objects, exposing pass through methods and adding no domain behavior.",
+          "isCorrect": true,
+          "explanation": "The wrapper simply forwards property access without adding validation, transformation, or behavior. That makes it an unnecessary layer that increases indirection and maintenance cost. Refactoring options include inlining the DTO usage or merging responsibilities to remove the trivial wrapper."
+        },
+        {
+          "id": "b",
+          "text": "This class fails to synchronize access to its fields and could cause race conditions when used concurrently across threads.",
+          "isCorrect": false,
+          "explanation": "While concurrency issues can be real, the snippet shows simple synchronous property access in a single-threaded JavaScript environment. There is no mutable shared state or locking context here, so race conditions are not the primary concern."
+        },
+        {
+          "id": "c",
+          "text": "This class exposes internal mutable state allowing callers to modify its internals and breaking encapsulation invariants unintentionally.",
+          "isCorrect": false,
+          "explanation": "The DTO properties are public, but the wrapper does not expose setters or allow modification beyond the DTO constructor. The bigger issue is that the wrapper adds no behavior rather than explicit encapsulation breaks."
+        },
+        {
+          "id": "d",
+          "text": "This class holds global long lived references and can prevent garbage collection of large objects leading to memory leaks over time.",
+          "isCorrect": false,
+          "explanation": "The snippet constructs transient objects without global storage. There is no evidence of application-level caching or global references that would cause memory leaks. The main smell is unnecessary indirection, not retention."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Consider this service layer example. Which concern is most likely the real problem here?",
+      "codeSnippet": "class InvoiceRepository {\n  save(invoice: any) { /* persist to DB */ }\n}\n\nclass InvoiceService {\n  constructor(private repo: InvoiceRepository) {}\n  create(invoice: any) {\n    console.log('creating invoice')\n    return this.repo.save(invoice)\n  }\n}\n\n// Used directly by controller: new InvoiceService(new InvoiceRepository()).create(data)",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This service is a thin forwarding wrapper that adds only trivial logging and no substantive business logic.",
+          "isCorrect": true,
+          "explanation": "The service only logs and forwards to the repository without validation, orchestration, or transformation. This indicates an unnecessary abstraction that could be inlined or expanded to hold real behavior. Fowler describes this as a Lazy Class smell and suggests collapsing such elements."
+        },
+        {
+          "id": "b",
+          "text": "This service lacks proper error handling and will propagate exceptions up the stack without transforming or logging contextual details.",
+          "isCorrect": false,
+          "explanation": "While lack of error handling is plausible, the snippet focuses on the service doing only logging then delegating. Error handling could be added, but the central design smell is the service's lack of meaningful responsibilities, not necessarily missing exception management."
+        },
+        {
+          "id": "c",
+          "text": "This service neglects transaction boundaries and could cause inconsistent database state when multiple repository calls are required together.",
+          "isCorrect": false,
+          "explanation": "Transaction management is important when combining multiple operations. The example shows a single repository call, so transaction boundary issues are not evident. The clearer problem is that the service currently performs no business work."
+        },
+        {
+          "id": "d",
+          "text": "This service exposes too much repository specific API and couples higher layers to persistence details instead of abstractions.",
+          "isCorrect": false,
+          "explanation": "Coupling to persistence details can be an issue, but here the service is simply forwarding a save call rather than exposing repository internals. The immediate smell is that the service adds no domain logic and could be removed or reworked."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two alternate refactorings are proposed. Which version better addresses unnecessary indirection while remaining maintainable?",
+      "codeSnippet": "// Version A: inline repository call into controller\nclass OrderControllerA {\n  constructor(private repo: OrderRepository) {}\n  submit(order: any) {\n    // minimal controller directly persists order\n    this.repo.save(order)\n  }\n}\n\n// Version B: keep a thin service layer that only forwards to repository\nclass OrderServiceB {\n  constructor(private repo: OrderRepository) {}\n  submit(order: any) { return this.repo.save(order) }\n}\n\nclass OrderControllerB {\n  constructor(private service: OrderServiceB) {}\n  submit(order: any) { return this.service.submit(order) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A consolidates trivial pass through logic into the caller and eliminates an unnecessary intermediary.",
+          "isCorrect": true,
+          "explanation": "Version A removes an indirection layer that provided no behavior, making the flow clearer and reducing points of maintenance. Keeping a thin pass-through service (Version B) adds a class to maintain without providing transformation, validation, or orchestration. Prefer inlining when the intermediary offers no responsibilities; if future behavior is expected, introduce the layer when needed. For guidance see Fowler on Lazy Class and the pragmatic advice in Clean Code about avoiding needless abstractions."
+        },
+        {
+          "id": "b",
+          "text": "Version B retains the thin forwarding wrapper and keeps an extra layer that adds no domain behavior and increases indirection.",
+          "isCorrect": false,
+          "explanation": "Keeping a forwarding wrapper can be useful when anticipating future requirements, but premature layers increase complexity and testing surface area. Version B specifically preserves an element that currently adds no business logic, which is the very symptom of a Lazy Class. If the wrapper will gain responsibilities soon, introduce it then, otherwise prefer the simpler Version A. See Martin Fowler on refactoring away Lazy Classes and the Pragmatic Programmer on YAGNI."
+        }
+      ]
+    }
+  ]
+}

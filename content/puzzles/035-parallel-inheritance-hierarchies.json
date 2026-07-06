@@ -1,0 +1,106 @@
+{
+  "id": 35,
+  "conceptName": "Parallel Inheritance Hierarchies",
+  "category": "code-smell",
+  "definition": "A design smell where two or more class hierarchies mirror each other so that adding a subclass in one hierarchy forces a matching subclass in the other.",
+  "ruleOfThumb": "If you find yourself adding corresponding subclasses in multiple hierarchies at the same time, consider collapsing behavior into composition or a single hierarchy.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Dealing with Parallel Inheritance Hierarchies",
+    "page": "p. 176",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best identifies the primary smell in the code below?",
+      "codeSnippet": "abstract class Shape {\n  abstract draw(): void;\n}\n\nclass Circle extends Shape {\n  draw() { /* circle drawing */ }\n}\n\nabstract class Renderer {\n  abstract renderCircle(): void;\n}\n\nclass SvgRenderer extends Renderer {\n  renderCircle() { /* svg circle */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Two separate class hierarchies mirror each other and require matching subclasses to change together across modules.",
+          "isCorrect": true,
+          "explanation": "The code shows Shape subclasses and Renderer subclasses that correspond to each other. Adding a new shape typically requires a new renderer subclass and vice versa. This coupling across hierarchies increases maintenance cost and causes duplicated change locations. The usual refactor is to use composition so a Shape delegates rendering to a Renderer instance, or to consolidate behavior into a single polymorphic hierarchy."
+        },
+        {
+          "id": "b",
+          "text": "A single class has too many methods and responsibilities and should be split into focused smaller classes.",
+          "isCorrect": false,
+          "explanation": "This complaint points at a God object or large class with many responsibilities, but the snippet shows separate small classes organized into two corresponding hierarchies rather than one oversized class. Splitting a single class would not address the mirrored-subclass coupling present between the Shape and Renderer hierarchies."
+        },
+        {
+          "id": "c",
+          "text": "An overuse of conditional logic on types indicates code that needs polymorphism rather than a structural hierarchy change.",
+          "isCorrect": false,
+          "explanation": "Excessive type-based conditionals often indicate missing polymorphism, but the sample uses subclassing already. The real issue is structural duplication across hierarchies rather than switch or if chains. Converting conditionals to polymorphism would not remove the need to coordinate two hierarchies."
+        },
+        {
+          "id": "d",
+          "text": "Multiple unrelated inheritance trees exist because classes share only naming patterns but not behavioral coupling.",
+          "isCorrect": false,
+          "explanation": "This option suggests the hierarchies are unrelated and only coincidentally named. In the snippet, the hierarchies are behaviorally coupled (shapes map to rendering methods), so they are related and create synchronized maintenance needs. Treating them as unrelated would overlook the coordination problem."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In this notification system, what is the most likely maintenance problem to expect as new notification types are added?",
+      "codeSnippet": "abstract class Notification {\n  abstract send(): void;\n}\n\nclass EmailNotification extends Notification {\n  send() { /* send email */ }\n}\n\nabstract class NotifierService {\n  abstract notifyEmail(): void;\n}\n\nclass SmtpNotifier extends NotifierService {\n  notifyEmail() { /* smtp send */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Subclass additions require touching two parallel hierarchies, causing duplicated changes and coupling across different modules.",
+          "isCorrect": true,
+          "explanation": "Adding a new notification type would likely require a new Notification subclass and a matching NotifierService method or subclass. That forces synchronized edits in separate hierarchies and modules, increasing the chance of missed updates and inconsistent behavior. Refactoring to delegate notification behavior into a single collaborator or using composition reduces these coupled edits."
+        },
+        {
+          "id": "b",
+          "text": "The code lacks extraction to interfaces so applying a Visitor pattern would remove the duplication quickly and safely.",
+          "isCorrect": false,
+          "explanation": "While introducing visitors can sometimes centralize operations across types, the Visitor pattern is not a universal fix and often increases complexity for adding new types. The real issue here is mirrored hierarchies; composition or moving behavior into a collaborator tends to be a clearer corrective approach than immediately introducing Visitor."
+        },
+        {
+          "id": "c",
+          "text": "Performance overhead from virtual method calls is the root cause rather than the design duplication between hierarchies.",
+          "isCorrect": false,
+          "explanation": "Virtual call overhead is rarely the primary maintenance concern compared to structural design problems. The snippet highlights duplicated structure that complicates changes. Optimizing method dispatch would not address the coupling that makes adding a new notification type error-prone."
+        },
+        {
+          "id": "d",
+          "text": "Unit tests are missing and test-driven redesign is required before refactoring to ensure behavior remains correct.",
+          "isCorrect": false,
+          "explanation": "Having tests is valuable before refactoring, but this answer points at a practice rather than the core smell. The immediate design problem is mirrored class hierarchies causing synchronized changes. Tests help safe refactoring but do not eliminate the underlying duplicated structure."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better addresses the mirrored subclass maintenance problem shown in the code comments?",
+      "codeSnippet": "// Version A: composition with a renderer collaborator\nclass Shape {\n  constructor(private renderer: Renderer) {}\n  draw() { this.renderer.render(this); }\n}\n\nclass Circle extends Shape {}\n\ninterface Renderer { render(shape: Shape): void }\n\n// Version B: two parallel hierarchies with matching subclasses\nabstract class ShapeB { abstract draw(): void }\nclass CircleB extends ShapeB { draw() { /* circle draw */ } }\nabstract class RendererB { abstract renderCircle(): void }\nclass SvgRendererB extends RendererB { renderCircle() { /* svg circle */ } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A removes mirrored subclass relationships by depending on a single behavior collaborator.",
+          "isCorrect": true,
+          "explanation": "Version A uses composition so shapes delegate rendering to a Renderer instance rather than forcing parallel renderer subclasses. This consolidates rendering behavior into one collaborator and avoids the need to create matching subclasses whenever a new Shape type is added. The result is lower coupling between type hierarchy and implementation detail, and easier extension by registering new renderers or shape-specific renderer logic without synchronized edits."
+        },
+        {
+          "id": "b",
+          "text": "Version B maintains separate subclass trees which will force synchronized edits in both hierarchies for every new shape type added.",
+          "isCorrect": false,
+          "explanation": "Version B shows the classic mirrored hierarchies: a ShapeB subclass must often be matched by a RendererB subclass or method, so adding a new shape forces changes in both places. While this keeps responsibilities explicit, it increases maintenance friction and error surface when extending behavior. The architecture may be salvageable for certain constraints, but it does not address the maintenance smell as effectively as composition."
+        }
+      ]
+    }
+  ]
+}

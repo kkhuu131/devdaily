@@ -1,0 +1,105 @@
+{
+  "id": 39,
+  "conceptName": "Stable Dependencies Principle",
+  "category": "solid",
+  "definition": "A guideline for package-level dependencies that says packages should depend on more stable packages to reduce ripple changes.",
+  "ruleOfThumb": "Arrange dependencies so that less stable packages depend on more stable, widely reused packages rather than the reverse.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Agile Software Development, Principles, Patterns, and Practices",
+    "chapter": "Package Principles",
+    "page": "N/A",
+    "externalUrl": "https://www.objectmentor.com/resources/articles/pack_principles.pdf"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best captures the desirable direction of package dependencies in a stable architecture?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "A package should depend only on packages that are more widely reused and less likely to change.",
+          "isCorrect": true,
+          "explanation": "Correct. The desirable direction is toward packages with greater reuse and lower change frequency so the dependent package inherits stability."
+        },
+        {
+          "id": "b",
+          "text": "A package should avoid depending on any external package in order to retain full compile-time independence always.",
+          "isCorrect": false,
+          "explanation": "This is an extreme tradeoff. Total isolation is often impractical and can lead to duplication and reduced reuse across the codebase."
+        },
+        {
+          "id": "c",
+          "text": "A package should prefer depending on packages with fewer responsibilities so each dependency has minimal impact when modified.",
+          "isCorrect": false,
+          "explanation": "Smaller responsibility can help, but stability is about likelihood of change and reuse, not only granularity of responsibilities."
+        },
+        {
+          "id": "d",
+          "text": "A package should depend only on packages within the same team to ensure ownership and avoid cross-team integration changes.",
+          "isCorrect": false,
+          "explanation": "Team boundaries can influence design, but coupling purely by team ownership ignores reuse and change frequency, which are the key stability factors."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review the code relationships below. Which observation most clearly indicates a package-level stability problem?",
+      "codeSnippet": "// packages/billing-core/src/index.ts\nimport { Dashboard } from '../billing-web/components/Dashboard';\nexport function calculateInvoice() {\n  // core logic\n}\n\n// packages/billing-web/src/components/Dashboard.tsx\nimport { calculateInvoice } from '../../billing-core';\nexport const Dashboard = () => {\n  // UI rendering\n};",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The core domain package directly depends on the web UI package and is less stable than packages that depend on it.",
+          "isCorrect": true,
+          "explanation": "Correct. The domain core importing UI makes the core depend on a likely changing UI package, which inverts the desired stability direction."
+        },
+        {
+          "id": "b",
+          "text": "The web UI package directly depends on the core domain package and therefore duplicates domain logic risking inconsistent state across services.",
+          "isCorrect": false,
+          "explanation": "Plausible concern but inaccurate here: the snippet shows mutual imports but the notable stability issue is the core importing the UI, not duplication per se."
+        },
+        {
+          "id": "c",
+          "text": "The API adapter package directly depends on the billing domain package and therefore creates a circular build-time coupling between deployment units.",
+          "isCorrect": false,
+          "explanation": "Circular coupling is a real issue, but the snippet demonstrates UI and core cross-dependency with the core depending on UI rather than an adapter coupling problem."
+        },
+        {
+          "id": "d",
+          "text": "The shared utilities package directly depends on business domain modules and therefore centralizes change impact across unrelated feature teams.",
+          "isCorrect": false,
+          "explanation": "That concern can happen, but the presented code highlights domain depending on UI, which more directly signals an unstable dependency relationship for core logic."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better organizes dependencies to keep the domain package stable and reduce ripple changes?",
+      "codeSnippet": "// Version A\n// packages/domain/src/index.ts\nimport { renderWidget } from '../../web/widget';\nexport function process() {\n  renderWidget();\n}\n\n// Version B\n// packages/domain/src/index.ts\nimport { IWidget } from '@acme/interfaces';\nexport function process(widget: IWidget) {\n  widget.render();\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A couples the domain package to concrete UI and infrastructure packages and makes the domain package unstable.",
+          "isCorrect": false,
+          "explanation": "Version A ties domain code to concrete UI implementation details, increasing the domain's susceptibility to UI-driven changes and reducing reuse. This violates the goal of directing dependencies toward stable, widely reused modules."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates stable abstractions in a small package that the domain package depends on.",
+          "isCorrect": true,
+          "explanation": "Version B is correct. It pushes the abstraction into a small, stable package that is unlikely to change often, allowing the domain to depend on a stable contract rather than on concrete implementations. This minimizes ripple effects from UI or infrastructure changes and preserves domain stability. This aligns with package-level dependency guidance described in Robert C. Martin's Package Principles and complements dependency inversion ideas from traditional design literature."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 64,
+  "conceptName": "Memento Pattern",
+  "category": "design-pattern",
+  "definition": "A behavioral design that captures and externalizes an object's internal state so it can be restored later without violating encapsulation.",
+  "ruleOfThumb": "Keep state snapshots separate from the originator to allow restoration without exposing or coupling to internal implementation details.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns (Memento)",
+    "page": null,
+    "externalUrl": "https://en.wikipedia.org/wiki/Memento_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the snippet. What is the primary intent of this code?",
+      "codeSnippet": "class Originator {\n  private state: string;\n  setState(s: string) { this.state = s }\n  createSnapshot() { return new Snapshot(this.state) }\n  restore(snapshot: Snapshot) { this.state = snapshot.getState() }\n}\n\nclass Snapshot {\n  constructor(private state: string) {}\n  getState() { return this.state }\n}\n\nclass Caretaker {\n  private history: Snapshot[] = []\n  save(s: Snapshot) { this.history.push(s) }\n  undo() { return this.history.pop() }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It preserves object state externally to allow restoring previous states without exposing the object's internal implementation details.",
+          "isCorrect": true,
+          "explanation": "This code separates the originator's state into Snapshot objects and a Caretaker. That externalization allows restoring prior states without making the originator reveal or couple to its internals. This is useful for undo/rollback semantics where encapsulation must be maintained."
+        },
+        {
+          "id": "b",
+          "text": "It implements a cloning mechanism to create independent copies for concurrent modifications without providing restoration of earlier states.",
+          "isCorrect": false,
+          "explanation": "Cloning would produce independent duplicates of an object for parallel use, but the snippet specifically creates snapshots and stores them for later restoration, which is focused on rollback rather than merely creating independent concurrent copies."
+        },
+        {
+          "id": "c",
+          "text": "It represents a serialization strategy to persist object data for durability and transfer rather than selective state rollback.",
+          "isCorrect": false,
+          "explanation": "Serialization aims at persisting or transmitting object state, often to disk or network. The Snapshot here is short-lived and used for in-memory restoration rather than long-term persistence or data transfer, so serialization is not the primary intent."
+        },
+        {
+          "id": "d",
+          "text": "It acts as an observer notification registry that stores subscriber snapshots to update listeners on state transitions.",
+          "isCorrect": false,
+          "explanation": "An observer registry manages subscribers and notifies them of changes; it does not typically capture and restore object state. The snippet's save/undo behavior indicates state preservation for rollback, not event distribution."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "The editor stores a history array of whole document objects for undo. What is the most likely problem with this approach?",
+      "codeSnippet": "class Editor {\n  private doc: string = ''\n  private history: string[] = []\n  type(text: string) { this.doc += text }\n  snapshot() { this.history.push(this.doc) }\n  undo() { this.doc = this.history.pop() || '' }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It stores full object snapshots in memory causing excessive memory usage and degraded performance when history grows for large documents.",
+          "isCorrect": true,
+          "explanation": "Keeping complete copies of large documents for each history entry can quickly consume memory and hurt performance. Alternatives include storing incremental diffs or limiting history depth to balance memory and functionality."
+        },
+        {
+          "id": "b",
+          "text": "It exposes internal state through public getters enabling external modules to modify internals and break invariants unintentionally.",
+          "isCorrect": false,
+          "explanation": "Exposing internals is a real concern, but the provided code stores whole document strings internally and does not show public getters. The dominant problem in the snippet is memory growth from full snapshots rather than an exposure issue."
+        },
+        {
+          "id": "c",
+          "text": "It relies on synchronous file writes for each snapshot which can block the main thread and slow responsive UI interactions.",
+          "isCorrect": false,
+          "explanation": "Synchronous IO could block the UI, but the snippet shows in-memory history using an array of strings. The immediate issue is memory and performance for in-memory storage, not disk write blocking."
+        },
+        {
+          "id": "d",
+          "text": "It conflates command logic with snapshot storage making replay and selective undo semantics difficult to reason about and test.",
+          "isCorrect": false,
+          "explanation": "Mixing command intent with storage policies can complicate replay semantics. While valid, the primary practical problem here is the cost of storing full document copies, which has immediate resource impact compared to architectural mixing concerns."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You must choose between two implementations for reversible state. Which version is preferable for maintaining encapsulation and testability?",
+      "codeSnippet": "// Version A\nclass Snapshot { constructor(private state: string) {} getState() { return this.state } }\nclass OriginatorA { private state = ''\n  set(s: string) { this.state = s }\n  createSnapshot() { return new Snapshot(this.state) }\n  restore(s: Snapshot) { this.state = s.getState() }\n}\nclass CaretakerA { private history: Snapshot[] = []\n  save(s: Snapshot) { this.history.push(s) }\n  undo() { return this.history.pop() }\n}\n\n// Version B\nclass OriginatorB { public state = ''\n  private history: string[] = []\n  set(s: string) { this.history.push(this.state); this.state = s }\n  undo() { this.state = this.history.pop() || '' }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A stores immutable snapshots externally so the originator remains encapsulated and history management stays separate.",
+          "isCorrect": true,
+          "explanation": "Version A separates concerns by encapsulating state into Snapshot objects and delegating history to a Caretaker. This preserves the originator's encapsulation and makes testing, reasoning, and restoring specific states straightforward. It aligns with the intention to externalize state without leaking internals."
+        },
+        {
+          "id": "b",
+          "text": "Version B embeds history inside the originator, which increases coupling, risks state leakage, and complicates unit testing of core behavior.",
+          "isCorrect": false,
+          "explanation": "Keeping history inside the originator mixes responsibilities and exposes more implementation details to tests and other modules. That internal storage can lead to tighter coupling and make it harder to maintain invariants or swap storage strategies. In contrast, external snapshots allow clearer separation and smaller, more testable classes."
+        }
+      ]
+    }
+  ]
+}

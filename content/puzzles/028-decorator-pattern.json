@@ -1,0 +1,106 @@
+{
+  "id": 28,
+  "conceptName": "Decorator Pattern",
+  "category": "design-pattern",
+  "definition": "A structural pattern that lets you attach additional responsibilities to an object dynamically by wrapping it with decorator objects that conform to the same interface.",
+  "ruleOfThumb": "When you need to add responsibilities to individual objects at runtime in many combinations, prefer composing lightweight wrappers instead of proliferating subclasses.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Decorator",
+    "page": "p. 175",
+    "externalUrl": "https://en.wikipedia.org/wiki/Decorator_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches code that adds behavior to an object by wrapping it instead of subclassing?",
+      "codeSnippet": "interface Service {\n  execute(): string\n}\n\nclass CoreService implements Service {\n  execute() { return 'core'; }\n}\n\nclass LoggingWrapper implements Service {\n  constructor(private inner: Service) {}\n  execute() { console.log('log'); return this.inner.execute(); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code wraps an existing object instance with another object to add behavior at runtime.",
+          "isCorrect": true,
+          "explanation": "Correct. The snippet composes an object that implements the same interface and delegates to the wrapped instance while adding behavior. This is the canonical way to add responsibilities per instance without modifying the original class or creating new subclasses for every feature combination."
+        },
+        {
+          "id": "b",
+          "text": "This code shows a subclass overriding methods at compile time to change base class behavior permanently.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Subclassing changes behavior at the class level for all instances of the subclass and requires new classes for combinations of responsibilities, which is not what the snippet demonstrates."
+        },
+        {
+          "id": "c",
+          "text": "This code demonstrates a utility function composing pure functions to build new behavior without object state.",
+          "isCorrect": false,
+          "explanation": "Incorrect. The snippet uses objects implementing an interface and delegation, not standalone pure function composition. The presence of stateful method delegation distinguishes it from functional composition."
+        },
+        {
+          "id": "d",
+          "text": "This code presents dependency injection of services through constructor parameters for configurable object dependencies at startup.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Constructor injection configures which implementation is used but does not itself add per-instance responsibilities by wrapping and delegating behavior at runtime, which the snippet shows."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You need logging and caching added to various service implementations without modifying them. Which observation is most accurate about choosing a solution?",
+      "codeSnippet": "interface Service { fetch(id: string): Promise<any> }\n\n// Several concrete Service implementations already exist in the codebase\n// Requirement: combine logging and caching in different permutations per instance",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Wrap instances at composition time to combine behaviors without modifying original classes or proliferating subclasses.",
+          "isCorrect": true,
+          "explanation": "Correct. Wrapping individual instances lets you mix and match behaviors like logging and caching at runtime, avoiding a combinatorial explosion of subclasses and keeping core classes untouched."
+        },
+        {
+          "id": "b",
+          "text": "Prefer creating concrete subclasses for each combination to keep behavior locality even if many subclass combinations result.",
+          "isCorrect": false,
+          "explanation": "Incorrect. While subclasses keep behavior local, creating a subclass for every combination quickly becomes unmaintainable and brittle when you have many orthogonal features to combine."
+        },
+        {
+          "id": "c",
+          "text": "Use static utility functions to add behavior externally to avoid runtime wrapping and minimize object composition complexity.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Static utilities can apply behavior but often lose per-instance state and polymorphism, and they do not integrate as seamlessly when multiple behaviors must be composed in different orders per instance."
+        },
+        {
+          "id": "d",
+          "text": "Rely on a global proxy that intercepts all service calls centrally to apply crosscutting concerns uniformly at runtime.",
+          "isCorrect": false,
+          "explanation": "Incorrect. A global proxy enforces uniform behavior for all services and complicates cases where only some instances need specific combinations, reducing flexibility compared with per-instance wrappers."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better supports adding independent behaviors to individual service instances without class explosion or tight coupling?",
+      "codeSnippet": "// Version A: compose lightweight wrappers per behavior\ninterface Service { execute(): string }\nclass CoreService implements Service { execute() { return 'core'; } }\nclass LoggingWrapper implements Service { constructor(private inner: Service) {} execute() { console.log('log'); return this.inner.execute(); } }\nclass CachingWrapper implements Service { constructor(private inner: Service) {} execute() { /* cache check */ return this.inner.execute(); } }\n\n// Version B: create concrete subclasses for combinations\nclass ServiceWithLogAndCache extends CoreService { execute() { console.log('log'); /* cache check */ return super.execute(); } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A composes small wrapper objects at runtime and avoids combinatorial subclass explosion across features.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable. Composing wrappers lets you add or remove behaviors per instance and reuse single-responsibility decorators, preventing the combinatorial growth of classes. It also preserves open extension for features without modifying existing classes, and supports flexible ordering of behaviors when necessary."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes behavior into large subclasses causing duplication and requiring a new subclass for each feature combination.",
+          "isCorrect": false,
+          "explanation": "Version B is problematic. Encoding combinations in subclasses leads to duplication and rigid coupling between features and classes. Every new crosscutting feature forces additional subclass variants, increasing maintenance cost and making it harder to apply behaviors selectively to individual instances."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 36,
+  "conceptName": "Inappropriate Intimacy",
+  "category": "code-smell",
+  "definition": "A code smell where one class relies on the internal details of another class, violating encapsulation and creating excessive coupling.",
+  "ruleOfThumb": "Prefer asking an object for what you need rather than reaching into its internals; expose behavior, not state.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Inappropriate Intimacy",
+    "page": "162",
+    "externalUrl": "https://martinfowler.com/bliki/InappropriateIntimacy.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which option best describes the problem shown in the following snippet?",
+      "codeSnippet": "class Invoice {\n  items: { price: number; qty: number }[] = [];\n  addItem(it: any) { this.items.push(it); }\n}\nclass InvoicePrinter {\n  printTotal(inv: Invoice) {\n    const total = inv.items.reduce((s, i) => s + i.price * i.qty, 0);\n    console.log(total);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "InvoicePrinter accesses multiple internal Invoice properties and computes totals by iterating and summing those internal values.",
+          "isCorrect": true,
+          "explanation": "The printer reaches directly into Invoice.items to compute the total. That is a direct breach of encapsulation because behavior (calculating total) belongs with the Invoice. The preferred fix is to move the total-calculation behavior into Invoice (add a getTotal method) or provide a focused API for printing. See Martin Fowler on moving behavior to the data owner to reduce coupling."
+        },
+        {
+          "id": "b",
+          "text": "Invoice exposes a mutable items array that other classes modify, creating data integrity and validation risks across boundaries.",
+          "isCorrect": false,
+          "explanation": "This is a plausible concern because exposing mutable collections invites external mutation and validation gaps. However, the snippet specifically shows external iteration and calculation on internal state rather than explicit mutation from the printer. The root smell is tight coupling from reaching into internals, not merely the collection being mutable."
+        },
+        {
+          "id": "c",
+          "text": "InvoicePrinter violates encapsulation because it depends on Invoice internal structure, making refactors of Invoice risky and error prone.",
+          "isCorrect": false,
+          "explanation": "This statement is correct in spirit and describes the consequence, but it is a restatement of the symptom. It does not single out the most actionable observation here: the printer performs domain logic using Invoice internals instead of delegating that logic to Invoice. The immediate fix is to encapsulate the calculation within Invoice."
+        },
+        {
+          "id": "d",
+          "text": "This pattern duplicates business logic in printer and invoice, risking divergence when taxation or discount rules change in production.",
+          "isCorrect": false,
+          "explanation": "Duplicated logic is a valid worry when multiple places compute totals. In the snippet we only see the printer performing the calculation; we cannot confirm duplication from this fragment alone. The central issue remains the printer operating on internal state, which enables duplication but is specifically an intimacy/encapsulation problem."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this code, which diagnosis best explains the core design issue?",
+      "codeSnippet": "class UserAccount {\n  sessions: { id: string; lastSeen: number }[] = [];\n  addSession(s: any) { this.sessions.push(s); }\n}\nclass SessionManager {\n  expireIdle(account: UserAccount) {\n    const now = Date.now();\n    account.sessions = account.sessions.filter(s => now - s.lastSeen < 30 * 60 * 1000);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "SessionManager directly mutates UserAccount sessions array, creating tight coupling and breaking UserAccount encapsulation across components.",
+          "isCorrect": true,
+          "explanation": "SessionManager reaches into and assigns account.sessions, which couples session lifecycle logic to the account's internal representation. The better approach is to give UserAccount a method like expireIdleSessions(now) or to move session management into a dedicated collaborator with a clean API. This preserves encapsulation and reduces fragile dependencies."
+        },
+        {
+          "id": "b",
+          "text": "This code is mainly a thread safety problem because concurrent session access is unprotected and will cause races under parallel requests.",
+          "isCorrect": false,
+          "explanation": "Race conditions are a real concern for mutable shared state, but the snippet's primary design smell is direct manipulation of another object's internals. Thread safety could be addressed independently, yet the architectural cleanliness requires first eliminating the intimate access so synchronization concerns have clearer boundaries."
+        },
+        {
+          "id": "c",
+          "text": "The snippet is primarily a serialization concern because raw session objects will complicate persistence and DTO mapping in future releases.",
+          "isCorrect": false,
+          "explanation": "Serialization and persistence are plausible future headaches, but they are secondary here. The immediate issue is that SessionManager depends on the exact shape of UserAccount.sessions. Refactoring to an explicit API or session value object would mitigate both intimacy and later serialization pain."
+        },
+        {
+          "id": "d",
+          "text": "This pattern is chiefly a performance problem because filtering sessions on each request will degrade throughput under significant load.",
+          "isCorrect": false,
+          "explanation": "Performance costs of repeated filtering could become real, however the core design flaw is the violation of encapsulation and coupling between SessionManager and UserAccount internals. Performance tuning should follow resolving the architectural coupling so that optimizations do not perpetuate bad structure."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better avoids excessive coupling between domain and audit code?",
+      "codeSnippet": "// Version A\nclass Payment {\n  private lineItems = [{ amount: 0 }];\n  getAuditData() { return this.lineItems.map(li => ({ amount: li.amount })); }\n}\nclass AuditService {\n  record(payment: Payment) { const data = payment.getAuditData(); sendToAudit(data); }\n}\n\n// Version B\nclass PaymentV {\n  lineItems = [{ amount: 0 }];\n}\nclass AuditServiceV {\n  record(p: PaymentV) { const total = p.lineItems.reduce((s, i) => s + i.amount, 0); sendToAudit(total); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A encapsulates audit access by offering a focused Payment API for audit consumers.",
+          "isCorrect": true,
+          "explanation": "Version A keeps the access to line item details behind a specific Payment method (getAuditData), which preserves the Payment abstraction and prevents audit code from depending on internal representation. That reduces coupling, makes future refactors safer, and centralizes any translation or filtering logic. Fowler recommends moving behavior to the data owner when collaborators otherwise reach into internals. Clean Code also advises exposing intention-revealing methods instead of leaking state."
+        },
+        {
+          "id": "b",
+          "text": "Version B exposes Payment internals and forces audit code to duplicate business logic, increasing fragility during changes.",
+          "isCorrect": false,
+          "explanation": "Version B lets the audit service reach into payment.lineItems and compute totals itself, which couples audit logic to the concrete structure of Payment. That makes refactors brittle and can lead to duplicated domain logic across consumers. While the criticism is accurate, the option is designed to be the wrong choice here because it represents the problematic design rather than the recommended one. References: Martin Fowler on encapsulation and GoF on object responsibility distribution."
+        }
+      ]
+    }
+  ]
+}

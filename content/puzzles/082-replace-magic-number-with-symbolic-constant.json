@@ -1,0 +1,106 @@
+{
+  "id": 82,
+  "conceptName": "Replace Magic Number with Symbolic Constant",
+  "category": "refactoring",
+  "definition": "Extract unexplained numeric literals into well-named constants so the code documents intent and eases change.",
+  "ruleOfThumb": "If a literal encodes domain logic, a policy, or a unit of measure, give it a name; leave universal math constants inline.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Magic Number with Symbolic Constant",
+    "page": null,
+    "externalUrl": "https://refactoring.com/catalog/replaceMagicNumberWithSymbolicConstant.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which fragment most clearly indicates a numeric literal that should be given a descriptive name?",
+      "codeSnippet": "function applyTax(price: number) {\n  return price + price * 0.0825;\n}\n\nfunction createArray() {\n  return new Array(10).fill(0);\n}\n\nfunction isPrimeCandidate(n: number) {\n  return n % 2 === 0;\n}\n\nfunction timeoutMs() {\n  return 3000;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The tax calculation embeds 0.0825 directly in the expression as an unexplained business numeric literal.",
+          "isCorrect": true,
+          "explanation": "The 0.0825 value is a domain-specific rate (likely tax) used in business logic. Naming it makes intent explicit and centralizes the single source of truth when rates change. Other literals like 2 for modulus are common math concepts, and 10 or 3000 may be less obviously business rules but could still benefit from naming in some contexts."
+        },
+        {
+          "id": "b",
+          "text": "The fixed array creation uses 10 directly which appears to encode a size constraint without an explanatory name.",
+          "isCorrect": false,
+          "explanation": "A hard-coded array size can be a candidate for a named constant when the size represents a business limit or protocol requirement. However, array sizes are sometimes temporary local choices and naming should be driven by whether the number carries domain meaning rather than being repetition alone."
+        },
+        {
+          "id": "c",
+          "text": "The evenness check uses the literal 2 in modulus which looks like a raw numeric meaning embedded in logic.",
+          "isCorrect": false,
+          "explanation": "Using 2 in an evenness check is a mathematical convention and is usually self-explanatory. Developers sometimes extract such numbers for symmetry or clarity, but extracting fundamental math constants can add indirection without improving readability in many cases."
+        },
+        {
+          "id": "d",
+          "text": "The timeout accessor returns 3000 directly which leaves the duration value unexplained to readers of the code.",
+          "isCorrect": false,
+          "explanation": "A hard-coded timeout often benefits from a named constant that clarifies units and intent. This is a legitimate concern, but the tax rate literal is more clearly a business rule embedded in computation and therefore a stronger immediate candidate for extraction in this snippet."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the code below, which numeric literal is the best candidate to extract into a named constant right now?",
+      "codeSnippet": "function applyDiscount(total: number) {\n  if (total > 100) {\n    return total * 0.1;\n  }\n  return 0;\n}\n\nfunction area(r: number) {\n  return 3.14159 * r * r;\n}\n\nfunction retry() {\n  for (let i = 0; i < 5; i++) {}\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Extract the 100 threshold into a named constant representing a business threshold for pricing rules.",
+          "isCorrect": false,
+          "explanation": "A threshold like 100 can represent a business rule and be worth naming. In this example it may be meaningful, but thresholds and rates should be considered together; sometimes the rate itself is the more volatile business parameter."
+        },
+        {
+          "id": "b",
+          "text": "Extract the 0.1 discount rate into a named constant representing promotional parameters that may change independently of code.",
+          "isCorrect": true,
+          "explanation": "Discount rates are typically policy or promotional parameters that change more often and are configured separately from algorithmic structure. Extracting the rate clarifies business intent, enables reuse and easier testing, and separates policy from control flow."
+        },
+        {
+          "id": "c",
+          "text": "Extract the 3.14159 literal into a named constant for mathematical clarity despite it being a well known universal constant.",
+          "isCorrect": false,
+          "explanation": "Pi is a universal mathematical constant and is often understood inline; extracting it is not harmful but usually unnecessary. The extraction trade-off depends on team conventions and whether higher precision or a math library is desired."
+        },
+        {
+          "id": "d",
+          "text": "Extract the loop bound 5 into a named constant to document retry behavior even if it is algorithmic detail.",
+          "isCorrect": false,
+          "explanation": "Naming retry counts can improve clarity, especially if they reflect policy decisions. This is a reasonable candidate, but discount rates are more likely to be part of business configuration and therefore the higher priority for extraction in a commerce context."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better design choice for managing the retry limit in production code?",
+      "codeSnippet": "// Version A\nconst RETRY_LIMIT = 5;\nfunction fetchWithRetry() {\n  for (let i = 0; i < RETRY_LIMIT; i++) {\n    // attempt\n  }\n}\n\n// Version B\nfunction fetchWithRetry() {\n  for (let i = 0; i < 5; i++) {\n    // attempt\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes the retry count into a single descriptive named constant.",
+          "isCorrect": true,
+          "explanation": "Version A gives the numeric value an explicit name and single point of change, making intent clear and easing future adjustments. Centralizing such policy-like numbers prevents scattered semantics and simplifies testing and configuration. This approach aligns with common refactoring guidance to express intent and separate policy from implementation."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps the numeric literal inline which appears concise but hides intent and risks inconsistent changes across the codebase.",
+          "isCorrect": false,
+          "explanation": "Keeping the literal inline can feel simpler for a single use, but the downside is subtle: inline literals duplicate meaning when the same policy appears elsewhere, making coordinated changes error prone. Choosing inline may also obscure units and intent, and it complicates introducing configuration later without invasive edits."
+        }
+      ]
+    }
+  ]
+}

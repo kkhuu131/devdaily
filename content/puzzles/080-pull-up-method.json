@@ -1,0 +1,106 @@
+{
+  "id": 80,
+  "conceptName": "Pull Up Method",
+  "category": "refactoring",
+  "definition": "When multiple subclasses contain identical or almost identical method implementations, move that shared implementation up into the common superclass to remove duplication.",
+  "ruleOfThumb": "If two or more subclasses have the same method body, implement it once in the base class and let subclasses override only true variations.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Move Method / Pull Up Method",
+    "page": "220",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at these classes. What design problem do they most clearly show?",
+      "codeSnippet": "class BaseReport {}\n\nclass SalesReport extends BaseReport {\n  generate() {\n    const rows = this.fetchRows();\n    return rows.map(r => `${r.id}:${r.value}`).join('\\n');\n  }\n}\n\nclass InventoryReport extends BaseReport {\n  generate() {\n    const rows = this.fetchRows();\n    return rows.map(r => `${r.id}:${r.value}`).join('\\n');\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Several subclasses duplicate identical method implementations that should be centralized in their common superclass to avoid duplication.",
+          "isCorrect": true,
+          "explanation": "Both subclasses implement the same generate logic. Moving the common implementation to the base class removes duplication and reduces maintenance points. After pulling the method up, subclasses can override only if they need special behavior. Fowler describes this as moving shared behavior to a common ancestor to reduce redundancy and improve clarity."
+        },
+        {
+          "id": "b",
+          "text": "A violation of single responsibility is evident because classes mix unrelated responsibilities inside a single method implementation across subclasses.",
+          "isCorrect": false,
+          "explanation": "This is a plausible concern when methods are doing too many things, but the snippet shows the same focused behavior repeated rather than multiple responsibilities. The primary issue is duplication across subclasses rather than a single method doing unrelated tasks."
+        },
+        {
+          "id": "c",
+          "text": "An interface segregation problem is present because consumers must depend on methods that some subclasses do not meaningfully implement.",
+          "isCorrect": false,
+          "explanation": "Interface segregation concerns arise when clients are forced to depend on unused methods. Here both subclasses provide the same implementation, so the problem is duplicated behavior rather than unused interface methods. That makes moving the shared method up more appropriate."
+        },
+        {
+          "id": "d",
+          "text": "Tight coupling to subclass details exists because derived classes call each other directly instead of sharing a common base method implementation.",
+          "isCorrect": false,
+          "explanation": "Tight coupling between subclasses would be a concern if they referenced each other or relied on concrete sibling behavior. The code instead duplicates the same logic. The better correction is consolidating shared behavior in the base class, not decoupling sibling interactions."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Consider these invoice subclasses with similar calculation methods. What is the most appropriate next refactoring step?",
+      "codeSnippet": "abstract class Invoice {\n  items: number[];\n  constructor(items: number[]) { this.items = items }\n}\n\nclass RetailInvoice extends Invoice {\n  calculateTotal() {\n    const sum = this.items.reduce((a, b) => a + b, 0);\n    return sum * 1.10 + this.getRetailDiscount();\n  }\n}\n\nclass WholesaleInvoice extends Invoice {\n  calculateTotal() {\n    const sum = this.items.reduce((a, b) => a + b, 0);\n    return sum * 1.05 + this.getWholesaleDiscount();\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Move the shared accumulation logic into the base class and provide a protected hook for subclass multipliers and discounts.",
+          "isCorrect": true,
+          "explanation": "The two calculateTotal implementations share the accumulation step. Extracting that part into the base class and exposing the variable parts (multiplier and discount) as protected methods or properties reduces duplication while preserving subclass-specific rules. This mirrors Fowler's approach of moving common behavior up and keeping hooks for variation."
+        },
+        {
+          "id": "b",
+          "text": "Keep implementations separated because the business multipliers are conceptually different and centralization would hide important distinctions.",
+          "isCorrect": false,
+          "explanation": "Centralization can hide distinctions when behavior is truly unrelated. However here the structure of the method is identical and only parameters vary. A base-level extraction with subclass hooks preserves distinctions while removing repetition, which is preferable to full duplication."
+        },
+        {
+          "id": "c",
+          "text": "Refactor into a standalone utility module used by both classes to avoid inheritance coupling and share calculation code across types.",
+          "isCorrect": false,
+          "explanation": "A utility module could share code, but it shifts shared logic out of the domain model and can scatter business rule responsibilities. Moving the common behavior to the base class keeps related behavior encapsulated with the Invoice abstraction and is typically cleaner."
+        },
+        {
+          "id": "d",
+          "text": "Replace inheritance with composition by injecting a strategy object for each invoice type to vary calculation behavior explicitly.",
+          "isCorrect": false,
+          "explanation": "Strategy injection is a valid design but introduces extra indirection and may be overkill for simple common structure with small variations. Prefer consolidating the shared method in the base class first, then consider composition if subclasses diverge more significantly later."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for long term maintenance and why? Review Version A and Version B implementations in the snippet.",
+      "codeSnippet": "/* Version A */\nclass NotificationService {\n  sendEmail(user: User, msg: string) { /* ... */ }\n}\n\nclass WelcomeNotification extends NotificationService {\n  notify(user: User) {\n    const msg = `Welcome ${user.name}`;\n    this.sendEmail(user, msg);\n  }\n}\n\nclass FarewellNotification extends NotificationService {\n  notify(user: User) {\n    const msg = `Goodbye ${user.name}`;\n    this.sendEmail(user, msg);\n  }\n}\n\n/* Version B */\nclass NotificationBase {\n  notify(user: User, buildMessage: (u: User) => string) {\n    const msg = buildMessage(user);\n    this.sendEmail(user, msg);\n  }\n  private sendEmail(user: User, msg: string) { /* ... */ }\n}\n\nclass WelcomeNotificationV2 extends NotificationBase {\n  notify(user: User) { super.notify(user, u => `Welcome ${u.name}`); }\n}\n\nclass FarewellNotificationV2 extends NotificationBase {\n  notify(user: User) { super.notify(user, u => `Goodbye ${u.name}`); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A repeats the same message-sending pattern inside each subclass which will increase maintenance burden and bug risk.",
+          "isCorrect": false,
+          "explanation": "Version A puts the notification orchestration inside each subclass, which duplicates sequencing and error handling concerns. That duplication makes changes to sending behavior error prone because every subclass would need updates. This is exactly the situation where moving shared orchestration into a single place improves consistency and reduces future defects."
+        },
+        {
+          "id": "b",
+          "text": "Version B consolidates the common orchestration in the base class so subclasses only provide message specifics and remain smaller.",
+          "isCorrect": true,
+          "explanation": "Version B centralizes the notification workflow and keeps subclasses focused on message construction. This reduces duplication, ensures consistent sending behavior, and simplifies future changes to delivery logic. It follows the refactoring principle of moving shared code upward while preserving subclass differences via small hooks or callbacks. See Fowler on moving shared behavior to a common ancestor and using protected hooks or parameters to capture variations."
+        }
+      ]
+    }
+  ]
+}

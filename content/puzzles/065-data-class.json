@@ -1,0 +1,106 @@
+{
+  "id": 65,
+  "conceptName": "Data Class",
+  "category": "code-smell",
+  "definition": "A class that primarily exposes data through public fields or trivial accessors while lacking meaningful domain behavior or encapsulation.",
+  "ruleOfThumb": "If most logic that uses the type lives outside it, consider moving behavior into the type or introducing richer abstractions.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Data Class",
+    "page": "pp. 146-148",
+    "externalUrl": "https://martinfowler.com/bliki/DataClass.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best identifies this TypeScript class?",
+      "codeSnippet": "class CustomerDTO {\n  constructor(\n    public id: number,\n    public name: string,\n    public email: string\n  ) {}\n  getName() { return this.name; }\n  setName(n: string) { this.name = n; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class only holds properties with trivial getters and setters and contains no domain behavior.",
+          "isCorrect": true,
+          "explanation": "Correct. The type is merely a passive container for state and offers only trivial accessors, so behavior lives elsewhere. Fowler warns this leads to an anemic domain model and scattered logic."
+        },
+        {
+          "id": "b",
+          "text": "This class exposes internal state through public fields which increases coupling across modules and hinders future validation.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect here. While public exposure can be harmful, the example uses trivial accessors not public mutation; the core issue is lack of behavior rather than field visibility alone."
+        },
+        {
+          "id": "c",
+          "text": "This class mixes transport responsibilities and presentation concerns making it hard to manage serialization and UI formatting.",
+          "isCorrect": false,
+          "explanation": "A reasonable concern for DTOs, but the snippet shows no presentation logic. The real smell is that domain logic is absent from the type rather than mixed responsibilities."
+        },
+        {
+          "id": "d",
+          "text": "This class initializes computed values eagerly and may cause unnecessary work when only partial data is required.",
+          "isCorrect": false,
+          "explanation": "This describes an eager-computation inefficiency, which is not visible in the snippet. The dominant issue is that the class offers no encapsulated behavior for domain rules."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this code, what is the most likely design concern?",
+      "codeSnippet": "class Invoice {\n  items: LineItem[] = [];\n  total(): number { return this.items.reduce((s,i)=>s + i.price * i.qty, 0); }\n  addItem(item: LineItem) { this.items.push(item); }\n}\n\nfunction applyDiscount(inv: Invoice, percent: number) {\n  inv.items.forEach(i => i.price *= 1 - percent);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This design splits behavior between the type and external functions and breaks encapsulation for discount logic.",
+          "isCorrect": true,
+          "explanation": "Correct. The discount operation mutates internal state from outside the type, scattering responsibilities and making it harder to maintain invariants or evolve discount rules."
+        },
+        {
+          "id": "b",
+          "text": "This design uses mutable arrays inside the type which risks unexpected external modification and threading issues later.",
+          "isCorrect": false,
+          "explanation": "A valid concern about mutability, but the more precise issue is behavioral placement. Making the collection immutable might help, but it does not address scattered discount rules."
+        },
+        {
+          "id": "c",
+          "text": "This design calculates totals inside the class but does not validate items which may allow invalid invoice states to propagate.",
+          "isCorrect": false,
+          "explanation": "Item validation is important, however the example shows total calculation present. The pressing smell is that domain behavior (discounts) is implemented externally rather than inside the invoice abstraction."
+        },
+        {
+          "id": "d",
+          "text": "This design performs numeric aggregation imperatively which may lose precision and complicate future currency handling logic.",
+          "isCorrect": false,
+          "explanation": "Numeric precision and currency handling are real issues, yet they are orthogonal here. The code smell to prioritize is the distribution of behavior across modules, not aggregation precision."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation better preserves invariants and reduces caller responsibility for money arithmetic?",
+      "codeSnippet": "// Version A\nclass MoneyA { constructor(public cents: number, public currency: string) {} }\nfunction addMoneyA(a: MoneyA, b: MoneyA) {\n  if (a.currency !== b.currency) throw new Error('currency mismatch');\n  return new MoneyA(a.cents + b.cents, a.currency);\n}\n\n// Version B\nclass MoneyB {\n  private cents: number;\n  private currency: string;\n  constructor(cents: number, currency: string) { this.cents = cents; this.currency = currency; }\n  add(other: MoneyB) { if (this.currency !== other.currency) throw new Error('currency mismatch'); return new MoneyB(this.cents + other.cents, this.currency); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A exposes raw fields and forces callers to perform operations, risking duplicated logic and invariant breaches.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Version A's public state pushes responsibility to callers, encouraging duplication of checks and making it easy to violate invariants across the codebase."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates state and exposes behavior methods so invariants stay internal to the type.",
+          "isCorrect": true,
+          "explanation": "Correct. Encapsulating state and providing operations keeps validation and rules co-located with the data, reducing client code complexity and the chance of inconsistent behavior. This follows object-oriented design advice to bind data and behavior together to maintain invariants. See Fowler on keeping behavior with data and the GoF on encapsulation."
+        }
+      ]
+    }
+  ]
+}

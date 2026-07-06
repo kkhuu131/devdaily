@@ -1,0 +1,106 @@
+{
+  "id": 40,
+  "conceptName": "Long Parameter List",
+  "category": "code-smell",
+  "definition": "A function or method that accepts many parameters, making calls hard to read, maintain, and extend.",
+  "ruleOfThumb": "If a routine requires more than three or four parameters, consider grouping related parameters into an object or introducing a small value object.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Introduce Parameter Object",
+    "page": "n/a",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the API below. Which concern best describes the primary maintainability problem?",
+      "codeSnippet": "function createReport(title: string, startDate: string, endDate: string, authorId: number, includeCharts: boolean, maxRows: number, filter?: string) {\n  // assemble data and render report\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It forces callers to pass many positional arguments, increasing cognitive load and reducing call site clarity.",
+          "isCorrect": true,
+          "explanation": "The signature requires many positional parameters, which makes it hard to understand calls at a glance and easy to mix up arguments. This is the classic symptom that grouping related data or introducing a parameter object would improve readability and reduce errors."
+        },
+        {
+          "id": "b",
+          "text": "It causes excessive runtime overhead from argument copying which could harm performance in tight loops.",
+          "isCorrect": false,
+          "explanation": "While passing many arguments can have some overhead in extreme hotspots, the primary issue for maintainability is readability and error proneness. Performance concerns are usually secondary and should be proven with profiling before refactoring for speed."
+        },
+        {
+          "id": "c",
+          "text": "It hides missing domain abstractions and encourages procedural code rather than modeling cohesive value objects.",
+          "isCorrect": false,
+          "explanation": "This is a plausible structural critique because many parameters can indicate an absent domain object. However, the immediate observable maintainability problem is the awkward API surface. Introducing a parameter object is one way to both improve the API and introduce clearer domain modeling."
+        },
+        {
+          "id": "d",
+          "text": "It increases test surface area because each parameter combination requires explicit unit tests to validate behavior.",
+          "isCorrect": false,
+          "explanation": "More parameters do increase combinatorial test considerations, but that is a downstream effect. The more direct problem is caller clarity and API ergonomics. Consolidating related parameters reduces combinatorics and clarifies test intent as well."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the existing public function shown, which change best reduces caller complexity while minimizing breaking changes for current users?",
+      "codeSnippet": "function scheduleEmail(to: string, subject: string, body: string, sendAt?: Date, retryCount?: number, priority?: 'low' | 'normal' | 'high') {\n  // send or enqueue email\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce a single typed options object parameter and preserve existing overloads to maintain backward compatibility with callers.",
+          "isCorrect": true,
+          "explanation": "Replacing multiple positional parameters with a single options object improves discoverability and flexibility. Preserving existing overloads or providing adapter shims lets existing callers continue to work while new callers benefit from the cleaner API."
+        },
+        {
+          "id": "b",
+          "text": "Introduce a separate builder class that incrementally sets fields, requiring new allocation and an additional builder API.",
+          "isCorrect": false,
+          "explanation": "A builder formalizes construction and supports fluent code, but it adds a new type and indirection. It can be useful for complex construction, yet for a moderate parameter count an options object is simpler and less invasive for many callers."
+        },
+        {
+          "id": "c",
+          "text": "Introduce a global configuration object to hold defaults, keeping the function signature unchanged for minimal caller changes.",
+          "isCorrect": false,
+          "explanation": "Global configuration reduces parameter repetition but introduces hidden state and makes testing harder. It can solve some ergonomics but trades off clarity and increases coupling, so it is not the best first step for API ergonomics."
+        },
+        {
+          "id": "d",
+          "text": "Introduce many small helper functions that split responsibilities but force callers to orchestrate multiple API calls.",
+          "isCorrect": false,
+          "explanation": "Splitting responsibilities into smaller functions can improve single responsibility, yet it shifts complexity to callers who now must coordinate multiple calls. This may be appropriate in some domains, but does not directly address call-site clarity for a single logical operation."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two versions below. Which API design is preferable for long term maintainability and why?",
+      "codeSnippet": "// Version A\ninterface EmailOptions {\n  to: string;\n  subject: string;\n  body: string;\n  sendAt?: Date;\n  retryCount?: number;\n}\nfunction sendEmail(opts: EmailOptions) {\n  // implementation\n}\n\n// Version B\nfunction sendEmail_v2(to: string, subject: string, body: string, sendAt?: Date, retryCount?: number) {\n  // implementation\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A consolidates parameters into a single typed options object used consistently across call sites.",
+          "isCorrect": true,
+          "explanation": "Version A groups related data into a single, named type which improves discoverability, enables defaulting, and makes future extensions less breaking. It also centralizes validation and documents intent through the option property names. This approach aligns with the 'Introduce Parameter Object' refactoring and reduces the chance of argument ordering mistakes."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps many positional parameters which reduces allocations but makes API changes fragile and less discoverable.",
+          "isCorrect": false,
+          "explanation": "While positional parameters may be marginally cheaper and explicit for tiny utilities, they make the API harder to extend safely because adding or reordering parameters breaks callers. They also reduce discoverability at the call site since parameter names are not visible. For evolving public APIs the options object pattern is generally safer and clearer."
+        }
+      ]
+    }
+  ]
+}

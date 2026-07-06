@@ -1,0 +1,106 @@
+{
+  "id": 32,
+  "conceptName": "Proxy Pattern",
+  "category": "design-pattern",
+  "definition": "Provide a surrogate object that controls access to another object, adding behavior like lazy loading, caching, access control, or logging without changing the client interface.",
+  "ruleOfThumb": "When many callers need the same access control, caching, or lazy behavior for a resource, introduce an object that implements the same interface and delegates to the real subject.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Structural Patterns - Proxy",
+    "page": "200-213",
+    "externalUrl": "https://refactoring.guru/design-patterns/proxy"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation most directly suggests introducing a controlling surrogate between callers and the remote fetcher?",
+      "codeSnippet": "class RemoteFetcher {\n  async fetch(url: string) { /* network call */ }\n}\n\n// Many places:\nconst f = new RemoteFetcher();\nawait f.fetch('/user/123');\nawait f.fetch('/user/123');",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code shows multiple callers duplicating expensive remote fetch and caching logic that should be centralized.",
+          "isCorrect": true,
+          "explanation": "Multiple callers repeating expensive network fetch and caching is the classic signal that a surrogate object should centralize access and caching. Introducing a proxy-like intermediary lets you encapsulate network retries, caching, and lazy loading in one place so callers remain simple and testable."
+        },
+        {
+          "id": "b",
+          "text": "The code shows a single class taking many responsibilities that should be split to improve cohesion.",
+          "isCorrect": false,
+          "explanation": "This is a plausible concern when a class grows fat, but the snippet shows duplicated caller behavior rather than one class with multiple responsibilities. Splitting responsibilities helps, but it does not address repeated access-control or caching concerns across callers as well as a surrogate would."
+        },
+        {
+          "id": "c",
+          "text": "The code shows tight coupling to the network client that makes testing and substituting implementations difficult.",
+          "isCorrect": false,
+          "explanation": "Tight coupling to the network client is a real testing problem, and introducing an abstraction is helpful. However, the immediate smell here is duplicated fetch/caching across callers. A proxy specifically centralizes access behavior while preserving the interface for easier substitution."
+        },
+        {
+          "id": "d",
+          "text": "The code shows heavy objects created eagerly even when callers rarely need them suggesting lazy creation.",
+          "isCorrect": false,
+          "explanation": "Eager creation and lazy initialization are legitimate concerns, and a lazy holder solves that specific problem. In this snippet the stronger symptom is repeated fetch and caching logic across callers, which points to a surrogate that can provide lazy loading plus other access controls."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given a payment gateway implementation used directly by many modules, which justification most strongly supports inserting a forwarding intermediary that implements the same interface?",
+      "codeSnippet": "interface PaymentProcessor { charge(amount: number): Promise<boolean> }\n\nclass ExternalGateway implements PaymentProcessor {\n  async charge(amount: number) { /* network call */ }\n}\n\n// Many consumers call new ExternalGateway().charge(x)",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code requires splitting payment logic into smaller cohesive services to reduce class complexity and improve testability.",
+          "isCorrect": false,
+          "explanation": "Splitting responsibilities is a valid refactor for large classes, but it requires changing callers or service boundaries. The stronger justification for a forwarding intermediary is to transparently add cross cutting concerns like retries or timeouts without modifying callers or the gateway implementation."
+        },
+        {
+          "id": "b",
+          "text": "This code requires introducing a forwarding intermediary that implements the same interface to add retries and timeouts without changing callers.",
+          "isCorrect": true,
+          "explanation": "Adding retries, timeouts, or circuit-breaking behavior around a flaky external service is an ideal use for a proxy-like intermediary. By implementing the same interface, the intermediary remains transparent to callers while centralizing resilience logic and keeping the external gateway unchanged."
+        },
+        {
+          "id": "c",
+          "text": "This code requires adapting the external gateway to internal domain types to avoid duplicated conversion logic across callers.",
+          "isCorrect": false,
+          "explanation": "An adapter that converts interfaces or types is a real alternative when the gateway has a mismatched contract. But adapters change the shape or translate types; the need to add resilience behavior without altering callers favors a forwarding intermediary instead."
+        },
+        {
+          "id": "d",
+          "text": "This code requires scattering logging into each client to capture request details for auditing and troubleshooting purposes.",
+          "isCorrect": false,
+          "explanation": "Scattering logging across clients is a tempting quick fix but it increases duplication and coupling. A centralized intermediary provides consolidated logging and auditing consistently while keeping client code unchanged, which is generally preferable to scattering concerns."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better isolates caching and keeps the core service implementation clean for testing and reuse?",
+      "codeSnippet": "// Version A: cache inside the real service\nclass UserService {\n  private cache = new Map<number, User>();\n  async getUser(id: number) {\n    if (this.cache.has(id)) return this.cache.get(id)!;\n    const u = await this.loadFromRemote(id);\n    this.cache.set(id, u);\n    return u;\n  }\n}\n\n// Version B: separate forwarding type wraps the real service\nclass UserServiceImpl {\n  async getUser(id: number) { return this.loadFromRemote(id); }\n}\nclass CachingForwarder {\n  constructor(private inner: UserServiceImpl) {}\n  private cache = new Map<number, User>();\n  async getUser(id: number) {\n    if (this.cache.has(id)) return this.cache.get(id)!;\n    const u = await this.inner.getUser(id);\n    this.cache.set(id, u);\n    return u;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A entangles caching into the service class making testing and reuse of the core service difficult.",
+          "isCorrect": false,
+          "explanation": "Putting caching inside the core service mixes concerns and makes unit testing the pure retrieval behavior harder because tests must account for cache state. It also prevents composing different behaviors (for example alternate caches or no-cache variants) without modifying the service implementation, violating single responsibility and composition principles."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates caching into a separate forwarding type that preserves the core service implementation.",
+          "isCorrect": true,
+          "explanation": "Version B is preferable because the forwarding object composes the core service and adds caching without changing its implementation. That keeps the core service small and focused, simplifies unit testing of the core behavior, and allows different wrappers to be composed for logging, retries, or metrics. This follows the structural patterns described in Design Patterns by Gamma et al. and aligns with the single responsibility guidance from Clean Code and Fowler."
+        }
+      ]
+    }
+  ]
+}

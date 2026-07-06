@@ -1,0 +1,105 @@
+{
+  "id": 42,
+  "conceptName": "Singleton Pattern",
+  "category": "design-pattern",
+  "definition": "Ensure a class has only one instance and provide a global point of access to that instance.",
+  "ruleOfThumb": "Prefer explicit composition or dependency injection at application composition time rather than hidden globally accessible instances.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Singleton",
+    "page": "127",
+    "externalUrl": "https://refactoring.guru/design-patterns/singleton"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best describes the primary intent of this pattern in object-oriented designs?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Ensure only one instance of a class exists and provide a single global access point to it.",
+          "isCorrect": true,
+          "explanation": "This pattern restricts instantiation to one object and usually exposes a single access method. It centralizes shared state and access, which is its defining intent."
+        },
+        {
+          "id": "b",
+          "text": "Ensure a class can be easily subclassed and multiple instances coordinate shared behavior across different modules.",
+          "isCorrect": false,
+          "explanation": "Subclassing and multiple coordinated instances describe extension and strategy concerns rather than guaranteeing a sole instance and global access point."
+        },
+        {
+          "id": "c",
+          "text": "Provide dependency injection style decoupling so that multiple test doubles and runtime implementations are interchangeable.",
+          "isCorrect": false,
+          "explanation": "Dependency injection emphasizes external composition and substitution, which is a different technique aimed at testability and decoupling rather than single-instance enforcement."
+        },
+        {
+          "id": "d",
+          "text": "Encapsulate a family of algorithms behind an interface so implementations are interchangeable at runtime for callers.",
+          "isCorrect": false,
+          "explanation": "Encapsulating interchangeable algorithms matches the Strategy pattern, not the single-instance enforcement and global access concerns of this pattern."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this TypeScript module implementation, what is the most likely practical concern when used across an application and tests?",
+      "codeSnippet": "class Logger {\n  private static instance: Logger | null = null;\n  private constructor() {}\n  static getInstance() {\n    if (!Logger.instance) {\n      Logger.instance = new Logger();\n    }\n    return Logger.instance;\n  }\n  log(msg: string) { console.log(msg); }\n}\nexport default Logger.getInstance();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The module exports a shared instance, which creates hidden global state and makes replacement in tests harder.",
+          "isCorrect": true,
+          "explanation": "Exporting a concrete instance hides the composition point and embeds global state in module boundaries. Tests cannot easily substitute or control that shared object without shimming imports."
+        },
+        {
+          "id": "b",
+          "text": "The lazy initialization uses a nullable static and may introduce race conditions with concurrent worker threads in Node environments.",
+          "isCorrect": false,
+          "explanation": "While worker threads or other concurrency models can expose races, Node commonly runs per-process single-threaded code. The more immediate practical problem in typical apps is the hidden global instance and testability."
+        },
+        {
+          "id": "c",
+          "text": "The private constructor prevents subclassing and therefore disallows extension where multiple logger implementations would be useful.",
+          "isCorrect": false,
+          "explanation": "Preventing subclassing is a real limitation, but developers often need replaceability and DI more than subclassing. The exported instance pattern primarily harms composition and testing rather than only extension."
+        },
+        {
+          "id": "d",
+          "text": "Exporting a concrete instance tightly couples callers to a specific logger, which makes adoption of dependency injection patterns more difficult later.",
+          "isCorrect": false,
+          "explanation": "Tight coupling to a concrete instance is a valid maintenance concern, but it is a manifestation of the hidden global state problem and not a distinct technical bug by itself."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better choice for maintainable, testable application composition when shared configuration is needed?",
+      "codeSnippet": "// Version A\nclass ConfigService {\n  private constructor() {}\n  get(key: string) { return process.env[key]; }\n}\nconst config = new ConfigService();\nexport default config;\n\n// Version B\nexport class ConfigService {\n  constructor(private data: Record<string,string>) {}\n  get(key: string) { return this.data[key]; }\n}\nexport function createConfig(data: Record<string,string>) { return new ConfigService(data); }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes a single exported instance which simplifies access but hides state and prevents easy test replacement.",
+          "isCorrect": false,
+          "explanation": "Version A provides convenience but couples consumers to a hidden module-level instance. That coupling obstructs test isolation and makes different runtime compositions or per-request variations awkward to implement."
+        },
+        {
+          "id": "b",
+          "text": "Version B favors explicit construction and composition time wiring which makes substitution and testing straightforward.",
+          "isCorrect": true,
+          "explanation": "Version B externalizes the creation point so the application composes the desired instance. This enables different environments or test doubles to be injected without touching module internals, improving testability and architecture. References: Martin Fowler on dependency injection and composition; GoF discussion on object creational patterns and their tradeoffs."
+        }
+      ]
+    }
+  ]
+}

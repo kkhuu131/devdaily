@@ -1,0 +1,106 @@
+{
+  "id": 59,
+  "conceptName": "Mediator Pattern",
+  "category": "design-pattern",
+  "definition": "Introduce an object that encapsulates how a set of objects interact, promoting loose coupling by preventing objects from referring to each other explicitly.",
+  "ruleOfThumb": "Use a central coordinator when many-to-many object communication becomes complex; avoid embedding business logic in that coordinator.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns",
+    "page": "279",
+    "externalUrl": "https://en.wikipedia.org/wiki/Mediator_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the snippet, which statement best describes the architectural role of the central ChatRoom class?",
+      "codeSnippet": "class ChatRoom {\n  private participants = new Map<string, User>();\n  send(from: string, to: string, message: string) {\n    const recipient = this.participants.get(to);\n    recipient?.receive({ from, message });\n  }\n  register(user: User) { this.participants.set(user.name, user); }\n}\nclass User {\n  constructor(public name: string, private room: ChatRoom) {}\n  send(to: string, msg: string) { this.room.send(this.name, to, msg); }\n  receive(m: any) { console.log(m); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code centralizes communication through a single hub object coordinating message delivery between loosely coupled components.",
+          "isCorrect": true,
+          "explanation": "The ChatRoom acts as an intermediary for messages between User instances. That centralization is the core idea: components no longer call each other directly; they go through the hub. This reduces the number of pairwise connections and simplifies clients, but it also creates a focal point where routing and policies can accumulate."
+        },
+        {
+          "id": "b",
+          "text": "This code implements a publish subscribe flow where subjects notify multiple observers directly about state changes.",
+          "isCorrect": false,
+          "explanation": "Observer (publish/subscribe) is about subjects broadcasting to many observers. In this snippet, communication is routed through a single ChatRoom instance rather than objects directly broadcasting to subscribed listeners. The hub here controls delivery, so it is not a simple subject-observer relationship."
+        },
+        {
+          "id": "c",
+          "text": "This code provides a simplified interface to a subsystem by exposing consolidated methods for multiple services.",
+          "isCorrect": false,
+          "explanation": "A facade offers a simpler interface to a complex subsystem, but it does not typically coordinate interactions between peers. The ChatRoom mediates peer-to-peer messages rather than only presenting a simplified API to hide subsystem complexity."
+        },
+        {
+          "id": "d",
+          "text": "This code hides dependencies behind a global registry that services query at runtime to find collaborators dynamically.",
+          "isCorrect": false,
+          "explanation": "A service locator pattern hides and provides dependencies on request. The ChatRoom is not a registry returning collaborators to callers; it actively routes messages between participants instead of providing lookup services."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Inspect the coordinator pattern in this snippet. What is the primary design problem developers are likely to face as features grow?",
+      "codeSnippet": "type Event = { type: string; payload: any };\nclass Coordinator {\n  handle(event: Event) {\n    switch (event.type) {\n      case \"OrderPlaced\":\n        PaymentService.process(event.payload);\n        NotificationService.alert(event.payload);\n        break;\n      case \"Refund\":\n        Accounting.update(event.payload);\n        Auditor.log(event.payload);\n        break;\n      // many more cases appended over time\n    }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The coordinator centralizes error handling causing lost exceptions across asynchronous boundaries that require special retry semantics.",
+          "isCorrect": false,
+          "explanation": "Centralized handling can complicate error semantics, but the more immediate design problem here is structural: the hub accumulates routing and domain conditionals. Error handling is a concern, yet it is secondary to the maintainability problems introduced by monolithic routing logic."
+        },
+        {
+          "id": "b",
+          "text": "The coordinator introduces tight coupling because every service must import hub internals and update hub conditionals on changes.",
+          "isCorrect": false,
+          "explanation": "Tight coupling to the hub is a real risk—services relying on the hub and developers modifying the hub for new behavior ties components together. This is a valid concern but not the most precise single observation about the snippet compared with the god object symptom."
+        },
+        {
+          "id": "c",
+          "text": "The coordinator has become a god object containing routing conditionals and embedded business logic.",
+          "isCorrect": true,
+          "explanation": "The switch statement shows the hub accumulating routing rules and domain actions. This creates a god object that resists modular evolution and makes adding or changing behavior risky and error prone. Extracting routing to handlers or registries and keeping domain logic in services improves maintainability."
+        },
+        {
+          "id": "d",
+          "text": "The coordinator duplicates event definitions across services increasing risk of inconsistent message schemas and brittle integrations.",
+          "isCorrect": false,
+          "explanation": "Schema duplication is plausible, but the snippet emphasizes centralized conditional routing more than duplicated definitions. Duplicated schemas are a downstream problem that can be mitigated independently, whereas the monolithic coordinator architecture requires structural refactoring."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version would you choose for a growing codebase that expects new message types frequently?",
+      "codeSnippet": "/* Version A */\nclass HubA {\n  handle(msg:{type:string,payload:any}) {\n    if (msg.type === \"Pay\") PaymentService.process(msg.payload);\n    else if (msg.type === \"Notify\") NotificationService.send(msg.payload);\n    // more conditionals accumulate here\n  }\n}\n\n/* Version B */\nclass HubB {\n  private handlers = new Map<string,(p:any)=>void>();\n  register(type:string, h:(p:any)=>void){ this.handlers.set(type,h); }\n  handle(msg:{type:string,payload:any}){ this.handlers.get(msg.type)?.(msg.payload); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A concentrates many conditional branches inside the hub creating a monolithic coordinator that resists safe change.",
+          "isCorrect": false,
+          "explanation": "Version A embeds routing as conditionals in the hub, which leads to a growing, hard to test coordinator where every new message requires modifying central code. Over time this increases merge conflicts and cognitive load. Prefer designs that let behaviors be registered or encapsulated elsewhere."
+        },
+        {
+          "id": "b",
+          "text": "Version B decouples message routing into registered handlers stored in a registry.",
+          "isCorrect": true,
+          "explanation": "Version B moves routing into a handler registry so adding a new message type is a local change: register a handler. This reduces modifications to central code, improves testability, and supports independent evolution of message handling. For large systems, a registry or command-handler mapping keeps the coordinator lightweight and focused on dispatch."
+        }
+      ]
+    }
+  ]
+}

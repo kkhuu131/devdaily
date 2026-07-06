@@ -1,0 +1,106 @@
+{
+  "id": 37,
+  "conceptName": "Speculative Generality",
+  "category": "code-smell",
+  "definition": "Adding abstractions, hooks, or configuration to support hypothetical future needs that are not currently required, increasing complexity and maintenance cost.",
+  "ruleOfThumb": "Prefer simple concrete code and extract abstractions only when real duplication or clear future requirements appear.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "When to Refactor",
+    "page": "xx-yy",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this TypeScript class added during a sprint to support future extensions. What is the primary problem?",
+      "codeSnippet": "class ReportGenerator {\n  generate(data: any) { /* ... */ }\n  beforeRender?(data: any): void {}\n  afterRender?(html: string): string { return html }\n  attachPlugin?(pluginName: string): void {}\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code tightly couples unrelated responsibilities into one class, making reuse and testing difficult across modules.",
+          "isCorrect": false,
+          "explanation": "While coupling is a real concern, the bigger issue here is added unused extension points. The optional hooks increase the API surface and cognitive load without delivering current value. Coupling could be addressed separately, but removing or delaying these hooks reduces maintenance burden immediately."
+        },
+        {
+          "id": "b",
+          "text": "This class defines hooks and parameters for hypothetical future features that are not needed now.",
+          "isCorrect": true,
+          "explanation": "The optional hook methods and plugin attachment are not used by existing code paths, indicating the team prepared for imagined future needs. That upfront generalization increases complexity and shows a pattern of designing for possibilities rather than present requirements."
+        },
+        {
+          "id": "c",
+          "text": "This implementation hides complex behavior behind an empty interface so maintainers cannot reason about runtime behavior.",
+          "isCorrect": false,
+          "explanation": "Hiding behavior behind interfaces is risky, but these methods are concrete optional members rather than a separate abstract interface. The maintainability pain comes more from unused extension points than from an opaque interface, though both concerns could compound over time."
+        },
+        {
+          "id": "d",
+          "text": "This code uses premature optimization to reduce duplication before there is evidence of a repeating pattern.",
+          "isCorrect": false,
+          "explanation": "Premature optimization is a plausible mistake, but the snippet shows API surface growth rather than performance work. The key issue is preparing multiple extension hooks without current use, not optimizing hot paths or eliminating observed duplication."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A payments microservice has been extended with many conditional branches and strategy hooks. What maintainability risk is most likely present?",
+      "codeSnippet": "class PaymentService {\n  payWithCard(details) { /* card flow */ }\n  payWithWallet(details) { /* wallet flow */ }\n  // planned futures\n  setupPaymentMethod(type: string, config: any) { /* empty for now */ }\n  process(details, options = {}) { /* delegates to flows */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This service exposes a detailed public API to support imagined external integrations that are not currently required.",
+          "isCorrect": false,
+          "explanation": "Exposing broad APIs for imagined integrators is a reasonable concern here, but the snippet more clearly shows branching and placeholder setup for internal payment types. The public API might be large, yet the immediate cost is internal complexity from unused extensibility."
+        },
+        {
+          "id": "b",
+          "text": "This service duplicates small variations across methods instead of centralizing logic to reduce cognitive load for new developers.",
+          "isCorrect": false,
+          "explanation": "Duplicated variations are a legitimate maintainability issue and can be present in this code, yet the defining pattern is scaffolding for many payment types that are not in use. Duplication could be a symptom but not the root speculative design in this context."
+        },
+        {
+          "id": "c",
+          "text": "This service prepares for many payment types that the product does not use in production today.",
+          "isCorrect": true,
+          "explanation": "The presence of placeholder setup methods and multiple specific flows indicates design for anticipated payment channels. That anticipatory structure adds complexity and increases the chance of stale code unless actual requirements materialize."
+        },
+        {
+          "id": "d",
+          "text": "This service leaks domain logic into transport layer handlers making future protocol changes riskier and harder to test.",
+          "isCorrect": false,
+          "explanation": "Leaking domain logic to transport layers is a valid concern in many services, but the code shown mainly centers on planned extensibility for payment types. Protocol leakage would look like coupling to request or response formats rather than placeholder strategy hooks."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two refactor proposals are on the table. Which version should the team prefer right now for maintainability and why?",
+      "codeSnippet": "// Version A: many small extension hooks\nclass ExporterA {\n  exportCsv(data) { /* ... */ }\n  exportJson(data) { /* ... */ }\n  onBeforeExport?(data) {}\n  onAfterExport?(result) {}\n  registerFormat?(name, handler) {}\n}\n\n// Version B: single concrete exporter with clear refactor point\nclass ExporterB {\n  export(data, format: 'csv'|'json') {\n    if (format === 'csv') { /* csv */ }\n    else { /* json */ }\n  }\n  // refactor into strategies when duplication appears\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A offers many extension hooks anticipating future needs but increases surface area and testing burden.",
+          "isCorrect": false,
+          "explanation": "Version A provides many extension points up front which seems flexible, but it expands the public API and introduces multiple unconditional maintenance responsibilities. Each hook requires documentation, tests, and mental overhead, and many may never be used, leaving dead code and fragile expectations."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps the public surface minimal and keeps changes local until future requirements justify introducing abstractions.",
+          "isCorrect": true,
+          "explanation": "Version B favors YAGNI and keeps behavior co-located so maintainers have fewer moving parts to understand. If duplication or complexity emerges, extracting strategies is a low risk mechanical refactor. This approach reduces current cognitive load and avoids owning unused extension points prematurely."
+        }
+      ]
+    }
+  ]
+}

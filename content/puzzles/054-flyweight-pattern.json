@@ -1,0 +1,105 @@
+{
+  "id": 54,
+  "conceptName": "Flyweight Pattern",
+  "category": "design-pattern",
+  "definition": "An object-structural pattern that shares fine-grained immutable state among many objects to minimize memory usage while keeping per-use state external.",
+  "ruleOfThumb": "Share intrinsic, immutable state; keep extrinsic, mutable state outside shared instances.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Flyweight",
+    "page": "195-203",
+    "externalUrl": "https://www.oreilly.com/library/view/design-patterns-elements/0201633612/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary intent behind applying this shared-object technique in a system with many small objects?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "To minimize memory by sharing common intrinsic state across many fine-grained objects in high-volume systems.",
+          "isCorrect": true,
+          "explanation": "The primary goal is memory reduction by reusing immutable intrinsic state across many objects. Other benefits may follow, but the core intent is reducing memory for large numbers of similar objects by sharing what can be made intrinsic and immutable."
+        },
+        {
+          "id": "b",
+          "text": "To increase runtime throughput by parallel object creation across threads instead of reducing the memory footprint of many objects.",
+          "isCorrect": false,
+          "explanation": "Parallel creation improves throughput but does not address memory duplication of identical state. This option mistakes a performance optimization for the structural sharing intent; the pattern focuses on memory, not parallel allocation."
+        },
+        {
+          "id": "c",
+          "text": "To group unrelated behaviors into a single object type for API simplicity and method consolidation across multiple modules.",
+          "isCorrect": false,
+          "explanation": "Consolidating behaviors is a cohesion or API design concern. This option confuses bundling responsibilities with sharing common state; the pattern is about sharing intrinsic data, not regrouping unrelated behavior."
+        },
+        {
+          "id": "d",
+          "text": "To abstract networking details behind a simple interface so clients remain unaware of remote communication changes over time.",
+          "isCorrect": false,
+          "explanation": "Abstracting remote calls is about location transparency or proxying. This distractor points to a valid pattern goal but is not related to sharing fine-grained object state to reduce memory."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Examine the icon factory below. What is the most likely problem with this implementation in a typical UI application?",
+      "codeSnippet": "class Icon { constructor(public name: string, public color: string) {} }\nclass IconFactory {\n  private pool = new Map<string, Icon>();\n  getIcon(name: string) {\n    if (!this.pool.has(name)) this.pool.set(name, new Icon(name, 'black'));\n    return this.pool.get(name)!;\n  }\n}\nconst factory = new IconFactory();\nconst iconA = factory.getIcon('save');\niconA.color = 'red';\nconst iconB = factory.getIcon('save');\n// iconB.color is now 'red'",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code shares mutable intrinsic state across clients leading to cross-client mutations and surprising behavior for callers.",
+          "isCorrect": true,
+          "explanation": "The factory returns shared Icon objects but the Icon's color is mutable. Mutating the shared object changes state for all clients that reference it. The proper approach is to keep shared data immutable and pass mutable extrinsic state per use."
+        },
+        {
+          "id": "b",
+          "text": "This code leaks memory by never purging unused icons from the pool which will grow unbounded with many distinct names.",
+          "isCorrect": false,
+          "explanation": "Unbounded growth is a real concern for caches, but the snippet's immediate problem is visible incorrect behavior due to shared mutable state. A cache eviction policy could be added separately, but it does not fix the shared-mutation bug."
+        },
+        {
+          "id": "c",
+          "text": "This code creates concurrency risks because the pool map is not synchronized for safe access across asynchronous or multi-threaded operations.",
+          "isCorrect": false,
+          "explanation": "Lack of synchronization is a plausible issue if used concurrently, and it should be considered. However, even in single-threaded contexts the mutable shared objects cause incorrect behavior; concurrency amplifies but is not the root functional problem shown."
+        },
+        {
+          "id": "d",
+          "text": "This code binds identity only to name allowing different style or size variations to collide under the same cache key.",
+          "isCorrect": false,
+          "explanation": "Using a single key can cause logical collisions when multiple intrinsic variants exist. Still, the snippet demonstrates a more direct harm: shared mutable state that changes observed properties for all consumers of the same key."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation is better for a high-scale text-rendering service where glyph shapes are reused but color and position vary per render call?",
+      "codeSnippet": "// Version A\nclass Glyph { constructor(public char: string, public metrics: {w:number}, public color: string) {} }\nclass GlyphFactoryA { private pool = new Map<string, Glyph>();\n  get(char: string){ if (!this.pool.has(char)) this.pool.set(char, new Glyph(char, {w:5}, 'black')); return this.pool.get(char)!; }\n}\n\n// Version B\nclass GlyphData { constructor(public char: string, public metrics: {w:number}) {} }\nclass GlyphFactoryB { private pool = new Map<string, GlyphData>();\n  get(char: string){ if (!this.pool.has(char)) this.pool.set(char, new GlyphData(char, {w:5})); return this.pool.get(char)!; }\n}\nfunction render(gd: GlyphData, color: string, x: number, y: number){ /* per-call state passed in instead of stored on shared data */ }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes mutable glyph objects causing cross-request state leaks and harder concurrency reasoning in the renderer.",
+          "isCorrect": false,
+          "explanation": "Version A stores mutable properties like color on shared Glyph instances. In a high-scale renderer where color and position change per draw, that design causes state to leak between renders and complicates concurrency. Shared state should be immutable to be safely reused."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates immutable glyph data and requires callers to provide per-use layout and color state externally to rendering calls.",
+          "isCorrect": true,
+          "explanation": "Version B separates intrinsic glyph data (metrics, char shape) from extrinsic rendering state (color, position). This allows the glyph data to be safely shared and cached, while callers supply mutable per-render values. This aligns with best practices described in classic references and reduces cross-request mutation and synchronization complexity."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 74,
+  "conceptName": "Global Data",
+  "category": "code-smell",
+  "definition": "Widespread mutable state that is accessible across modules, creating hidden coupling, order dependencies, and testing difficulty.",
+  "ruleOfThumb": "Prefer explicit dependency passing or scoped contexts; avoid widely exported mutable objects that create implicit hooks between modules.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Replace Global Variable with Parameter or Singleton",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/GlobalVariables.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What design problem does the following TypeScript snippet most clearly illustrate?",
+      "codeSnippet": "// store.ts\nexport const currentUser = { id: '', name: '' };\n// a.ts\nimport { currentUser } from './store';\ncurrentUser.id = 'alice';\n// b.ts\nimport { currentUser } from './store';\nconsole.log(currentUser.name);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Application components rely on a single mutable exported object creating hidden dependencies across modules unintentionally.",
+          "isCorrect": true,
+          "explanation": "This snippet shows a mutable value exported and accessed from multiple modules. That creates hidden coupling and makes behavior order dependent and hard to test. The smell arises because state is globally reachable rather than passed explicitly."
+        },
+        {
+          "id": "b",
+          "text": "Duplicate code spread across files causes maintenance burden and violates single responsibility in multiple layers of the application.",
+          "isCorrect": false,
+          "explanation": "While duplication is a real maintenance concern, the example focuses on cross-module shared state rather than repeated logic. The symptom is coupling through shared mutable data, not duplicated implementation."
+        },
+        {
+          "id": "c",
+          "text": "An overly large module contains mixed responsibilities and should be split into smaller focused modules for improved clarity.",
+          "isCorrect": false,
+          "explanation": "Large modules and mixed responsibilities are worth addressing, but the code sample demonstrates inter-module mutation and implicit dependencies rather than a monolithic module with many responsibilities."
+        },
+        {
+          "id": "d",
+          "text": "Excessive runtime type assertions hide interface mismatches and increase the risk of subtle runtime failures in production.",
+          "isCorrect": false,
+          "explanation": "Runtime type assertions can cause runtime errors, but this snippet lacks any type assertion use. The central issue is a shared mutable export used by multiple modules, not type safety violations."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this initialization pattern, which concern is most likely to cause bugs in larger systems?",
+      "codeSnippet": "// config.ts\nexport const AppConfig = { mode: 'prod', retries: 3 };\n// init.ts\nimport { AppConfig } from './config';\nAppConfig.mode = process.env.DEBUG ? 'debug' : AppConfig.mode;\n// service.ts\nimport { AppConfig } from './config';\nif (AppConfig.mode === 'debug') console.log('debugging enabled');",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A hidden order dependency exists where modules behave differently depending on which file mutated shared configuration first during startup.",
+          "isCorrect": true,
+          "explanation": "Mutating an exported object during initialization creates an order dependency: modules that run before the mutation see different configuration than those running after. This leads to fragile startup sequencing and subtle environment-specific bugs."
+        },
+        {
+          "id": "b",
+          "text": "A risk exists of leaking mutable configuration across layers causing incidental coupling and making unit testing brittle and stateful.",
+          "isCorrect": false,
+          "explanation": "Leaking mutable configuration is a valid concern and does happen here, but the more precise risk in this pattern is the startup ordering problem, where the timing of the mutation changes behavior across modules."
+        },
+        {
+          "id": "c",
+          "text": "A need exists for stronger compile time guarantees because runtime changes to plain objects bypass static checks and invite runtime errors.",
+          "isCorrect": false,
+          "explanation": "Stronger types help, but TypeScript cannot prevent runtime mutation of plain exported objects. The core issue is not just typing but the mutable shared state and its lifecycle across modules."
+        },
+        {
+          "id": "d",
+          "text": "An unnecessary singleton pattern is introduced where a single instance is reused globally instead of being injected per caller context.",
+          "isCorrect": false,
+          "explanation": "Labeling this as a singleton concern is reasonable, but the real practical problem is the implicit mutation and order dependence rather than the mere existence of a single shared instance."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version would you prefer for managing mutable counters across modules and why?",
+      "codeSnippet": "// Version A\nexport const shared = { count: 0 };\nexport function incA() { shared.count++; }\nexport function getA() { return shared.count; }\n\n// Version B\nexport class CounterContext {\n  private count = 0;\n  inc() { this.count++; }\n  get() { return this.count; }\n}\nexport function createCounter() { return new CounterContext(); }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A creates hidden initialization and ordering fragility because modules directly mutate an exported shared object during startup.",
+          "isCorrect": false,
+          "explanation": "Version A exposes a mutable object to all modules, which breeds implicit coupling and makes initialization order important. That fragility leads to tests that must set global state and to modules that cannot be reasoned about in isolation."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates mutable state inside an explicit context object that is created or injected for each usage scope.",
+          "isCorrect": true,
+          "explanation": "Version B bounds the mutable state inside an instance, allowing callers to control lifecycle and scope. This reduces implicit coupling, improves testability by enabling isolated instances, and makes ownership and initialization explicit."
+        }
+      ]
+    }
+  ]
+}

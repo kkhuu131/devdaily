@@ -1,0 +1,105 @@
+{
+  "id": 33,
+  "conceptName": "Middle Man",
+  "category": "code-smell",
+  "definition": "A class that exists mainly to delegate work to another class, adding little or no meaningful behavior.",
+  "ruleOfThumb": "If a class mostly forwards calls to a collaborator without adding value, collapse it or move behavior to the real owner.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Middle Man",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/MiddleMan.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "You find a class that only calls methods on another object and performs almost no other work. What is the most likely concern?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "This class primarily forwards calls to a collaborator and provides almost no additional behavior or value.",
+          "isCorrect": true,
+          "explanation": "This is the classic symptom: the class exists mainly as a forwarding layer. It adds indirection and maintenance cost without encapsulating behavior. Typical fixes are to remove the delegating layer, inline its calls at callers, or move any real logic into the collaborator."
+        },
+        {
+          "id": "b",
+          "text": "This class is a thin facade intended to simplify the public API while duplicating collaborator signatures without change.",
+          "isCorrect": false,
+          "explanation": "A facade can be legitimate when it simplifies many collaborators or decouples clients. Here the facade merely mirrors the collaborator's API, which suggests unnecessary duplication rather than useful abstraction. Consider whether the facade adds value or should be removed."
+        },
+        {
+          "id": "c",
+          "text": "This class centralizes adaptation to an unstable external dependency and hides complex mapping without meaningful logic reduction.",
+          "isCorrect": false,
+          "explanation": "Centralizing adaptation to an external API can be deliberate. If the class genuinely encapsulates mapping or stability concerns, it is justified. If not, and it only forwards calls, it is unnecessary indirection rather than a true anti corruption layer."
+        },
+        {
+          "id": "d",
+          "text": "This class acts as an application controller accumulating unrelated responsibilities and violating single responsibility with many methods.",
+          "isCorrect": false,
+          "explanation": "A controller that accumulates responsibilities is a different smell from a forwarding layer. If the class contains many unrelated operations, splitting responsibilities is appropriate. But if it only delegates calls, the primary issue is needless delegation, not multiplicity."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Consider this TypeScript service. Which concern is the most accurate diagnosis of the design?",
+      "codeSnippet": "class InvoiceService {\n  constructor(private pricing: PricingEngine) {}\n\n  createInvoice(order: Order) {\n    const total = this.pricing.calculateTotal(order.items);\n    this.audit(order.id);\n    return { orderId: order.id, total };\n  }\n\n  private audit(id: string) { /* simple logging */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class is an intentional adapter hiding a volatile external API and centralizing translation logic for future stability.",
+          "isCorrect": false,
+          "explanation": "An adapter that shields callers from a volatile API can be appropriate. However, the example shows almost pure delegation with only logging. If the adapter had substantial translation logic, it would be justified; here it likely adds unnecessary indirection."
+        },
+        {
+          "id": "b",
+          "text": "This class is a reasonable facade that simplifies consumer calls and consolidates cross cutting concerns like auditing into one place.",
+          "isCorrect": false,
+          "explanation": "A facade that consolidates cross cutting concerns can be valid. But in this snippet the facade does not reduce complexity or combine multiple collaborators; it mainly relays a single call and adds minor logging, which is weak justification for the extra layer."
+        },
+        {
+          "id": "c",
+          "text": "This class primarily forwards behavior to another component and adds very little meaningful responsibility overall.",
+          "isCorrect": true,
+          "explanation": "The service mostly forwards to PricingEngine and only performs a trivial audit. That situation increases indirection without encapsulating significant behavior. Typical corrections are to inline the forwarding at callers or move the small responsibility into PricingEngine where it belongs."
+        },
+        {
+          "id": "d",
+          "text": "This class accumulates unrelated duties and should be split to respect single responsibility and reduce coupling between concerns.",
+          "isCorrect": false,
+          "explanation": "Accumulating unrelated duties is a common problem, but the code here does not show multiple unrelated behaviors. The main issue is delegation with minimal added logic. Splitting responsibilities is useful when a class actually contains many distinct roles."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better long term design for reducing unnecessary indirection and clarifying ownership?",
+      "codeSnippet": "/* Version A */\nclass UserService {\n  constructor(private repo: UserRepository) {}\n  findUser(id: string) { return this.repo.findById(id); }\n  updateEmail(id: string, email: string) { return this.repo.updateEmail(id, email); }\n}\n\n/* Version B */\n// Callers use UserRepository directly and repository owns find and update behaviors\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps a thin service that forwards all operations to the repository with minimal added value.",
+          "isCorrect": false,
+          "explanation": "Version A preserves a delegating layer that adds little behavior. While it can be helpful for future expansion or to centralize access, it also introduces an extra maintenance surface and hides the true owner of the behavior. If the layer does not add responsibilities, it tends to increase coupling and testing burden."
+        },
+        {
+          "id": "b",
+          "text": "Version B removes the thin service and lets callers interact directly with the repository that owns the behavior.",
+          "isCorrect": true,
+          "explanation": "Version B clarifies where the logic belongs by removing an unnecessary forwarding layer. When a service only mirrors repository methods, allowing callers to use the repository directly reduces indirection and maintenance. Recommended actions include moving any genuine cross cutting logic into the repository or a well justified facade. See Martin Fowler on delegating middle men and Uncle Bob on minimizing indirection for maintainability."
+        }
+      ]
+    }
+  ]
+}

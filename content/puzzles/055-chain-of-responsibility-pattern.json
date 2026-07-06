@@ -1,0 +1,106 @@
+{
+  "id": 55,
+  "conceptName": "Chain of Responsibility Pattern",
+  "category": "design-pattern",
+  "definition": "A behavioral design approach where a request is passed along a sequence of handler objects until one of them handles it.",
+  "ruleOfThumb": "Prefer small, focused handler components that forward unhandled requests rather than a single large dispatcher.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns - Chain of Responsibility",
+    "page": "233",
+    "externalUrl": "https://en.wikipedia.org/wiki/Chain-of-responsibility_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches the intent of the code below?",
+      "codeSnippet": "interface Handler {\n  setNext(handler: Handler): void;\n  handle(req: Request): boolean;\n}\n\nclass AuthHandler implements Handler {\n  private next?: Handler;\n  setNext(h: Handler) { this.next = h; }\n  handle(req: Request) { if (req.user?.isAdmin) return true; return this.next ? this.next.handle(req) : false; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A sequence of handler objects forwards the request to the next handler until one of them processes it.",
+          "isCorrect": true,
+          "explanation": "This code defines handler objects with a reference to the next handler and forwards the request when not handled. That forwarding chain is characteristic of passing responsibility along a linked sequence of handlers. Each handler chooses to process or delegate, which matches the pattern where responsibility moves along until someone handles it."
+        },
+        {
+          "id": "b",
+          "text": "A single object selects a concrete algorithm at runtime and executes it directly without forwarding to others.",
+          "isCorrect": false,
+          "explanation": "This describes selecting and executing one strategy instance at runtime, which would not involve forwarding to another handler. The snippet explicitly stores a next handler and delegates when not handled, so it is not a one-shot algorithm selection approach."
+        },
+        {
+          "id": "c",
+          "text": "Multiple subscribers are notified of an event and each independently decides whether to act on the event or not.",
+          "isCorrect": false,
+          "explanation": "An observer approach notifies many listeners independently. In contrast, the snippet shows delegation to a single next handler rather than broadcasting to multiple subscribers, so it is not an observer style notification."
+        },
+        {
+          "id": "d",
+          "text": "A central switch statement dispatches requests to functions based on request type inside one class.",
+          "isCorrect": false,
+          "explanation": "A dispatcher using a switch in one place centralizes logic. The code sample instead expresses decentralized handlers that each decide and then forward, rather than a monolithic switch-based dispatcher, so this option is not accurate."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In the routing pipeline below, what is the most likely design concern a senior engineer would raise?",
+      "codeSnippet": "type Request = { path: string; user?: any };\nclass Logger implements Handler { next?: Handler; setNext(h: Handler) { this.next = h; }\n  handle(req: Request) { console.log(req.path); return this.next ? this.next.handle(req) : false; }\n}\nclass Auth implements Handler { next?: Handler; setNext(h: Handler) { this.next = h; }\n  handle(req: Request) { if (req.path.startsWith('/admin')) return this.checkAuth(req); return this.next ? this.next.handle(req) : false; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Handlers directly reference the next handler creating tight coupling and making handler reuse and testing difficult.",
+          "isCorrect": true,
+          "explanation": "When handlers hold direct references to a concrete next handler, they become linked in a specific topology and harder to reuse or unit test in isolation. A more decoupled pipeline or builder can reduce coupling and allow easier composition and testing."
+        },
+        {
+          "id": "b",
+          "text": "The routing logic uses exceptions for flow control risking hidden side effects and confusing failure semantics in production.",
+          "isCorrect": false,
+          "explanation": "Using exceptions for flow control is a valid concern in many systems, but the snippet shows delegation with boolean returns rather than throwing exceptions. Thus exceptions are not the primary issue shown here."
+        },
+        {
+          "id": "c",
+          "text": "A global registry chooses handlers by type introducing shared mutable state and unpredictable handler ordering at runtime.",
+          "isCorrect": false,
+          "explanation": "A global registry can indeed cause ordering and mutation issues, but the code sample explicitly wires handlers locally by setNext, so a global registry is not present and is not the main design concern in this snippet."
+        },
+        {
+          "id": "d",
+          "text": "All routing decisions happen inside a monolithic handler class making maintenance harder and violating single responsibility expectations.",
+          "isCorrect": false,
+          "explanation": "Centralized routing would be a valid smell, but the presented code splits concerns into Logger and Auth handler classes. The real risk visible here is the way handlers are coupled to each other via next references, not a single monolith."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation is preferable for building an extensible request pipeline in a microservice, Version A or Version B?",
+      "codeSnippet": "// Version A: Monolithic dispatcher\nclass Router {\n  handle(req: Request) {\n    if (req.type === 'A') return this.handleA(req);\n    if (req.type === 'B') return this.handleB(req);\n    // many more conditionals\n  }\n}\n\n// Version B: Composed handler components\ninterface Handler { setNext(h: Handler): void; handle(req: Request): boolean }\nclass HandlerA implements Handler { next?: Handler; setNext(h: Handler) { this.next = h; } handle(req: Request) { if (req.type === 'A') return true; return this.next ? this.next.handle(req) : false; } }\nclass HandlerB implements Handler { next?: Handler; setNext(h: Handler) { this.next = h; } handle(req: Request) { if (req.type === 'B') return true; return this.next ? this.next.handle(req) : false; } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes all handling logic in one class with many conditionals making extension and testing costly.",
+          "isCorrect": false,
+          "explanation": "Version A packs routing decisions into one class, so adding a new type requires editing the central router and adding another conditional. This increases risk of regression, complicates testing, and can grow into a maintenance bottleneck as the number of types increases."
+        },
+        {
+          "id": "b",
+          "text": "Version B composes independent handler objects where each handler decides and forwards requests to the next.",
+          "isCorrect": true,
+          "explanation": "Version B favors small, focused handler components that encapsulate a single responsibility and delegate when they cannot handle a request. This composition improves extensibility, allows adding handlers without modifying existing ones, and makes unit testing each handler straightforward. Note that composition must still manage ordering and lifecycle; use a builder or registry to construct pipelines and avoid tight coupling between concrete handler classes."
+        }
+      ]
+    }
+  ]
+}
