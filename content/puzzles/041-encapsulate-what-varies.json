@@ -1,0 +1,106 @@
+{
+  "id": 41,
+  "conceptName": "Encapsulate What Varies",
+  "category": "principle",
+  "definition": "Identify aspects of code that frequently change or differ between contexts and isolate those differences behind stable abstractions so changes are localized.",
+  "ruleOfThumb": "When you see repeated conditionals or scattered special cases, extract the varying behavior behind an interface or lookup and delegate to it.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Organizing Data / Moving Features Between Objects",
+    "page": "42",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best describes the smell in this TypeScript snippet?",
+      "codeSnippet": "interface Payment { type: string; amount: number }\nfunction process(payment: any) {\n  if (payment.type === 'card') {\n    chargeCard(payment)\n  } else if (payment.type === 'paypal') {\n    chargePaypal(payment)\n  } else {\n    throw new Error('Unknown')\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code centralizes multiple branching choices based on a runtime type flag, coupling behavior to conditional logic.",
+          "isCorrect": true,
+          "explanation": "The if/else ladder dispatches behavior based on a runtime type value, which scatters responsibilities and couples callers to specific cases. Encapsulating each payment behavior behind a common interface or a registry moves branching out of the caller and localizes future changes. Patterns like Strategy, Function Tables, or simple dependency injection are typical remedies—each reduces the need to modify the conditional when adding a new payment type."
+        },
+        {
+          "id": "b",
+          "text": "This code duplicates payment calculations across branches, increasing maintenance when calculation rules change across payment providers.",
+          "isCorrect": false,
+          "explanation": "While duplicated calculation could appear in branches, the more direct issue is the branching by type. Duplication is a symptom that often accompanies conditionals, but extracting shared calculations does not remove the conditional dispatch. The main improvement is to separate the dispatch into abstractions so each provider encapsulates its calculation, addressing both duplication and branching simultaneously."
+        },
+        {
+          "id": "c",
+          "text": "This code exposes format-specific handling in procedural blocks, making it hard to add logging consistently across handlers.",
+          "isCorrect": false,
+          "explanation": "Scattered handling does make cross-cutting concerns like logging harder, and that is a real maintenance cost. However, the root smell here is the conditional-based dispatch that mixes selection with behavior. Encapsulating each handler behind an interface or centralized registry enables consistent logging via decorators or middleware and directly addresses both selection and cross-cutting concerns."
+        },
+        {
+          "id": "d",
+          "text": "This code performs runtime string comparisons to select behavior, which risks missing compile-time guarantees and scattering logic.",
+          "isCorrect": false,
+          "explanation": "Relying on runtime strings does reduce compile-time safety and can scatter behavior, which is a valid concern. Still, the key design problem is conflating selection logic with implementation. Moving selections into typed abstractions or a dependency injection map improves type safety and relocates logic to cohesive implementations, addressing both the safety and scattering problems together."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this renderer dispatch code, which refactor most directly localizes the varying behavior?",
+      "codeSnippet": "type RendererType = 'svg' | 'canvas' | 'webgl'\nfunction render(shape: any, type: RendererType) {\n  switch (type) {\n    case 'svg': return svgRender(shape)\n    case 'canvas': return canvasRender(shape)\n    case 'webgl': return webglRender(shape)\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce a registry mapping renderer types to implementation functions and delegate rendering to the selected function.",
+          "isCorrect": true,
+          "explanation": "A registry or map moves the switch into configuration and lets you add renderers without editing the dispatch code. This approach keeps a simple lookup and delegation at the call site, making it easier to inject mocks for testing or to register new renderers at runtime. It is a lightweight form of the Strategy pattern and encourages single-responsibility for each renderer implementation."
+        },
+        {
+          "id": "b",
+          "text": "Extract each case into separate helper functions but retain the switch for explicit branching control across types.",
+          "isCorrect": false,
+          "explanation": "Extracting to helper functions improves readability but keeps the central switch, so adding a new renderer still requires modifying the dispatcher. That retains the open-closed problem and still couples the caller to the list of types. It helps locally but does not fully encapsulate the varying behavior."
+        },
+        {
+          "id": "c",
+          "text": "Use class-based renderers with a common interface and create instances selected by the switch at call time.",
+          "isCorrect": false,
+          "explanation": "Introducing classes with a common interface is a valid technique, but selecting implementations via the same switch still couples the client to the list of types. Better is to combine a common interface with a registry or factory so selection logic is externalized, supporting registration and easier extension without modifying the calling code."
+        },
+        {
+          "id": "d",
+          "text": "Introduce a configuration-based feature toggle to select which renderer implementation to use at runtime.",
+          "isCorrect": false,
+          "explanation": "Feature toggles control rollout and runtime selection, but they do not inherently remove conditional branching or encapsulate per-renderer behavior. Using toggles can increase complexity and does not address the need for localized implementations; toggles are orthogonal and are better used alongside proper abstraction and registration mechanisms."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation better confines future variation and eases testing for regional tax calculations?",
+      "codeSnippet": "// Version A\ninterface TaxCalculator { calculate(order:any): number }\nconst registry: Record<string, TaxCalculator> = {\n  US: new USTaxCalculator(),\n  EU: new EUTaxCalculator()\n}\nfunction calculateTax(order:any) { return registry[order.region].calculate(order) }\n\n// Version B\nclass TaxService {\n  calculate(order:any) {\n    if (order.region === 'US') return this.usCalc(order)\n    if (order.region === 'EU') return this.euCalc(order)\n    return 0\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates regional tax logic into separate implementations, improving extensibility and focused unit testing.",
+          "isCorrect": true,
+          "explanation": "Version A delegates regional differences to discrete implementations registered in a registry. That isolates change points, allows independent unit testing of each TaxCalculator, and supports runtime registration or DI. Adding a new region requires adding a new implementation and a registry entry, without modifying the dispatcher logic. This follows the single-responsibility principle and aligns with patterns like Strategy or plugin registries for variation encapsulation. See Fowler on organizing behavior and GoF Strategy pattern for related guidance."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes all regional conditions in one service, which simplifies single-file control but complicates targeted testing later.",
+          "isCorrect": false,
+          "explanation": "Version B keeps conditionals inside a single class, which may seem simpler initially but leads to a growing monolith as regions proliferate. Tests must exercise the service with many scenarios, and adding new regions requires editing the central class, increasing risk of regressions. The code violates open-closed and makes substitution and mocking less straightforward compared to separating implementations. Effective encapsulation reduces these long-term maintenance costs. Recommended reading includes Clean Code on function responsibility and GoF Strategy pattern for encapsulating variation."
+        }
+      ]
+    }
+  ]
+}

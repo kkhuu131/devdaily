@@ -1,0 +1,105 @@
+{
+  "id": 77,
+  "conceptName": "High Cohesion",
+  "category": "principle",
+  "definition": "A design quality where a module's responsibilities are narrowly focused and its parts are strongly related, minimizing unrelated reasons to change.",
+  "ruleOfThumb": "Keep related behavior together and separate unrelated behavior into distinct modules so changes affect few, focused places.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Chapter 7: Composing Methods",
+    "page": "88-95",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description most clearly indicates a module with focused, closely related responsibilities?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "The module groups tightly related functions and data with minimal dependence on unrelated modules at runtime.",
+          "isCorrect": true,
+          "explanation": "This describes a unit whose functions operate on the same concepts and do not pull in unrelated behaviors, which reduces ripple changes when requirements evolve."
+        },
+        {
+          "id": "b",
+          "text": "The module exposes many unrelated public methods that each manipulate different domains and require global context.",
+          "isCorrect": false,
+          "explanation": "Many unrelated public methods across domains indicate multiple responsibilities in one module, increasing the chance changes in one area break others."
+        },
+        {
+          "id": "c",
+          "text": "The module has a single class doing one job but delegates most work to many external services and layers.",
+          "isCorrect": false,
+          "explanation": "Delegation to services can still be cohesive, but excessive scattering of related logic into many external collaborators can reduce clarity and increase coordination cost."
+        },
+        {
+          "id": "d",
+          "text": "The module contains utilities and domain logic mixed together with duplicated behavior across unrelated features.",
+          "isCorrect": false,
+          "explanation": "Mixing utilities and domain logic with duplication shows responsibilities are not focused, making the module hard to reason about and evolve safely."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In this payment module, what is the primary cohesion-related problem you should address?",
+      "codeSnippet": "export class PaymentService {\n  validateCard(card) { /* validate card details */ }\n  computeFees(order) { /* calculate fees and taxes */ }\n  processPayment(order, card) { /* charge card and record payment */ }\n  formatReceipt(order) { /* build printable receipt string */ }\n  generateMonthlyReport(accounts) { /* aggregate payments for reporting */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The module mixes payment processing, reporting, and formatting responsibilities in one file causing unrelated responsibilities together.",
+          "isCorrect": true,
+          "explanation": "Processing, formatting, and reporting are distinct responsibilities; combining them forces unrelated changes into the same place and increases risk when modifying behavior."
+        },
+        {
+          "id": "b",
+          "text": "The module directly accesses the database layer causing tight coupling and preventing independent testing of business logic.",
+          "isCorrect": false,
+          "explanation": "Direct DB access is a coupling issue but the snippet shows functional separation concerns across different domain tasks, so cohesion is the more visible smell here."
+        },
+        {
+          "id": "c",
+          "text": "The module contains functions that preferentially manipulate each others internal data indicating feature envy between functions.",
+          "isCorrect": false,
+          "explanation": "Feature envy appears when functions overly reference another object's internals; the primary issue in this file is mixed responsibilities rather than envy within a single responsibility."
+        },
+        {
+          "id": "d",
+          "text": "The module exposes many public methods without abstraction resulting in a large surface area for other modules.",
+          "isCorrect": false,
+          "explanation": "A large surface area can be a consequence of poor cohesion, but the root cohesion problem here is the mixing of distinct responsibilities in one module."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version would you prefer for long term maintainability and why?",
+      "codeSnippet": "/* Version A */\nclass UserAccount {\n  create(data) { /* validate, persist, sendWelcomeEmail */ }\n  update(id, data) { /* validate, persist, sendUpdateNotification */ }\n}\n\n/* Version B */\nclass AccountValidator { validate(data) { /* validation logic */ } }\nclass AccountRepo { save(entity) { /* persistence logic */ } }\nclass Notifier { notify(event) { /* email or SMS */ } }\nclass UserAccountService {\n  constructor(v, r, n) {}\n  create(data) { /* use v, r, n collaborators */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A co-locates multiple concerns reducing indirection and thus simplifying changes for performance critical code.",
+          "isCorrect": false,
+          "explanation": "While fewer files may feel simpler, co-locating validation, persistence, and notification increases the blast radius of changes and makes testing and reasoning harder; the claimed performance benefit rarely outweighs maintainability costs."
+        },
+        {
+          "id": "b",
+          "text": "Version B separates responsibilities into focused collaborators and reduces the scope of changes for each distinct role.",
+          "isCorrect": true,
+          "explanation": "Splitting validation, persistence, and notification into collaborators keeps each class narrowly focused and easier to test and change independently. This reduces coupling of change reasons and aligns with proven modularity practices from Clean Code and Refactoring."
+        }
+      ]
+    }
+  ]
+}

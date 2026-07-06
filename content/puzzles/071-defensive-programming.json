@@ -1,0 +1,106 @@
+{
+  "id": 71,
+  "conceptName": "Defensive Programming",
+  "category": "principle",
+  "definition": "Practices that make software resilient to unexpected inputs and states by validating inputs, checking assumptions, and failing in controlled ways.",
+  "ruleOfThumb": "Validate inputs at boundaries, fail fast with clear signals, and avoid hiding errors behind silent defaults.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code: A Handbook of Agile Software Craftsmanship",
+    "chapter": "Error Handling",
+    "page": null,
+    "externalUrl": "https://www.oreilly.com/library/view/clean-code/9780136083238/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best describes the primary practice demonstrated by this snippet?",
+      "codeSnippet": "const payload = req.body;\ntry {\n  const data = JSON.parse(payload);\n  if (!data.id) throw new Error('missing id');\n  // proceed with business logic\n  res.send({ ok: true });\n} catch (e) {\n  res.status(400).send('Bad input');\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code proactively validates and handles unexpected external input before proceeding to core business logic.",
+          "isCorrect": true,
+          "explanation": "This snippet shows boundary validation and explicit handling of malformed input, converting unexpected cases into a controlled 400 response. This is a straightforward defensive measure to stop invalid data before it reaches deeper logic. Clean Code recommends making errors obvious and dealing with them near where they occur to avoid propagation."
+        },
+        {
+          "id": "b",
+          "text": "The code centralizes error logging and observability for faults originating from third party services in production.",
+          "isCorrect": false,
+          "explanation": "While centralizing logging is valuable, this snippet focuses on input validation and immediate client response rather than building observability around third party failures. The code does not show instrumentation, structured logs, or remote error aggregation that would support the claim."
+        },
+        {
+          "id": "c",
+          "text": "The code avoids throwing runtime exceptions by converting all errors into neutral default values silently.",
+          "isCorrect": false,
+          "explanation": "This option is incorrect because the snippet does throw an exception when 'id' is missing and returns an explicit error response rather than silently substituting defaults. Silent defaults would hide problems; this code signals an explicit failure instead."
+        },
+        {
+          "id": "d",
+          "text": "The code prefers extra type checking to enforce compile time correctness and prevent any runtime checks.",
+          "isCorrect": false,
+          "explanation": "The snippet performs runtime checks, not compile time enforcement. Compile time type checking is valuable, but it cannot replace runtime validation of external input such as HTTP payloads. This option mistakes runtime boundary checks for compile-time type strategies."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the most significant design concern in the following function?",
+      "codeSnippet": "function reserveSeat(user, seat) {\n  if (!user) throw new Error('unauthenticated');\n  if (!seat) return false;\n  if (seat.status !== 'available') return false;\n  // perform reservation side effects\n  return true;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function mixes exception throwing and boolean returns for different error cases, signaling failures inconsistently to calling code.",
+          "isCorrect": true,
+          "explanation": "Mixing exceptions and boolean returns creates unclear contracts for callers about how to detect and handle failures. A caller must know which failures are exceptions and which are ordinary false returns, leading to fragile client code. Consistent failure signalling—either explicit result types or exceptions—is a cleaner design."
+        },
+        {
+          "id": "b",
+          "text": "The function pushes business logic into the API layer by performing domain validation instead of delegating to a domain service.",
+          "isCorrect": false,
+          "explanation": "While layering and separation are important, the snippet's primary smell is inconsistent failure signaling, not necessarily misplaced domain logic. Moving validation to a domain service might help structure concerns but does not by itself resolve the mixed exception/return contract problem."
+        },
+        {
+          "id": "c",
+          "text": "The function should always return promises to ensure consistent asynchronous handling instead of mixing synchronous boolean returns and exceptions.",
+          "isCorrect": false,
+          "explanation": "Returning promises addresses async consistency but does not address the core design ambiguity here: whether failures are reported by exceptions or truthy values. Converting to promises is orthogonal and would still require a consistent failure reporting strategy."
+        },
+        {
+          "id": "d",
+          "text": "The function lacks input sanitization for seat identifiers and may accept invalid data, risking security and data integrity issues.",
+          "isCorrect": false,
+          "explanation": "Input sanitization is a legitimate concern for external data, but the provided snippet shows explicit presence and status checks. The more immediate issue for a developer reading this code is the mixed signaling of errors, which affects API contract clarity more than sanitization."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better expresses safe boundary checks while keeping downstream code simple?",
+      "codeSnippet": "// Version A: validate at the boundary and return Result-like object\nfunction handleRequestA(payload) {\n  const parsed = safeParse(payload);\n  if (!parsed.ok) return { ok: false, reason: 'invalid payload' };\n  if (!isValidUser(parsed.user)) return { ok: false, reason: 'unauthorized' };\n  return performBusiness(parsed.data);\n}\n\n// Version B: let helpers check deeply and use thrown errors or defaults\nfunction handleRequestB(payload) {\n  const parsed = JSON.parse(payload); // may throw\n  return performBusinessWithHelpers(parsed);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A validates at the boundary and returns explicit results, keeping downstream code simple and predictable.",
+          "isCorrect": true,
+          "explanation": "Version A centralizes parsing and validation at the entry point and returns a clear result type, which makes downstream code assume valid inputs and simplifies handling of success and failure. This approach reduces scattered checks and improves observability of failure reasons—aligning with recommendations to validate near boundaries and use explicit failure signals."
+        },
+        {
+          "id": "b",
+          "text": "Version B defers checks into deep helpers and mixes exceptions with silent defaults, making root cause tracing fragile.",
+          "isCorrect": false,
+          "explanation": "Version B allows errors to emerge unpredictably from deep helpers or from JSON.parse, which can lead to inconsistent behavior and harder debugging. Mixing thrown exceptions and implicit defaults makes it difficult to know which failures are recoverable. Although deferring work can reduce boundary code, it increases coupling and error propagation complexity."
+        }
+      ]
+    }
+  ]
+}

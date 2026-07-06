@@ -1,0 +1,106 @@
+{
+  "id": 78,
+  "conceptName": "Mysterious Name",
+  "category": "code-smell",
+  "definition": "Use of ambiguous, overly terse, or context-free names that conceal intent and make code harder to read, test, and evolve.",
+  "ruleOfThumb": "Choose names that reveal intent; prefer descriptive verbs and domain nouns over short cryptic identifiers.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code: A Handbook of Agile Software Craftsmanship",
+    "chapter": "Meaningful Names",
+    "page": "pp. 27-45",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-code/9780136083238/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this service snippet. What is the primary problem a new developer will notice immediately?",
+      "codeSnippet": "class OrderProcessor {\n  process(order) {\n    const x = order.items;\n    const y = this.calc(order);\n    // apply discounts\n    return y + 10;\n  }\n  calc(o) { return o.subtotal * 0.08; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code uses non-descriptive short identifiers that hide intent and increase the effort required to understand behavior.",
+          "isCorrect": true,
+          "explanation": "The primary barrier here is naming: identifiers like x, y, and calc do not convey purpose. That forces readers to inspect implementation to infer intent, increasing cognitive load and slowing onboarding and refactoring."
+        },
+        {
+          "id": "b",
+          "text": "The OrderProcessor mixes persistence and domain logic in the same class creating coupling that hinders independent testing.",
+          "isCorrect": false,
+          "explanation": "While mixing concerns is a real smell, the snippet does not show persistence or data access. The visible issue is naming clarity rather than layering or testability from persistence coupling."
+        },
+        {
+          "id": "c",
+          "text": "The calculation method returns raw numbers without currency context leading to silent incorrectness across localization boundaries.",
+          "isCorrect": false,
+          "explanation": "Returning raw numbers can be risky in financial code, but the snippet's immediate cognitive problem is the unclear names. Currency and localization are secondary concerns that would be revealed after understanding intent."
+        },
+        {
+          "id": "d",
+          "text": "The code lacks a validation step allowing malformed orders to proceed without explicit checks before processing starts.",
+          "isCorrect": false,
+          "explanation": "Missing validation is a valid concern, yet the snippet does not show input validation logic explicitly. The most obvious and immediate issue for a reader is the poor naming, which prevents knowing whether validation exists."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Consider this service that decides between create and update. Which concern best describes the naming-related risk?",
+      "codeSnippet": "class InvoiceService {\n  save(invoice) {\n    if (!invoice.id) {\n      this.create(invoice);\n    } else {\n      this.update(invoice);\n    }\n  }\n  create(i) { /* persist */ }\n  update(i) { /* persist */ }\n  process(i) { /* calculate totals and send notifications */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The generic method name obscures multiple responsibilities and increases risk of accidental behavior changes during future refactors.",
+          "isCorrect": true,
+          "explanation": "A name like save or process can hide branching and multiple responsibilities. When names are generic, callers and maintainers may change behavior unknowingly during refactors because the method's role is unclear."
+        },
+        {
+          "id": "b",
+          "text": "The service performs synchronous IO on the request thread leading to latency spikes under load when many invoices are processed concurrently.",
+          "isCorrect": false,
+          "explanation": "Synchronous IO under load is a real operational concern, but nothing in the snippet proves synchronous blocking behavior. The more direct issue shown is the ambiguous naming that hides responsibilities."
+        },
+        {
+          "id": "c",
+          "text": "The save method violates single responsibility by both deciding persistence action and orchestrating external notifications to other systems.",
+          "isCorrect": false,
+          "explanation": "Violating SRP could be true if save also orchestrated notifications, but the snippet separates persistence and notifications into different methods. The immediate risk called out is the ambiguous naming rather than a clear SRP violation here."
+        },
+        {
+          "id": "d",
+          "text": "The code lacks a transactional boundary causing partial persistence if one operation fails during the request.",
+          "isCorrect": false,
+          "explanation": "Transaction management is important, yet the snippet does not show transactional control. The prompt aims at naming ambiguity and maintainability risk, which is the stronger and more obvious problem in this example."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version leads to clearer client code and easier maintenance over time?",
+      "codeSnippet": "// Version A\nfunction run(query: any) {\n  if (query.type === 'active') return db.find({ active: true });\n  if (query.type === 'customer') return db.find({ customerId: query.id });\n}\n\n// Version B\nfunction getActiveOrders() { return db.find({ active: true }); }\nfunction getOrdersForCustomer(customerId: string) { return db.find({ customerId }); }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A uses a generic verb that hides multiple behaviors and forces callers to understand internal branching before use.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes different queries behind a single generic function, which hides intent and coupling. Callers must construct query objects and learn internal branching, increasing coupling and reducing discoverability."
+        },
+        {
+          "id": "b",
+          "text": "Version B provides specific function names that clearly express intent and simplify client usage and future refactors.",
+          "isCorrect": true,
+          "explanation": "Version B gives each operation a clear name and signature, making intent explicit for callers and enabling safer refactors and easier testing. This aligns with naming practices that improve readability and reduce accidental coupling."
+        }
+      ]
+    }
+  ]
+}

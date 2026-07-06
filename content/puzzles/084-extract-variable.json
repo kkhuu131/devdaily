@@ -1,0 +1,106 @@
+{
+  "id": 84,
+  "conceptName": "Extract Variable",
+  "category": "refactoring",
+  "definition": "Replace repeated or complex subexpressions with a clearly named local variable so the value is computed once and intent is clarified.",
+  "ruleOfThumb": "If you see the same complex expression repeated or a long expression that hides intent, compute it once into a well-named local.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Introduce Explaining Variable",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the most visible problem in this function?",
+      "codeSnippet": "function isEligible(user: User) {\n  if (user.getAddress().country === 'US' && user.getAddress().isVerified) {\n    return true;\n  }\n  return user.getAddress().country === 'US';\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function contains identical complex property access repeated multiple times across branches in the same scope.",
+          "isCorrect": true,
+          "explanation": "The code repeatedly calls user.getAddress() and accesses country in multiple places. Extracting that expression into a local binding prevents duplication, reduces the chance of subtle inconsistencies if the expression changes, and makes the intent clearer. Fowler recommends introducing a named local when a subexpression is repeated or obscures intent."
+        },
+        {
+          "id": "b",
+          "text": "The function contains repeated external service calls that could be expensive and therefore merit caching at a higher scope.",
+          "isCorrect": false,
+          "explanation": "This concern is plausible when repeated calls touch I/O or expensive computation. In this snippet the calls are local property accesses rather than external network calls, so module-level caching would be overkill. A local temporary to hold the address is a smaller, clearer improvement."
+        },
+        {
+          "id": "c",
+          "text": "The function contains multiple responsibilities mixed into one block and should instead be split into smaller pure functions.",
+          "isCorrect": false,
+          "explanation": "Splitting responsibilities can help in functions doing many things. Here the function has a single decision expressed multiple times; splitting into functions would add indirection without addressing the duplicated expression. A local binding is the targeted refactor."
+        },
+        {
+          "id": "d",
+          "text": "The function contains an unclear boolean condition composed of nested property accesses that hinders straightforward understanding.",
+          "isCorrect": false,
+          "explanation": "Readability is a valid concern because nested accesses hide intent. However the immediate fix is to name the subexpression to make the boolean clearer. Renaming the expression into a local clarifies the condition while keeping logic unchanged."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which refactor is the most appropriate here?",
+      "codeSnippet": "function calculateScore(items: Item[]) {\n  const risky = items.filter(i => i.type === 'danger' && i.level > 3).length > 2;\n  if (items.filter(i => i.type === 'danger' && i.level > 3).length > 2) {\n    return 100;\n  }\n  return items.filter(i => i.type === 'danger' && i.level > 3).length;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Evaluate the filter once and store the resulting collection in a local constant to avoid repeated evaluation.",
+          "isCorrect": true,
+          "explanation": "Computing the same filtered list three times wastes CPU and makes the intent less clear. Assigning the filter result to a well-named local (or its boolean predicate if only truthiness is needed) reduces repetition and improves readability while preserving behavior."
+        },
+        {
+          "id": "b",
+          "text": "Extract the filtering logic into a named helper function and call it in each place to express intent clearly.",
+          "isCorrect": false,
+          "explanation": "A helper function clarifies the criterion, but calling it repeatedly still performs the same work multiple times unless the helper caches results. Better is to compute once and reuse that value, optionally using a helper that returns the cached result."
+        },
+        {
+          "id": "c",
+          "text": "Introduce a memoization layer caching filter results keyed by input to optimize repeated calls across separate invocations.",
+          "isCorrect": false,
+          "explanation": "Memoization can be appropriate for expensive pure computations across calls, but it adds complexity and lifecycle concerns. In this local-scope case a simple local binding is cheaper and clearer than adding cross-call caching."
+        },
+        {
+          "id": "d",
+          "text": "Leave the repeated filters as-is because modern runtimes will likely optimize identical array operations automatically at runtime.",
+          "isCorrect": false,
+          "explanation": "JIT optimizations are not a reliable substitute for clear code structure. Relying on engine optimizations risks different performance characteristics across platforms and does not improve readability. Explicitly naming the result is a deterministic, maintainable improvement."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable and why?",
+      "codeSnippet": "// Version A\nfunction price(order: Order) {\n  return order.items.reduce((s, i) => s + i.price * (1 - i.discount), 0) +\n         order.items.reduce((s, i) => s + i.tax, 0);\n}\n\n// Version B\nfunction price(order: Order) {\n  const items = order.items;\n  const subtotal = items.reduce((s, i) => s + i.price * (1 - i.discount), 0);\n  const taxes = items.reduce((s, i) => s + i.tax, 0);\n  return subtotal + taxes;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A avoids additional named locals by repeating expressions inline and therefore reduces declared variables in the function scope.",
+          "isCorrect": false,
+          "explanation": "While Version A uses fewer locals, it duplicates traversal of the collection and repeats the same subexpressions, increasing risk of divergence and making debugging harder. Repeating expressions can hide intent and lead to inconsistent updates if the logic later changes. Prefer clarity and a single source of truth for intermediate results."
+        },
+        {
+          "id": "b",
+          "text": "Version B stores intermediate computations in descriptively named local constants and uses those locals to produce the final result.",
+          "isCorrect": true,
+          "explanation": "Version B computes each intermediate value once into a clearly named local, which improves readability and makes subsequent changes safer. Naming intermediates documents intent and reduces duplicated work — a pragmatic refactor that balances transparency and performance. This aligns with refactoring guidance to give meaningful names to important subexpressions and avoid repeating complex calculations. See Fowler and Clean Code for guidance on clarifying intent with locals."
+        }
+      ]
+    }
+  ]
+}

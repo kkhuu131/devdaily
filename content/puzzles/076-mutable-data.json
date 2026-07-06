@@ -1,0 +1,106 @@
+{
+  "id": 76,
+  "conceptName": "Mutable Data",
+  "category": "code-smell",
+  "definition": "A smell where program data structures or objects are changed after creation, causing state to be observed and modified in multiple places and making reasoning, testing, and maintenance harder.",
+  "ruleOfThumb": "Prefer value objects or controlled updates; avoid exposing writable internal state across module or service boundaries and return new values for state transitions.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Code Smells",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/catalog/mutableData.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary design problem in this TypeScript snippet?",
+      "codeSnippet": "class Order {\n  items: string[];\n  total: number;\n  constructor(items: string[]) { this.items = items; this.total = items.length * 10 }\n}\nfunction applyDiscount(order: Order, discount: number) {\n  order.total = order.total - discount;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code directly mutates caller-owned objects via obvious in-place updates to their properties and fields.",
+          "isCorrect": true,
+          "explanation": "The function applyDiscount mutates the Order instance passed in rather than returning a new value. Mutable objects passed between modules hide who is allowed to change state and make it harder to reason about behavior. A common refactoring is to return a new Order or use an immutable value object so each state transition is explicit."
+        },
+        {
+          "id": "b",
+          "text": "This code relies on numeric totals computed externally and risks inconsistency if the items list changes without recalculating totals afterward.",
+          "isCorrect": false,
+          "explanation": "This is a plausible concern because the total is computed once in the constructor and then updated separately, which can lead to divergence if items are modified elsewhere. However the more immediate smell is the in-place mutation of the Order instance which creates the risk of unexpected external changes."
+        },
+        {
+          "id": "c",
+          "text": "This code exposes internal arrays by reference, allowing consumers to mutate items without the class enforcing invariants or notifying observers.",
+          "isCorrect": false,
+          "explanation": "Exposing arrays by reference is a real maintainability problem and often accompanies mutable state issues. In this snippet the items array is indeed writable, but the root issue highlighted by the example is the direct in-place mutation of the Order object, not only the array exposure."
+        },
+        {
+          "id": "d",
+          "text": "This code performs arithmetic on currency values directly, introducing precision and rounding risks when discounts or taxes are applied.",
+          "isCorrect": false,
+          "explanation": "Treating money as plain numbers can cause precision problems, which is a valid concern in financial domains. Yet this distraction misses the primary design smell in the snippet: state is mutated in place on objects shared with callers, making reasoning about totals and updates brittle."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In this inventory service, what maintenance hazard is most likely to cause surprising bugs?",
+      "codeSnippet": "type Product = { id: string; stock: number };\nconst products: Product[] = [{ id: \"p1\", stock: 10 }];\nfunction decrementStock(productId: string, amount: number) {\n  const p = products.find(p => p.id === productId);\n  if (!p) return;\n  p.stock -= amount;\n}\nfunction getProduct(productId: string) { return products.find(p => p.id === productId); }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code shares product objects via a global array exposing caller-modifiable state to all module consumers.",
+          "isCorrect": true,
+          "explanation": "The products array holds objects that are directly mutated (p.stock -= amount). Because getProduct returns references into that array, any consumer can observe or change module state. This pattern increases coupling and makes it easy for different parts of the program to accidentally step on each other. Fixes include returning copies, using read-only views, or modeling stock updates with functions that return new product values."
+        },
+        {
+          "id": "b",
+          "text": "This code can produce race conditions under multi-threaded environments because it does not synchronize access to the shared products array.",
+          "isCorrect": false,
+          "explanation": "Race conditions are a legitimate concern when mutable shared state crosses thread boundaries. In typical JavaScript runtimes race conditions are less common because of the single-threaded event loop, so this is a plausible but misplaced blame in this context. The more practical hazard here is the unchecked sharing and mutation of product objects within the module."
+        },
+        {
+          "id": "c",
+          "text": "This code returns internal product references to callers, allowing external modules to retain references that prevent garbage collection.",
+          "isCorrect": false,
+          "explanation": "Returning internal references can extend the lifetime of objects, which may affect memory use, and it is a valid concern. However retaining references preventing GC is usually less harmful than the semantic problems caused by shared writable state. The primary maintenance hazard is the exposure of mutable objects leading to implicit cross-module mutations."
+        },
+        {
+          "id": "d",
+          "text": "This code mutates product objects directly which hides business rules and makes adding validation or logging before updates difficult.",
+          "isCorrect": false,
+          "explanation": "Direct mutation can indeed obscure where business rules are enforced and complicate adding cross-cutting concerns like validation or logging. This is a real downside and often part of the same smell, but the more specific hazard to call out in this snippet is the global sharing of mutable objects that lets any consumer update state arbitrarily."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for long-term maintainability in a shared-service architecture?",
+      "codeSnippet": "// Version A: returns new objects rather than mutating inputs\nfunction addItemA(order: Readonly<Order>, item: string): Order {\n  return { ...order, items: [...order.items, item], total: order.total + itemPrice(item) };\n}\n\n// Version B: mutates the order in place and returns it\nfunction addItemB(order: Order, item: string): Order {\n  order.items.push(item);\n  order.total += itemPrice(item);\n  return order;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A returns new value objects instead of mutating caller-owned state across service boundaries.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable because it treats the order as an immutable value for transitions, making updates explicit and isolating side effects. Returning new objects removes a large class of bugs caused by aliasing, simplifies reasoning about state, and makes it easier to implement features like optimistic updates, undo, or replay. It also reduces coupling between callers and the service implementation. Recommended readings include Martin Fowler on mutable data and functional principles in pragmatic design."
+        },
+        {
+          "id": "b",
+          "text": "Version B mutates orders in place which simplifies code and reduces allocations but spreads hidden state changes across callers.",
+          "isCorrect": false,
+          "explanation": "While Version B can be slightly faster and appears simpler, it leaks mutation into every caller that holds a reference, producing subtle coupling and lifecycle issues. Over time the small allocation savings are outweighed by complexity when trying to track who changed state and when. This design makes testing harder and increases the surface area for bugs as the codebase grows."
+        }
+      ]
+    }
+  ]
+}

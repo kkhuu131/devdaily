@@ -1,0 +1,106 @@
+{
+  "id": 61,
+  "conceptName": "Separation of Concerns",
+  "category": "principle",
+  "definition": "Divide a system into distinct sections, each addressing a separate responsibility so changes in one area have minimal impact on others.",
+  "ruleOfThumb": "Keep business rules isolated from infrastructure and UI; prefer pure components for domain logic and inject side effecting dependencies.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Architecture",
+    "chapter": "Boundaries and Layers",
+    "page": "45-48",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-architecture/9780134494272/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary design problem in this controller code?",
+      "codeSnippet": "export class UserController {\n  save(req: any) {\n    const data = JSON.parse(req.body);\n    const sql = `INSERT INTO users (name, email) VALUES ('${data.name}', '${data.email}')`;\n    DB.query(sql);\n    Logger.info('user saved');\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code couples HTTP request parsing with direct SQL persistence and prevents independent reuse and straightforward unit testing.",
+          "isCorrect": true,
+          "explanation": "This is a textbook case of mixing domain or persistence concerns with transport code. The controller both parses input and composes SQL, which makes testing the business behavior without a database hard and tightly couples transport-level changes to storage details. The usual fix is to move persistence behind an interface and keep the controller limited to orchestration."
+        },
+        {
+          "id": "b",
+          "text": "The code exposes a public save method with no type guards and thus invites runtime crashes on malformed input.",
+          "isCorrect": false,
+          "explanation": "Missing validation is a real concern, but the snippet's main maintainability problem is coupling of responsibilities. Adding validation is important, yet even with validation the direct SQL and DB usage inside the controller would still block reuse and testing."
+        },
+        {
+          "id": "c",
+          "text": "The code inlines SQL generation and concatenation increasing injection risk and making parameterized query reuse very difficult.",
+          "isCorrect": false,
+          "explanation": "Inline SQL and string concatenation do raise injection and reuse issues, but the deeper structural smell is that persistence is handled inside the controller. Even after fixing SQL safety, the controller would still mix transport and storage concerns and remain hard to test."
+        },
+        {
+          "id": "d",
+          "text": "The code handles both persistence and logging synchronously inside the request path which may cause latency spikes under heavy load.",
+          "isCorrect": false,
+          "explanation": "Synchronous side effects like logging and DB calls can affect latency, but that is an operational concern. The primary design problem shown is architectural coupling of responsibilities, which should be addressed before optimizations around latency."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which concern is most directly violated by this order processing implementation?",
+      "codeSnippet": "class OrderService {\n  process(order: Order) {\n    let total = 0;\n    for (const item of order.items) {\n      total += item.price * item.quantity;\n    }\n    if (order.coupon) total *= 0.9;\n    DB.save(order);\n    Email.sendReceipt(order);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function mixes domain calculation with persistence and email side effects which hinders isolated testing of pricing rules.",
+          "isCorrect": true,
+          "explanation": "The business calculation for total should be testable without touching DB or email. Having persistence and notification in the same method couples business logic to side effects, making unit tests noisy and forcing infrastructure concerns into domain-focused tests. Extract the calculation into a pure module and inject side effecting services."
+        },
+        {
+          "id": "b",
+          "text": "The function performs monetary calculations in floating point causing rounding errors and severe issues for currency correctness.",
+          "isCorrect": false,
+          "explanation": "Floating point for money is a valid practical concern, but the snippet's main structural issue is mixing responsibilities. Addresses for numeric correctness are necessary but orthogonal to the architectural coupling between domain logic and side effects."
+        },
+        {
+          "id": "c",
+          "text": "The function lacks explicit transaction boundaries so partial updates and emails could leave system state inconsistent on failure.",
+          "isCorrect": false,
+          "explanation": "Transactional consistency is a concrete reliability problem. It becomes relevant once responsibilities are separated. Even with transactions, the present method still mixes calculation, persistence, and notification, which reduces modularity and testability."
+        },
+        {
+          "id": "d",
+          "text": "The function depends on a concrete email sender and repository which prevents replacing infrastructure without changing core code.",
+          "isCorrect": false,
+          "explanation": "Depending on concretes is a maintainability issue, and introducing interfaces would help. However, the most direct concern shown is that domain logic and side effects live together; dependency inversion helps but separating pure calculation from effects is the higher priority for clearer tests and design."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two implementations. Which version better keeps business rules independent from infrastructure?",
+      "codeSnippet": "// Version A\ninterface OrderRepo { save(o: Order): void }\ninterface Notifier { send(o: Order): void }\nclass OrderProcessor {\n  constructor(private repo: OrderRepo, private notifier: Notifier) {}\n  process(order: Order) {\n    const total = OrderCalculator.calculate(order);\n    this.repo.save(order);\n    this.notifier.send(order);\n  }\n}\nclass OrderCalculator { static calculate(order: Order) { /* pure logic */ } }\n\n// Version B\nclass OrderController {\n  process(order: Order) {\n    const total = /* inline calc */ 0;\n    DB.save(order);\n    Email.send(order);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates pure business rules behind interfaces and uses injected infrastructure for interactions.",
+          "isCorrect": true,
+          "explanation": "Version A extracts pure calculation into OrderCalculator and injects repository and notifier abstractions. That keeps domain logic deterministic and easy to unit test while allowing multiple infrastructure implementations. This separation reduces coupling, clarifies responsibilities, and supports evolutionary changes to storage or notification without touching business rules."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps calculation inline and directly calls concrete DB and email increasing coupling and hindering reuse.",
+          "isCorrect": false,
+          "explanation": "Version B centralizes responsibilities in a single class and uses concrete infrastructure calls. That makes it harder to test business logic in isolation, harder to replace or stub out I/O, and creates ripples when infrastructure changes. It is often tempting for quick delivery but causes long term maintenance pain."
+        }
+      ]
+    }
+  ]
+}

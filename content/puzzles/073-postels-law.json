@@ -1,0 +1,105 @@
+{
+  "id": 73,
+  "conceptName": "Postel's Law",
+  "category": "principle",
+  "definition": "A robustness guideline that recommends implementations be liberal in what they accept from others and conservative in what they send.",
+  "ruleOfThumb": "Tolerate small deviations on input at the boundary, but emit strictly conforming output to avoid propagating ambiguity.",
+  "citation": {
+    "author": "Jon Postel",
+    "bookTitle": "RFC 793 (Robustness Principle)",
+    "chapter": "Robustness Principle",
+    "page": null,
+    "externalUrl": "https://www.rfc-editor.org/info/rfc793"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which of the following best describes the desirable behavior for a networked endpoint handling incoming messages?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Accept input that deviates slightly from the spec while sending only strictly conforming output to peers.",
+          "isCorrect": true,
+          "explanation": "This captures the idea of being tolerant when receiving but strict when emitting. In practice this reduces interoperability friction while keeping the protocol shape stable for consumers."
+        },
+        {
+          "id": "b",
+          "text": "Strictly reject any input that does not exactly follow the specification to avoid ambiguity and implementation drift.",
+          "isCorrect": false,
+          "explanation": "Hard rejecting minor nonconformances enforces cleanliness but can break clients that send harmless variants. That rigidity often increases version churn and operational coupling."
+        },
+        {
+          "id": "c",
+          "text": "Accept all incoming input without validation so downstream logic can decide how to handle each irregular payload.",
+          "isCorrect": false,
+          "explanation": "Blindly accepting everything defers responsibility and can let malformed or malicious data silently corrupt domains. This frequently shifts complexity into many callers and sinks."
+        },
+        {
+          "id": "d",
+          "text": "Produce responses tailored to each client version, applying strict schema checks before emitting any outgoing messages.",
+          "isCorrect": false,
+          "explanation": "Adapting output per client can be useful, but coupling output shape to many client variants increases maintenance burden and risks accidental protocol drift."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this request handler. What is the most likely robustness problem relative to boundary handling?",
+      "codeSnippet": "function handleRequest(req: Request) {\n  let data;\n  try {\n    data = JSON.parse(req.body);\n  } catch {\n    data = {};\n  }\n  const userId = Number(data.userId) || undefined;\n  saveUser({ id: userId, name: data.name || 'Guest' });\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code swallows parse failures and proceeds with defaults, which can silently create inconsistent application state.",
+          "isCorrect": true,
+          "explanation": "Silently replacing a failed parse with an empty object hides errors and can produce misleading domain records. Better is to normalize at the boundary with clear validation and explicit fallbacks or errors."
+        },
+        {
+          "id": "b",
+          "text": "The code is too strict by rejecting incomplete payloads instead of applying sensible defaults to preserve backward compatibility.",
+          "isCorrect": false,
+          "explanation": "Rejecting incomplete payloads can hurt clients, but this handler is not rejecting; it is swallowing errors. The real risk here is silent corruption rather than excessive strictness."
+        },
+        {
+          "id": "c",
+          "text": "The code performs numeric coercion without validation which can lead to unexpected types passed into downstream storage APIs.",
+          "isCorrect": false,
+          "explanation": "Coercion of userId to Number is a genuine concern, but the larger issue is the catch-all fallback that masks parse failures and allows bad data to proceed without explicit handling."
+        },
+        {
+          "id": "d",
+          "text": "The code exposes raw parse exceptions to the caller which may leak implementation details and aid malicious probing.",
+          "isCorrect": false,
+          "explanation": "Exposing parse exceptions is a potential problem in other code, but this snippet intentionally swallows exceptions. The main weakness here is silent acceptance, not exception leakage."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better aligns with robust boundary design for incoming domain data in a web service?",
+      "codeSnippet": "// Version A: boundary parser normalizes to a clean domain object\nfunction parseOrder(req: Request): Order {\n  const raw = safeJsonParse(req.body);\n  return {\n    id: String(raw.id || ''),\n    qty: Number(raw.qty) || 0,\n    note: (raw.note || '').trim()\n  };\n}\n\n// Version B: pass-through parsing deferred to downstream service\nfunction handleOrder(req: Request) {\n  const body = JSON.parse(req.body);\n  processOrder(body);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes tolerant parsing and returns a clean domain object at the service boundary.",
+          "isCorrect": true,
+          "explanation": "Version A keeps parsing and normalization at the boundary so downstream code receives a consistent, validated shape. That reduces duplicated validation and prevents messy raw data from spreading into business logic. Centralizing normalization also makes it easier to observe and log adaptation decisions and to apply safe defaults explicitly."
+        },
+        {
+          "id": "b",
+          "text": "Version B preserves raw payloads and defers parsing to downstream services which can multiply validation code.",
+          "isCorrect": false,
+          "explanation": "Deferring parsing spreads responsibility and often leads to duplicated and inconsistent validation across services. It may preserve the original payload for auditing, but it increases the chance of inconsistent interpretations and bugs when multiple consumers implement slightly different parsing rules."
+        }
+      ]
+    }
+  ]
+}

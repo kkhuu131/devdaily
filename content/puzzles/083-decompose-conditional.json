@@ -1,0 +1,106 @@
+{
+  "id": 83,
+  "conceptName": "Decompose Conditional",
+  "category": "refactoring",
+  "definition": "A refactoring that replaces complex conditional logic with clearer, smaller units of behavior so each branch is easier to understand and test.",
+  "ruleOfThumb": "If a conditional branch has its own distinct behavior or comment, extract it into a well-named helper and call it from the decision point.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Decompose Conditional",
+    "page": "120-123",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "You encounter a long if-else chain that computes a value differently in each branch. Which observation best identifies the immediate smell?",
+      "codeSnippet": null,
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A long conditional determining different results across many branches suggests extracting each branch into its own helper method.",
+          "isCorrect": true,
+          "explanation": "The core smell is that each branch represents a distinct behavior that can be named and tested separately. Extracting branch code into well-named helper methods makes intent clearer, reduces the cognitive load at the decision point, and improves testability by isolating each case."
+        },
+        {
+          "id": "b",
+          "text": "A long conditional that mixes decision logic and computation suggests moving alternatives into strategy objects for clearer responsibilities.",
+          "isCorrect": false,
+          "explanation": "Polymorphism or strategy objects can be a valid follow-up when variations are core to domain types. However, the immediate, lower-cost refactor is to extract methods for each branch first to reveal whether polymorphism is warranted."
+        },
+        {
+          "id": "c",
+          "text": "A sequence of else if clauses with duplicated code suggests introducing a lookup table or dictionary to map conditions to behavior.",
+          "isCorrect": false,
+          "explanation": "A data-driven table can replace branching when branches are simple mappings, but this approach obscures intent when branches have behavior. Extracting methods helps you decide whether entries or functions belong in a table or an object."
+        },
+        {
+          "id": "d",
+          "text": "A nested conditional that buries business rules suggests encapsulating each rule to make the logic explicit and testable.",
+          "isCorrect": false,
+          "explanation": "Encapsulating rules is a good goal and matches the same underlying motivation, but it is a slightly broader framing. The immediate actionable smell is long conditional branches that should be extracted to clarify each rule."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In the snippet below, what is the best immediate refactoring to reduce complexity and make the code easier to test?",
+      "codeSnippet": "function calculatePrice(order: Order) {\n  if (order.isPromotional) {\n    return applyPromo(order);\n  } else if (order.customer.isPreferred) {\n    return applyPreferredDiscount(order);\n  } else if (order.total > 1000) {\n    return applyBulkDiscount(order);\n  } else {\n    return standardPrice(order);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce a visitor-like strategy class hierarchy to represent each case and route decisions through polymorphic methods.",
+          "isCorrect": false,
+          "explanation": "Using a strategy hierarchy can remove conditionals by delegating behavior to variants, but it adds structural complexity. It is often premature before extracting branch logic into focused functions to confirm meaningful behavioral differences."
+        },
+        {
+          "id": "b",
+          "text": "Replace conditional logic with a configuration lookup table mapping predicates to handlers and evaluate handlers at runtime.",
+          "isCorrect": false,
+          "explanation": "A lookup table can work when branches are simple mappings, but predicates that inspect object state can become awkward to express and test in a table. Extracting functions first reveals whether mapping is appropriate."
+        },
+        {
+          "id": "c",
+          "text": "Extract each conditional branch into well-named private functions and dispatch to them from the original decision point.",
+          "isCorrect": true,
+          "explanation": "Extracting each branch into a named function clarifies intent at the decision point and permits isolated unit tests. This minimal refactor often reveals a clearer abstraction and helps determine if further refactorings like strategy or table lookups are justified."
+        },
+        {
+          "id": "d",
+          "text": "Keep the conditional and add comments and inline tests to clarify behavior for each branch without structural changes.",
+          "isCorrect": false,
+          "explanation": "Comments and tests help, but they do not reduce the branching complexity. Structural extraction gives clearer, testable units and prevents comments from becoming the primary source of documentation for complex logic."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B below. Which version is preferable and why?",
+      "codeSnippet": "/* Version A */\nfunction computeDiscount(order: Order) {\n  if (order.type === 'VIP') {\n    return order.total * 0.2;\n  } else if (order.type === 'Wholesale') {\n    return order.total * 0.15 - 50;\n  } else if (order.customer.age > 65) {\n    return order.total * 0.1;\n  }\n  return 0;\n}\n\n/* Version B */\nfunction computeDiscount(order: Order) {\n  if (order.type === 'VIP') return vipDiscount(order);\n  if (order.type === 'Wholesale') return wholesaleDiscount(order);\n  if (order.customer.age > 65) return seniorDiscount(order);\n  return 0;\n}\n\nfunction vipDiscount(o: Order) { return o.total * 0.2; }\nfunction wholesaleDiscount(o: Order) { return o.total * 0.15 - 50; }\nfunction seniorDiscount(o: Order) { return o.total * 0.1; }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes logic in one function which reduces indirection but increases coupling and hinders isolated testing.",
+          "isCorrect": false,
+          "explanation": "Version A keeps all branch logic inline which can seem straightforward but quickly becomes difficult to maintain. Each branch cannot be tested in isolation and intent is not expressed by a name. Also, adding or changing a rule risks side effects across the large function."
+        },
+        {
+          "id": "b",
+          "text": "Version B extracts each branch into a small named function and makes the decision site a straightforward dispatcher.",
+          "isCorrect": true,
+          "explanation": "Version B separates concerns by giving each branch a focused, testable unit and a clear name that documents intent. The decision point becomes a simple dispatcher, reducing cognitive load. This extraction is a low-risk refactor that enables further design evolution such as composing strategies or moving handlers to types or registries."
+        }
+      ]
+    }
+  ]
+}

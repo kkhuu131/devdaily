@@ -1,0 +1,106 @@
+{
+  "id": 43,
+  "conceptName": "Large Class",
+  "category": "code-smell",
+  "definition": "A class that accumulates too many responsibilities, methods, or fields, making it hard to understand, test, and change.",
+  "ruleOfThumb": "If a class has many unrelated methods or hides multiple domain concepts, consider splitting responsibilities into focused collaborators.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Large Class",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/refactoring/catalog/largeClass.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Review this TypeScript class. Which observation best identifies the primary problem?",
+      "codeSnippet": "class OrderService {\n  createOrder(data){ /* validate, calculate, persist */ }\n  chargeCard(card){ /* payment gateway */ }\n  sendReceipt(email){ /* email logic */ }\n  saveAudit(entry){ /* persistence */ }\n  calculateDiscount(order){ /* discount rules */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class bundles payment processing, notification, and persistence logic and mixes unrelated responsibilities into one file.",
+          "isCorrect": true,
+          "explanation": "The class clearly mixes domain concerns (orders), payment, email, and persistence in one unit. This is a textbook sign of a Large Class smell where multiple responsibilities are coupled together. Splitting by responsibility into a payment service, mailer, and repository improves cohesion and makes unit testing simpler."
+        },
+        {
+          "id": "b",
+          "text": "This class primarily lacks an explicit interface abstraction so external modules are tightly coupled to its concrete implementation details.",
+          "isCorrect": false,
+          "explanation": "While lacking an interface can cause coupling, the snippet shows distinct responsibilities inside the same class rather than merely an absence of an abstraction boundary. Introducing an interface alone does not address the mixing of responsibilities or improve cohesion."
+        },
+        {
+          "id": "c",
+          "text": "The class is optimized for performance with inline caching and mutability concerns leading to hard to test code and state bugs.",
+          "isCorrect": false,
+          "explanation": "Performance optimizations and mutable state can make testing harder, but the snippet highlights multiple domain roles rather than caching or mutation complexity. Tackling performance is orthogonal to the clearer structural issue of responsibilities being combined."
+        },
+        {
+          "id": "d",
+          "text": "The file is missing small helper objects causing too many public static utility methods and unclear separation of concerns.",
+          "isCorrect": false,
+          "explanation": "Missing helper objects could be a consequence, but the central problem here is a single class aggregating several responsibilities. Introducing helpers without reorganizing responsibilities may only mask the underlying design problem rather than resolve it."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Examine this coordinator-style class. Is this structure an acceptable facade or a problematic accumulation?",
+      "codeSnippet": "class UserProfileManager {\n  constructor(repo, validator, mailer){ this.repo = repo; this.validator = validator; this.mailer = mailer }\n  load(id){ return this.repo.find(id) }\n  save(data){ this.validator.check(data); return this.repo.save(data) }\n  sendWelcome(user){ this.mailer.send(user.email) }\n  computeScore(user){ return this.repo.metrics(user.id) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class should be split because it contains many unrelated business rules and mixes persistence and validation logic.",
+          "isCorrect": false,
+          "explanation": "Splitting can be valid, but this option overlooks that the class largely coordinates collaborators rather than owning deep business logic. Blindly splitting increases indirection; first check whether responsibilities are already delegated to collaborators."
+        },
+        {
+          "id": "b",
+          "text": "This class primarily acts as an application facade coordinating several small collaborator services with minimal embedded business logic.",
+          "isCorrect": true,
+          "explanation": "The snippet shows delegation to repo, validator, and mailer with little internal business logic. That pattern is a facade or service layer which is acceptable when it orchestrates collaborators. Refactoring should focus on extracting business rules if they start accumulating inside this class."
+        },
+        {
+          "id": "c",
+          "text": "The class increases testing difficulty because it requires complex setup for internal state and many integration style tests across collaborators.",
+          "isCorrect": false,
+          "explanation": "Testing can be harder when many collaborators are involved, but proper injection of mock collaborators keeps unit tests straightforward. The presence of collaborators does not automatically imply a Large Class smell if responsibilities remain delegated."
+        },
+        {
+          "id": "d",
+          "text": "The class is hiding data model responsibilities and should extract a domain model to centralize business invariants and rules.",
+          "isCorrect": false,
+          "explanation": "Extracting a domain model is appropriate when business invariants are embedded in the manager, but the snippet currently delegates validation and persistence. This option jumps to a heavy structural change without confirming that domain rules are actually spread inside the class."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which version better addresses responsibility separation while keeping the API simple?",
+      "codeSnippet": "/* Version A */\nclass BillingService {\n  calculate(order){ /* discounts, taxes, totals */ }\n  charge(card, amount){ /* payment gateway */ }\n  createInvoice(order){ /* formatting and persistence */ }\n  sendInvoice(email){ /* email formatting and send */ }\n}\n\n/* Version B */\nclass BillingService {\n  constructor(calculator, gateway, invoicer){ /* delegates to collaborators */ }\n  process(order, card){ /* coordinates calculator, gateway, invoicer */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A groups many helper routines in one class which reduces file counts but increases hidden responsibilities and coupling.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes many concerns: calculation, payment, invoicing, and emailing. While fewer files may seem simpler, that approach hides distinct responsibilities, making tests, maintenance, and independent evolution harder. This option presents the common but ultimately fragile trade off of reduced surface area at the cost of cohesion."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates distinct responsibilities into collaborators and keeps the facade simple and focused on coordination.",
+          "isCorrect": true,
+          "explanation": "Version B extracts calculation, payment gateway, and invoicing into collaborators and exposes a small coordinating API. This improves cohesion and testability while keeping the public interface concise. Prefer this when the class would otherwise accumulate multiple orthogonal responsibilities; create small services for each role and let a thin facade coordinate them. Sources: Martin Fowler on Large Class and the Single Responsibility Principle in design literature."
+        }
+      ]
+    }
+  ]
+}

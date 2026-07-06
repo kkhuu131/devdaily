@@ -1,0 +1,106 @@
+{
+  "id": 79,
+  "conceptName": "Loose Coupling",
+  "category": "principle",
+  "definition": "A design quality where components minimize direct knowledge of each other by relying on small, stable abstractions so changes ripple less across the system.",
+  "ruleOfThumb": "Prefer depending on narrow interfaces, keep dependencies explicit at construction, avoid global registries, and design for easy substitution and testing.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Architecture",
+    "chapter": "Component Cohesion and Coupling",
+    "page": "Chapter 5",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-architecture/9780134494272/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best describes the difference between these two processors in terms of dependency flexibility?",
+      "codeSnippet": "interface Gateway { charge(amount: number): Promise<void> }\nclass StripeGateway implements Gateway { async charge(a:number){ /*...*/ } }\nclass PaypalGateway implements Gateway { async charge(a:number){ /*...*/ } }\nclass PaymentProcessor {\n  constructor(private gateway: Gateway) {}\n  pay(amount:number){ return this.gateway.charge(amount) }\n}\nclass TightProcessor {\n  private gateway = new StripeGateway()\n  pay(amount:number){ return this.gateway.charge(amount) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The PaymentProcessor that receives a gateway interface through its constructor supports independent replacement of payment implementations.",
+          "isCorrect": true,
+          "explanation": "Constructor injection makes the dependency explicit and allows tests or other runtime wiring to supply alternate implementations without changing the class. That reduces change impact when a new gateway is added or swapped."
+        },
+        {
+          "id": "b",
+          "text": "The TightProcessor that instantiates a specific gateway inside the class will be difficult to test independently under different behaviors.",
+          "isCorrect": false,
+          "explanation": "Direct instantiation ties the class to a concrete implementation, forcing tests to either use that exact implementation or introduce complex indirection. This increases setup friction and coupling."
+        },
+        {
+          "id": "c",
+          "text": "Using the interface in the constructor increases indirection which could slightly complicate the code without adding immediate benefit.",
+          "isCorrect": false,
+          "explanation": "While abstraction adds a layer of indirection, its value appears when implementations must vary, be mocked, or substituted. In small throwaway scripts this overhead might be unnecessary, but in evolving systems it pays off."
+        },
+        {
+          "id": "d",
+          "text": "If all code always uses the same gateway implementation, introducing an interface can be unnecessary extra abstraction for simple projects.",
+          "isCorrect": false,
+          "explanation": "When there is truly no need for swapping or testing substitutes, an interface can be premature abstraction. However, most production code benefits from the flexibility to change implementations later."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Your team needs different modules to react to item additions without creating direct compile-time dependencies. Which approach best minimizes explicit module coupling?",
+      "codeSnippet": "class InventoryServiceV1 {\n  subscribers: ((item:any)=>void)[] = []\n  addItem(item:any){ this.subscribers.forEach(s => s(item)) }\n}\n\nclass InventoryServiceV2 {\n  private emitter = new EventEmitter()\n  addItem(item:any){ this.emitter.emit('itemAdded', item) }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Publishing a generic event and allowing subscribers to register keeps modules unaware of each other and allows independent evolution.",
+          "isCorrect": true,
+          "explanation": "An event-based publish/subscribe approach decouples senders and receivers at compile time and runtime. Modules only agree on the event contract, enabling independent lifecycle, scaling, and replacement of listeners without touching the producer."
+        },
+        {
+          "id": "b",
+          "text": "Providing a callback registration point still couples modules by runtime contract and requires consumers to coordinate invocation expectations.",
+          "isCorrect": false,
+          "explanation": "Callback registration exposes a runtime contract and can lead to tighter coupling when order, error handling, or synchronous assumptions are required. It is less decoupled than a well-defined event bus that normalizes communication patterns."
+        },
+        {
+          "id": "c",
+          "text": "Making InventoryService accept concrete handler instances at construction gives stable wiring and simplifies ownership of side effects.",
+          "isCorrect": false,
+          "explanation": "Constructor-supplied concrete handlers create explicit wiring but couple the service to specific collaborators. That can be appropriate for small bounded contexts but reduces flexibility when many optional listeners or plugins are needed."
+        },
+        {
+          "id": "d",
+          "text": "Having InventoryService call specific module methods directly makes control flow explicit and simplifies debugging at the cost of flexibility.",
+          "isCorrect": false,
+          "explanation": "Direct calls provide explicit control and are easy to follow, but they create compile-time and runtime dependencies that make adding or removing reactions harder and increase change impact across modules."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version handles required collaborators more transparently and supports easier testing and maintenance?",
+      "codeSnippet": "// Version A\nclass ReportGeneratorA {\n  constructor(private storage: Storage, private notifier: Notifier) {}\n  generate(){ const data = this.storage.load(); this.notifier.notify(data) }\n}\n\n// Version B\nclass ReportGeneratorB {\n  generate(){\n    const storage = ServiceRegistry.get('storage') as Storage\n    const notifier = ServiceRegistry.get('notifier') as Notifier\n    const data = storage.load()\n    notifier.notify(data)\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A makes required collaborators explicit at object creation and supports straightforward substitution with test doubles.",
+          "isCorrect": true,
+          "explanation": "Version A declares collaborators via constructor parameters, making dependencies visible and easy to replace in tests. This explicit wiring documents runtime obligations, improves static analysis, and avoids hidden global state that harms modular reasoning."
+        },
+        {
+          "id": "b",
+          "text": "Version B hides collaborators behind a global registry and therefore makes dependencies implicit and tests harder to compose.",
+          "isCorrect": false,
+          "explanation": "Using a service registry conceals what a class needs and encourages hidden runtime coupling. That increases the difficulty of constructing isolated tests, makes refactoring riskier, and centralizes configuration concerns in a way that can produce hidden cycles."
+        }
+      ]
+    }
+  ]
+}

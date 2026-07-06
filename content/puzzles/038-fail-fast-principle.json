@@ -1,0 +1,105 @@
+{
+  "id": 38,
+  "conceptName": "Fail Fast Principle",
+  "category": "principle",
+  "definition": "A design approach where components detect invalid or unexpected conditions early and signal errors immediately instead of continuing in an uncertain state.",
+  "ruleOfThumb": "Validate inputs and invariants as early as possible and prefer explicit errors over deferred or ambiguous failure modes.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code: A Handbook of Agile Software Craftsmanship",
+    "chapter": "Error Handling",
+    "page": "84",
+    "externalUrl": "https://www.informit.com/articles/article.aspx?p=1433236"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which of the following behaviors most clearly demonstrates early error detection in a component?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "It throws an immediate explicit error when encountering invalid input during early validation checks in the component.",
+          "isCorrect": true,
+          "explanation": "This option describes detecting bad input at the point of entry and raising an explicit error immediately, preventing downstream code from running on invalid state. Failing early keeps failure semantics local and reduces ambiguity for callers."
+        },
+        {
+          "id": "b",
+          "text": "It delays reporting errors until after processing completes to collect more context before signaling failure.",
+          "isCorrect": false,
+          "explanation": "Accumulating context before reporting can be useful for diagnostics, but delaying errors allows code to run with invalid state and pushes complexity to callers. This pattern increases the risk of hidden side effects and coupled error handling."
+        },
+        {
+          "id": "c",
+          "text": "It logs errors and returns default values to avoid breaking callers even when input validation fails.",
+          "isCorrect": false,
+          "explanation": "Silently returning defaults hides the presence of invalid input and forces callers to infer correctness from returned values. This reduces clarity about whether operations actually succeeded and can propagate subtle bugs."
+        },
+        {
+          "id": "d",
+          "text": "It retries transient operations silently and only surfaces an error after multiple failed attempts without clear cause.",
+          "isCorrect": false,
+          "explanation": "Silent retries can be appropriate for transient failures, but hiding the initial error and surfacing it later without context makes diagnosis harder and can obscure the original failure point where prevention would be most effective."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the validation helper below, which description best matches its error-handling behavior?",
+      "codeSnippet": "function validateUser(u: any) {\n  const errors: string[] = [];\n  if (!u.email) errors.push('email required');\n  if (!isValidPassword(u.password)) errors.push('password weak');\n  // other checks\n  if (errors.length) return { ok: false, errors };\n  createAccount(u);\n  return { ok: true };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It accumulates multiple validation errors and returns them after all checks have completed to the caller.",
+          "isCorrect": true,
+          "explanation": "The helper collects errors and returns a summary object rather than throwing on the first failing check. This enables callers to show aggregated validation feedback but is not an early-throwing approach."
+        },
+        {
+          "id": "b",
+          "text": "It throws an immediate exception on the first invalid field to prevent further processing with inconsistent data.",
+          "isCorrect": false,
+          "explanation": "Throwing on first failure is a valid fail-fast strategy, but this specific implementation does not throw; it collects errors. A throw-on-first design would stop sooner but would not provide aggregated validation."
+        },
+        {
+          "id": "c",
+          "text": "It converts validation errors into warning logs and allows account creation to continue despite missing required fields.",
+          "isCorrect": false,
+          "explanation": "This option describes permissive behavior that proceeds regardless of validation problems. The shown code does not proceed when errors exist; it returns an error object and prevents account creation, so this concern is misplaced."
+        },
+        {
+          "id": "d",
+          "text": "It retries failed validations asynchronously and delays final result until transient validators have been rechecked.",
+          "isCorrect": false,
+          "explanation": "Asynchronous retries for validation would involve waiting and rechecking later. The code is synchronous and deterministic, collecting static validation failures immediately and returning them without retries."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for a core library that needs clear and predictable failure behavior?",
+      "codeSnippet": "// Version A: strict validation and explicit errors\nfunction parseConfigA(raw: any): Config {\n  if (!raw.host) throw new Error('host missing');\n  if (typeof raw.port !== 'number') throw new Error('invalid port');\n  return { host: raw.host, port: raw.port };\n}\n\n// Version B: permissive partial return\nfunction parseConfigB(raw: any): Partial<Config> {\n  const result: Partial<Config> = {};\n  if (raw.host) result.host = raw.host;\n  if (typeof raw.port === 'number') result.port = raw.port;\n  return result;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A validates inputs up front and raises immediate errors on invalid data in library entry points.",
+          "isCorrect": true,
+          "explanation": "Version A enforces invariants at the boundary and surfaces explicit exceptions where clients can see them immediately. For a core library, failing at the entry point reduces ambiguous downstream state, simplifies caller contracts, and makes bugs easier to diagnose. Pragmatic guidance from sources like Clean Code and The Pragmatic Programmer favors clear, explicit failure modes in shared components."
+        },
+        {
+          "id": "b",
+          "text": "Version B returns partial results and forces callers to handle many nil checks across the system which increases burden.",
+          "isCorrect": false,
+          "explanation": "Version B moves validation responsibility to every caller and produces partial objects that require widespread defensive checks. That pattern scatters error handling and increases cognitive load and testing surface. While permissive parsing has its place, for core library boundaries it often shifts complexity onto users and hides the original cause of invalid input."
+        }
+      ]
+    }
+  ]
+}

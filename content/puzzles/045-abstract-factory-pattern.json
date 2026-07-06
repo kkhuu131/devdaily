@@ -1,0 +1,106 @@
+{
+  "id": 45,
+  "conceptName": "Abstract Factory Pattern",
+  "category": "design-pattern",
+  "definition": "A creational pattern that provides interfaces for creating families of related or dependent objects without specifying their concrete classes.",
+  "ruleOfThumb": "Use when clients must work with families of related products and you want to enforce consistency without exposing concrete classes.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Abstract Factory",
+    "page": "87-93",
+    "externalUrl": "https://en.wikipedia.org/wiki/Abstract_factory_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the factory interfaces and concrete factories below. What design concern is immediately visible?",
+      "codeSnippet": "interface WidgetFactory {\n  createButton(): Button;\n  createCheckbox(): Checkbox;\n}\n\nclass MacFactory implements WidgetFactory {\n  createButton() { return new MacButton(); }\n  createCheckbox() { return new MacCheckbox(); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code centralizes creation of related product families behind interchangeable factory interfaces used by multiple clients.",
+          "isCorrect": true,
+          "explanation": "The snippet groups creation methods for related products into factory interfaces implemented by concrete factories. That is the heart of the pattern: clients depend on the factory interface rather than concrete products. This organizes product families and decouples concrete classes from clients."
+        },
+        {
+          "id": "b",
+          "text": "This code duplicates product construction logic in multiple places and mixes concrete types into client code.",
+          "isCorrect": false,
+          "explanation": "While duplication and leaking concrete types are real concerns in ad hoc creation code, the shown factories aim to centralize construction. The main smell here is intentional grouping of product creation rather than accidental duplication."
+        },
+        {
+          "id": "c",
+          "text": "This code exposes concrete classes to callers, making variant swapping error prone and testing harder across modules.",
+          "isCorrect": false,
+          "explanation": "Exposing concretes would be a problem if client code used new MacButton() directly. The snippet shows clients could use the factory interfaces instead, so exposure is not the primary issue depicted."
+        },
+        {
+          "id": "d",
+          "text": "This code scatters service discovery logic instead of providing a single cohesive creation abstraction for related components.",
+          "isCorrect": false,
+          "explanation": "Scattered service discovery is a plausible concern in some designs, but the snippet demonstrates a cohesive creation abstraction rather than scattered discovery. The prominent characteristic is the family-oriented factory interface."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given a factory interface with createButton and createCheckbox methods across many concrete factories, what is the most likely maintenance drawback?",
+      "codeSnippet": "interface GUIFactory {\n  createButton(): Button;\n  createCheckbox(): Checkbox;\n}\n\nclass WindowsFactory implements GUIFactory { /* ... */ }\nclass MacFactory implements GUIFactory { /* ... */ }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This implementation makes adding a new product type require changing every concrete factory and updating all dependent clients.",
+          "isCorrect": true,
+          "explanation": "When the factory interface enumerates product creation methods, adding a new product type forces changes to the interface and every concrete factory. That is the known trade off: easy to add families but hard to add product kinds."
+        },
+        {
+          "id": "b",
+          "text": "This implementation produces excessive small interface types which increases code surface and makes refactoring riskier.",
+          "isCorrect": false,
+          "explanation": "Many small interfaces can be an issue, but the primary, most likely maintenance problem with this shape is the need to touch many factories when adding new product kinds, not the count of interfaces."
+        },
+        {
+          "id": "c",
+          "text": "This implementation forces clients to depend on factory interfaces they may not need leading to wasted abstractions.",
+          "isCorrect": false,
+          "explanation": "Clients that only need one product could suffer from extra indirection, but that is a less likely general problem than the requirement to update all factories when a new product type is introduced."
+        },
+        {
+          "id": "d",
+          "text": "This implementation centralizes object creation in a single place increasing startup latency and creating a runtime bottleneck.",
+          "isCorrect": false,
+          "explanation": "Centralized creation can create runtime costs in some systems, but for typical factories the maintenance cost of evolving product kinds is a more common and immediate concern."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two approaches below. Which version better preserves type safety and maintainability for product families?",
+      "codeSnippet": "// Version A\ninterface WidgetFactory {\n  createButton(): Button;\n  createCheckbox(): Checkbox;\n}\nclass MacFactory implements WidgetFactory {\n  createButton() { return new MacButton(); }\n  createCheckbox() { return new MacCheckbox(); }\n}\n\n// Version B\nclass OneFactory {\n  create(kind: 'button'|'checkbox', style: 'mac'|'win') {\n    if (style === 'mac') {\n      if (kind === 'button') return new MacButton();\n      return new MacCheckbox();\n    }\n    // windows branch omitted\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A preserves compile time type safety for related product families with cohesive factory interfaces.",
+          "isCorrect": true,
+          "explanation": "Version A encodes product families in typed factory interfaces, so mismatches are caught at compile time and factories remain cohesive. Version B centralizes runtime switches and mixes variant logic, which increases the chance of runtime errors and scattered conditional complexity. The trade off is that A makes adding new product kinds harder but keeps family consistency and static safety. See Gamma et al. on the tradeoffs of family versus type extension."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes conditional creation logic using runtime switches which mixes variants and increases coupling and brittleness.",
+          "isCorrect": false,
+          "explanation": "Version B is a plausible alternative but it relies on runtime conditionals to select concrete products. That creates scattered switch logic and weakens compile time guarantees, making refactors and testing more error prone. In contrast, typed factories keep creation responsibilities organized and statically checked."
+        }
+      ]
+    }
+  ]
+}

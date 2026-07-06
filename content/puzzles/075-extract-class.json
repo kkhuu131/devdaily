@@ -1,0 +1,106 @@
+{
+  "id": 75,
+  "conceptName": "Extract Class",
+  "category": "refactoring",
+  "definition": "A refactoring that moves a subset of a class's fields and related methods into a new class to improve cohesion and reduce responsibility overload.",
+  "ruleOfThumb": "When a class has two or more distinct responsibilities that can be named independently, move one responsibility into a separate type.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Extract Class",
+    "page": "160",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this TypeScript class. What is the primary design problem you see?",
+      "codeSnippet": "class Invoice {\n  customerName: string;\n  customerAddress: string;\n  items: { desc: string; price: number }[];\n  taxRate: number;\n\n  printCustomerLetter() {\n    // format and print customer letter\n  }\n\n  calculateTotal(): number {\n    // compute items total and tax\n    return 0;\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class mixes data storage and unrelated business logic, indicating multiple responsibilities in one object.",
+          "isCorrect": true,
+          "explanation": "The Invoice class holds customer data and also implements printing and calculation behavior. Those are distinct responsibilities that should be separated so each type has a single, focused purpose. Moving customer-related data or printing behavior into a separate type clarifies intent and makes each class easier to test and maintain."
+        },
+        {
+          "id": "b",
+          "text": "This class exposes too many internal fields through accessors and encourages external modules to manipulate internal state.",
+          "isCorrect": false,
+          "explanation": "While exposing internals can be a problem, the snippet shows no explicit accessors yet. The more pressing issue is cohesion: unrelated responsibilities live together. Addressing exposure alone would not reduce the mixed responsibilities that make the class hard to reason about."
+        },
+        {
+          "id": "c",
+          "text": "This class centralizes unrelated operations like printing invoices and calculating taxes into one bulky implementation.",
+          "isCorrect": false,
+          "explanation": "This description is accurate as a symptom but reads as a restatement of the problem rather than a specific fix. It points toward a decomposition need, but it does not prescribe where to move behavior. The underlying refactor is to split responsibilities into focused types."
+        },
+        {
+          "id": "d",
+          "text": "This class depends on primitive collections for customer data rather than using higher level abstractions for behavior grouping.",
+          "isCorrect": false,
+          "explanation": "Using higher level abstractions can help, but the core problem here is that customer data and invoice logic are co-located. Wrapping primitives alone would not resolve the mixed responsibilities; extracting a dedicated type for customer data and behavior would more directly improve cohesion."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "This TypeScript class shows several clusters of fields and a handful of related methods. Which refactor is most appropriate?",
+      "codeSnippet": "class CustomerAccount {\n  billingAddress: string;\n  shippingAddress: string;\n  billingContact: string;\n  loyaltyPoints: number;\n  calculateLoyalty() { /* uses loyalty fields */ }\n  formatInvoice() { /* uses billing fields */ }\n  validateAddresses() { /* uses address fields */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce a new collaborator that owns related fields and moves corresponding methods into a cohesive smaller type.",
+          "isCorrect": true,
+          "explanation": "Creating a new type that groups billing-related fields and methods (and another for addresses if needed) reduces the responsibilities of CustomerAccount and improves cohesion. This approach makes each class easier to test and reason about, and prevents future changes in one concern from impacting unrelated behaviors."
+        },
+        {
+          "id": "b",
+          "text": "Split the current class into two unrelated facades while leaving shared state duplicated across both types for simplicity.",
+          "isCorrect": false,
+          "explanation": "Duplicating shared state across facades trades away correctness and increases maintenance cost. It may hide the real logical grouping of responsibilities and creates multiple places to update the same data, which is worse than extracting a single authoritative collaborator."
+        },
+        {
+          "id": "c",
+          "text": "Convert the grouped fields into a nested data structure without moving methods to clarify usage in the same class.",
+          "isCorrect": false,
+          "explanation": "Nesting fields can make the internal structure clearer but keeps methods and behavior on the large, multi-responsibility class. Methods operating on those nested structures still belong to different concerns; moving methods together with their data into a new type yields better cohesion than merely reorganizing fields."
+        },
+        {
+          "id": "d",
+          "text": "Defer refactoring and add more inline comments to explain why fields are grouped to avoid changing public APIs.",
+          "isCorrect": false,
+          "explanation": "Comments do not improve runtime structure and often become outdated. If the grouping represents a distinct responsibility, refactoring to a separate type is safer and cleaner than relying on documentation to communicate intent while keeping a bloated class."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation would you choose for long-term maintainability?",
+      "codeSnippet": "/* Version A */\nclass Customer {\n  constructor(public name: string, public address: string) {}\n  formatAddress() { /* formatting logic */ }\n}\n\nclass Billing {\n  constructor(public items: any[], public tax: number) {}\n  calculateTotal() { /* total logic */ }\n}\n\n/* Version B */\nclass CustomerBilling {\n  name: string;\n  address: string;\n  items: any[];\n  tax: number;\n  formatAddress() { /* formatting logic */ }\n  calculateTotal() { /* total logic */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates billing and customer responsibilities into separate types with clearer boundaries and cohesion.",
+          "isCorrect": true,
+          "explanation": "Version A splits the code into two focused types, each owning its data and behavior. That separation reduces coupling, makes intent explicit, and simplifies testing because each class has a single area of responsibility. Over time this structure scales better when new billing or customer behaviors are added independently."
+        },
+        {
+          "id": "b",
+          "text": "Version B embeds mixed responsibilities into one large object which complicates testing and increases coupling across methods.",
+          "isCorrect": false,
+          "explanation": "Keeping both domains together creates a monolithic type that is harder to reason about and to change safely. Tests will need more setup, and changes to billing risks affecting customer behavior and vice versa. While simpler initially, this design degrades as features are added and diverging requirements appear."
+        }
+      ]
+    }
+  ]
+}

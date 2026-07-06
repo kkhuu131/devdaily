@@ -1,0 +1,106 @@
+{
+  "id": 52,
+  "conceptName": "Composite Pattern",
+  "category": "design-pattern",
+  "definition": "A structural design that lets clients treat individual objects and compositions uniformly by defining a common interface for both leaves and containers.",
+  "ruleOfThumb": "When you have tree structures where clients should ignore whether an element is a single object or a collection, provide a common component interface.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Composite",
+    "page": "163",
+    "externalUrl": "https://refactoring.guru/design-patterns/composite"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What design intent does this TypeScript code most clearly demonstrate?",
+      "codeSnippet": "interface Node {\n  operation(): number\n}\n\nclass Leaf implements Node {\n  constructor(private value: number) {}\n  operation() { return this.value }\n}\n\nclass Folder implements Node {\n  private children: Node[] = []\n  add(c: Node) { this.children.push(c) }\n  operation() { return this.children.reduce((s, c) => s + c.operation(), 0) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code represents tree nodes that uniformly handle single objects and nested collections through shared interface methods.",
+          "isCorrect": true,
+          "explanation": "The code defines a common Node interface implemented by Leaf and Folder, and Folder delegates operation to its children. That uniform interface for leaves and containers is the hallmark of the pattern demonstrated. It allows clients to call operation() without knowing node concrete types."
+        },
+        {
+          "id": "b",
+          "text": "This code establishes a strict inheritance hierarchy focused on differentiating leaf behavior from container behavior.",
+          "isCorrect": false,
+          "explanation": "While there is an inheritance-like relationship via the interface, the intent is not merely an inheritance hierarchy. The important aspect is treating individual and aggregated objects uniformly, not only differentiating behaviors."
+        },
+        {
+          "id": "c",
+          "text": "This code centralizes traversal logic into separate visitor objects to decouple operations from the object structure.",
+          "isCorrect": false,
+          "explanation": "Visitor would place operation logic outside the elements and add accept methods. Here operation() lives on the elements themselves and Folder iterates children, so traversal is internal rather than separated."
+        },
+        {
+          "id": "d",
+          "text": "This code aims to provide object cloning and prototypical duplication of nodes for fast copy operations.",
+          "isCorrect": false,
+          "explanation": "There is no cloning or prototype use in the snippet. The classes focus on composing nodes and delegating operations rather than copying or prototype-based creation."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this directory/file model, what is the most accurate description of the design tradeoff shown?",
+      "codeSnippet": "interface FSNode { size(): number }\n\nclass File implements FSNode {\n  constructor(private bytes: number) {}\n  size() { return this.bytes }\n}\n\nclass Directory implements FSNode {\n  constructor(public children: FSNode[] = []) {}\n  size() { return this.children.reduce((s, c) => s + c.size(), 0) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This design reifies traversal strategy into node classes so callers must choose traversal at compile time.",
+          "isCorrect": false,
+          "explanation": "The traversal is embedded in Directory.size which means clients do not pick a traversal strategy; nodes perform their own traversal. The concern mentioned is plausible but not accurate for this code."
+        },
+        {
+          "id": "b",
+          "text": "This design couples storage and presentation concerns within nodes causing UI and persistence code to be tightly bound.",
+          "isCorrect": false,
+          "explanation": "The snippet shows size calculation in node objects, but it does not demonstrate UI or persistence coupling. The worry is plausible in other contexts but does not reflect this specific structural intent."
+        },
+        {
+          "id": "c",
+          "text": "This design models hierarchical part-whole relationships so clients can treat leaves and containers uniformly at runtime.",
+          "isCorrect": true,
+          "explanation": "Directory and File share FSNode and clients can call size() on either kind without distinguishing them. This is the core tradeoff: uniformity and simpler client code versus possible complexity when adding new operations."
+        },
+        {
+          "id": "d",
+          "text": "This design relies on mutable child lists exposed publicly which risks concurrent modification and encapsulation leaks.",
+          "isCorrect": false,
+          "explanation": "Exposing children arrays would indeed create encapsulation and concurrency risks, but the snippet shows children injected via constructor and not directly mutated externally. The concern is valid in other designs but not the most accurate description here."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for a growing product where new node types will be added frequently and correctness matters?",
+      "codeSnippet": "// Version A\nclass Node {\n  name: string\n  children?: Node[]\n  constructor(name: string) { this.name = name }\n  add(child: Node) { if (!this.children) this.children = []; this.children.push(child) }\n  value(): number { return (this.children || []).reduce((s, c) => s + c.value(), 0) }\n}\n\n// Version B\ninterface TreeNode { value(): number }\nclass Leaf implements TreeNode { constructor(private v: number) {}\n  value() { return this.v }\n}\nclass Branch implements TreeNode { constructor(public children: TreeNode[] = []) {}\n  add(c: TreeNode) { this.children.push(c) }\n  value() { return this.children.reduce((s, c) => s + c.value(), 0) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A mixes container state into the base node class which hinders type safety and complicates polymorphic operations.",
+          "isCorrect": false,
+          "explanation": "Version A puts child storage and container behavior on the same base class, leading to nodes that sometimes act as leaves and sometimes as containers. That mixing increases the chance of runtime errors and makes it harder to enforce invariants or add operations safely."
+        },
+        {
+          "id": "b",
+          "text": "Version B cleanly models separate leaf and container types for safer evolution.",
+          "isCorrect": true,
+          "explanation": "Version B separates responsibilities by defining an explicit interface and distinct implementations for leaves and branches. This separation improves type safety, makes it clearer where to add behavior for new node kinds, and reduces accidental misuse of container APIs. Fowler and the Gang of Four recommend this clear part whole structure when clients should treat objects and composites uniformly but you still want strong structure for evolution."
+        }
+      ]
+    }
+  ]
+}

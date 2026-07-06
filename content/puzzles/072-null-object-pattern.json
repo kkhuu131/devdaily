@@ -1,0 +1,106 @@
+{
+  "id": 72,
+  "conceptName": "Null Object Pattern",
+  "category": "design-pattern",
+  "definition": "Provide an object implementing the expected interface with neutral behavior so clients can use it without special null checks.",
+  "ruleOfThumb": "When callers otherwise need to check for absence, return a harmless implementer that encapsulates the no-op behavior.",
+  "citation": {
+    "author": "Joshua Kerievsky",
+    "bookTitle": "Refactoring to Patterns",
+    "chapter": "Null Object",
+    "page": "n/a",
+    "externalUrl": "https://refactoring.guru/design-patterns/null-object"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "In the snippet below, what best describes the role of NoopPrinter?",
+      "codeSnippet": "interface InvoicePrinter {\n  print(invoice: { id: string }): void;\n}\n\nclass ConsolePrinter implements InvoicePrinter {\n  print(invoice: { id: string }) { console.log(invoice.id); }\n}\n\nclass NoopPrinter implements InvoicePrinter {\n  print(invoice: { id: string }) { /* do nothing */ }\n}\n\nfunction getPrinter(enabled: boolean): InvoicePrinter {\n  return enabled ? new ConsolePrinter() : new NoopPrinter();\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It provides a harmless default implementation of the interface so clients avoid checking before use.",
+          "isCorrect": true,
+          "explanation": "NoopPrinter implements InvoicePrinter with a do-nothing print method, allowing callers to invoke print without null checks. This is useful to keep call sites simple and predictable. The pattern replaces conditional logic at each use site with a single object that encapsulates the 'do nothing' behavior."
+        },
+        {
+          "id": "b",
+          "text": "It acts as a test stub and should be replaced by a real printer in production to avoid silent failures.",
+          "isCorrect": false,
+          "explanation": "A Noop implementation can be used in tests, but its presence here is clearly design-time rather than temporary. Treating it solely as a test stub misses the intent to avoid scattered presence checks in production code."
+        },
+        {
+          "id": "c",
+          "text": "It hides errors by swallowing output and therefore makes debugging harder when code unexpectedly does not log invoices.",
+          "isCorrect": false,
+          "explanation": "Swallowing output can mask problems, but the pattern is appropriate when silent behavior is the correct default. If silent failures are a concern, prefer an implementation that logs a warning rather than removing the abstraction entirely."
+        },
+        {
+          "id": "d",
+          "text": "It is an optimization that buffers and drops prints to improve performance under heavy load at the cost of data loss.",
+          "isCorrect": false,
+          "explanation": "NoopPrinter simply does nothing, not buffering or dropping messages for performance reasons. Confusing a default no-op implementation with a performance optimization conflates different responsibilities and can lead to incorrect fixes."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which critique is most accurate about getDiscountCalculator returning null here?",
+      "codeSnippet": "interface DiscountCalculator { calculate(order: any): number }\n\nclass StandardCalculator implements DiscountCalculator {\n  calculate(order: any) { return 0 }\n}\n\nclass VipCalculator implements DiscountCalculator {\n  calculate(order: any) { return 10 }\n}\n\nfunction getDiscountCalculator(customer?: any): DiscountCalculator | null {\n  if (!customer) return null\n  if (customer.isVIP) return new VipCalculator()\n  return new StandardCalculator()\n}\n\n// Callers must do: const calc = getDiscountCalculator(customer); const discount = calc ? calc.calculate(order) : 0",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Returning null requires every caller to perform null checks, increasing call-site complexity and risking forgotten checks.",
+          "isCorrect": true,
+          "explanation": "Returning null pushes the responsibility for handling absence to every caller, which increases duplication and the chance a caller forgets the check. Returning a default implementer centralizes the absence behavior and keeps callers simple and consistent."
+        },
+        {
+          "id": "b",
+          "text": "The function correctly signals absence of strategy and callers should treat null differently to enable optional discount pathways.",
+          "isCorrect": false,
+          "explanation": "Signaling absence is sometimes desired, but when absence corresponds to a default behavior (no discount) it is better to return an implementer representing that default. Requiring every caller to interpret null makes the API more error prone."
+        },
+        {
+          "id": "c",
+          "text": "Returning null is preferable because it uses less memory and avoids creating trivial objects that add garbage collection pressure.",
+          "isCorrect": false,
+          "explanation": "Object allocation cost is rarely significant for trivial default objects, and premature optimization here harms code clarity. The maintenance cost of distributed null checks usually outweighs the negligible memory savings."
+        },
+        {
+          "id": "d",
+          "text": "This pattern centralizes decision making and is safer because a missing customer should result in no discount by default.",
+          "isCorrect": false,
+          "explanation": "Centralizing decision making is good, but returning null does not centralize handling at callers. A better centralization is to return a default calculator that encodes the no-discount behavior so callers do not need branching logic."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version represents the cleaner design for avoiding scattered null checks across the codebase?",
+      "codeSnippet": "// Version A\ninterface Notifier { notify(message: string): void }\nclass RealNotifier implements Notifier { notify(m: string) { /* send */ } }\nclass DefaultNotifier implements Notifier { notify(m: string) { /* no-op */ } }\nfunction getNotifier(enabled: boolean): Notifier { return enabled ? new RealNotifier() : new DefaultNotifier() }\n\n// Version B\nfunction getOptionalNotifier(enabled: boolean): Notifier | null { return enabled ? new RealNotifier() : null }\n// callers for Version B must do null checks before calling notify",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A encapsulates default behavior in an object and removes conditional logic from multiple callers.",
+          "isCorrect": true,
+          "explanation": "Version A centralizes the default no-op behavior inside a dedicated implementer, letting all callers treat the result uniformly. This reduces duplication, simplifies testing, and lowers the risk of forgotten null checks. The approach follows established object-oriented design principles for substitutable behavior."
+        },
+        {
+          "id": "b",
+          "text": "Version B scatters null checks across callers, increasing duplication, coupling, and risk of inconsistent default behavior over time.",
+          "isCorrect": false,
+          "explanation": "Version B forces every caller to handle absence explicitly, which proliferates conditional logic and couples each caller to the absence semantics. Over time, callers may implement slightly different fallback behaviors or forget checks, creating subtle bugs and maintenance overhead. Centralizing the default behavior avoids those problems."
+        }
+      ]
+    }
+  ]
+}

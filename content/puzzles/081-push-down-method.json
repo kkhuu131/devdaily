@@ -1,0 +1,106 @@
+{
+  "id": 81,
+  "conceptName": "Push Down Method",
+  "category": "refactoring",
+  "definition": "A refactoring that moves a method from a superclass to one or more subclasses when the method only makes sense for those subclasses.",
+  "ruleOfThumb": "If a method in a parent class relies on subclass-specific data or behavior, move it into the appropriate subclass.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Move Method",
+    "page": "146-151",
+    "externalUrl": "https://refactoring.com/catalog/moveMethod.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which explanation best identifies the smell shown in this code snippet?",
+      "codeSnippet": "class Document {\n  title: string;\n  watermarkText?: string;\n  preview() {\n    return `<h1>${this.title}</h1>${this.watermarkText ? '<div>' + this.watermarkText + '</div>' : ''}`;\n  }\n}\n\nclass PdfDocument extends Document {\n  watermarkText = 'Company';\n}\n\nclass TextDocument extends Document {}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The base class method accesses subclass-only state and therefore belongs in the subclass that defines that state.",
+          "isCorrect": true,
+          "explanation": "The preview method depends on watermarkText, which is meaningful only for PdfDocument. Moving the method down keeps the superclass focused on shared behavior and prevents it from knowing about subclass-specific data. Fowler calls this situation a candidate for moving behavior closer to the data it uses."
+        },
+        {
+          "id": "b",
+          "text": "The base class method mixes presentation concerns and business logic so it should be refactored into clearer component boundaries.",
+          "isCorrect": false,
+          "explanation": "While mixing concerns is sometimes relevant, the concrete issue here is reliance on a field only defined / used by one subclass. Splitting presentation from logic would not remove the dependency on subclass data; relocating the method to the subclass more directly addresses ownership."
+        },
+        {
+          "id": "c",
+          "text": "The base class method ignores dependency injection and directly reads instance fields which makes testing and reuse more difficult overall.",
+          "isCorrect": false,
+          "explanation": "Direct field access can complicate testing, but the core smell is that the method depends on data that belongs to a specific subclass. Injecting dependencies would not eliminate the fact that only PdfDocument supplies watermarkText, so moving the method remains the clearer fix."
+        },
+        {
+          "id": "d",
+          "text": "The base class method duplicates subclass behavior and should be removed in favor of a shared utility function to reduce repetition.",
+          "isCorrect": false,
+          "explanation": "There is no duplication across subclasses in this snippet. A shared utility would still leave the superclass referencing subclass-specific data. The better change is to relocate the behavior to where the data lives rather than extract a utility."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which refactoring is the most appropriate next step for this code that branches on a specific output format?",
+      "codeSnippet": "class Report {\n  data: any[];\n  export(format: string) {\n    if (format === 'csv') {\n      return this.csvOptions ? this.toCsv(this.csvOptions) : this.toCsv();\n    } else {\n      return this.toJson();\n    }\n  }\n}\n\nclass CsvReport extends Report {\n  csvOptions: { delimiter: string };\n  toCsv(opts?: any) { /* produce CSV */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Move format-specific export logic into the subclass that owns the csv options and knows how to produce CSV output.",
+          "isCorrect": true,
+          "explanation": "The export method in Report branches based on format and accesses csvOptions that only CsvReport defines. Moving the CSV branch into CsvReport aligns responsibility with data ownership and enables polymorphic export behavior. This reduces conditional logic and clarifies class roles."
+        },
+        {
+          "id": "b",
+          "text": "Extract a strategy interface per format and have the base class delegate to a format strategy instance for each output type.",
+          "isCorrect": false,
+          "explanation": "A strategy pattern can be a valid solution when many independent format implementations vary greatly, but it introduces extra indirection and objects. Given a single subclass already expressing CSV behavior, moving the method down is a simpler, lower-risk refactor that preserves clarity and keeps the design minimal."
+        },
+        {
+          "id": "c",
+          "text": "Introduce a protected hook that subclasses override to provide format serialization while keeping the dispatcher in the base class.",
+          "isCorrect": false,
+          "explanation": "A template method with a protected hook is reasonable when the base class has core coordination logic. Here the base class has no useful default for CSV details; delegating all CSV specifics to the subclass by moving the method yields clearer ownership than maintaining a dispatcher in the parent."
+        },
+        {
+          "id": "d",
+          "text": "Keep the branching in the base class but hide details behind private helper methods to centralize dispatch logic.",
+          "isCorrect": false,
+          "explanation": "Hiding branch details in helpers still leaves the base class responsible for format-specific decisions and dependent on subclass data. That maintains coupling and conditional complexity. Relocating the behavior to the subclass removes the mismatch between data ownership and behavior responsibility."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better design in terms of responsibility placement and why? Examine both implementations.",
+      "codeSnippet": "// Version A\nclass Notification {\n  send() { /* abstract */ }\n}\nclass EmailNotification extends Notification {\n  send() { /* email-specific send using SMTP config */ }\n}\nclass PushNotification extends Notification {\n  send() { /* push-specific send using push service */ }\n}\n\n// Version B\nclass Notification {\n  type: 'email' | 'push';\n  send() {\n    if (this.type === 'email') {\n      /* email-specific send using SMTP config */\n    } else {\n      /* push-specific send using push service */\n    }\n  }\n}\nclass EmailNotification extends Notification {}\nclass PushNotification extends Notification {}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A places the protocol-specific send implementation directly inside each concrete subclass implementation.",
+          "isCorrect": true,
+          "explanation": "Version A assigns each concrete subclass responsibility for its own send behavior. This keeps the superclass abstract and avoids conditional branches based on runtime type. It improves cohesion and makes extending a new notification type straightforward. This aligns with refactorings that move behavior closer to the data that uses it."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes dispatch with runtime type checks in the superclass creating conditional logic and violating class cohesion.",
+          "isCorrect": false,
+          "explanation": "Version B mixes the distinct sending protocols into a single method with runtime conditionals, which couples the superclass to specific protocols. That design violates single responsibility and makes adding or modifying notification types more error prone. While sometimes used for small cases, it is generally worse for maintainability than locating behavior in subclasses."
+        }
+      ]
+    }
+  ]
+}

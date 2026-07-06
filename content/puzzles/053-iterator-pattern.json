@@ -1,0 +1,106 @@
+{
+  "id": 53,
+  "conceptName": "Iterator Pattern",
+  "category": "design-pattern",
+  "definition": "A behavioral pattern that provides a way to access elements of an aggregate object sequentially without exposing its underlying representation.",
+  "ruleOfThumb": "Provide an external iterator object when clients need independent cursors or complex traversal; keep traversal state out of the aggregate.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Iterator",
+    "page": "257-263",
+    "externalUrl": "https://refactoring.guru/design-patterns/iterator"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches the intent of the following traversal code?",
+      "codeSnippet": "interface Iterator<T> {\n  hasNext(): boolean;\n  next(): T;\n}\n\nclass ListIterator<T> implements Iterator<T> {\n  private index = 0;\n  constructor(private items: T[]) {}\n  hasNext() { return this.index < this.items.length; }\n  next() { return this.items[this.index++]; }\n}\n\nconst iter = new ListIterator([1,2,3]);",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Provides a separate traverser object that encapsulates cursor state and allows clients to iterate without exposing collection internals.",
+          "isCorrect": true,
+          "explanation": "Correct. The code moves traversal state into a distinct iterator object so callers can iterate without touching the collection's internal array. This is the classic external iterator approach described by the GoF authors and recommended when you need independent cursors."
+        },
+        {
+          "id": "b",
+          "text": "Provides direct array access where clients use numeric indices and the collection exposes its internal storage for traversal.",
+          "isCorrect": false,
+          "explanation": "This is a plausible misreading. The code could have handed back the array itself so callers use indices, but here traversal state is encapsulated in the iterator object rather than exposing the internal storage. Exposing the array would break encapsulation and make versioning harder."
+        },
+        {
+          "id": "c",
+          "text": "Provides a single callback method that applies an operation across elements without letting callers control traversal order.",
+          "isCorrect": false,
+          "explanation": "This describes an internal iteration approach such as forEach where the collection controls iteration and the caller supplies a callback. The snippet instead gives the caller a next/hasNext cursor, which is external iteration, not internal."
+        },
+        {
+          "id": "d",
+          "text": "Provides lazy stream-like access that defers computation and composes filters rather than exposing explicit traversal mechanics.",
+          "isCorrect": false,
+          "explanation": "Lazy stream-like designs return composable pipelines and often defer work until terminal operations. The snippet shows an explicit cursor with next and hasNext, which is not the same as a lazy stream abstraction."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the main design problem in this collection implementation?",
+      "codeSnippet": "class ProductCollection {\n  private items: Product[] = [];\n  private cursor = 0; // shared traversal state\n\n  add(p: Product) { this.items.push(p); }\n  getIterator() { return this; } // returns collection as iterator\n  hasNext() { return this.cursor < this.items.length; }\n  next() { return this.items[this.cursor++]; }\n}\n\nconst c = new ProductCollection();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Shows traversal state is stored on the collection making iterators mutually dependent and unsafe for concurrent traversals.",
+          "isCorrect": true,
+          "explanation": "Correct. The cursor is a field on the aggregate and getIterator returns the collection itself. Multiple callers will share that single cursor, so iterators cannot be independent. This is a common pitfall when iterator state is kept on the aggregate rather than in separate iterator objects."
+        },
+        {
+          "id": "b",
+          "text": "Shows iterator directly exposes the internal array to callers which allows external mutation and breaks collection encapsulation.",
+          "isCorrect": false,
+          "explanation": "Plausible concern but not the core issue here. The code does not return the internal array; it returns the collection object as an iterator. The real hazard is shared cursor state rather than direct array exposure."
+        },
+        {
+          "id": "c",
+          "text": "Shows iterator eagerly copies all elements into a new list causing significant memory overhead for large collections during traversal.",
+          "isCorrect": false,
+          "explanation": "This is a reasonable performance worry for some iterator implementations, but the snippet does not copy items. The code reads directly from the internal array and uses a shared cursor, so memory overhead from copying is not the primary problem."
+        },
+        {
+          "id": "d",
+          "text": "Shows iterator implementation throws checked exceptions for normal termination making client loops awkward and error prone.",
+          "isCorrect": false,
+          "explanation": "Throwing exceptions for normal iteration termination would be a real smell, but the snippet uses hasNext/next semantics and does not rely on exceptions to end traversal. The main design flaw remains shared traversal state on the collection."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better supports multiple independent traversals and safer client use?",
+      "codeSnippet": "class ArrayIterator<T> {\n  private i = 0;\n  constructor(private items: T[]) {}\n  hasNext() { return this.i < this.items.length; }\n  next() { return this.items[this.i++]; }\n}\n\nclass ProductCollection {\n  private items: Product[] = [];\n\n  // Version A\n  createIteratorA() { return new ArrayIterator(this.items); }\n\n  // Version B\n  private cursor = 0;\n  createIteratorB() { return this; }\n  hasNext() { return this.cursor < this.items.length; }\n  next() { return this.items[this.cursor++]; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A returns independent iterator objects that allow multiple concurrent traversals without exposing collection internals.",
+          "isCorrect": true,
+          "explanation": "Version A is correct. It constructs a fresh ArrayIterator that holds its own cursor, so each caller receives an independent traversal object. This supports multiple concurrent iterations and preserves encapsulation of the aggregate. Fowler and the GoF recommend separate iterator objects when independent cursors are required."
+        },
+        {
+          "id": "b",
+          "text": "Version B stores traversal index on the collection which makes separate iterators share state and break concurrent iteration safety.",
+          "isCorrect": false,
+          "explanation": "Version B is incorrect. By keeping cursor state on the collection and returning the collection as the iterator, multiple clients will interfere with each other because they share the same cursor. This undermines reentrancy and concurrency. Prefer external iterators or rework the API to return new iterator instances instead."
+        }
+      ]
+    }
+  ]
+}

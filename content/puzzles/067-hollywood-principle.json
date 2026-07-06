@@ -1,0 +1,106 @@
+{
+  "id": 67,
+  "conceptName": "Hollywood Principle",
+  "category": "principle",
+  "definition": "A framework-oriented control style where the framework controls flow and calls client-provided hooks, summarized as \"Don't call us, we'll call you.\"",
+  "ruleOfThumb": "Let the framework own the overall flow and expose concise hooks or interfaces for client code to implement.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Patterns of Enterprise Application Architecture",
+    "chapter": "Inversion of Control",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/InversionOfControl.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the snippet. What is the core structural relationship shown here between framework and application?",
+      "codeSnippet": "class Framework {\n  run(app: App) {\n    app.onStart();\n  }\n}\nclass App {\n  onStart() {\n    // application startup logic\n  }\n}\nnew Framework().run(new App());",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code lets the framework dictate control flow and it invokes application hooks to perform work.",
+          "isCorrect": true,
+          "explanation": "The framework controls the sequence and calls into application code via a hook method. This is the classic inversion of control used by frameworks to manage lifecycle and plug-in behavior. Clients implement callbacks or hooks which the framework invokes at the appropriate times."
+        },
+        {
+          "id": "b",
+          "text": "This code tightly couples the application to framework internals by importing and instantiating framework classes inside app code.",
+          "isCorrect": false,
+          "explanation": "While coupling is a real concern in many designs, the snippet shows the framework invoking an application method rather than the application importing framework internals. The dependency direction here is framework-to-application for control flow, not application-to-framework for control."
+        },
+        {
+          "id": "c",
+          "text": "This code shows the application polling framework state on a schedule rather than the framework invoking event callbacks on app code.",
+          "isCorrect": false,
+          "explanation": "Polling would mean the application repeatedly asks the framework for state. The snippet instead shows the framework actively calling app.onStart(), so it is a callback model rather than a polling model."
+        },
+        {
+          "id": "d",
+          "text": "This code demonstrates inverted control that may make unit testing harder because framework hides execution order from application code.",
+          "isCorrect": false,
+          "explanation": "Inversion of control can affect testability if lifecycle hooks are hard to simulate, but the snippet itself is a simple example of the framework calling app hooks. Testability concerns may be mitigated by providing test helpers or by injecting test doubles into the framework."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this plugin-style framework, what is the most immediate runtime risk introduced by the current callback-based design?",
+      "codeSnippet": "interface Plugin { onEvent(e: any): void }\nclass Framework {\n  plugins: Plugin[] = [];\n  register(p: Plugin) { this.plugins.push(p) }\n  trigger(e: any) { this.plugins.forEach(p => p.onEvent(e)) }\n}\nclass SlowPlugin implements Plugin {\n  onEvent(e: any) { while(true) {} }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This design allows plugin callbacks to block or throw, risking destabilization of the framework execution thread and flow.",
+          "isCorrect": true,
+          "explanation": "Because the framework invokes plugin callbacks directly and synchronously, a misbehaving plugin that blocks or throws can stall or crash the framework. Mitigations include guarding calls, running plugins in isolated contexts, timeouts, or explicit error boundaries."
+        },
+        {
+          "id": "b",
+          "text": "This design exposes a mutable plugin list which encourages external mutation and makes framework state hard to reason about safely.",
+          "isCorrect": false,
+          "explanation": "Exposing mutable collections is a valid concern because outside code might alter the plugins array unexpectedly. However, the code as written shows the immediate runtime problem of synchronous plugin invocation rather than only the mutation of the plugin container."
+        },
+        {
+          "id": "c",
+          "text": "This design increases interface surface over time by adding many hook methods which will become difficult to maintain consistently across versions.",
+          "isCorrect": false,
+          "explanation": "Growing an API surface with many hooks is a realistic long-term maintenance issue, but the snippet demonstrates a more pressing short-term hazard: plugin callbacks run synchronously and can block the triggering flow."
+        },
+        {
+          "id": "d",
+          "text": "This design causes tight coupling because plugins assume synchronous event sequencing which makes future asynchronous refactors risky and breaking.",
+          "isCorrect": false,
+          "explanation": "Assuming synchronous sequencing is indeed a risk when you later introduce async execution. Still, the immediate operational hazard in this code sample is that a plugin can block or throw during a synchronous callback invocation, which can be addressed first."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better supports a framework-managed lifecycle where third-party modules register behavior without orchestrating core flow?",
+      "codeSnippet": "// Version A: application orchestrates framework services\nclass AppA {\n  constructor(private svc: Service) {}\n  start() { this.svc.doWork(); }\n}\nnew AppA(new Service()).start();\n\n// Version B: framework manages flow and calls app hooks\ninterface AppB { onStart(): void }\nclass Framework {\n  run(app: AppB) { app.onStart(); }\n}\nclass MyApp implements AppB { onStart() { /* startup */ } }\nnew Framework().run(new MyApp());",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes control in application code and forces apps to orchestrate framework services, risking fragmentation and inconsistent lifecycle handling.",
+          "isCorrect": false,
+          "explanation": "Version A puts orchestration responsibility on each application, which can lead to duplicated bootstrap logic and divergent lifecycle behaviors across integrations. For a framework intended to provide a consistent runtime, this design prevents the framework from consolidating lifecycle concerns and enforcing consistent sequencing."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps the framework in charge and calls application hooks for consistent lifecycle control across integrations.",
+          "isCorrect": true,
+          "explanation": "Version B delegates overall control to the framework while letting applications provide small, well defined hooks. This aligns with the principle of having a single orchestrator manage lifecycle and reduces duplication across clients. It improves consistency and makes it easier to evolve framework-managed concerns such as error handling, concurrency, and startup ordering. For more discussion see Fowler on Inversion of Control and common framework design patterns."
+        }
+      ]
+    }
+  ]
+}

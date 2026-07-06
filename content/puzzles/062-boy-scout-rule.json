@@ -1,0 +1,106 @@
+{
+  "id": 62,
+  "conceptName": "Boy Scout Rule",
+  "category": "principle",
+  "definition": "A development habit: when you touch code, make it a little cleaner than you found it by making small, safe improvements.",
+  "ruleOfThumb": "Make tiny, local improvements when modifying code; avoid large unrelated changes in the same commit.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code",
+    "chapter": "Emergence and Heuristics",
+    "page": "p. 14-18",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-code/9780136083238/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "You see a small commit that renames variables and removes a stale comment but does not change tests. What is the primary assessment?",
+      "codeSnippet": "// commit: small cleanup\nexport function calculateTotal(items: number[]) {\n  // total sum helper\n  let r = 0\n  for (const it of items) {\n    r += it\n  }\n  return r\n}\n\n// cleaned: rename and remove comment\nexport function sum(items: number[]) {\n  let result = 0\n  for (const item of items) {\n    result += item\n  }\n  return result\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The change is a harmless cosmetic refactor that improves readability and does not alter public API behavior.",
+          "isCorrect": true,
+          "explanation": "This is a small cleanup limited to naming and comments without behavioral change. According to the practice advocated in the literature, such tiny improvements that preserve behavior reduce technical debt and improve future readability. Keep commits small and focused so reviewers can verify there is no behavior change."
+        },
+        {
+          "id": "b",
+          "text": "The change might hide a regression because the renaming touches tests and call sites without explicit verification steps.",
+          "isCorrect": false,
+          "explanation": "Renames can introduce subtle regressions when call sites or serialization keys depend on names. The concern is valid if the change touched many files or lacked test coverage, but in this snippet tests remained green and behavior looks unchanged, so the risk is low here."
+        },
+        {
+          "id": "c",
+          "text": "The change looks like unrelated churn that increases PR size and makes historical blame harder to interpret later on.",
+          "isCorrect": false,
+          "explanation": "Large unrelated changes can make history and blame noisy. This option is plausible when refactors are mixed with feature changes, but the snippet shows a concentrated, small rename rather than broad unrelated edits, so it is less likely to be harmful."
+        },
+        {
+          "id": "d",
+          "text": "The change could affect downstream modules that rely on exact names even though tests currently remain green after edits.",
+          "isCorrect": false,
+          "explanation": "Downstream coupling to names is a real concern, especially for serialized keys or public APIs. If this were a public library change, stricter review and versioning would be required. In most application-local cases a small rename accompanied by tests is acceptable."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A PR extracts helpers into a new utils file and simultaneously adjusts business logic across services. What is the most appropriate immediate action?",
+      "codeSnippet": "// PR: extracted helper and moved file\n// services/order.ts\nexport function finalizeOrder(o: Order) {\n  normalizeOrder(o)\n  applyDiscounts(o)\n  persistOrder(o)\n}\n\n// utils/orderHelpers.ts\nexport function normalizeOrder(o: Order) {\n  // moved from services code\n  o.items = o.items.filter(i => i.qty > 0)\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The change should be split into focused commits separating refactors from behavior changes to simplify review and rollback.",
+          "isCorrect": true,
+          "explanation": "When mechanical refactors and behavior changes are mixed in a single PR it increases reviewer cognitive load and makes regression tracking harder. Splitting into distinct commits or PRs (pure refactor then behavior) preserves the improvement while keeping history readable and rollbacks safer."
+        },
+        {
+          "id": "b",
+          "text": "The change is risky because it moves responsibility across modules without updating integration tests or documenting new module boundaries.",
+          "isCorrect": false,
+          "explanation": "Moving logic between modules can introduce integration issues if boundaries are not clarified. This is a plausible concern when there is insufficient test coverage or documentation, but the best immediate action is to separate refactor from behavioral changes to make such risks visible and addressable."
+        },
+        {
+          "id": "c",
+          "text": "The change primarily improves internal organization and is safe if existing unit tests fully cover the moved logic and its side effects.",
+          "isCorrect": false,
+          "explanation": "This is a reasonable assessment when tests provide confidence. However, even with tests, combining refactor and behavior edits in one PR still complicates review. The safer practice is to isolate the refactor so reviewers can validate without conflating intent."
+        },
+        {
+          "id": "d",
+          "text": "The change likely hides a performance regression by abstracting hot paths into helpers without any profiling or benchmarking evidence.",
+          "isCorrect": false,
+          "explanation": "Abstracting hot paths can affect performance, and profiling is the right tool when performance is a concern. This distractor is a concrete worry, but unless this code is on a known hot path, the primary maintainability concern is separating refactor from behavior rather than immediate profiling."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two alternative approaches are proposed while touching order finalization code. Which version should you prefer when practicing small incremental cleanup?",
+      "codeSnippet": "// Version A: centralized validator\n// shared/validator.ts\nexport class OrderValidator {\n  isValid(o: Order) { return o.items.length > 0 && o.total >= 0 }\n}\n\n// services/order.ts\nimport { OrderValidator } from '../shared/validator'\nconst v = new OrderValidator()\nexport function finalizeOrder(o: Order) { if (!v.isValid(o)) throw new Error('invalid') /* ... */ }\n\n// Version B: minimal local cleanup\n// services/order.ts\nexport function finalizeOrder(o: Order) { if (o.items.length === 0) throw new Error('invalid') /* ... */ }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes logic into a broad service causing increased coupling and a large change surface area that is risky.",
+          "isCorrect": false,
+          "explanation": "Centralizing into a new shared validator may be the right long term design, but doing that as a wide change while touching a single module increases coupling and the scope of the change. Prefer incremental moves with clear tests and follow-up refactors rather than an immediate big-scope extraction."
+        },
+        {
+          "id": "b",
+          "text": "Version B applies a minimal focused cleanup and adds targeted tests to the touched modules which keeps risk low.",
+          "isCorrect": true,
+          "explanation": "Version B follows the small-improvement principle: keep the change minimal, local, and verifiable. This reduces review complexity and risk while improving code. You can later extract shared components in a separate, well-tested refactor when the benefits and boundaries are clearer. This aligns with small-step maintenance advocated by software-craft literature."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 34,
+  "conceptName": "Temporary Field",
+  "category": "code-smell",
+  "definition": "A class-level field that is only set and used in certain conditions or by a subset of methods, causing misleading object state and coupling unrelated behavior to the object's lifetime.",
+  "ruleOfThumb": "If a field is only needed for one operation or under a single condition, prefer a local variable or parameter instead of adding it to the object's state.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Bad Smells in Code",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine this class. What is the primary design problem you see?",
+      "codeSnippet": "class Session {\n  private cachedReportOwnerId?: string;\n\n  setOwner(id: string) { this.cachedReportOwnerId = id; }\n\n  generateReport() {\n    if (!this.cachedReportOwnerId) return 'summary';\n    return `detailed report for ${this.cachedReportOwnerId}`;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class contains a field that is only conditionally used by a single method, adding confusing object state.",
+          "isCorrect": true,
+          "explanation": "The field is only relevant when generateReport runs and otherwise contributes no meaningful object state. This idiom hides that the value is operation-specific; moving it into the reporting method or passing it as a parameter clarifies responsibility and avoids surprising state on the Session object."
+        },
+        {
+          "id": "b",
+          "text": "The method is doing too many things and should be split into smaller methods to reduce responsibility and complexity.",
+          "isCorrect": false,
+          "explanation": "While splitting responsibilities can help, generateReport is small here. The larger smell is that a field is being used to carry a transient value across calls rather than adding complexity inside a single method."
+        },
+        {
+          "id": "c",
+          "text": "The field should be declared readonly and initialized in the constructor to improve immutability and predictable object state at creation.",
+          "isCorrect": false,
+          "explanation": "Making the field readonly and constructor-initialized would make it permanent on the object, but the code shows the value is optional and only relevant for a particular operation. That would not address the core issue of transient state."
+        },
+        {
+          "id": "d",
+          "text": "There is missing defensive error handling around optional usage which could throw when the field is accessed unexpectedly at runtime.",
+          "isCorrect": false,
+          "explanation": "Defensive checks are useful, but the code already guards the optional usage. The more important design problem is holding an operation-specific value on the object rather than keeping it local when needed."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In this processor class the field is only used during certain operations. What is the most accurate concern?",
+      "codeSnippet": "class OrderProcessor {\n  private promoCode?: string;\n\n  loadPromo(code?: string) { this.promoCode = code; }\n\n  calculateTotal(items: { price: number }[]) {\n    let total = items.reduce((s, i) => s + i.price, 0);\n    if (this.promoCode) total -= 10;\n    return total;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class stores an operation-specific value in a field instead of passing it into the methods that actually need it for computation.",
+          "isCorrect": true,
+          "explanation": "The promo code is tied to a specific calculation but lives on the instance. That makes the data persist beyond the immediate operation and couples unrelated method calls to transient data. Passing the code into calculateTotal or into a separate context object avoids this coupling."
+        },
+        {
+          "id": "b",
+          "text": "This design risks thread-safety problems because concurrent executions could overwrite the field while another execution still relies on it during processing.",
+          "isCorrect": false,
+          "explanation": "Concurrent misuse is a valid risk in shared mutable state, but the primary design smell here is keeping per-operation data on the instance. Even in single-threaded systems this creates confusing lifetimes; addressing the transient storage pattern is the first step before concurrency hardening."
+        },
+        {
+          "id": "c",
+          "text": "The field should be moved into a dedicated DTO injected into the class to separate data from processing logic and improve decoupling.",
+          "isCorrect": false,
+          "explanation": "Introducing a DTO can help in complex scenarios, but it may be overengineering here. Simpler fixes are to pass the promo code as a parameter or local context for the calculation, which more directly addresses the temporary nature of the value."
+        },
+        {
+          "id": "d",
+          "text": "The code is breaking encapsulation by exposing the field through setters that allow external objects to alter internal calculation state arbitrarily.",
+          "isCorrect": false,
+          "explanation": "Exposing mutators can break encapsulation, however the shown API already suggests intentional loading of promo data. The central issue is that the field models a per-operation concern on the object, not merely the presence of a setter."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two versions below. Which version is preferable for maintainability and why?",
+      "codeSnippet": "// Version A\nclass InvoiceCalculatorA {\n  compute(lines: {amount: number}[]) {\n    const adjustment = this.calculateAdjustment(lines);\n    return this.total(lines) + adjustment;\n  }\n  private calculateAdjustment(lines: {amount: number}[]) { return 0; }\n}\n\n// Version B\nclass InvoiceCalculatorB {\n  private adjustment?: number;\n  compute(lines: {amount: number}[]) {\n    this.adjustment = this.calculateAdjustment(lines);\n    return this.total(lines) + (this.adjustment || 0);\n  }\n  private calculateAdjustment(lines: {amount: number}[]) { return 0; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A stores the intermediate adjustment in a local variable during computation rather than on the object instance.",
+          "isCorrect": true,
+          "explanation": "Version A keeps the temporary value inside the compute method, making the code easier to reason about and eliminating the extra field that would live on the object. This reduces accidental state leaks, simplifies the object's lifecycle, and improves thread-safety. Prefer local variables for values that are only relevant during one computation."
+        },
+        {
+          "id": "b",
+          "text": "Version B puts the intermediate adjustment on the object which risks leaking transient state across calls and complicates object invariants.",
+          "isCorrect": false,
+          "explanation": "Version B attaches the adjustment to the instance which creates a field that is only meaningful during compute execution. That pattern makes it harder to understand invariants, increases the surface for bugs when methods are called in different orders, and can introduce subtle concurrency and testing issues. Storing per-call data on the object is generally inferior to keeping it local."
+        }
+      ]
+    }
+  ]
+}

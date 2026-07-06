@@ -1,0 +1,106 @@
+{
+  "id": 69,
+  "conceptName": "Inline Function",
+  "category": "refactoring",
+  "definition": "Replace a trivial function call by the function body at its call sites when the function adds no abstraction or explanatory value.",
+  "ruleOfThumb": "If a function merely forwards arguments or duplicates a simple expression and is used in only one place, remove the indirection.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Inline Method",
+    "page": "110-113",
+    "externalUrl": "https://refactoring.com/catalog/inlineMethod.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best describes the small helper function in this code snippet?",
+      "codeSnippet": "function sendEmail(address: string, body: string) {\n  EmailService.send(address, body);\n}\n\nfunction welcome(user: User) {\n  const body = `Welcome ${user.name}`;\n  sendEmail(user.email, body);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The helper function only forwards its arguments to another routine and adds no meaningful logic.",
+          "isCorrect": true,
+          "explanation": "The helper merely delegates to EmailService.send with no transformation or validation. In this case, the function is pure indirection; inlining removes a needless layer and keeps the logic next to its use. If the helper had validation, logging, or were part of a stable public API, keeping it would make more sense."
+        },
+        {
+          "id": "b",
+          "text": "This helper may obscure asynchronous behavior and change call timing or error propagation in ways that are hard to debug.",
+          "isCorrect": false,
+          "explanation": "This concern is plausible when the helper wraps asynchronous calls, but the snippet shows a direct synchronous forward to EmailService.send. The asynchronous behavior is owned by the underlying service, so the helper does not introduce additional timing effects here."
+        },
+        {
+          "id": "c",
+          "text": "The wrapper might be required for a public API and removing it would break multiple consumers or contracts.",
+          "isCorrect": false,
+          "explanation": "Preserving a wrapper for API stability is valid when the function is part of the module's public surface. In this example the helper appears internal and is only used by welcome; that reduces the need to maintain it purely for compatibility."
+        },
+        {
+          "id": "d",
+          "text": "The helper could be a seam for testing and deleting it could make unit tests harder to isolate dependencies.",
+          "isCorrect": false,
+          "explanation": "Using small wrappers as seams for tests is a common tactic. However, testing seams should be intentional; if tests require substituting the service, a mocking strategy at the EmailService boundary is a clearer seam than keeping trivial pass-through helpers."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this formatting helper used by a single caller, which observation best supports keeping it as written?",
+      "codeSnippet": "function formatPrice(cents: number) {\n  return (cents / 100).toFixed(2);\n}\n\nfunction display(item: Item) {\n  const price = formatPrice(item.priceCents);\n  console.log(item.name + \" costs $\" + price);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The helper documents formatting intent and improves readability for callers even though it performs only a small conversion.",
+          "isCorrect": true,
+          "explanation": "A tiny function can be worth keeping when its name captures domain intent that the raw expression would obscure. Here, formatPrice conveys the semantic role of the calculation, aiding maintenance and reducing cognitive load for readers of display."
+        },
+        {
+          "id": "b",
+          "text": "This wrapper duplicates formatting logic found elsewhere and risks inconsistent representation when multiple callers independently evolve formatting.",
+          "isCorrect": false,
+          "explanation": "Duplication is a real concern if similar code exists in several places. If duplication is present, centralizing makes sense. But the snippet shows a single usage; duplication would need to be evidenced before extracting or centralizing."
+        },
+        {
+          "id": "c",
+          "text": "This extra function introduces call overhead in a hot loop and could measurably affect performance under heavy traffic.",
+          "isCorrect": false,
+          "explanation": "Function call overhead can matter in tight loops, but modern runtimes inline small functions and the human cost of obfuscated math often outweighs microbenchmarks. Profile before optimizing for this reason."
+        },
+        {
+          "id": "d",
+          "text": "The helper hides opportunity to centralize formatting into a shared utility and makes future standardization more difficult.",
+          "isCorrect": false,
+          "explanation": "Centralization for consistency is important, but one small helper with a clear name already aids consistency. If many callers require the same format, promoting it to a shared module is warranted; otherwise the helper is a simple clarity aid."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable when the calculation is trivial and used only by this single caller?",
+      "codeSnippet": "// Version A: inline calculation\nfunction checkout(items: Item[], discountRate: number) {\n  const total = items.reduce((sum, item) => {\n    const discounted = item.price * (1 - discountRate);\n    return sum + discounted;\n  }, 0);\n  return total;\n}\n\n// Version B: extracted helper\nfunction applyDiscount(price: number, rate: number) {\n  return price * (1 - rate);\n}\nfunction checkout2(items: Item[], discountRate: number) {\n  const total = items.reduce((sum, item) => sum + applyDiscount(item.price, discountRate), 0);\n  return total;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps the trivial calculation adjacent to its use and improves local comprehension for maintainers.",
+          "isCorrect": true,
+          "explanation": "When the computation is tiny and appears in only one place, keeping it inline reduces indirection and makes the intent immediately visible at the call site. Extracting in this case creates an extra hop for readers and fragments the local flow without providing documentation or reuse benefits. Prefer inlining until a second use or added complexity justifies extraction."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes logic into a helper which may fragment flow and force call indirection for a single-use calculation.",
+          "isCorrect": false,
+          "explanation": "Extracting can be valuable for reuse, testing, or naming intent. However, here the helper is tiny and only used once, so extraction primarily introduces navigation cost and indirection. If the function later gains complexity or additional callers, extracting is warranted. See Fowler on Inline Method and the pragmatic guidance in Clean Code about naming versus indirection."
+        }
+      ]
+    }
+  ]
+}

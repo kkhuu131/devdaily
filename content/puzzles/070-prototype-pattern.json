@@ -1,0 +1,106 @@
+{
+  "id": 70,
+  "conceptName": "Prototype Pattern",
+  "category": "design-pattern",
+  "definition": "A creational approach where objects are produced by copying a prototypical instance at runtime instead of calling constructors directly.",
+  "ruleOfThumb": "Prefer when instances are expensive to configure or when runtime variants must be created without tight coupling to concrete classes.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Prototype",
+    "page": "pp. 107-110",
+    "externalUrl": "https://refactoring.guru/design-patterns/prototype"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given this clone method, what best describes the code's intent?",
+      "codeSnippet": "class Product {\n  constructor(public name: string, public price: number) {}\n  clone() { return Object.assign(Object.create(Object.getPrototypeOf(this)), this); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Copies an existing instance to produce independent object duplicates at runtime instead of constructing them from scratch.",
+          "isCorrect": true,
+          "explanation": "This implementation creates a new object by copying the instance state and preserving its prototype, which yields independent duplicates. The approach avoids calling concrete constructors and preserves methods on the prototype chain, which is useful when creating many similar runtime instances quickly."
+        },
+        {
+          "id": "b",
+          "text": "Produces a single shared instance globally to avoid repeated allocation and enforce a single configuration across modules.",
+          "isCorrect": false,
+          "explanation": "This option describes a singleton style concern, which is different. The code shown returns new objects rather than returning a shared, single instance; therefore it does not implement a global single-instance mechanism."
+        },
+        {
+          "id": "c",
+          "text": "Defers complex initialization until first use so that objects are created lazily and only when actually needed at runtime.",
+          "isCorrect": false,
+          "explanation": "Lazy initialization postpones creation until first access, but the snippet explicitly copies an existing object immediately via clone(). It does not implement delayed creation logic or lazy holders, so this distractor is incorrect."
+        },
+        {
+          "id": "d",
+          "text": "Exposes a factory method that clients call to build new instances with encapsulated creation logic and validation.",
+          "isCorrect": false,
+          "explanation": "A factory centralizes construction and validation through a method or object. The clone method shown duplicates an instance in-place rather than encapsulating new construction logic, so the factory description does not match the snippet."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which practical concern best explains why this clone implementation can be risky in production?",
+      "codeSnippet": "class Order {\n  id: number;\n  items: any[];\n  constructor(id: number, items: any[]) { this.id = id; this.items = items; }\n  clone() { return Object.assign(Object.create(Object.getPrototypeOf(this)), this); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It performs a shallow copy that leaves nested mutable structures shared between the original and the cloned instance at runtime.",
+          "isCorrect": true,
+          "explanation": "Object.assign copies property references, so arrays and nested objects remain shared between original and clone. That can produce subtle bugs when either instance mutates nested state. A deeper clone or copy-on-write is required when nested mutability must be isolated."
+        },
+        {
+          "id": "b",
+          "text": "It relies on prototype identity and may break if instances come from different module loaders or subclassed constructors at runtime.",
+          "isCorrect": false,
+          "explanation": "While constructor and prototype identity differences are a real concern in some environments, the more immediate risk in this snippet is shared nested mutable state due to shallow copying. Prototype identity issues are less likely here unless objects cross loader boundaries."
+        },
+        {
+          "id": "c",
+          "text": "It uses shallow copying semantics that will drop class methods or lose special type semantics like Date and RegExp during serialization.",
+          "isCorrect": false,
+          "explanation": "This option mixes two concerns. The shown method does not serialize to JSON, so Date or RegExp loss via serialization is not the direct issue. The principal problem remains shallow copying of nested mutable data rather than loss via serialization."
+        },
+        {
+          "id": "d",
+          "text": "It can be inefficient for large graphs because it duplicates entire object graphs rather than sharing immutable internals or using structural sharing.",
+          "isCorrect": false,
+          "explanation": "Performance on large graphs matters, but the shown approach actually performs a shallow copy, which is cheap but unsafe for nested mutability. The inefficiency described would apply to deep copy implementations rather than this shallow assign approach."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You must choose between two cloning designs for a high-performance graphics editor. Which version is preferable?",
+      "codeSnippet": "// Version A\nclass Shape {\n  constructor(public type: string, public props: any) {}\n  clone() { return Object.assign(Object.create(Object.getPrototypeOf(this)), this); }\n}\n\n// Version B\nclass ShapeFactory {\n  static create(shape: Shape) {\n    return new Shape(shape.type, JSON.parse(JSON.stringify(shape.props)));\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A preserves prototype behavior and produces fast instance clones with minimal allocations for frequent duplication.",
+          "isCorrect": true,
+          "explanation": "Version A copies the instance while preserving the original prototype chain and methods, and it does so with minimal allocation compared to serializing and rehydrating data. In a high-performance editor where cloning is frequent and objects carry behavior on their prototypes, this approach keeps allocations low and method bindings intact. However, be cautious about shared nested mutable state; use defensive copying for mutable substructures when needed."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes creation through serialization and constructors but causes higher allocations and exposes deep copy performance penalties.",
+          "isCorrect": false,
+          "explanation": "Version B uses JSON serialization which forces deep copying and re-instantiation. That approach increases CPU and memory pressure and can strip methods or special types. It also requires reapplying prototypes or type conversions, making it noticeably slower in tight loops. While safer for deep isolation, it is a poor fit for a performance-critical editor."
+        }
+      ]
+    }
+  ]
+}

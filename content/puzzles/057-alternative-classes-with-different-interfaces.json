@@ -1,0 +1,106 @@
+{
+  "id": 57,
+  "conceptName": "Alternative Classes with Different Interfaces",
+  "category": "code-smell",
+  "definition": "A situation where two or more classes represent the same conceptual role but expose different method names or signatures, forcing callers to special-case, duplicate, or adapt behavior across the codebase.",
+  "ruleOfThumb": "When two types do the same job but require different client code, introduce a single stable abstraction or adapter so callers use a unified API.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Alternative Classes with Different Interfaces",
+    "page": null,
+    "externalUrl": "https://refactoring.com/catalog/alternate_classes_with_different_interfaces.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the payment classes below. What is the primary design problem shown?",
+      "codeSnippet": "class StripeCharge {\n  charge(amount: number) {\n    // charge via Stripe\n  }\n}\n\nclass PayPalPayment {\n  pay(amount: number) {\n    // pay via PayPal\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "These classes implement similar behavior yet expose incompatible method names, parameters, and usage expectations across clients.",
+          "isCorrect": true,
+          "explanation": "The core issue is that both classes fulfill the same conceptual role but expose different APIs. That forces calling code to branch or duplicate glue logic whenever it needs to work with either type. The usual fixes are to introduce a common interface both implement or to adapt one to the other so callers can program against a single stable API."
+        },
+        {
+          "id": "b",
+          "text": "These classes mix too many responsibilities into one type and should be split into smaller focused classes to reduce coupling.",
+          "isCorrect": false,
+          "explanation": "While large classes can be a problem, the snippet shows two small classes each focused on a single payment mechanism. The pain arises from differing method names, not from multiple responsibilities. Splitting responsibilities would not address duplicated caller logic or name mismatch between implementations."
+        },
+        {
+          "id": "c",
+          "text": "These classes duplicate similar logic across separate implementations and cause maintenance overhead through repeated code across modules.",
+          "isCorrect": false,
+          "explanation": "Duplication is a real concern, but the immediate smell here is not repeated algorithmic code; it is an API mismatch. Duplication-focused refactoring (like extracting common code) might help later, but it does not remove the need for callers to treat each implementation differently due to their differing interfaces."
+        },
+        {
+          "id": "d",
+          "text": "These classes indicate incorrect use of inheritance where composition should have been used to share behavior between types and reduce coupling.",
+          "isCorrect": false,
+          "explanation": "This suggestion presumes inheritance is in play, but the snippet shows two independent concrete classes with different method names. The problem is incompatible interfaces rather than improper inheritance. Introducing a shared interface or adapter is the more direct remediation."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You must support both serializers in a large codebase without breaking many callers. Which of the options below is the best immediate approach?",
+      "codeSnippet": "class JsonSerializer {\n  toJson(obj: any) {\n    return JSON.stringify(obj);\n  }\n}\n\nclass XmlSerializer {\n  serializeToXml(obj: any) {\n    // produce XML string\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Prefer introducing an adapter type that unifies method names across implementations without changing external callers immediately.",
+          "isCorrect": true,
+          "explanation": "An adapter provides a noninvasive migration path: new adapter types present a single API for callers while leaving existing implementations and callers intact. Over time you can move clients to the unified API or update implementations to implement the common interface directly."
+        },
+        {
+          "id": "b",
+          "text": "Prefer renaming methods across implementations and updating all callers to match the new unified method names immediately to reduce long term friction.",
+          "isCorrect": false,
+          "explanation": "Renaming and updating all callers can be correct but is invasive in a large codebase and risks regression. It forces immediate wide-reaching changes, which may not be practical if many modules or external consumers depend on current names."
+        },
+        {
+          "id": "c",
+          "text": "Prefer extracting a shared abstract base class that forces subclasses to implement a common method signature and shared serialization behavior.",
+          "isCorrect": false,
+          "explanation": "Extracting a shared base class can work when implementations can be changed, but it couples concrete serializers to a common hierarchy and requires modifying both implementations. An adapter is often safer initially when you cannot change third party or legacy code."
+        },
+        {
+          "id": "d",
+          "text": "Prefer keeping both implementations separate and document differences for future engineers to avoid accidental coupling between services.",
+          "isCorrect": false,
+          "explanation": "Documenting differences is low cost but merely defers the cost to future developers. It does not address duplicate calling logic or the cognitive overhead of supporting multiple incompatible APIs, so it is not the best immediate approach for maintainability."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two versions are proposed for serializer support. Which version should be chosen for long term maintainability?",
+      "codeSnippet": "// Version A: single interface\ninterface Serializer {\n  serialize(obj: any): string;\n}\nclass JsonSerializer implements Serializer {\n  serialize(obj: any) { return JSON.stringify(obj); }\n}\nclass XmlSerializer implements Serializer {\n  serialize(obj: any) { /* produce XML string */ return '<xml/>'; }\n}\n\n// Version B: differing APIs and local adapters\nclass JsonLegacy { toJson(obj: any) { return JSON.stringify(obj); } }\nclass XmlLegacy { serializeToXml(obj: any) { return '<xml/>'; } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes a single stable interface that all serializers implement and eases client usage and testing.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable because a single interface removes the need for caller-side branching and scattered adapters. It makes polymorphism explicit, simplifies dependency injection and unit testing, and reduces accidental duplication of glue code. Over time this structure supports adding new serializers without changing callers. Fowler and other design authorities recommend establishing a clean abstraction rather than letting multiple incompatible interfaces proliferate."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes adapters inside callers which scatters glue code and increases duplicated adapter logic across the codebase.",
+          "isCorrect": false,
+          "explanation": "Version B may be tempting as a quick fix when you cannot change legacy types, but it leads to duplicated adapter logic in multiple places and inconsistent behavior across clients. This increases maintenance cost and makes it harder to enforce consistency or add cross-cutting features like metrics. A single interface or centralized adapter layer is usually preferable for long term clarity."
+        }
+      ]
+    }
+  ]
+}

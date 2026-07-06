@@ -1,0 +1,106 @@
+{
+  "id": 56,
+  "conceptName": "Replace Conditional with Polymorphism",
+  "category": "refactoring",
+  "definition": "When a method uses conditionals to select behavior based on type or kind, replace those branches with polymorphic variants that encapsulate behavior.",
+  "ruleOfThumb": "If adding a new type requires editing a conditional, introduce a subtype or strategy so new types can be added without modifying existing conditionals.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Conditional with Polymorphism",
+    "page": "pp. 125-129",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the most telling code smell in the following Order pricing example?",
+      "codeSnippet": "class Order {\n  constructor(public type: string, public amount: number) {}\n\n  calculatePrice() {\n    if (this.type === 'standard') return this.amount * 1.0;\n    if (this.type === 'discount') return this.amount * 0.8;\n    if (this.type === 'premium') return this.amount * 1.2;\n    return this.amount;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code centralizes type based branches and would be clearer if each type encapsulated its own behavior behind an interface.",
+          "isCorrect": true,
+          "explanation": "The calculatePrice method dispatches on a type field. That central conditional makes adding types require editing this method. Converting each variant into its own class that implements a common interface moves behavior to the variant, improving encapsulation and making additions safer. See Fowler's example of moving conditional logic into polymorphic subclasses to reduce branching and improve extensibility."
+        },
+        {
+          "id": "b",
+          "text": "This code risks duplicated logic across conditional branches and will become error prone when adding new product types in future.",
+          "isCorrect": false,
+          "explanation": "Duplicate logic is a real risk when many branches repeat calculations. However the immediate smell is the centralized type dispatch itself. Duplications could be addressed by factoring helpers, but extracting to variant classes addresses duplication and the core design issue simultaneously."
+        },
+        {
+          "id": "c",
+          "text": "This code prefers runtime branching which could impact performance if branches are evaluated frequently in tight loops under load.",
+          "isCorrect": false,
+          "explanation": "Performance concerns are plausible, but runtime branching overhead is usually negligible compared with the maintainability cost of scattered conditional logic. Refactoring to polymorphism targets clarity and extensibility first; performance should be measured before optimizing."
+        },
+        {
+          "id": "d",
+          "text": "This code exposes conditional logic that makes unit testing individual behaviors harder and increases chance of fragile tests as cases grow.",
+          "isCorrect": false,
+          "explanation": "Testing difficulty is a valid consequence: a single method with many branches can make focused testing awkward. Still, the root design issue is the conditional-based dispatch. Moving behavior into separate types yields more focused, easier to test units."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You have several notification types and a switching sender. Which approach is most appropriate here?",
+      "codeSnippet": "class Notification {\n  constructor(public type: string, public payload: any) {}\n}\n\nclass Notifier {\n  send(n: Notification) {\n    switch (n.type) {\n      case 'email': return this.sendEmail(n.payload);\n      case 'sms': return this.sendSms(n.payload);\n      default: return this.sendPush(n.payload);\n    }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code should define subclasses for each notification type and let each subclass implement its own send behavior.",
+          "isCorrect": true,
+          "explanation": "When behavior varies by type and you expect new types, moving send behavior into type-specific classes reduces switch growth. Each notification variant owns its sending logic, making it easier to add types without modifying central dispatch. This aligns with polymorphism for behavior specialization described by refactoring literature."
+        },
+        {
+          "id": "b",
+          "text": "The code should keep the switch and extract each case into private helper functions to reduce repetition but keep a single class.",
+          "isCorrect": false,
+          "explanation": "Extracting helpers reduces duplication but preserves the central conditional. It delays but does not eliminate the fragility when new notification types are added. If types proliferate, the single-class switch will still need modification for each new type."
+        },
+        {
+          "id": "c",
+          "text": "The code should replace the switch with a registry mapping types to handler functions and avoid creating new classes for each type.",
+          "isCorrect": false,
+          "explanation": "A registry of functions removes the switch and can be an acceptable pragmatic choice, especially when handler lifetimes are dynamic. However it trades type safety and encapsulation for indirection and can devolve into a dispersed collection of functions rather than cohesive objects that own their behavior."
+        },
+        {
+          "id": "d",
+          "text": "The code should convert types to symbols and perform pattern matching centrally to make branching easier to reason about later.",
+          "isCorrect": false,
+          "explanation": "Using symbols or pattern matching may make the switch syntactically cleaner, but it still centralizes behavior. The core design smell remains if adding a type requires editing the central matcher; polymorphic variants better support open extension."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation is preferable for evolving product pricing rules shown below?",
+      "codeSnippet": "// Version A\nabstract class Pricing {\n  abstract price(order: Order): number\n}\nclass StandardPricing extends Pricing { price(o: Order){ return o.qty * 10 } }\nclass DiscountPricing extends Pricing { price(o: Order){ return o.qty * 8 } }\n\n// Version B\nfunction priceOrder(order: Order) {\n  switch(order.type) {\n    case 'standard': return order.qty * 10\n    case 'discount': return order.qty * 8\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A encapsulates each product variation in its own subclass and avoids central conditional growth.",
+          "isCorrect": true,
+          "explanation": "Version A puts behavior where it belongs: in variant types. This means adding a new pricing rule usually adds a new subclass without modifying existing code, complying with the open closed principle. It also localizes testing and keeps the central codebase free of sprawling conditionals. Fowler demonstrates this pattern to reduce conditional complexity and improve extensibility."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes all pricing branches in one function which will become harder to change and test safely over time.",
+          "isCorrect": false,
+          "explanation": "Version B is simpler initially but creates a maintenance bottleneck: each new pricing rule requires editing the central switch, increasing risk of regression and testing surface. For small stable domains the single function may be acceptable, but for evolving rules the centralized conditional becomes a liability compared with polymorphic variants."
+        }
+      ]
+    }
+  ]
+}

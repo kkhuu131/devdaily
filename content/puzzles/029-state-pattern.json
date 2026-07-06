@@ -1,0 +1,106 @@
+{
+  "id": 29,
+  "conceptName": "State Pattern",
+  "category": "design-pattern",
+  "definition": "Encapsulate object behavior that depends on internal state into separate state objects so the context delegates behavior and can change its current state at runtime.",
+  "ruleOfThumb": "If an object's behavior changes depending on its internal status and transition logic is scattered across conditionals, encapsulate each behavior in separate state-specific objects.",
+  "citation": {
+    "author": "Erich Gamma et al.",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "State",
+    "page": "pp. 293-311",
+    "externalUrl": "https://refactoring.guru/design-patterns/state"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the implementation below. Which concise description best identifies the core design problem?",
+      "codeSnippet": "class OrderProcessor {\n  status: 'new' | 'paid' | 'shipped' | 'closed' = 'new'\n\n  handle(event: string) {\n    if (this.status === 'new') {\n      // handle new\n    } else if (this.status === 'paid') {\n      // handle paid\n    } else if (this.status === 'shipped') {\n      // handle shipped\n    }\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A class switches behavior based on an internal status field using conditionals rather than encapsulated role objects.",
+          "isCorrect": true,
+          "explanation": "The code centralizes behavior in one class and chooses branches by inspecting a status value. That is the hallmark of conditional state code that benefits from moving behavior into per-state objects so transitions and behavior are localized and polymorphic rather than spread across if/else chains."
+        },
+        {
+          "id": "b",
+          "text": "A class violates single responsibility by mixing several behaviors and lifecycle management responsibilities in one central method.",
+          "isCorrect": false,
+          "explanation": "This is a plausible observation because the class mixes handling for many statuses, but the root issue is conditional dispatch on an internal status rather than a pure SRP violation. Splitting responsibilities helps but does not directly address transition coupling."
+        },
+        {
+          "id": "c",
+          "text": "A class uses inheritance to represent states leading to deep hierarchies and fragile base class coupling across behaviors.",
+          "isCorrect": false,
+          "explanation": "Deep inheritance can be a real concern when states become classes, but the snippet shows conditional branches inside one class rather than an inheritance hierarchy. Replacing conditionals with objects is more appropriate than introducing fragile base classes."
+        },
+        {
+          "id": "d",
+          "text": "A class relies on strategy objects passed per call causing behavior scattering and inconsistent state handling across instances.",
+          "isCorrect": false,
+          "explanation": "Passing strategy objects per call can cause scattering, but the snippet shows internal status checks rather than externally supplied strategies. The key problem is internal conditional dispatch tied to context state, not per-call strategy injection."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this session manager. Which observation most strongly indicates that behavior should be tied to the session state rather than left as flags or external algorithms?",
+      "codeSnippet": "class PaymentSession {\n  mode: 'started' | 'authorized' | 'captured' = 'started'\n\n  process(payment: Payment) {\n    if (this.mode === 'started') return this.authorize(payment)\n    if (this.mode === 'authorized') return this.capture(payment)\n    if (this.mode === 'captured') return this.noop()\n  }\n\n  authorize(p: Payment) {}\n  capture(p: Payment) {}\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code shows mutually exclusive modes controlled by flags but no polymorphism for transition logic inside each mode.",
+          "isCorrect": false,
+          "explanation": "This correctly describes what is present: flags and conditional dispatch. It identifies the lack of polymorphic handling for transitions, which is a sign the design could be improved by encapsulating mode-specific logic."
+        },
+        {
+          "id": "b",
+          "text": "The code requires behaviors that both vary and initiate context transitions within the context object.",
+          "isCorrect": true,
+          "explanation": "The key signal is that behaviors not only differ by mode but also drive transitions between modes. That coupling between action and transition is best handled by encapsulating per-mode behavior and transition rules in dedicated objects rather than scattering conditional checks across the context."
+        },
+        {
+          "id": "c",
+          "text": "The code primarily configures independent algorithms per operation and requires no context mutation or transition responsibilities.",
+          "isCorrect": false,
+          "explanation": "If operations were independent algorithms with no transitions this would be a Strategy use case. However the snippet clearly mutates the mode and requires transitions, so treating them as independent algorithms would leave transition logic unresolved."
+        },
+        {
+          "id": "d",
+          "text": "The code demonstrates deep inheritance to represent operations rather than using composition of small reusable algorithm objects.",
+          "isCorrect": false,
+          "explanation": "Deep inheritance is not evidenced here; the implementation uses a mode flag and methods. Replacing conditionals with composed objects is reasonable, but inheritance specifically is not the immediate problem."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You need to pick between two versions for handling many status-dependent behaviors. Which version is the better long-term design for maintainability and testability?",
+      "codeSnippet": "// Version A\nclass ShipmentContext {\n  state: string = 'pending'\n  update(event: string) {\n    if (this.state === 'pending') { /* many conditionals and transitions */ }\n    if (this.state === 'in_transit') { /* many conditionals and transitions */ }\n  }\n}\n\n// Version B\ninterface State { handle(ctx: ShipmentContext, e: string): void }\nclass PendingState implements State { handle(ctx,e){ /* transition to other states here */ } }\nclass InTransitState implements State { handle(ctx,e){ /* transition to other states here */ } }\nclass ShipmentContext2 { state: State = new PendingState(); dispatch(e: string){ this.state.handle(this, e) } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps all transition logic inside one class causing sprawling conditional branches and brittle tests.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes all behavior and transitions in the context, which tends to produce long conditional methods and makes it hard to isolate and test individual behaviors. As states grow the method complexity and coupling to context increase, making changes risky."
+        },
+        {
+          "id": "b",
+          "text": "Version B places state specific behavior in dedicated objects and clarifies transitions and test boundaries.",
+          "isCorrect": true,
+          "explanation": "Version B delegates behavior and transitions to discrete state objects, improving encapsulation, single responsibility, and testability. Each state can be tested in isolation and transitions are explicit in the state implementations. This reduces conditional explosion in the context and makes adding new states safer. See Gamma et al and refs on behavioral patterns for rationale and examples."
+        }
+      ]
+    }
+  ]
+}

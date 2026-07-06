@@ -1,0 +1,106 @@
+{
+  "id": 63,
+  "conceptName": "Introduce Parameter Object",
+  "category": "refactoring",
+  "definition": "Group a set of related parameters into a single object so callers pass one coherent value instead of many separate arguments.",
+  "ruleOfThumb": "When a method regularly accepts several parameters that conceptually belong together, encapsulate them into a single parameter object.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Introduce Parameter Object",
+    "page": "p. 150",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Looking at this function signature, what is the clearest indicator that the API needs a structural change?",
+      "codeSnippet": "function createOrder(customerId: string, itemId: string, quantity: number, price: number, discountCode?: string, shippingAddress?: string) {\n  // process order\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function accepts an excessive number of primitive parameters and presents a brittle, hard to read API.",
+          "isCorrect": true,
+          "explanation": "A long list of primitives at the call site increases the chance of parameter ordering mistakes and reduces readability. Grouping related fields into a single value clarifies intent and centralizes validation. Fowler recommends this refactoring when parameters form a coherent concept."
+        },
+        {
+          "id": "b",
+          "text": "This function mixes unrelated responsibilities into its parameters which increases coupling and hampers future reuse across modules.",
+          "isCorrect": false,
+          "explanation": "The parameters here are mostly about the same domain concept (an order), so coupling between unrelated responsibilities is not the primary concern. The real issue is parameter bloat rather than unrelated responsibilities, which calls for grouping rather than splitting responsibilities."
+        },
+        {
+          "id": "c",
+          "text": "This function lacks explicit validation on each parameter which allows inconsistent argument combinations at runtime and causes subtle bugs.",
+          "isCorrect": false,
+          "explanation": "Missing validation is a genuine concern, but it is orthogonal. Encapsulating related parameters into an object gives a single place to validate semantics and prevents scattered checks across callers. Validation alone does not explain why the signature is problematic."
+        },
+        {
+          "id": "d",
+          "text": "This function uses many positional parameters which makes call sites fragile and increases the risk of passing arguments in the wrong order.",
+          "isCorrect": false,
+          "explanation": "Positional fragility is a valid symptom and closely related to the correct answer. However, the deeper structural smell is that many primitives belong together conceptually. Creating a parameter object solves positional fragility as a side effect while also grouping domain data."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which explanation best identifies the nuanced reason to refactor this billing API signature?",
+      "codeSnippet": "class BillingService {\n  charge(customerId: string, amount: number, currency: string, description?: string, receiptEmail?: string, metadata?: Record<string,string>) {\n    // charge logic\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This method's many related parameters represent a single payment concept and should be encapsulated into one coherent parameter object.",
+          "isCorrect": true,
+          "explanation": "The parameters collectively describe one logical entity (a payment). Encapsulating them into a value object reduces signature noise, centralizes validation, and simplifies future extension. This follows Fowler's guidance to clarify intent and reduce churn at call sites."
+        },
+        {
+          "id": "b",
+          "text": "This method's optional arguments will force many calling sites to pass undefined values and create brittle tests and stubbed setups across the codebase.",
+          "isCorrect": false,
+          "explanation": "Optional arguments do lead to awkward callers, but the core structural improvement is grouping related fields. A parameter object can also allow sensible defaults, making callers easier to test. The symptom described here is secondary to the grouping opportunity."
+        },
+        {
+          "id": "c",
+          "text": "This method's primitive parameters leak domain meaning across callers which scatters validation logic and duplicates conversion code everywhere.",
+          "isCorrect": false,
+          "explanation": "Primitive obsession is a real code smell and grouping parameters into a domain type addresses it. However, the immediate actionable refactor for this signature is to encapsulate the related payment fields so domain logic and conversions can live in one place."
+        },
+        {
+          "id": "d",
+          "text": "This method's signature will frequently change as billing attributes evolve which will cause API churn and costly versioning work for consumers.",
+          "isCorrect": false,
+          "explanation": "API churn is a likely consequence of many parameters, but it is an effect rather than the precise structural problem. Introducing a parameter object stabilizes the API by allowing additive changes to the object without altering the method signature."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for maintainability in a payment service, Version A or Version B shown below?",
+      "codeSnippet": "/* Version A: single parameter object */\ninterface PaymentDetails { customerId: string; amount: number; currency: string; description?: string; receiptEmail?: string; metadata?: Record<string,string>; }\nfunction charge(payment: PaymentDetails) {\n  // process payment\n}\n\n/* Version B: multiple positional parameters */\nfunction charge(customerId: string, amount: number, currency: string, description?: string, receiptEmail?: string, metadata?: Record<string,string>) {\n  // process payment\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A accepts a single cohesive payment object instead of multiple separate positional parameters.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable because it centralizes related data into a single type, which clarifies intent, simplifies call sites, and provides a single location for validation and defaults. It reduces parameter ordering errors and makes evolving the payment model less disruptive to callers. This follows refactoring practice described by Fowler and aligns with advice from Clean Code about reducing primitive obsession and improving expressiveness."
+        },
+        {
+          "id": "b",
+          "text": "Version B keeps all parameters explicit on the signature which preserves local visibility but increases fragility when fields change.",
+          "isCorrect": false,
+          "explanation": "Keeping parameters explicit can aid clarity for very small signatures, but with many related fields it makes the API brittle and prone to ordering mistakes. Adding or rearranging fields forces every caller to change. Grouping into a parameter object provides clearer semantics and a stable extension point, which is why the refactor is recommended in practice."
+        }
+      ]
+    }
+  ]
+}

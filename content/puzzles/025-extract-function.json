@@ -1,0 +1,106 @@
+{
+  "id": 25,
+  "conceptName": "Extract Function",
+  "category": "refactoring",
+  "definition": "Move a chunk of code from a larger function into its own named function so the original reads at a higher level and smaller parts can be tested and reused.",
+  "ruleOfThumb": "If a block of code within a function can be given a clear name and described in one sentence, pull it into its own function.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Extract Method",
+    "page": "88",
+    "externalUrl": "https://refactoring.com/catalog/extractMethod.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Review this order processing code. Which refactor most directly reduces duplication and clarifies intent?",
+      "codeSnippet": "function processOrder(order) {\n  const subtotal = order.items.reduce((s, i) => s + i.price, 0);\n  const tax = Math.round(subtotal * 0.0875 * 100) / 100;\n  const total = subtotal + tax;\n  analytics.track('order_processed', { orderId: order.id, total });\n  const receipt = `Order ${order.id}: subtotal ${subtotal}, tax ${tax}, total ${total}`;\n  email.send(order.email, receipt);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Move the analytics logging and receipt formatting into separate helper functions to reduce complexity and improve testability.",
+          "isCorrect": false,
+          "explanation": "Splitting analytics and formatting into helpers is a reasonable decomposition, but the primary duplication here is the repeated formatting and calculation logic which should be centralized first. This option points at a real concern but is not the most focused refactor for the shown duplication."
+        },
+        {
+          "id": "b",
+          "text": "Inline the helper code into the main function to keep all steps visible and reduce abstraction for future maintainers.",
+          "isCorrect": false,
+          "explanation": "Inlining increases function size and mixes concerns, making the code harder to read and test. While keeping visibility can help in trivial cases, it worsens duplication and testability for nontrivial blocks."
+        },
+        {
+          "id": "c",
+          "text": "Introduce a configuration object to control behavior instead of splitting responsibilities across multiple helpers at runtime.",
+          "isCorrect": false,
+          "explanation": "A configuration object addresses variability, not duplication or clarity. This would add indirection and complexity without isolating the repeated logic or clarifying intent for the formatting and calculation responsibilities."
+        },
+        {
+          "id": "d",
+          "text": "This code repeats operations and should be moved into small focused helper functions for clarity and testability.",
+          "isCorrect": true,
+          "explanation": "Factoring the repeated calculation, formatting, and tracking into small, named helpers raises the abstraction level of the original function and makes each part easier to test and reuse. This is the most direct, low-risk way to reduce duplication and improve readability."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A profile save function handles both persistence and optional user notification. Which refactor most cleanly separates responsibilities?",
+      "codeSnippet": "function saveUserProfile(user, notify) {\n  const rows = db.query(`SELECT * FROM users WHERE id=${user.id}`);\n  if (rows.length === 0) {\n    db.insert('users', user);\n  } else {\n    db.update('users', user);\n  }\n  if (notify) {\n    const message = `User ${user.name} updated at ${new Date().toISOString()}`;\n    email.send(user.email, message);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Separate database persistence and notification logic into focused helper functions to reduce duplication and make behavior testable.",
+          "isCorrect": true,
+          "explanation": "Isolating persistence and notification into distinct functions makes each concern independently testable and easier to reason about. It also opens clear places to add transactional boundaries or retry logic without mixing responsibilities."
+        },
+        {
+          "id": "b",
+          "text": "Introduce an application service layer combining persistence and notification to centralize transactional boundaries and reduce call sites.",
+          "isCorrect": false,
+          "explanation": "A service layer can be useful, but combining the two concerns in a single new layer keeps them coupled. The current smell is mixed responsibilities inside one function; the cleaner first step is to separate those responsibilities, not to wrap them together."
+        },
+        {
+          "id": "c",
+          "text": "Replace the notify boolean with two explicit functions to reduce conditional complexity and clarify caller intent in the API.",
+          "isCorrect": false,
+          "explanation": "Splitting into two call sites (saveWithNotify, saveWithoutNotify) clarifies intent at the caller but does not address the internal mixture of persistence and notification logic or make each piece easier to unit test in isolation."
+        },
+        {
+          "id": "d",
+          "text": "Use database triggers to perform notification after persistence to guarantee consistency and avoid application-level orchestration.",
+          "isCorrect": false,
+          "explanation": "Database triggers move logic out of the application but introduce operational complexity and coupling to a specific datastore. They are an architectural choice, not the straightforward local refactor that reduces code-level coupling and improves testability."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two versions below. Which implementation is preferable for maintainability and unit testing?",
+      "codeSnippet": "// Version A\nfunction handlePayment(tx) {\n  const amount = calculateAmount(tx);\n  const formatted = formatCurrency(amount);\n  if (!isValidPayment(tx)) throw new Error('invalid');\n  gateway.charge(formatted, tx.card);\n}\n\n// Version B\nfunction handlePayment(tx) {\n  const amount = calculateAmount(tx);\n  const formatted = (a) => Math.round(a * 100) / 100;\n  if (!(() => validate(tx))()) throw new Error('invalid');\n  gateway.charge(formatted(amount), tx.card);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A uses named helper functions that keep each step focused and make unit testing straightforward.",
+          "isCorrect": true,
+          "explanation": "Version A gives meaningful names to discrete operations and calls named helpers. That makes intent explicit, simplifies mocking and stubbing in tests, and enables individual behavior to be refined or reused. Named helpers also provide easier breakpoints and documentation than inline anonymous expressions."
+        },
+        {
+          "id": "b",
+          "text": "Version B uses inline anonymous lambdas and self-invocations that hinder unit testing and reduce code reuse across the codebase.",
+          "isCorrect": false,
+          "explanation": "Version B buries logic inside inline anonymous functions and obscure invocations, which makes it harder to mock or write focused unit tests for formatting and validation. It also prevents reuse and obscures intent, increasing maintenance cost when those behaviors need independent changes or error handling."
+        }
+      ]
+    }
+  ]
+}
