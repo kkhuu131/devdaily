@@ -1,0 +1,106 @@
+{
+  "id": 44,
+  "conceptName": "Speculative Generality",
+  "category": "code-smell",
+  "definition": "Adding abstractions, hooks, or options to the design in anticipation of future needs that are not currently required or used.",
+  "ruleOfThumb": "Prefer simple concrete implementations now; introduce abstraction only when a second client or concrete need justifies it.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Code Smells: Speculative Generality",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/SpeculativeGenerality.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best describes the primary smell in this snippet?",
+      "codeSnippet": "export interface PaymentGateway {\n  charge(card: string, amount: number): Promise<boolean>;\n  refund?(transactionId: string): Promise<boolean>; // planned for future\n  scheduleCharge?(card: string, amount: number, date: Date): void; // not used\n}\n\nexport class StripeGateway implements PaymentGateway {\n  async charge(card: string, amount: number) { /* implemented */ }\n  // refund and scheduleCharge left as future hooks\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This module declares extra abstractions and unused hooks that are not required by current business logic.",
+          "isCorrect": true,
+          "explanation": "The snippet shows optional methods and comments like \"planned for future\" and unused scheduling hooks. Those are classic signs of anticipating features that do not exist yet. Introducing such hooks increases surface area and maintenance cost for no present benefit. A refactor would remove or postpone these abstractions until a real need appears, then extract interfaces when multiple implementations justify them."
+        },
+        {
+          "id": "b",
+          "text": "This module mixes multiple responsibilities by combining payment processing and scheduling concerns into a single exportable class.",
+          "isCorrect": false,
+          "explanation": "While mixing responsibilities is a valid concern, the snippet primarily shows hooks that are not implemented rather than active scheduling logic. The class focuses on charging and merely reserves optional methods for future features, so the immediate SRP violation is less clear than the speculative abstraction problem."
+        },
+        {
+          "id": "c",
+          "text": "This module omits explicit error handling for external gateway failures which could cause unhandled exceptions at runtime.",
+          "isCorrect": false,
+          "explanation": "Missing error handling is a practical runtime concern, but the code intentionally left optional hooks and comments about future functionality. The smell to spot here is unnecessary future-facing abstractions rather than immediate exception handling gaps."
+        },
+        {
+          "id": "d",
+          "text": "This module tightly couples concrete gateway implementations to business rules making unit testing and substitution difficult.",
+          "isCorrect": false,
+          "explanation": "Tight coupling can be a real issue, but the snippet shows an interface plus a concrete implementation rather than direct coupling to business logic. The prominent smell is the presence of unused optional members that anticipate future needs and add complexity without current justification."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which of the following is the most likely risk introduced by this design?",
+      "codeSnippet": "class NotificationService {\n  sendEmail(to:string, body:string) { /* used */ }\n  sendSms?(to:string, body:string) { /* planned */ }\n  scheduleSend?(payload:any, when:Date) { /* planned */ }\n  featureFlags = { enablePush: false, enableAuditing: false, futureMode: true };\n}\n\n// Only sendEmail is used by current application flows",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This service exposes many optional hooks and flags that anticipate future features not yet required by current users.",
+          "isCorrect": true,
+          "explanation": "The class contains multiple optional methods and a featureFlags object that signals planned but unused capabilities. That increases cognitive load and maintenance overhead for no immediate benefit. The pragmatic approach is to keep the implementation minimal and introduce hooks when multiple consumers or concrete requirements emerge."
+        },
+        {
+          "id": "b",
+          "text": "This service violates the Single Responsibility Principle by handling delivery scheduling and persistence alongside message formatting.",
+          "isCorrect": false,
+          "explanation": "SRP is a reasonable concern, but the snippet primarily demonstrates placeholder methods and flags rather than implemented scheduling or persistence responsibilities. The immediate issue is overgeneralization for anticipated needs rather than a clear SRP breach from multiple active responsibilities."
+        },
+        {
+          "id": "c",
+          "text": "This service hardcodes external provider logic making it difficult to substitute third party integrations for different environments.",
+          "isCorrect": false,
+          "explanation": "Hardcoding providers is a practical maintainability problem, but the shown code focuses on optional methods and feature flags. There is no explicit provider logic visible. The more accurate diagnosis is that the design is overprepared for potential features that do not yet exist."
+        },
+        {
+          "id": "d",
+          "text": "This service lacks proper input validation on the public methods which could lead to unpredictable runtime failures.",
+          "isCorrect": false,
+          "explanation": "Input validation is important, but the snippet's notable characteristic is numerous unused extension points and flags. The speculative expansion of the API surface is the stronger and more actionable diagnosis in this case."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation would you prefer for the current requirements, and why?",
+      "codeSnippet": "/* Version A: general plugin approach */\ninterface NotifierPlugin { notify(payload:any): Promise<void> }\nclass Notifier {\n  private plugins: NotifierPlugin[] = [];\n  register(p: NotifierPlugin) { this.plugins.push(p); }\n  async notifyAll(payload:any) { for (const p of this.plugins) await p.notify(payload); }\n}\n\n/* Version B: focused concrete implementation */\nclass EmailNotifier {\n  async notify(payload:{to:string,body:string}) { /* simple email send implementation */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A defines a general plugin interface and many unused extension points that complicate current maintenance.",
+          "isCorrect": false,
+          "explanation": "Version A introduces a plugin infrastructure that looks flexible but increases indirection and API surface area before any real need. If no multiple implementations or extension consumers exist, this complexity adds maintenance cost and testing burden. It can also encourage premature splitting of responsibilities that are better kept simple until requirements demand variation."
+        },
+        {
+          "id": "b",
+          "text": "Version B implements only the concrete handlers required by current requirements without introducing extension points.",
+          "isCorrect": true,
+          "explanation": "Version B matches the present needs with a focused concrete implementation and avoids unnecessary indirection. Delaying abstraction keeps the code simpler, easier to understand, and cheaper to maintain. When a second or third notifier implementation is actually needed, you can refactor toward a plugin or strategy pattern with real usage guiding the abstraction choices. This approach follows YAGNI and reduces speculative work while keeping future refactoring paths open. References: Fowler on speculative generality, and pragmatic advice in The Pragmatic Programmer about evolving design."
+        }
+      ]
+    }
+  ]
+}

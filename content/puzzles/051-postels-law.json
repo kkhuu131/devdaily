@@ -1,0 +1,105 @@
+{
+  "id": 51,
+  "conceptName": "Postel's Law",
+  "category": "principle",
+  "definition": "A robustness guideline for interoperable systems: tolerate differences in incoming data, but produce strictly specified outputs to avoid propagating ambiguity.",
+  "ruleOfThumb": "Accept a broad range of inputs; emit one well-documented canonical output format.",
+  "citation": {
+    "author": "Jon Postel",
+    "bookTitle": "RFC 793 (Robustness Principle)",
+    "chapter": "Design principles for robust implementations",
+    "page": null,
+    "externalUrl": "https://tools.ietf.org/html/rfc793"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which short description best matches a guideline that preserves interoperability by tolerating varied inputs but standardizing outputs?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Accept a broad variety of incoming formats while emitting narrowly defined, strictly formatted outputs to maintain compatibility across implementations.",
+          "isCorrect": true,
+          "explanation": "This captures the core guideline: be tolerant of what you receive but conservative in what you send. The emphasis is on accepting diverse client representations while producing one canonical, well-documented output that other implementations can rely on. That combination minimizes breakage and reduces ambiguity in downstream consumers."
+        },
+        {
+          "id": "b",
+          "text": "Reject any input that deviates from the schema and require exact request and response shapes to guarantee strict safety and validation.",
+          "isCorrect": false,
+          "explanation": "This is a plausible alternative focused on strict validation. While strict schemas improve safety and make contracts explicit, they can fragment an ecosystem when clients unintentionally vary. The original guideline advocates tolerance at the input boundary to improve robustness across heterogeneous clients."
+        },
+        {
+          "id": "c",
+          "text": "Normalize all received data into a single canonical model and always serialize responses using that canonical representation for consistency.",
+          "isCorrect": false,
+          "explanation": "Normalizing into a canonical model is often a useful implementation detail, and consistent serialization aligns with the principle. However, taken alone this phrasing misses the practical tradeoff of tolerating a variety of incoming client formats at the boundary before normalization."
+        },
+        {
+          "id": "d",
+          "text": "Be permissive in accepting inputs and permissive in sending outputs to maximize forward compatibility and ease of client integration.",
+          "isCorrect": false,
+          "explanation": "Being permissive on both input and output sounds flexible but risks propagating incompatible or ambiguous data between systems. The more robust practice is to accept flexibility inbound while keeping outbound representations strict to prevent ambiguity from spreading."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given a REST date API that receives many client formats, which strategy best follows the tolerance-and-strict-output guideline?",
+      "codeSnippet": "function parseDate(input: string): Date | null {\n  // accepts yyyy-MM-dd, MM/dd/yyyy, RFC2822, and ISO strings\n}\n\n// Server response\n// { amount: number, date: string }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Accept multiple incoming date formats and always serialize responses in a single canonical ISO 8601 format to avoid ambiguity.",
+          "isCorrect": true,
+          "explanation": "This option directly follows the guideline: tolerate diverse client date formats when parsing, but return a single, well-documented canonical format (ISO 8601). That prevents consumers from depending on client-specific quirks while still easing client interoperability."
+        },
+        {
+          "id": "b",
+          "text": "Require clients to submit dates in one strict format and return errors for other formats to enforce uniformity.",
+          "isCorrect": false,
+          "explanation": "Requiring a single incoming format creates a rigid contract that can increase client errors and integration friction. It trades tolerance for enforcement, which is sometimes necessary but diverges from the robustness approach that improves resilience across varied clients."
+        },
+        {
+          "id": "c",
+          "text": "Accept many date formats and echo back the exact string the client sent to minimize server parsing and transformation.",
+          "isCorrect": false,
+          "explanation": "Echoing client-supplied strings preserves original intent but propagates ambiguity to consumers and downstream systems. It shifts the burden to every consumer and undermines interoperability by exposing multiple inconsistent representations."
+        },
+        {
+          "id": "d",
+          "text": "Parse dates only when necessary and attach raw input strings to the stored record to preserve original client intent.",
+          "isCorrect": false,
+          "explanation": "Storing raw inputs preserves evidence but defers normalization, increasing complexity for consumers who must handle multiple formats. The robustness guideline favors handling that variability at the service boundary while offering a single canonical output for consumers."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation choice better embodies the tolerance-on-input, strict-on-output tradeoff for an invoice API? Review Version A and Version B.",
+      "codeSnippet": "// Version A: lenient parsing, strict output\nfunction handleRequestA(req: Request) {\n  const amt = parseFloat(req.body.amount);\n  const date = parseDate(req.body.date); // accepts many formats\n  return { amount: amt, date: date.toISOString() };\n}\n\n// Version B: lenient parsing, echo raw\nfunction handleRequestB(req: Request) {\n  const amt = parseFloat(req.body.amount);\n  const date = req.body.date; // preserved as-sent string\n  return { amount: amt, date };\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A accepts varied input formats and emits a single normalized response format for stable interoperability.",
+          "isCorrect": true,
+          "explanation": "Version A demonstrates the robustness tradeoff: it tolerates multiple client formats at the boundary but converts to a single, documented output representation. That minimizes downstream ambiguity and prevents client-specific quirks from being propagated. In practice this reduces the blast radius of client variation and simplifies consumers."
+        },
+        {
+          "id": "b",
+          "text": "Version B accepts many input formats and echoes client-supplied fields back, creating brittle cross-client ambiguities and compatibility risk.",
+          "isCorrect": false,
+          "explanation": "Version B preserves the raw client string in responses which offers no normalization guarantee to consumers. While this may seem convenient for debugging or minimal transformation, it causes interoperability problems because different clients will see different formats and downstream services must handle each variation, increasing coupling and long term maintenance cost."
+        }
+      ]
+    }
+  ]
+}

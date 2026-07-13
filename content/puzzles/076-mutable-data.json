@@ -1,0 +1,106 @@
+{
+  "id": 76,
+  "conceptName": "Mutable Data",
+  "category": "code-smell",
+  "definition": "Code that relies on objects or values being changed in place so that other parts of the system observe and depend on those changes.",
+  "ruleOfThumb": "Prefer returning new values or clearly encapsulating state changes instead of exposing shared, modifiable objects across module boundaries.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Data Value with Object / Make Immutable",
+    "page": "160-166",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation best identifies the primary design problem shown in this snippet?",
+      "codeSnippet": "// config.ts\nexport const config = { count: 0 };\nexport function increment() {\n  config.count++;\n}\nexport function reset() {\n  config.count = 0;\n}\n// app.ts\nimport { config, increment } from \"./config\";\nincrement();\nconsole.log(config.count);\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It exposes a single shared object that multiple functions directly modify across the application at runtime.",
+          "isCorrect": true,
+          "explanation": "The snippet exports a mutable object and mutates it from multiple functions. That makes state changes reachable everywhere that imports the object, producing hidden dependencies and unexpected interactions. Refactoring approaches include encapsulating state behind an API or returning new state objects to avoid callers relying on shared, mutable storage."
+        },
+        {
+          "id": "b",
+          "text": "It uses global constants incorrectly causing compile time errors when modules attempt to import and mutate those values.",
+          "isCorrect": false,
+          "explanation": "This concern is plausible but incorrect here: the code compiles and the exported object is intentionally mutable. The real issue is runtime sharing and mutation rather than compile time import problems. The symptom is surprising state changes, not import or constant semantics."
+        },
+        {
+          "id": "c",
+          "text": "It relies on deep copying of objects which may cause performance overhead and unexpected data duplication during heavy processing.",
+          "isCorrect": false,
+          "explanation": "Deep copying can be a real problem, but this snippet does not copy objects anywhere. The observed symptom is direct mutation of a shared object rather than duplication costs. Addressing this code by copying might hide the real coupling without clarifying ownership."
+        },
+        {
+          "id": "d",
+          "text": "It binds functions to lexical scopes in a way that prevents reuse and makes testing of isolated units harder.",
+          "isCorrect": false,
+          "explanation": "Tight lexical binding can hinder testability, but the concrete issue here is export of a mutable object and in-place mutation. Tests can be made harder by shared state, but the root cause is shared mutable state, not closure over unreachable variables."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this function that modifies its input, which statement best characterizes the subtle design smell?",
+      "codeSnippet": "interface Order { id: string; total: number }\nfunction applyDiscount(order: Order, percent: number) {\n  order.total = order.total - order.total * percent;\n}\nconst o: Order = { id: \"A1\", total: 100 };\napplyDiscount(o, 0.1);\nconsole.log(o.total);\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code mutates caller-supplied objects and lets side effects propagate across unrelated modules at runtime.",
+          "isCorrect": true,
+          "explanation": "The function changes the provided Order in place instead of returning a modified copy. That design allows callers and other modules to observe unexpected state changes, increasing coupling and making reasoning and testing harder. A safer alternative is to return a new object or explicitly document and encapsulate the mutation contract."
+        },
+        {
+          "id": "b",
+          "text": "This code duplicates data across objects, leading to synchronization bugs and heavier memory use when values diverge.",
+          "isCorrect": false,
+          "explanation": "Data duplication is a real concern when you copy state indiscriminately, but the snippet shows in-place mutation rather than duplicating objects. The synchronization bug risk arises from shared mutation, not multiple copies drifting apart in memory."
+        },
+        {
+          "id": "c",
+          "text": "This code exposes internal mutable fields through getters, permitting external callers to change internal invariants unnoticed.",
+          "isCorrect": false,
+          "explanation": "Leaking internal mutable fields via getters is a known smell, but here the function directly mutates an object passed in by the caller. The issue is caller-provided mutable state being changed, not a class exposing internal fields via accessors."
+        },
+        {
+          "id": "d",
+          "text": "This code relies on global singletons for state, causing tight coupling and making unit test isolation difficult.",
+          "isCorrect": false,
+          "explanation": "Global singletons produce global coupling, yet this example operates on a caller-supplied object rather than a global singleton. The testing and coupling problems stem from shared, modifiable inputs rather than an application-wide singleton."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better design when updating a domain object that may be shared across requests or modules?",
+      "codeSnippet": "interface User { id: string; name: string }\n// Version A: in-place update\nfunction updateUserV1(user: User, name: string) {\n  user.name = name;\n  return user;\n}\n\n// Version B: return new object\nfunction updateUserV2(user: User, name: string) {\n  return { ...user, name };\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A mutates the passed object in place which allows cross-request state leaks and hidden side effects.",
+          "isCorrect": false,
+          "explanation": "In-place updates are tempting for performance and simplicity, but when the same object instance may be observed by multiple callers or requests, mutating it in place creates hard-to-find bugs. Shared instances can be changed without the knowledge of other modules, producing nondeterministic behavior. For server or library code that crosses boundaries, avoiding in-place mutation or clearly owning state is usually preferable."
+        },
+        {
+          "id": "b",
+          "text": "Version B returns a fresh object on each update and leaves the original object unchanged for callers.",
+          "isCorrect": true,
+          "explanation": "Version B avoids surprising cross-caller interactions by returning a new object rather than changing the caller's instance. This makes reasoning about state easier, simplifies concurrent or request-scoped code, and improves testability. There are trade-offs around copying cost and identity semantics, but in many domain and server contexts the defensive immutability pattern reduces risk of accidental coupling. See Martin Fowler on making values immutable and Robert C. Martin on minimizing shared mutable state for related guidance."
+        }
+      ]
+    }
+  ]
+}

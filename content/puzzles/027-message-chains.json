@@ -1,0 +1,105 @@
+{
+  "id": 27,
+  "conceptName": "Message Chains",
+  "category": "code-smell",
+  "definition": "A smell where client code repeatedly navigates through a chain of object references to reach data or behavior, coupling callers to internal object structure.",
+  "ruleOfThumb": "If callers must call several getters or traversals to reach needed data, consider adding a higher-level operation on a closer abstraction.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Message Chains",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/MessageChain.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which of these is the clearest symptom of problematic deep navigation between objects?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Frequent sequences of calls that traverse multiple objects to reach nested data indicate tight coupling across modules.",
+          "isCorrect": false,
+          "explanation": "This is a plausible symptom because long navigations do create coupling, but it describes a broader pattern rather than the single clearest indicator. The classic sign is explicit repeated navigation expressions in client code rather than just many calls overall."
+        },
+        {
+          "id": "b",
+          "text": "Large service classes with many methods indicate this problem because they centralize unrelated responsibilities across the domain.",
+          "isCorrect": false,
+          "explanation": "Large service classes are a design smell of their own, but they do not specifically point to deep navigation chains. The issue here is more about god objects and responsibility distribution than nested traversal by callers."
+        },
+        {
+          "id": "c",
+          "text": "Data transfer objects passed through layers without behavior suggest this problem but may also be a performance optimization.",
+          "isCorrect": false,
+          "explanation": "DTOs can correlate with traversal smells, yet passing passive data objects may be intentional for serialization or performance. The core symptom remains explicit chained navigation of domain objects by clients."
+        },
+        {
+          "id": "d",
+          "text": "Calls that repeatedly navigate properties like a.getB().getC().getD() indicate brittle coupling to object structure and evolution risk.",
+          "isCorrect": true,
+          "explanation": "This pattern is the textbook symptom: clients depend on a specific object graph shape. That coupling makes refactoring internals risky and leads to scattered knowledge of structure across code."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In this order-processing snippet, what is the primary design concern?",
+      "codeSnippet": "class OrderProcessor {\n  calculateDiscount(order: Order) {\n    const tier = order.customer.getAccount().getLoyalty().getTier();\n    if (tier === 'GOLD') return 0.2;\n    if (tier === 'SILVER') return 0.1;\n    return 0;\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code exposes internal navigation details and tightly couples OrderProcessor to nested domain object structures.",
+          "isCorrect": true,
+          "explanation": "The core problem is that the caller reaches through several objects to get data, binding it to the exact object graph. The appropriate refactor is to hide traversal behind a higher level API on Order or Customer so callers do not depend on internals."
+        },
+        {
+          "id": "b",
+          "text": "This is primarily a performance concern because repeated chained calls create excessive intermediate objects and slow execution.",
+          "isCorrect": false,
+          "explanation": "While performance can be a factor in some languages, the example shows simple accessor chaining which is not typically expensive. The bigger issue is structural coupling rather than runtime allocation here."
+        },
+        {
+          "id": "c",
+          "text": "The main issue is transactional safety because multiple traversals may observe inconsistent state across different domain aggregates.",
+          "isCorrect": false,
+          "explanation": "Transactional boundaries are important, but the snippet does not show cross-aggregate modifications or concurrency. The immediate maintainability concern is exposing internal navigation rather than transactional inconsistency."
+        },
+        {
+          "id": "d",
+          "text": "It indicates a missing higher level abstraction that could simplify the API and reduce knowledge of internal structure.",
+          "isCorrect": false,
+          "explanation": "This observation is true as a consequence, but it describes a remedy rather than the primary design concern. The primary concern to flag is tight coupling caused by exposed navigation; the abstraction is one of several possible fixes."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better preserves encapsulation and reduces caller knowledge of internal object structure?",
+      "codeSnippet": "// Version A\nfunction calculateDiscount(order: Order) {\n  const tier = order.customer.getAccount().getLoyalty().getTier();\n  if (tier === 'GOLD') return 0.2;\n  if (tier === 'SILVER') return 0.1;\n  return 0;\n}\n\n// Version B\nfunction calculateDiscount(order: Order) {\n  const tier = order.getCustomerLoyaltyTier();\n  if (tier === 'GOLD') return 0.2;\n  if (tier === 'SILVER') return 0.1;\n  return 0;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A performs traversal directly in the caller and exposes nested object structure across modules.",
+          "isCorrect": false,
+          "explanation": "Version A leaves callers dependent on the path through several objects, scattering knowledge of the object graph. That makes refactoring inner objects risky and increases coupling between modules. Although local logic is visible, the structural exposure is a long term maintenance liability."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates nested traversal behind a single domain method on the Order aggregate.",
+          "isCorrect": true,
+          "explanation": "Version B centralizes the traversal in a domain method, preserving encapsulation and reducing coupling for callers. This aligns with Fowler's guidance to hide delegate logic and provide higher level operations on the object that owns the data. The approach makes future internal changes less disruptive and keeps business intent clearer at call sites."
+        }
+      ]
+    }
+  ]
+}

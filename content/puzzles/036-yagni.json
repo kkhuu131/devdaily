@@ -1,0 +1,106 @@
+{
+  "id": 36,
+  "conceptName": "YAGNI",
+  "category": "principle",
+  "definition": "Prefer implementing only the functionality that is currently required, avoiding speculative additions intended for possible future needs.",
+  "ruleOfThumb": "If you do not need a feature for the current requirement or a near-term story, do not build it yet.",
+  "citation": {
+    "author": "Kent Beck",
+    "bookTitle": "Extreme Programming Explained: Embrace Change",
+    "chapter": "Principles",
+    "page": "27",
+    "externalUrl": "https://www.amazon.com/Extreme-Programming-Explained-Embrace-Change/dp/0321278658"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best identifies the code smell illustrated by this snippet?",
+      "codeSnippet": "// billing.ts\nexport function processInvoice(invoice: Invoice, options = { preview: false, audit: false }) {\n  if (options.preview) {\n    // preview path not implemented yet\n  }\n  // perform charge\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This module adds several unused feature flags and branches now that are never exercised by existing production code.",
+          "isCorrect": true,
+          "explanation": "The snippet declares multiple flags and a conditional branch that are not used. That increases surface area, maintenance, and cognitive load without delivering immediate value. The principle encourages deferring such flags until a real need arises so the implementation stays small and testable."
+        },
+        {
+          "id": "b",
+          "text": "This module mixes domain logic and persistence concerns in one class causing tight coupling between business rules and storage.",
+          "isCorrect": false,
+          "explanation": "While mixing concerns is a valid design problem, the snippet specifically shows unused feature flags and an unimplemented branch rather than coupling between domain and persistence. Addressing coupling requires different refactoring than removing speculative features."
+        },
+        {
+          "id": "c",
+          "text": "This module has long functions with nested conditionals that make reasoning and testing of edge cases more difficult.",
+          "isCorrect": false,
+          "explanation": "Long functions and nested conditionals are real maintainability issues, but the presented code is short and the primary issue is added but unused options. Splitting long functions would not remove the speculative flags themselves."
+        },
+        {
+          "id": "d",
+          "text": "This module uses global mutable state which increases risk of hard to reproduce bugs and unpredictable side effects.",
+          "isCorrect": false,
+          "explanation": "Global mutable state is an important smell, but the example shows a local options object and an unused branch. The core issue is speculative feature scaffolding rather than global state management."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Team is considering extracting an interface for the payment gateway though only one provider exists. Which judgement best aligns with the shown concern?",
+      "codeSnippet": "interface PaymentGateway { charge(amount: number): Promise<void> }\nclass StripeGateway implements PaymentGateway { async charge(amount){ /* stripe call */ } }\n// Currently only StripeGateway is used in the app\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This change introduces an interface for a single implementation and increases unnecessary complexity across the codebase.",
+          "isCorrect": true,
+          "explanation": "Creating an interface when there is only one concrete implementation is a form of speculative abstraction. It increases indirection and the number of types to maintain without delivering immediate value. If multiple providers actually arrive, the interface can be extracted then with minimal cost."
+        },
+        {
+          "id": "b",
+          "text": "This change improves testability by decoupling payment logic from implementation details and makes mocking easier in tests.",
+          "isCorrect": false,
+          "explanation": "Decoupling can improve testability, but languages and test tools often allow mocking concrete classes or using test doubles without an extra interface. The benefit must be weighed against the added abstraction when only one implementation exists."
+        },
+        {
+          "id": "c",
+          "text": "This change future-proofs the system for upcoming multiple providers and avoids rework when requirements expand later.",
+          "isCorrect": false,
+          "explanation": "Future-proofing is a common rationale, yet premature generalization can cost time and clarity now. Postponing the abstraction until a second provider is required avoids unnecessary complexity and keeps the design aligned with current needs."
+        },
+        {
+          "id": "d",
+          "text": "This change violates open closed principle by requiring change to interface whenever a new provider is introduced in future.",
+          "isCorrect": false,
+          "explanation": "The Open-Closed Principle is about extension without modification, but extracting an interface does not inherently violate it. The primary trade-off here is speculative abstraction versus immediate simplicity, not an unavoidable OCP violation."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "For a small team shipping a core feature quickly, which version better follows the minimal-building principle shown above?\nCompare Version A and Version B in the snippet.",
+      "codeSnippet": "// Version A\nclass UserRepo { fetchUsers(){ /* SQL query */ } }\nclass UserService { constructor(private repo: UserRepo) {} }\n\n// Version B\ninterface Repo { fetchUsers(): any }\nclass UserRepoV2 implements Repo { fetchUsers(){ /* SQL query */ } }\nclass UserService2 { constructor(private repo: Repo) {} }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A implements only the concrete repository used today without premature abstraction layers.",
+          "isCorrect": true,
+          "explanation": "Version A keeps the implementation direct and focused on the current need. Introducing the Repo interface in Version B adds an abstraction layer and indirection before there is a demonstrated need for multiple implementations. For small teams shipping core features, minimizing abstractions reduces cognitive overhead and upkeep. If a second implementation becomes necessary, extracting the interface is a low-risk refactor."
+        },
+        {
+          "id": "b",
+          "text": "Version B introduces an interface and adapters that add indirection and maintenance burden for no immediate need.",
+          "isCorrect": false,
+          "explanation": "Version B creates an extra type boundary and potential adapter implementations before any consumer requires them. That can be justified when multiple implementations, third-party swapping, or different lifecycles are certain, but in an early-stage product this indirection increases maintenance and obscures the simple path. The wrong choice is subtle because concerns like testability and future changes are real, yet the premature abstraction is the primary downside here."
+        }
+      ]
+    }
+  ]
+}

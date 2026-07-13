@@ -1,0 +1,106 @@
+{
+  "id": 70,
+  "conceptName": "Alternative Classes with Different Interfaces",
+  "category": "code-smell",
+  "definition": "A design smell where multiple classes provide similar or identical responsibilities but expose different public APIs, forcing callers to treat them differently instead of using them interchangeably.",
+  "ruleOfThumb": "When two classes are used for the same purpose but require different call patterns, introduce a common abstraction or adapters so clients need not branch on type.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Alternative Classes with Different Interfaces",
+    "page": "152",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the code. What is the most likely design smell affecting how callers use these classes?",
+      "codeSnippet": "class CustomerRepo {\n  saveCustomer(c: Customer) { /* ... */ }\n}\nclass ClientStore {\n  persistClient(c: Customer) { /* ... */ }\n}\nfunction persist(c: Customer, useClient: boolean) {\n  if (useClient) new ClientStore().persistClient(c);\n  else new CustomerRepo().saveCustomer(c);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Two classes in this module provide the same behavior but present different public APIs to callers.",
+          "isCorrect": true,
+          "explanation": "Correct. Both classes fulfill the same role yet expose different method names; callers must branch on which concrete type to use. This is the symptom that prevents polymorphism and typically calls for a common interface or adapter so callers can treat implementations uniformly."
+        },
+        {
+          "id": "b",
+          "text": "Two classes in this module provide the same behavior but have extensive duplication of implementation that needs refactoring.",
+          "isCorrect": false,
+          "explanation": "This is a plausible observation because duplicated logic is common when similar classes exist. However the snippet shows different public method names and client branching, not obvious internal code duplication. The primary issue is the inconsistent APIs, not necessarily duplicated internals."
+        },
+        {
+          "id": "c",
+          "text": "Two classes in this module provide the same behavior but expose overly large interfaces leading to unnecessary coupling for clients.",
+          "isCorrect": false,
+          "explanation": "This concern is realistic when classes offer many unrelated methods. In this example the classes only differ by a single method name and do not show fat interfaces. The core problem is inconsistent method signatures rather than excessive surface area."
+        },
+        {
+          "id": "d",
+          "text": "Two classes in this module provide the same behavior but one class appears to be unused and should be removed.",
+          "isCorrect": false,
+          "explanation": "Removing dead code is often correct, but the snippet purposefully shows both being used via a runtime branch. The smell is about callers needing to choose which API to call, not about an unused class. Eliminating a class would lose necessary variations."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given these two tax calculators used across the codebase, which refactor best addresses long term maintainability and caller simplicity?",
+      "codeSnippet": "class LocalTaxCalculator {\n  computeLocalTax(amount: number) { /* local rules */ }\n}\nclass InternationalTaxCalculator {\n  calculateForeignTax(amount: number) { /* international rules */ }\n}\n// callers now must pick which class and method to call",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Merge both calculators into one class with conditional branches selecting behavior based on a locale flag in constructor.",
+          "isCorrect": false,
+          "explanation": "Merging may centralize logic but introduces conditional branches and a flag that mixes concerns. It increases complexity and makes adding new regions harder. Prefer polymorphism or adapters to keep region rules encapsulated and callers uniform."
+        },
+        {
+          "id": "b",
+          "text": "Keep both classes as is and let client code instantiate the appropriate one based on environment or flags.",
+          "isCorrect": false,
+          "explanation": "Leaving callers to select concrete implementations preserves current design but spreads conditional logic throughout the codebase. It makes caller code harder to test and harder to extend. This does not solve the inconsistent interface problem."
+        },
+        {
+          "id": "c",
+          "text": "Define a shared interface for tax calculation and implement it in both classes to unify caller code.",
+          "isCorrect": true,
+          "explanation": "Defining a shared interface or abstract base for tax calculation lets both implementations be used interchangeably by callers. This reduces branching, centralizes the contract, and enables dependency injection and testing. It aligns with the Strategy pattern and common refactorings described by Fowler and GoF."
+        },
+        {
+          "id": "d",
+          "text": "Create a facade object that holds both calculators and exposes a single compute method delegating internally by rules.",
+          "isCorrect": false,
+          "explanation": "A facade can hide complexity from clients but it still encodes the delegation logic in one place and does not provide interchangeable implementations to callers. It can be useful short term, but a shared interface with polymorphism is generally cleaner for varying calculation strategies."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better resolves callers having to branch on concrete types and method names?",
+      "codeSnippet": "// Version A\nclass LocalInvoiceProcessor { processLocal(invoice: Invoice) { /* ... */ } }\nclass RemoteInvoiceHandler { handleRemote(invoice: Invoice) { /* ... */ } }\nfunction sendInvoice(invoice: Invoice, local: boolean) {\n  if (local) new LocalInvoiceProcessor().processLocal(invoice);\n  else new RemoteInvoiceHandler().handleRemote(invoice);\n}\n\n// Version B\ninterface InvoiceProcessor { process(invoice: Invoice): void }\nclass LocalInvoiceProcessorV2 implements InvoiceProcessor { process(invoice: Invoice) { /* ... */ } }\nclass RemoteInvoiceProcessor implements InvoiceProcessor { process(invoice: Invoice) { /* ... */ } }\nfunction sendInvoiceUnified(invoice: Invoice, processor: InvoiceProcessor) {\n  processor.process(invoice);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A forces callers to branch on concrete types and duplicate orchestration logic across client code.",
+          "isCorrect": false,
+          "explanation": "Version A leaves callers responsible for selecting the correct concrete class and invoking different method names. This spreads conditional logic, increases coupling, and makes testing callers harder. It obstructs reuse and violates the goal of interchangeable implementations. The remedy is to provide a consistent abstraction or adapters so callers need not branch."
+        },
+        {
+          "id": "b",
+          "text": "Version B provides a single interface so callers use polymorphism and avoid conditional branches in caller code.",
+          "isCorrect": true,
+          "explanation": "Version B is preferable because it offers a consistent public API that callers can depend on. By introducing a shared interface each processor becomes substitutable, enabling dependency injection, simpler testing, and easier extension. This approach aligns with the Strategy pattern and with refactorings recommended by Fowler. If existing classes cannot be changed, adapters can provide the same unified interface without modifying implementations."
+        }
+      ]
+    }
+  ]
+}

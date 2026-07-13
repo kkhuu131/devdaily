@@ -1,0 +1,106 @@
+{
+  "id": 32,
+  "conceptName": "Encapsulate What Varies",
+  "category": "principle",
+  "definition": "When a part of the system is likely to change independently, isolate that varying behavior behind a stable interface or abstraction so the rest of the system is unaffected by changes.",
+  "ruleOfThumb": "Identify bits that change frequently and hide them behind small, well-documented interfaces so callers depend on stable contracts.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Encapsulate What Varies",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/EncapsulateWhatVaries.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best identifies the design shown in this checkout example?",
+      "codeSnippet": "interface DiscountStrategy {\n  apply(price: number): number\n}\n\nclass PercentageDiscount implements DiscountStrategy {\n  apply(price: number) { return price * 0.9 }\n}\n\nclass Checkout {\n  constructor(private discount: DiscountStrategy) {}\n  total(price: number) { return this.discount.apply(price) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code isolates interchangeable pricing behavior behind a pluggable strategy interface used by the checkout service.",
+          "isCorrect": true,
+          "explanation": "This design moves the varying pricing algorithms behind an interface so Checkout depends on a stable contract. That separation makes replacing or adding discount algorithms straightforward and improves testability. Refactoring to an interface like this aligns with the advice to keep stable boundaries and localize changeable parts, as discussed by Fowler and the Gang of Four for behavior variants."
+        },
+        {
+          "id": "b",
+          "text": "The code centralizes validation logic into one module to reduce duplicated input checks across different endpoints.",
+          "isCorrect": false,
+          "explanation": "This statement mistakes the intent: the snippet delegates pricing calculation, not input validation. Centralizing validation would focus on input concerns across controllers, whereas the shown code isolates algorithmic variation. The real concern here is behavioral variation, not duplicated input checks."
+        },
+        {
+          "id": "c",
+          "text": "The code introduces global mutable configuration to let different discount implementations adjust runtime parameters.",
+          "isCorrect": false,
+          "explanation": "This is incorrect because the snippet passes a DiscountStrategy instance into Checkout rather than using global mutable state. Using dependency injection avoids global mutation; the shown approach keeps state local to implementations and callers instead of relying on shared mutable configuration."
+        },
+        {
+          "id": "d",
+          "text": "The code inlines discount calculations in the controller which will make unit testing and reuse more difficult.",
+          "isCorrect": false,
+          "explanation": "This distractor flips the reality: discount calculations are extracted into strategy implementations, not inlined. Inlining would indeed harm testability and reuse, but the presented code improves those qualities by extracting behavior into replaceable objects."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary maintainability problem in this shipping cost calculation?",
+      "codeSnippet": "function calculateShipping(order: any) {\n  if (order.method === 'air') return order.weight * 1.5 + 50\n  if (order.method === 'sea') return order.weight * 0.5 + 20\n  if (order.method === 'road') return order.weight * 1.0 + 30\n  return 0\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function creates hidden coupling by mutating external state inside each branch which hinders concurrent safety.",
+          "isCorrect": false,
+          "explanation": "While hidden coupling and shared mutable state are real problems, this snippet shows pure computations without mutating external state. The branches are independent calculations; the key issue is the conditional structure itself, not concurrent mutation."
+        },
+        {
+          "id": "b",
+          "text": "This function violates single responsibility by mixing calculation and logging concerns inside conditional branches for each type.",
+          "isCorrect": false,
+          "explanation": "There is no logging in the snippet, so SRP violation via logging is not the main problem. The central issue is that shipping methods are encoded as conditionals, making extension and testing harder — a variation that should be isolated."
+        },
+        {
+          "id": "c",
+          "text": "This function embeds varying order type behaviors in conditional branches which makes adding new types error prone and scattered.",
+          "isCorrect": true,
+          "explanation": "The conditional branches put each shipping algorithm in-line, so adding or changing methods requires editing the function. Extracting each method into its own implementation behind a common contract localizes change and reduces risk. Fowler and GoF recommend isolating variability to ease extension and maintenance."
+        },
+        {
+          "id": "d",
+          "text": "This function performs inefficient repeated computations in each branch instead of sharing common subexpressions across branches.",
+          "isCorrect": false,
+          "explanation": "Performance through common subexpression elimination may help in some cases, but the snippet's main problem is structural: differing algorithms are mixed together. Premature optimization for small repeated arithmetic distracts from the need to encapsulate the differing behaviors."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better prepares the codebase for adding new workflows and why?",
+      "codeSnippet": "// Version A\nclass WorkflowService {\n  run(type: string, payload: any) {\n    if (type === 'alpha') processAlpha(payload)\n    else if (type === 'beta') processBeta(payload)\n    else if (type === 'gamma') processGamma(payload)\n  }\n}\n\n// Version B\ninterface Workflow { run(payload: any): void }\nclass AlphaWorkflow implements Workflow { run(p){ /* ... */ } }\nclass BetaWorkflow implements Workflow { run(p){ /* ... */ } }\nclass WorkflowDispatcher {\n  constructor(private map: Record<string, Workflow>) {}\n  run(type: string, payload: any){ this.map[type].run(payload) }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes workflow logic in a single class and preserves a single inspection point for behavior.",
+          "isCorrect": false,
+          "explanation": "Keeping all logic in one class might seem simpler initially, but it couples different workflows together and forces edits in a central place for every new type. Over time this increases risk of regressions and makes isolated testing harder. The distributed implementation approach avoids those risks by allowing independent additions."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates each workflow into its own implementation allowing each to evolve and be tested separately.",
+          "isCorrect": true,
+          "explanation": "Version B separates varying workflows behind a small interface so each can change without touching the dispatcher or other workflows. That reduces coupling, improves testability, and supports the open closed idea — new workflows can be added by introducing new implementations and wiring them in. This aligns with Fowler's guidance and the Gang of Four patterns such as Strategy and Command for encapsulating variation."
+        }
+      ]
+    }
+  ]
+}

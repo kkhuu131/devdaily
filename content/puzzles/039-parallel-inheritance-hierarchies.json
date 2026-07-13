@@ -1,0 +1,106 @@
+{
+  "id": 39,
+  "conceptName": "Parallel Inheritance Hierarchies",
+  "category": "code-smell",
+  "definition": "Two or more class hierarchies that mirror each other so that a new subclass in one hierarchy requires a matching subclass or coordinated changes in the other hierarchies.",
+  "ruleOfThumb": "If adding a subtype forces edits in several class trees at once, prefer composition or a single abstraction to decouple the responsibilities.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Parallel Inheritance Hierarchies",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/ParallelInheritanceHierarchies.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Review the code below. What best describes the structural problem you see?",
+      "codeSnippet": "abstract class Report {\n  abstract data(): any;\n}\nclass SalesReport extends Report {\n  data() { return { /* ... */ }; }\n}\nclass InventoryReport extends Report {\n  data() { return { /* ... */ }; }\n}\nabstract class Exporter {\n  abstract export(r: Report): string;\n}\nclass PdfExporter extends Exporter {\n  export(r: Report) { return 'pdf'; }\n}\nclass CsvExporter extends Exporter {\n  export(r: Report) { return 'csv'; }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Two class hierarchies mirror each other and require coordinated edits for every new concrete type.",
+          "isCorrect": true,
+          "explanation": "This situation shows two hierarchies whose types correspond closely (report kinds and exporter kinds). Adding a new kind tends to require adding matching classes across both trees, which increases maintenance friction and the chance of inconsistent implementations."
+        },
+        {
+          "id": "b",
+          "text": "A large god class that centralizes unrelated responsibilities and grows with many methods over time.",
+          "isCorrect": false,
+          "explanation": "A god class smells different: one class accumulating many responsibilities. The example shows multiple small classes forming two hierarchies rather than a single overly large class, so the god class diagnosis is not the primary issue here."
+        },
+        {
+          "id": "c",
+          "text": "Excessive conditional logic scattered across classes selecting behaviors at runtime and hindering extension over time.",
+          "isCorrect": false,
+          "explanation": "Scattered conditionals are a real smell, but the snippet shows explicit subclassing of behaviors rather than if/else dispatch. While conditionals may appear elsewhere, they are not the key structural maintenance risk illustrated by the paired hierarchies."
+        },
+        {
+          "id": "d",
+          "text": "Tight coupling between modules caused by shared global state and static singletons across services in production.",
+          "isCorrect": false,
+          "explanation": "Global state and singletons cause coupling across modules, but the code demonstrates type-level coupling between parallel class families rather than runtime coupling via globals. The root problem is mirrored type growth, not shared global state."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the pattern in this code, which maintenance risk is most likely to cause repeated coordinated changes?",
+      "codeSnippet": "abstract class Report {\n  abstract data(): any;\n}\nclass SalesReport extends Report { data() { return {} } }\nclass InventoryReport extends Report { data() { return {} } }\nabstract class Exporter {\n  abstract export(r: Report): string;\n}\nclass PdfExporter extends Exporter { export(r: Report) { return 'pdf' } }\nclass CsvExporter extends Exporter { export(r: Report) { return 'csv' } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Adding a new report subtype forces coordinated additions across exporter and handler hierarchies and increases change friction.",
+          "isCorrect": true,
+          "explanation": "When two hierarchies correspond, adding a new concept typically requires parallel additions and updates across both trees. That coordinated work increases time to implement features and raises the risk of mismatched behavior between related subclasses."
+        },
+        {
+          "id": "b",
+          "text": "Duplication of business logic across classes will cause inconsistent behavior if teams implement similar methods differently in parallel.",
+          "isCorrect": false,
+          "explanation": "Duplication is a plausible risk, and parallel hierarchies can lead to duplicated logic, but the more precise maintenance cost is the requirement to introduce matched types across hierarchies. Duplication is a symptom that may or may not be present."
+        },
+        {
+          "id": "c",
+          "text": "Performance overhead from unnecessary indirection through many small classes will slow critical code paths under load.",
+          "isCorrect": false,
+          "explanation": "Indirection overhead can matter in hot paths, but it is usually negligible compared to the design and maintenance costs caused by mirrored hierarchies. The primary concern is structural coupling, not runtime performance in most applications."
+        },
+        {
+          "id": "d",
+          "text": "A brittle public API will emerge because clients must know paired class names and construct matching types together.",
+          "isCorrect": false,
+          "explanation": "Clients coupling to paired names is a real usability issue, but the immediate maintenance burden is internal coordinated changes when adding types. API brittleness may follow, yet it is a downstream effect rather than the central evolution cost."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version more effectively reduces future coordinated changes and why?",
+      "codeSnippet": "// Version A: composition\nclass Report {\n  constructor(public exporter: Exporter) {}\n}\nclass SalesReport extends Report {}\nclass InventoryReport extends Report {}\ninterface Exporter { export(r: Report): string }\nclass PdfExporter implements Exporter { export(r: Report) { return 'pdf' } }\n\n// Version B: mirrored subclasses\nclass PdfSalesReport { data() { } export() { return 'pdf' } }\nclass PdfInventoryReport { data() { } export() { return 'pdf' } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A composes exporter behavior into reports to avoid duplicated subclasses and reduce coordinated changes.",
+          "isCorrect": true,
+          "explanation": "Version A applies composition so exporter behavior is orthogonal to report kinds. That decouples the two dimensions and lets you add a new report without adding a matching exporter subclass. This follows common refactor advice to replace parallel hierarchies with composition or a single abstraction to separate concerns — see Fowler on Parallel Inheritance Hierarchies and the general guidance for improving modularity."
+        },
+        {
+          "id": "b",
+          "text": "Version B creates combined subclasses for each pair which increases duplication and tight coupling for future extensions.",
+          "isCorrect": false,
+          "explanation": "Version B maintains the mirrored inheritance approach by combining every pair into its own subclass. That increases the number of classes and duplicates structure as the domain grows, forcing coordinated edits and making extension brittle. It may seem simpler initially, but it scales poorly and violates the intent to separate orthogonal concerns as recommended in refactoring literature."
+        }
+      ]
+    }
+  ]
+}

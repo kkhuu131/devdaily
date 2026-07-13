@@ -1,0 +1,105 @@
+{
+  "id": 68,
+  "conceptName": "Memento Pattern",
+  "category": "design-pattern",
+  "definition": "A behavioral pattern that captures and externalizes an object's internal state so it can be restored later, without violating encapsulation.",
+  "ruleOfThumb": "Store immutable snapshots of an object's necessary state separately, and keep originator internals encapsulated from caretakers.",
+  "citation": {
+    "author": "Erich Gamma et al.",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Memento",
+    "page": "311",
+    "externalUrl": "https://en.wikipedia.org/wiki/Memento_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches the intent of this pattern when saving and restoring object state?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "It stores an object's internal state externally so the object can be restored later without exposing internals.",
+          "isCorrect": true,
+          "explanation": "Correct. The pattern's intent is to capture an object's state in a separate snapshot object so the originator's encapsulation is preserved while allowing restoration later. The caretaker holds the snapshot without manipulating internals."
+        },
+        {
+          "id": "b",
+          "text": "It records every method invocation as a reversible command to replay or undo behavior across system components.",
+          "isCorrect": false,
+          "explanation": "This describes the Command pattern with undo, where actions are recorded as commands. That approach focuses on operations rather than capturing an object's full internal state as a snapshot."
+        },
+        {
+          "id": "c",
+          "text": "It clones objects shallowly to produce cheap copies for rollback without keeping a separate immutable history snapshot.",
+          "isCorrect": false,
+          "explanation": "Shallow cloning is a different strategy and often fails when internals are mutable or complex. The pattern emphasizes separate snapshot objects rather than naïve shallow copies to ensure reliable restoration."
+        },
+        {
+          "id": "d",
+          "text": "It centralizes state in a global store so multiple objects can read and write shared system state directly.",
+          "isCorrect": false,
+          "explanation": "Global shared state is an anti pattern for encapsulation and does not preserve an individual object's private state snapshots. This choice mixes responsibilities and breaks object boundaries."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary flaw in this TypeScript excerpt when saving and restoring Editor state?",
+      "codeSnippet": "class Editor {\n  private lines: string[] = [];\n  getState() { return this.lines; }\n  setState(lines: string[]) { this.lines = lines; }\n}\n\nclass Caretaker {\n  private history: string[][] = [];\n  save(e: Editor) { this.history.push(e.getState()); }\n  restore(e: Editor, i: number) { e.setState(this.history[i]); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The caretaker saves references to the originator's mutable internal structures instead of making independent immutable snapshots for restoration.",
+          "isCorrect": true,
+          "explanation": "Correct. The code pushes the originator's internal array reference into history, so subsequent mutations to the originator also change saved entries. The fix is to copy or create an immutable snapshot when saving."
+        },
+        {
+          "id": "b",
+          "text": "The caretaker performs synchronous serialization during each save, introducing blocking latency when history grows and many saves occur frequently.",
+          "isCorrect": false,
+          "explanation": "This is a plausible performance concern for some designs, but the snippet does not show serialization. The main functional bug shown is saving mutable references rather than snapshots."
+        },
+        {
+          "id": "c",
+          "text": "The caretaker mixes persistence and history responsibilities causing a single component to violate single responsibility and testing simplicity.",
+          "isCorrect": false,
+          "explanation": "Mixing responsibilities can be a maintainability issue, and separating concerns is good practice. However, the immediate correctness problem in this code is not SRP violation but incorrect handling of mutable state references."
+        },
+        {
+          "id": "d",
+          "text": "The caretaker stores state entries without defensive copying or validation, allowing later mutations to corrupt prior saved entries.",
+          "isCorrect": false,
+          "explanation": "This identifies the symptom accurately but is framed as a general lack of validation; the root is specifically that getState returns a live reference instead of a snapshot. Defensive copying is indeed the remedy."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better implements safe history snapshots for later restore in a mutable editor implementation?",
+      "codeSnippet": "// Version A\nclass EditorV1 {\n  private content: string[] = [];\n  getState() { return this.content; } // returns direct reference\n  setState(s: string[]) { this.content = s; }\n}\n\n// Version B\nclass Snapshot {\n  constructor(public readonly lines: string[]) {}\n}\nclass EditorV2 {\n  private content: string[] = [];\n  createSnapshot() { return new Snapshot(this.content.slice()); }\n  restore(s: Snapshot) { this.content = s.lines.slice(); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A stores raw references to internal arrays and therefore archived snapshots will change when the originator mutates.",
+          "isCorrect": false,
+          "explanation": "Version A returns live references to its internal arrays. Because caretak ers keep those references, any later modification by the originator will retroactively alter the saved entries, breaking historical guarantees and making restores unreliable."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates immutable snapshots and prevents accidental mutation of saved history by design.",
+          "isCorrect": true,
+          "explanation": "Version B is preferable. It constructs explicit snapshot objects and copies the internal state, ensuring saved data is immutable and decoupled from the originator. This preserves encapsulation and makes restores deterministic. This approach aligns with the original pattern intent and helps keep responsibilities separated between originator and caretaker."
+        }
+      ]
+    }
+  ]
+}

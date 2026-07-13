@@ -1,0 +1,106 @@
+{
+  "id": 60,
+  "conceptName": "Composite Pattern",
+  "category": "design-pattern",
+  "definition": "A structural pattern that composes objects into tree structures so clients treat individual objects and compositions uniformly.",
+  "ruleOfThumb": "Use when you need to represent part-whole hierarchies and allow clients to treat single objects and groups uniformly.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Composite",
+    "page": "pp. 163-175",
+    "externalUrl": "https://refactoring.guru/design-patterns/composite"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the code. Which description best matches the implemented structure?",
+      "codeSnippet": "interface Component {\n  operation(): string;\n}\n\nclass Leaf implements Component {\n  operation() { return \"Leaf\"; }\n}\n\nclass Container implements Component {\n  private children: Component[] = [];\n  operation() { return this.children.map(c => c.operation()).join(\",\"); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code implements a tree-structured object hierarchy where leaves and containers share a common interface for operations.",
+          "isCorrect": true,
+          "explanation": "The snippet defines a Component interface with both Leaf and Container implementing the same operation method and Container holding children. That uniformity of interface and recursive composition is the hallmark of treating individuals and composites the same way, enabling clients to call operation without knowing the concrete type."
+        },
+        {
+          "id": "b",
+          "text": "This code shows simple inheritance-based specialization without explicit recursive composition or client-transparent handling of nested components.",
+          "isCorrect": false,
+          "explanation": "Although inheritance is present, the Container class holds children and forwards operation to them. That recursive structure enables clients to treat containers and leaves uniformly, which goes beyond mere inheritance-based specialization."
+        },
+        {
+          "id": "c",
+          "text": "This code represents a builder-style fluent API for assembling elements, not a structural uniform-treatment hierarchy for elements.",
+          "isCorrect": false,
+          "explanation": "There is no fluent builder API here. The intent is structural: Container stores children and aggregates their operation results, which is about composition and uniform treatment rather than a fluent construction sequence."
+        },
+        {
+          "id": "d",
+          "text": "This code illustrates separating algorithms from data structures, intending external visitors to operate on different node types.",
+          "isCorrect": false,
+          "explanation": "A visitor approach would show accept(visitor) and double dispatch. The snippet instead embeds operation on components themselves and composes children, so it implements uniform object behavior rather than separating operations via a visitor."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this implementation, what is the most likely maintenance risk introduced by the public component API?",
+      "codeSnippet": "interface Component {\n  operation(): string;\n  add?(c: Component): void;\n  remove?(c: Component): void;\n}\n\nclass Leaf implements Component {\n  operation() { return \"leaf\"; }\n}\n\nclass Composite implements Component {\n  private children: Component[] = [];\n  operation() { return this.children.map(c => c.operation()).join(\",\"); }\n  add(c: Component) { this.children.push(c); }\n  remove(c: Component) { this.children = this.children.filter(x => x !== c); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This implementation exposes child management methods on the component interface, forcing leaves to carry irrelevant API surface and increasing confusion.",
+          "isCorrect": true,
+          "explanation": "Placing add/remove on the general Component interface forces leaf implementations to either provide no-op methods or throw errors, polluting the interface and confusing clients. A common alternative is to separate the child-management responsibilities into a different interface or use runtime-safe wrappers so leaves are not forced to implement irrelevant operations."
+        },
+        {
+          "id": "b",
+          "text": "This implementation relies on runtime type checks in clients to handle leaf and container nodes differently, risking brittle client code when structure evolves.",
+          "isCorrect": false,
+          "explanation": "While clients sometimes need to treat composites differently, this implementation actually intends uniform treatment; the risk of runtime type checks exists but the immediate API smell is interface pollution. If clients are already type-checking extensively, it indicates the API did not provide the right abstraction."
+        },
+        {
+          "id": "c",
+          "text": "This implementation concatenates child operation results into a single string which loses structural context and complicates later traversal needs.",
+          "isCorrect": false,
+          "explanation": "Returning a concatenated string may be limiting for some use cases, but it is a usage choice inside operation implementation. The more structural maintenance problem is the public add/remove on Component rather than how operation composes results."
+        },
+        {
+          "id": "d",
+          "text": "This implementation lacks concurrency protection for children mutation so concurrent modifications could produce inconsistent traversal or runtime errors under parallel access.",
+          "isCorrect": false,
+          "explanation": "Concurrent modification is a valid concern for mutable children collections, but it is a broader threading issue. The more pattern-specific maintainability risk here is exposing child manipulation on the base interface which affects design and client expectations regardless of concurrency."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "You maintain a widely used UI component library. Which version is preferable for long-term API stability and minimal client coupling?",
+      "codeSnippet": "// Version A\ninterface ComponentA { operation(): string; add(c: ComponentA): void; remove(c: ComponentA): void; }\nclass LeafA implements ComponentA { operation() { return \"leaf\"; } add() {} remove() {} }\nclass CompositeA implements ComponentA { private children: ComponentA[] = []; operation() { return this.children.map(c => c.operation()).join(\",\"); } add(c: ComponentA) { this.children.push(c); } remove(c: ComponentA) { this.children = this.children.filter(x => x !== c); } }\n\n// Version B\ninterface ComponentB { operation(): string }\ninterface ChildrenManager { add(c: ComponentB): void; remove(c: ComponentB): void }\nclass LeafB implements ComponentB { operation() { return \"leaf\"; } }\nclass CompositeB implements ComponentB, ChildrenManager { private children: ComponentB[] = []; operation() { return this.children.map(c => c.operation()).join(\",\"); } add(c: ComponentB) { this.children.push(c); } remove(c: ComponentB) { this.children = this.children.filter(x => x !== c); } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A exposes child management on the base interface which increases client coupling and pollutes the shared component contract.",
+          "isCorrect": false,
+          "explanation": "Version A forces every Component to present add/remove, which couples clients to a broader contract and requires leaf implementations to host irrelevant methods. This increases the chance of misuse, complicates mocking and testing, and makes future API changes riskier because changing the base interface impacts all implementers."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates child management into a separate interface and preserves a small component contract for broader client stability.",
+          "isCorrect": true,
+          "explanation": "Version B keeps the core Component minimal while moving mutating responsibilities to a separate ChildrenManager. This reduces surface area for clients that only need read operations, improves testability, and prevents leaves from being forced to implement irrelevant methods. The separation follows Interface Segregation guidance from SOLID and mirrors recommendations in GoF and refactoring literature for keeping abstractions minimal and focused."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 26,
+  "conceptName": "Fail Fast Principle",
+  "category": "principle",
+  "definition": "A design approach that detects invalid conditions early and stops execution immediately to prevent later, harder-to-debug failures.",
+  "ruleOfThumb": "Validate and stop at the earliest stable boundary where invariants can be checked confidently.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "martinfowler.com (blog)",
+    "chapter": "Fail Fast",
+    "page": null,
+    "externalUrl": "http://martinfowler.com/bliki/FailFast.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which implementation best demonstrates immediate detection and termination when encountering invalid input?",
+      "codeSnippet": "function createUser(input: any) {\n  if (!input.email) throw new Error('Missing email');\n  // proceed with user creation\n}\n\nfunction createUserLenient(input: any) {\n  // try to proceed and log problems later\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function validates inputs immediately and throws an error when any required value is missing or invalid.",
+          "isCorrect": true,
+          "explanation": "This is the fail-fast behavior: detect the invalid condition at the point of entry and stop execution. Failing early avoids cascading faults and makes the root cause easier to find. Fowler recommends surfacing problems where they can be validated with confidence rather than letting invalid state diffuse through the system."
+        },
+        {
+          "id": "b",
+          "text": "The function logs validation problems and continues processing, hoping downstream code will detect and handle those issues later.",
+          "isCorrect": false,
+          "explanation": "Continuing after logging lets invalid state propagate and often obscures the original cause, making debugging harder. While logging is useful, it does not prevent subsequent code from operating on bad data and can produce misleading secondary errors."
+        },
+        {
+          "id": "c",
+          "text": "The function returns a null result on invalid inputs and relies on callers to check for null before proceeding.",
+          "isCorrect": false,
+          "explanation": "Returning null pushes responsibility to callers and increases the chance of missed checks, resulting in null reference errors far from the origin. This delayed failure pattern trades immediate clarity for distributed responsibility and brittle caller code."
+        },
+        {
+          "id": "d",
+          "text": "The function accumulates validation errors and returns them as a list for the caller to decide how to react.",
+          "isCorrect": false,
+          "explanation": "Accumulating errors can be appropriate in batch validation scenarios, but for single-entry invariants it postpones decisive handling and requires every caller to interpret results. That distributed decision making can lead to inconsistent reactions and hidden failures."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given a service constructor that receives configuration, which approach most closely follows immediate invariant enforcement?",
+      "codeSnippet": "class EmailService {\n  constructor(private cfg: any) {\n    // validation choices here\n  }\n  send(msg: string) {\n    // send implementation\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The constructor validates configuration immediately and throws an error when required fields are missing or inconsistent.",
+          "isCorrect": true,
+          "explanation": "Validating in the constructor and throwing prevents creating an unusable instance and signals configuration problems at creation time. This avoids later surprises when methods assume invariants hold but they do not."
+        },
+        {
+          "id": "b",
+          "text": "The constructor stores configuration as provided and defers validation until the first method call where errors may be detected.",
+          "isCorrect": false,
+          "explanation": "Deferring validation moves failure points into method calls, scattering error handling across the API surface. That increases the number of places to check invariants and makes client behavior less predictable."
+        },
+        {
+          "id": "c",
+          "text": "The constructor replaces missing configuration with default values silently so that the instance can be used without disruption.",
+          "isCorrect": false,
+          "explanation": "Silently substituting defaults can mask misconfiguration and lead to subtle incorrect behavior. While suitable for optional settings, doing this for required invariants hides configuration errors from operators and tests."
+        },
+        {
+          "id": "d",
+          "text": "The constructor logs a warning on inconsistent configuration but lets the instance be created for backward compatibility with older callers.",
+          "isCorrect": false,
+          "explanation": "Logging a warning while creating a potentially invalid instance maintains compatibility but risks runtime failures. This compromises safety for convenience and often defers hard-to-diagnose failures to production."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better encapsulates early detection of invalid state versus delayed validation across methods?",
+      "codeSnippet": "/* Version A */\nclass Widget {\n  constructor(config: any) {\n    if (!config.size) throw new Error('Missing size');\n    this.size = config.size;\n  }\n}\n\n/* Version B */\nclass Widget {\n  constructor(config: any) {\n    this.size = config.size;\n  }\n  render() {\n    if (!this.size) throw new Error('Missing size');\n    // render logic\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A throws an exception at construction time when required invariants are violated.",
+          "isCorrect": true,
+          "explanation": "Version A enforces the invariant immediately, preventing clients from obtaining an invalid instance and making errors appear at the point of origin. This aligns with fail-fast thinking by keeping failure localized and easier to debug. It avoids duplicated runtime checks across many methods and simplifies client usage contracts."
+        },
+        {
+          "id": "b",
+          "text": "Version B defers validation into every method, increasing runtime checks and spreading responsibility across many call sites.",
+          "isCorrect": false,
+          "explanation": "Deferring validation to each method forces every caller to understand and handle the same invariant, which increases the chance of missed checks and repetitive code. It pushes the failure surface outward, complicates testing, and allows invalid instances to exist for longer periods, which can produce secondary, misleading errors."
+        }
+      ]
+    }
+  ]
+}

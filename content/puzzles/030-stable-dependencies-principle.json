@@ -1,0 +1,105 @@
+{
+  "id": 30,
+  "conceptName": "Stable Dependencies Principle",
+  "category": "solid",
+  "definition": "Higher-level modules should depend on lower-level modules that are more stable; dependencies should point toward greater stability to minimize ripple changes.",
+  "ruleOfThumb": "Depend only on packages that are less likely to change than the dependent package; keep core abstractions stable and implementation volatile.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "The Principles of Package Design (article collection)",
+    "chapter": "Stable Dependencies Principle",
+    "page": null,
+    "externalUrl": "https://8thlight.com/blog/uncle-bob/2014/05/09/ThePrinciplesOfPackageDesign.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best captures the intended direction of package dependencies?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "A package should depend only on other packages that are more stable and less likely to change frequently.",
+          "isCorrect": true,
+          "explanation": "The principle expects dependencies to point to more stable code so changes ripple less. Stable packages often contain abstractions and well-tested APIs, while volatile packages implement details. Keeping the dependency arrow toward stability reduces churn, simplifies releases, and makes higher level packages less brittle."
+        },
+        {
+          "id": "b",
+          "text": "A package should avoid depending on any external package to keep implementation details fully isolated at all times.",
+          "isCorrect": false,
+          "explanation": "Total isolation is impractical in real systems and would lead to duplicated code and reinvention. The real goal is to choose dependencies that are stable and abstracted, not to eliminate all dependencies. Thoughtful design accepts dependencies that reduce duplication and provide stable contracts."
+        },
+        {
+          "id": "c",
+          "text": "A package should be free of public interfaces and expose only internal helpers to prevent accidental coupling between modules.",
+          "isCorrect": false,
+          "explanation": "Removing public interfaces prevents reuse and testability. The aim is stable public abstractions that other packages can depend on safely. Well-designed public interfaces reduce coupling by stabilizing contracts, whereas hiding everything forces duplication and brittle workarounds."
+        },
+        {
+          "id": "d",
+          "text": "A package should prioritize runtime performance over interface stability when choosing dependencies for high throughput systems.",
+          "isCorrect": false,
+          "explanation": "Performance is important, but choosing dependencies solely for speed can sacrifice long term maintainability. Stability of interfaces and dependency direction often yields fewer bugs and lower maintenance cost; performance should be balanced with stable design and profiled where necessary."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the code below which concern about dependency stability is most important to fix?",
+      "codeSnippet": "// packages/core/src/CoreService.ts\nimport { renderOrder } from '../../feature/orders-ui';\nexport class CoreService {\n  show() { renderOrder(); }\n}\n\n// packages/feature/orders-ui/src/ui.ts\nexport function renderOrder() { /* UI rendering logic */ }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The main concern is that a low level package depends on a higher level package causing ripple changes across layers.",
+          "isCorrect": true,
+          "explanation": "Core (a lower-level package) depending on feature UI (a higher-level package) inverts the desirable dependency direction and makes core fragile to UI changes. Fixing this usually means introducing stable abstractions in core that UI implements, moving dependencies outward and preserving core stability."
+        },
+        {
+          "id": "b",
+          "text": "The main concern is that the feature package exposes mutable global state which could cause unpredictable runtime behavior across multiple modules.",
+          "isCorrect": false,
+          "explanation": "Mutable globals are a real problem but the snippet shows a structural dependency problem where core imports UI. Even if globals existed, the primary maintainability risk here is the wrong dependency direction that couples core lifecycle to UI changes."
+        },
+        {
+          "id": "c",
+          "text": "The main concern is that relative path imports will break when packages are published or the repository structure is reorganized.",
+          "isCorrect": false,
+          "explanation": "Relative imports can be brittle for packaging, but they are an orthogonal build/packaging concern. The more serious architectural issue is the core package depending on a higher-level UI package, which affects design and stability independent of import paths."
+        },
+        {
+          "id": "d",
+          "text": "The main concern is that the UI pulls heavy libraries and brings unnecessary runtime weight into core services expected to be lightweight.",
+          "isCorrect": false,
+          "explanation": "Bringing heavy dependencies into core matters for performance, yet the core problem shown is architectural coupling between layers. Even if weight is an issue, the immediate design fix is to invert the dependency so core is stable and implementations handle heavy libraries externally."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better preserves stable dependency direction for package boundaries?",
+      "codeSnippet": "// Version A\n// packages/domain/src/IOrderRepository.ts\nexport interface IOrderRepository { find(id: string): Order }\n\n// packages/infra/src/OrderRepository.ts\nimport { IOrderRepository } from '../../domain/IOrderRepository'\nexport class OrderRepository implements IOrderRepository { /* ... */ }\n\n// Version B\n// packages/domain/src/OrderRepository.ts\nimport { Cache } from '../../infra/cache'\nexport class OrderRepository { /* depends on infra directly */ }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A has domain abstractions that remain independent and are depended upon by implementation packages.",
+          "isCorrect": true,
+          "explanation": "Version A keeps the core domain package stable by defining interfaces and letting external packages implement them. This directs dependencies toward stability and isolates domain logic from volatile implementation details. That alignment reduces ripple effects when implementations change and is consistent with package design principles from Martin."
+        },
+        {
+          "id": "b",
+          "text": "Version B ties the core domain to volatile implementation packages creating ripple instability when feature packages change.",
+          "isCorrect": false,
+          "explanation": "In Version B the domain package imports concrete infrastructure, making it depend on less stable code. This causes domain churn whenever infrastructure changes and prevents tests or alternate implementations from being introduced easily. The subtlety is that direct imports can seem convenient but degrade long term stability."
+        }
+      ]
+    }
+  ]
+}

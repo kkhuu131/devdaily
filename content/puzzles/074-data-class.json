@@ -1,0 +1,106 @@
+{
+  "id": 74,
+  "conceptName": "Data Class",
+  "category": "code-smell",
+  "definition": "An object that primarily holds attributes with trivial accessors but lacks meaningful behavior tied to its state, pushing logic into external procedural code.",
+  "ruleOfThumb": "If most business rules that operate on an object live outside it, prefer moving closely related behavior back into the object.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Data Class (code smell description)",
+    "page": "183",
+    "externalUrl": "https://refactoring.guru/smells/data-class"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this TypeScript class used across the codebase. What problem does it most clearly demonstrate?",
+      "codeSnippet": "class CustomerDTO {\n  constructor(public id: string, public name: string, public email: string) {}\n  getId() { return this.id }\n  getName() { return this.name }\n  getEmail() { return this.email }\n}\n\n// Used by services and presentation layers for many operations",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class primarily exposes its fields through trivial accessors and contains no domain behavior, enabling procedural code elsewhere.",
+          "isCorrect": true,
+          "explanation": "This is the classic symptom where an object merely carries data and delegates meaningful operations to other modules. Such objects make it easy for business rules to be scattered across services and functions, which reduces encapsulation and increases the chance of duplicated logic. The usual refactoring is to move behavior that naturally belongs with the data back into the object or to introduce a richer domain model."
+        },
+        {
+          "id": "b",
+          "text": "The class breaks encapsulation by using public properties and thus directly exposes internal representation to many callers.",
+          "isCorrect": false,
+          "explanation": "While exposing internal representation can break encapsulation, this example shows trivial accessors rather than raw public fields. The core issue is lack of behavior rather than the mere presence of accessors. Addressing only accessor visibility would not stop the procedural distribution of logic across the codebase."
+        },
+        {
+          "id": "c",
+          "text": "This type indicates a likely single responsibility violation by mixing persistence field shapes with unrelated processing logic.",
+          "isCorrect": false,
+          "explanation": "A single responsibility problem usually means one class does multiple unrelated jobs. Here the class does almost nothing beyond holding data; the real concern is that behavior has been pushed out, not that this class itself performs unrelated responsibilities. SRP concerns could coexist, but they are not the clearest issue in this snippet."
+        },
+        {
+          "id": "d",
+          "text": "The class suggests premature optimization through simple structs instead of abstractions that would accommodate future business rules.",
+          "isCorrect": false,
+          "explanation": "Premature optimization is a plausible worry, but the immediate maintainability issue is that domain logic lacks a home. Merely saying this is premature optimization misses the structural problem: the system lacks cohesive objects that own behavior, which leads to procedural code proliferation."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Consider this order line object. Is this implementation an acceptable design or still symptomatic of the smell?",
+      "codeSnippet": "class OrderLine {\n  constructor(public productId: string, public quantity: number, public unitPrice: number) {}\n  get lineTotal(): number {\n    return this.quantity * this.unitPrice;\n  }\n}\n\n// Used by invoicing and discount calculations",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This implementation is acceptable because it encapsulates small domain behavior directly with the data it owns.",
+          "isCorrect": true,
+          "explanation": "A simple computed property that operates on the object's own fields is typically fine and preferred. Keeping behavior that naturally belongs to the data inside the object improves cohesion and reduces the need for external utility functions. The smell appears when most business rules are implemented outside these objects rather than with them."
+        },
+        {
+          "id": "b",
+          "text": "This implementation is problematic because its public fields make persistence and mapping responsibilities leak into domain objects.",
+          "isCorrect": false,
+          "explanation": "Public fields can blur boundaries, but in this snippet the single behavior uses the local state directly and belongs with the object. The larger problem would be if persistence concerns or mapping code were embedded here; that is not shown. Marking small domain methods as problematic would discourage proper encapsulation."
+        },
+        {
+          "id": "c",
+          "text": "This design would be better expressed as free functions to prevent objects from becoming carriers of trivial calculations.",
+          "isCorrect": false,
+          "explanation": "Turning simple behaviors into free functions can lead to procedural code and duplicated logic across the codebase. When a calculation directly uses an object's state and represents a domain concept, placing it on the object increases clarity and testability compared to scattering free functions."
+        },
+        {
+          "id": "d",
+          "text": "This pattern risks future duplication because related behaviors might be scattered when multiple modules access the raw properties.",
+          "isCorrect": false,
+          "explanation": "While duplication risk is real, this specific implementation already keeps a related behavior next to its data. The pragmatic answer is to consolidate cohesive behaviors on the object; simply flagging potential future duplication without recognizing the current encapsulation misses that this form is often the corrective for the smell."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Review Version A and Version B of customer handling. Which version is structurally preferable for domain modeling?",
+      "codeSnippet": "// Version A\nclass Customer {\n  constructor(private id: string, private name: string, private address: string) {}\n  changeAddress(newAddress: string) {\n    if (newAddress.length === 0) throw new Error(\"invalid address\");\n    this.address = newAddress;\n  }\n  getContactInfo() { return `${this.name} <${this.address}>`; }\n}\n\n// Version B\ntype CustomerRecord = { id: string; name: string; address: string };\nclass CustomerService {\n  changeAddress(c: CustomerRecord, newAddress: string) {\n    if (newAddress.length === 0) throw new Error(\"invalid address\");\n    c.address = newAddress;\n  }\n  getContactInfo(c: CustomerRecord) { return `${c.name} <${c.address}>`; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A groups related behavior with state into cohesive objects that own their invariants and local logic.",
+          "isCorrect": true,
+          "explanation": "Version A encapsulates behavior with the data it operates on, so the invariants and validation logic live where they belong. This reduces scattered procedural code and keeps the domain model expressive. Refactoring towards richer objects often simplifies callers and makes tests focus on meaningful behaviors rather than on data plumbing."
+        },
+        {
+          "id": "b",
+          "text": "Version B separates data and operations into plain records and service functions, scattering rules and coupling callers to structure.",
+          "isCorrect": false,
+          "explanation": "Version B centralizes logic in a service that manipulates plain records, which can lead to duplicated rules and tighter coupling between callers and the data shape. Over time this pattern tends to create anemic models where behavior is harder to discover and maintain. For complex domains the costs of scattered rules usually outweigh any initial simplicity benefits."
+        }
+      ]
+    }
+  ]
+}

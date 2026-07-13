@@ -1,0 +1,106 @@
+{
+  "id": 49,
+  "conceptName": "Proxy Pattern",
+  "category": "design-pattern",
+  "definition": "Introduce a stand-in object that controls access to another object, optionally adding responsibilities such as caching, logging, access control, or lazy initialization.",
+  "ruleOfThumb": "Use a lightweight intermediary when you need to control or augment access to a resource without changing the real object's implementation.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Proxy",
+    "page": "223",
+    "externalUrl": "https://refactoring.guru/design-patterns/proxy"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the snippet below, what best describes the role of LoggingProxy relative to RealService?",
+      "codeSnippet": "interface Service {\n  request(): string\n}\nclass RealService implements Service {\n  request() { return 'payload' }\n}\nclass LoggingProxy implements Service {\n  constructor(private real: Service) {}\n  request() { console.log('auth check'); return this.real.request() }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "An intermediary object controls access and forwards requests to the actual service implementation without altering result semantics.",
+          "isCorrect": true,
+          "explanation": "The proxy here acts as an access point that delegates to RealService while adding a side effect (logging). It does not change the returned value. This separation keeps the original service logic focused and lets the wrapper handle cross-cutting concerns."
+        },
+        {
+          "id": "b",
+          "text": "A wrapper adds logging and metrics by embedding monitoring logic inside the primary implementation and altering core behavior.",
+          "isCorrect": false,
+          "explanation": "This option describes mixing monitoring into the core implementation. In the snippet logging is placed in a separate wrapper object rather than inside RealService, so the primary implementation remains unchanged."
+        },
+        {
+          "id": "c",
+          "text": "A factory function lazily constructs the service instance and returns it to callers for direct use in all cases.",
+          "isCorrect": false,
+          "explanation": "A factory would control instantiation, but the code shows an object implementing the same interface that delegates requests. There is no lazy construction logic or factory abstraction in the snippet."
+        },
+        {
+          "id": "d",
+          "text": "A singleton ensures a single shared service instance is used across requests and centralizes stateful resource management in one object.",
+          "isCorrect": false,
+          "explanation": "A singleton enforces single-instance semantics. The snippet shows a delegating wrapper; it does not enforce single instantiation or global access, so singleton concerns are not present."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "When would introducing a CachingProxy wrapper be a better choice than modifying the remote service implementation directly?",
+      "codeSnippet": "interface InventoryService { fetchItem(id: number): Promise<{id:number,name:string}> }\nclass RemoteInventory implements InventoryService {\n  async fetchItem(id: number) { /* network call */ }\n}\nclass CachingProxy implements InventoryService {\n  private cache = new Map<number, any>()\n  constructor(private real: InventoryService) {}\n  async fetchItem(id: number) {\n    if (this.cache.has(id)) return this.cache.get(id)\n    const item = await this.real.fetchItem(id)\n    this.cache.set(id, item)\n    return item\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "To add caching and interception concerns without modifying the concrete service, keeping the original implementation focused on core logic.",
+          "isCorrect": true,
+          "explanation": "Adding a wrapper is appropriate when you want to attach cross-cutting behavior like caching while leaving the core service unchanged. This preserves single responsibility and reduces risk when the real service is shared or third party."
+        },
+        {
+          "id": "b",
+          "text": "To provide a thread safe singleton instance that serializes access and enforces a single global service instance across modules.",
+          "isCorrect": false,
+          "explanation": "This option conflates caching with global instance management. While a wrapper could be a singleton, the primary justification for the wrapper in the snippet is adding caching without changing the real implementation, not enforcing singleton semantics."
+        },
+        {
+          "id": "c",
+          "text": "To decouple modules by introducing a shared interface factory that returns different concrete implementations based on configuration at startup.",
+          "isCorrect": false,
+          "explanation": "A factory providing different implementations is a valid design but different in intent. The snippet demonstrates runtime interception and caching on a per-call basis rather than compile time or startup configuration selection."
+        },
+        {
+          "id": "d",
+          "text": "To convert synchronous operations into asynchronous ones by wrapping the service calls and spawning background tasks transparently to callers.",
+          "isCorrect": false,
+          "explanation": "Converting sync to async is an orthogonal concern. The wrapper shown provides caching around asynchronous calls, not an adaptation layer that transforms call semantics from synchronous to asynchronous."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better structure for adding authentication and caching around a remote API used in many places?",
+      "codeSnippet": "// Version A: separate wrapper\ninterface ApiService { request(path: string): Promise<any> }\nclass RealApi implements ApiService {\n  async request(path: string) { /* perform network request */ }\n}\nclass AuthCachingWrapper implements ApiService {\n  private cache = new Map<string, any>()\n  constructor(private real: ApiService, private tokenProvider: () => string) {}\n  async request(path: string) {\n    const token = this.tokenProvider()\n    if (this.cache.has(path)) return this.cache.get(path)\n    const res = await this.real.request(path)\n    this.cache.set(path, res)\n    return res\n  }\n}\n\n// Version B: modify core service\nclass RealApiWithAuth implements ApiService {\n  private cache = new Map<string, any>()\n  constructor(private tokenProvider: () => string) {}\n  async request(path: string) {\n    const token = this.tokenProvider()\n    if (this.cache.has(path)) return this.cache.get(path)\n    /* perform network request using token */\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates authentication and caching in a wrapper class so the core service remains unchanged and testable.",
+          "isCorrect": true,
+          "explanation": "Version A separates cross-cutting concerns into a wrapper that implements the same interface. This keeps RealApi focused on network logic, improves testability by allowing the wrapper and core service to be tested independently, and reduces coupling when different clients need different behaviors. It matches classic separation of concerns recommended in patterns literature and supports composition and reuse."
+        },
+        {
+          "id": "b",
+          "text": "Version B risks mixing networking, authentication, and caching inside the core service which reduces testability and increases coupling.",
+          "isCorrect": false,
+          "explanation": "Embedding auth and caching into the core service ties multiple responsibilities together, making unit tests harder because the core service now needs token provision and cache state. It also makes it harder to reuse the core network logic in contexts that do not require caching or different auth schemes. This fragility is why separating concerns into wrappers is often preferable."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 55,
+  "conceptName": "Introduce Parameter Object",
+  "category": "refactoring",
+  "definition": "Replace a long parameter list with a single object that groups related parameters into a cohesive structure.",
+  "ruleOfThumb": "When multiple parameters are frequently passed together or represent a single conceptual entity, consolidate them into one typed value.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Preserve Whole Object / Introduce Parameter Object",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which situation most directly suggests this refactoring for the shown function?",
+      "codeSnippet": "function createInvoice(customerId: string, startDate: Date, endDate: Date, discount: number, taxRate: number, notes?: string) {\n  // create invoice\n}\n\n// Many callers pass these values together",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A function has many parameters that are repeatedly passed together across several call sites and modules.",
+          "isCorrect": true,
+          "explanation": "Repeatedly passing the same group of parameters indicates they form a conceptual unit. Consolidating them into one object reduces call-site churn, clarifies intent, and makes future extensions safer. Fowler recommends this when parameters naturally belong together."
+        },
+        {
+          "id": "b",
+          "text": "An object already groups these values but callers still pass individual primitive parameters across the codebase.",
+          "isCorrect": false,
+          "explanation": "This is a valid smell but it is slightly different: an existing domain object suggests callers should use that domain model rather than creating a new parameter grouping. The refactor may be duplicative if a canonical object already exists."
+        },
+        {
+          "id": "c",
+          "text": "Call sites frequently reorder parameters causing subtle bugs when arguments are passed in the wrong position.",
+          "isCorrect": false,
+          "explanation": "Parameter reordering bugs are a real risk with many primitives, and grouping can help. However, the core signal is that values belong together conceptually; reordering alone might be addressed with named arguments or stricter typing instead."
+        },
+        {
+          "id": "d",
+          "text": "Signature changes require touching many call sites because several related parameters are separate primitive values.",
+          "isCorrect": false,
+          "explanation": "Broad impact from signature changes is a good reason to refactor, but it is a consequence of not grouping parameters. The stronger immediate signal is conceptual cohesion of parameters rather than just the pain of edits."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this function, which justification most strongly supports applying the refactoring now?",
+      "codeSnippet": "function schedulePayment(userId: string, amount: number, currency: string, scheduleDate?: Date, retryCount?: number, metadata?: Record<string, any>) {\n  // schedule payment\n}\n\n// Many call sites construct the same argument list inline",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Refactor if the parameter group represents a single conceptual entity frequently manipulated together by domain logic.",
+          "isCorrect": true,
+          "explanation": "When parameters represent one domain concept, grouping them improves expressiveness and places related validation and behavior near the data. This yields clearer APIs and reduces accidental misuse across the codebase."
+        },
+        {
+          "id": "b",
+          "text": "Refactor if most call sites construct the same long argument list inline with repeated literal or temporary values.",
+          "isCorrect": false,
+          "explanation": "Repeated inline construction suggests DRY improvements, but the better solution might be a factory or helper to build the arguments. Grouping is helpful, but repeated construction alone is a weaker justification."
+        },
+        {
+          "id": "c",
+          "text": "Refactor if introducing an object would eliminate many parameter reorder bugs and improve compile time type safety.",
+          "isCorrect": false,
+          "explanation": "Introducing a typed object can reduce reorder bugs and improve type safety, but it is an implementation benefit rather than the primary reason. The primary driver should be conceptual cohesion, not only safety improvements."
+        },
+        {
+          "id": "d",
+          "text": "Refactor if an object would encapsulate validation logic and reduce duplicated validation across numerous functions and services.",
+          "isCorrect": false,
+          "explanation": "Encapsulating validation is a strong operational benefit, but it can also be achieved by extracting a validator or value object. The best justification combines conceptual grouping with duplicated validation costs."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for maintainability and API clarity in a growing codebase?",
+      "codeSnippet": "// Version A\nfunction bookTrip(origin: string, destination: string, startDate: Date, endDate: Date, seatPreference?: string, mealPreference?: string) {\n  // booking logic\n}\n\n// Version B\ninterface TripRequest { origin: string; destination: string; startDate: Date; endDate: Date; preferences?: {seat?: string; meal?: string} }\nfunction bookTrip(req: TripRequest) {\n  // booking logic\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps a long parameter list that forces callers to manage related data individually and explicitly.",
+          "isCorrect": false,
+          "explanation": "Version A exposes all primitives at the call site, which can be explicit but brittle. Callers must assemble related values repeatedly and any extension requires signature changes everywhere, increasing maintenance cost. This design is easier for tiny functions but does not scale well for evolving domain data."
+        },
+        {
+          "id": "b",
+          "text": "Version B consolidates related parameters into a single typed structure passed by callers.",
+          "isCorrect": true,
+          "explanation": "Version B groups related values into a cohesive type, making the API clearer and easier to evolve. The single object reduces call-site noise, centralizes validation, and supports optional expansion without changing every caller. Be mindful to avoid creating a catchall data bag; prefer a focused request type or a small value object to preserve clarity. See Fowler on grouping parameters and the Pragmatic advice about making interfaces expressive and stable."
+        }
+      ]
+    }
+  ]
+}

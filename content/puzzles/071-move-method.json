@@ -1,0 +1,105 @@
+{
+  "id": 71,
+  "conceptName": "Move Method",
+  "category": "refactoring",
+  "definition": "A refactoring that relocates a method from one class to another where it fits better with the data and responsibilities it uses.",
+  "ruleOfThumb": "If a method mainly uses another object's data or enforces its invariants, consider relocating the behavior to that object.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Moving Features Between Objects",
+    "page": "p. 120",
+    "externalUrl": "https://refactoring.com/catalog/moveMethod.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation best indicates that a method likely belongs on a different class?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "The method accesses several fields of another class and mainly manipulates that other class's data.",
+          "isCorrect": true,
+          "explanation": "When a method reads or writes many of another object's fields, it signals that the behavior is centered on that object. Moving the method to the object that owns the data improves cohesion and reduces coupling because the logic and state are colocated."
+        },
+        {
+          "id": "b",
+          "text": "The method is called with a single parameter but performs many unrelated tasks in the caller's context.",
+          "isCorrect": false,
+          "explanation": "Long or multitasking methods are a smell, but length alone does not imply it belongs on another class. This could instead indicate a need to extract helper methods or clarify responsibilities within the current class."
+        },
+        {
+          "id": "c",
+          "text": "The method contains UI formatting logic intermixed with business calculations and violates separation of concerns.",
+          "isCorrect": false,
+          "explanation": "Mixing UI and business logic is a separation-of-concerns issue rather than evidence the method belongs to a different domain object. The fix is usually to separate presentation from domain logic, not necessarily to move the method between domain classes."
+        },
+        {
+          "id": "d",
+          "text": "The method is long, references only its own class fields, and is rarely used by other collaborators.",
+          "isCorrect": false,
+          "explanation": "A long method that uses only its own fields suggests a cohesion or complexity problem within the class, not necessarily relocation. Refactoring strategies might include Extract Method or reorganizing the class, not automatically moving the method elsewhere."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In this TypeScript snippet, which change most justifies moving behavior to the other object?",
+      "codeSnippet": "class Customer {\n  constructor(public loyaltyLevel: number) {}\n}\n\nclass Order {\n  total: number;\n  constructor(public customer: Customer, total: number) { this.total = total }\n  applyLoyaltyDiscount() { if (this.customer.loyaltyLevel > 3) this.total *= 0.9 }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Change the code when a method mostly reads or updates another object's state and enforces its invariants.",
+          "isCorrect": true,
+          "explanation": "If a method's logic predominantly depends on another object's data and rules, the behavior logically belongs with that object. Moving it reduces the need for external accessors and clarifies where invariants are enforced."
+        },
+        {
+          "id": "b",
+          "text": "Change the code when the method is long even if it only uses its own class fields and no external state.",
+          "isCorrect": false,
+          "explanation": "Method length can indicate the need for decomposition, but if it uses only its own fields, relocating it to another class would increase coupling and scatter related state. Prefer internal refactors first."
+        },
+        {
+          "id": "c",
+          "text": "Change the code when multiple clients duplicate logic even if that logic primarily manipulates the original class's private data.",
+          "isCorrect": false,
+          "explanation": "Duplicated logic across clients suggests extraction to a shared utility or to the class that owns the relevant data. But if the logic manipulates private data of the original class, centralizing behavior there is often better than moving it outward."
+        },
+        {
+          "id": "d",
+          "text": "Change the code when the method triggers many other modules even if it mostly coordinates calls without data ownership.",
+          "isCorrect": false,
+          "explanation": "High coordination indicates a possible Facade or Orchestrator role rather than an ownership problem. Moving a coordinating method to a data owner can break the intended orchestration and reduce clarity."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which design is preferable for keeping responsibilities clear in the following example?",
+      "codeSnippet": "/* Version A */\nclass Order {\n  constructor(public customer: Customer, public total: number) {}\n  calculateDiscount() { if (this.customer.loyaltyLevel > 3) return this.total * 0.1; return 0 }\n}\n\n/* Version B */\nclass Customer {\n  constructor(public loyaltyLevel: number) {}\n  discountFor(orderTotal: number) { if (this.loyaltyLevel > 3) return orderTotal * 0.1; return 0 }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps the discount logic on Order creating tight coupling to Customer internals and weaker cohesion.",
+          "isCorrect": false,
+          "explanation": "Version A places behavior that depends on customer state inside Order, which requires Order to reach into Customer's internals. This increases coupling and scatters customer-related rules across other classes, making the system harder to evolve and reason about."
+        },
+        {
+          "id": "b",
+          "text": "Version B locates the behavior with the owning data, keeping module responsibilities aligned and cohesion higher.",
+          "isCorrect": true,
+          "explanation": "Putting the discount logic on Customer localizes rules that depend on customer state, preserving invariants and reducing the need for other classes to query or interpret that state. This follows the principle of telling objects to do work with their own data and improves maintainability. See Martin Fowler on moving features to the object that owns the data for similar guidance."
+        }
+      ]
+    }
+  ]
+}

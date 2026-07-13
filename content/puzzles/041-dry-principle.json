@@ -1,0 +1,106 @@
+{
+  "id": 41,
+  "conceptName": "DRY Principle",
+  "category": "principle",
+  "definition": "Avoid duplicating knowledge or logic in multiple places so a single change does not require coordinated edits across the codebase.",
+  "ruleOfThumb": "If you find the same intent or calculation in two places, consider creating a single responsible abstraction to own that knowledge.",
+  "citation": {
+    "author": "Andy Hunt and Dave Thomas",
+    "bookTitle": "The Pragmatic Programmer",
+    "chapter": "Don't Repeat Yourself",
+    "page": "Section 2.1",
+    "externalUrl": "https://pragprog.com/titles/tpp20/the-pragmatic-programmer-20th-anniversary-edition/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best identifies the primary issue in the following code?",
+      "codeSnippet": "// pricing.ts\nfunction priceFor(order) {\n  const tax = order.amount * 0.08;\n  const total = order.amount + tax;\n  return total;\n}\nfunction finalPrice(item) {\n  const tax = item.price * 0.08;\n  return item.price + tax;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The same core computation appears in multiple functions across the module without a single shared implementation.",
+          "isCorrect": true,
+          "explanation": "Both functions compute tax and totals using identical formulas. Centralizing that computation would reduce duplication and the risk of inconsistent updates across callers."
+        },
+        {
+          "id": "b",
+          "text": "A specific function mixes domain logic with I/O details, making it hard to unit test in isolation.",
+          "isCorrect": false,
+          "explanation": "This snippet does not show I/O boundaries like network or disk access; the concern here would be valid if external effects were present but they are not."
+        },
+        {
+          "id": "c",
+          "text": "Type annotations are missing on public interfaces which can allow incorrect types to propagate at runtime unnoticed.",
+          "isCorrect": false,
+          "explanation": "Missing types can be a real maintenance problem in TypeScript, but the immediate observable problem in this code is duplicated business calculation rather than typing errors."
+        },
+        {
+          "id": "d",
+          "text": "There is an inefficient algorithmic loop that recomputes values repeatedly causing a potential performance bottleneck.",
+          "isCorrect": false,
+          "explanation": "While performance can be important, the shown functions perform constant-time calculations; the primary smell is duplication of the same logic, not an algorithmic inefficiency."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which diagnosis most accurately describes the maintenance risk in this DTO mapping code?",
+      "codeSnippet": "// dtos.ts\nclass OrderDTO {\n  constructor(public id: string, public amountCents: number) {}\n  static fromApi(data: any) {\n    return new OrderDTO(data.id, Math.round(data.amount * 100));\n  }\n}\nclass InvoiceDTO {\n  constructor(public id: string, public amountCents: number) {}\n  static fromApi(data: any) {\n    return new InvoiceDTO(data.id, Math.round(data.amount * 100));\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Numeric conversion from dollars to cents is duplicated across DTO mappings in this module currently.",
+          "isCorrect": true,
+          "explanation": "Both DTOs perform the same Math.round(data.amount * 100) logic. If rounding rules or currency handling change, multiple places must be updated — a maintenance risk."
+        },
+        {
+          "id": "b",
+          "text": "Each DTO may need different rounding semantics and should therefore keep separate conversion logic by design.",
+          "isCorrect": false,
+          "explanation": "It is plausible that different DTOs need distinct rules, but in this example both conversions are identical. Assuming intentional divergence without evidence can lead to unnecessary duplication."
+        },
+        {
+          "id": "c",
+          "text": "The real issue is absence of a shared utility which causes ad hoc amount conversions scattered across adapters.",
+          "isCorrect": false,
+          "explanation": "This identifies a likely remedy but frames the problem as missing infrastructure. The more precise diagnosis is duplicated conversion logic between these mappings specifically."
+        },
+        {
+          "id": "d",
+          "text": "This pattern signals a missing domain primitive for Money which would centralize calculations and enforce invariants.",
+          "isCorrect": false,
+          "explanation": "Introducing a Money type is a strong long-term solution, but the immediate, actionable issue visible here is duplicated conversion logic that can be extracted sooner."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Given the two implementations below, which would you prefer for long term maintainability in a billing service?",
+      "codeSnippet": "// billing.ts\n// Version A\nfunction computeTotal(order, type) {\n  let subtotal = order.items.reduce((s, i) => s + i.price, 0);\n  if (type === 'retail') subtotal = Math.round(subtotal * 1.08);\n  if (type === 'wholesale') subtotal = Math.round(subtotal * 0.06);\n  return subtotal;\n}\n\n// Version B\nfunction roundToCents(amount) { return Math.round(amount); }\nfunction computeRetailTotal(order) {\n  const subtotal = order.items.reduce((s, i) => s + i.price, 0);\n  return roundToCents(subtotal * 1.08);\n}\nfunction computeWholesaleTotal(order) {\n  const subtotal = order.items.reduce((s, i) => s + i.price, 0);\n  return roundToCents(subtotal * 0.06);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps all rules in one function which seems simpler but creates many conditional branches.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes behavior but mixes variant logic via conditionals. That can lead to subtle bugs as variants proliferate and the function accumulates special cases — a classic maintenance hazard."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates variant behaviors into small focused components across the billing module.",
+          "isCorrect": true,
+          "explanation": "Version B extracts shared concerns and separates variant behavior into dedicated functions, making each variant easier to test and evolve independently. This reduces conditional entanglement and keeps change impact localized, following principles of single responsibility and composition."
+        }
+      ]
+    }
+  ]
+}

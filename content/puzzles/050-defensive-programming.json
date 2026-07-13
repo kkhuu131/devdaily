@@ -1,0 +1,106 @@
+{
+  "id": 50,
+  "conceptName": "Defensive Programming",
+  "category": "principle",
+  "definition": "A coding approach that adds checks and fallback behavior to anticipate possible failures and invalid inputs, often applied at many call sites.",
+  "ruleOfThumb": "Validate early at system boundaries and prefer clear failures over silent defaults inside core domain code.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code",
+    "chapter": "Error Handling",
+    "page": "163",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-code/9780136083238/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this helper used across services. What is the primary problem the snippet most clearly demonstrates?",
+      "codeSnippet": "function getPrice(item: any) {\n  if (!item) return 0;\n  if (!item.meta) return 0;\n  if (!item.meta.price) return 0;\n  if (typeof item.meta.price !== 'number') return 0;\n  return item.meta.price;\n}\n\n// Called from many places without upstream validation",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code conceals upstream data quality failures through silent defaulting and many dispersed local checks across modules.",
+          "isCorrect": true,
+          "explanation": "Returning defaults at every access point hides where invalid data originates, shifting responsibility away from a single validation boundary. That makes it harder to diagnose the root cause because failures are masked near the symptom rather than surfaced at the source."
+        },
+        {
+          "id": "b",
+          "text": "This code creates runtime overhead in hot paths by performing redundant checks on every call without caching results.",
+          "isCorrect": false,
+          "explanation": "Redundant guards do incur cost in tight loops, but the more significant maintainability issue here is masking data quality problems. Optimizing checks may help performance but would not address the root cause that validation is scattered."
+        },
+        {
+          "id": "c",
+          "text": "This code scatters validation across functions making it hard to reuse a single authoritative validation point later.",
+          "isCorrect": false,
+          "explanation": "Scattered validation is a real concern because it reduces reuse and consistency. However, the snippet shows not only scattering but also silent defaulting that actively conceals upstream errors, which is the more immediate problem."
+        },
+        {
+          "id": "d",
+          "text": "This code normalizes input values in place and therefore mutates callers data, breaking caller expectations and purity.",
+          "isCorrect": false,
+          "explanation": "Mutating caller data can be harmful, but the snippet returns defaults rather than mutating inputs. The bigger issue is the silent acceptance of invalid shapes, not in-place mutation in this example."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Examine this HTTP client helper. What is the most plausible operational concern introduced by this pattern?",
+      "codeSnippet": "async function fetchUser(id: string) {\n  try {\n    const r = await fetch(`/users/${id}`);\n    return await r.json();\n  } catch (e) {\n    console.error('user fetch failed', e);\n    return {};\n  }\n}\n\n// Callers assume a user-shaped object on success",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This client hides transport failures by returning an empty object that appears successful to callers.",
+          "isCorrect": true,
+          "explanation": "Returning an empty object turns network or parse failures into apparently successful responses. Callers then proceed as if the request succeeded, which can lead to incorrect business decisions and obscure the real error source."
+        },
+        {
+          "id": "b",
+          "text": "This client leaks network concerns into business code because it returns raw response shapes rather than domain specific errors.",
+          "isCorrect": false,
+          "explanation": "Exposing raw shapes can couple business logic to transport formats. That is a valid concern, but the more acute risk here is silent failure handling that converts errors into empty results rather than a structured error model."
+        },
+        {
+          "id": "c",
+          "text": "This client introduces inconsistent return types across the codebase and forces callers to check for shape manually every time.",
+          "isCorrect": false,
+          "explanation": "Inconsistent return types burden callers with shape checks, which is problematic. Still, the key operational issue is the swallowing of exceptions and the tendency for callers to treat empty objects as legitimate successful payloads."
+        },
+        {
+          "id": "d",
+          "text": "This client increases debugging difficulty by swallowing exceptions and logging only a generic message without structured error details.",
+          "isCorrect": false,
+          "explanation": "Minimal logging certainly hampers debugging and should be improved, but the design choice that most directly affects correctness is returning an empty object on failure, which hides the failure from upstream logic."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation would you prefer for a core money transfer API in a banking service, and why is it preferable?",
+      "codeSnippet": "// Version A\nfunction transferA(from: Account, to: Account, amount: number) {\n  if (!from || !to || amount <= 0) return false;\n  from.balance -= amount;\n  to.balance += amount;\n  return true;\n}\n\n// Version B\nfunction transferB(from: Account, to: Account, amount: number) {\n  if (!from) throw new Error('missing from account');\n  if (!to) throw new Error('missing to account');\n  if (amount <= 0) throw new Error('invalid amount');\n  from.balance -= amount;\n  to.balance += amount;\n  return true;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A suppresses failures by returning false and therefore masks root cause of invalid inputs across calls.",
+          "isCorrect": false,
+          "explanation": "Version A hides why a transfer failed by returning a boolean; callers cannot distinguish validation errors from other failures. For core financial operations we want explicit failure modes and strong invariants so errors are diagnosed and audited. Returning false encourages downstream code to ignore or incorrectly handle failure conditions."
+        },
+        {
+          "id": "b",
+          "text": "Version B surfaces input errors early by throwing clear precondition errors at the service boundary.",
+          "isCorrect": true,
+          "explanation": "Version B fails fast and makes invalid inputs explicit, which is preferable for critical domain logic. Throwing specific precondition errors ensures failures are observable, traceable, and handled appropriately by higher-level orchestration or monitoring. This aligns with established guidance about validating at system boundaries and favoring explicit failure over silent defaults — see Fowler on fail fast and Clean Code on meaningful errors."
+        }
+      ]
+    }
+  ]
+}

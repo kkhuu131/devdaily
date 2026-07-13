@@ -1,0 +1,106 @@
+{
+  "id": 54,
+  "conceptName": "Replace Conditional with Polymorphism",
+  "category": "refactoring",
+  "definition": "A refactoring that replaces explicit conditional logic that dispatches behavior based on type or value with type-specific implementations so that each variant encapsulates its own behavior.",
+  "ruleOfThumb": "When branches select behavior based on an object's type or role and new branches are frequently added, move the behavior into the types themselves.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Conditional with Polymorphism",
+    "page": "p. 174",
+    "externalUrl": "https://martinfowler.com/bliki/ReplaceConditionalWithPolymorphism.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What design problem is the snippet below demonstrating?",
+      "codeSnippet": "type InvoiceType = 'standard' | 'proforma';\n\nfunction calculateFee(inv: { type: InvoiceType, amount: number }) {\n  switch (inv.type) {\n    case 'standard': return inv.amount * 0.1;\n    case 'proforma': return inv.amount * 0.05;\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code centralizes type-based branching and is a candidate for relocating behavior to specific type implementations.",
+          "isCorrect": true,
+          "explanation": "The switch inspects the invoice type to decide behavior. That pattern is a classic sign that behavior belongs with the variants rather than centralized branching. Moving the calculations into type-specific implementations removes the repeated conditional and makes adding new invoice kinds simpler."
+        },
+        {
+          "id": "b",
+          "text": "This code indicates an overly long function that should be split into smaller helpers without changing type dispatch.",
+          "isCorrect": false,
+          "explanation": "Splitting into helper functions reduces method size but does not remove the core problem: behavior is selected by type. Helpers would still require conditional dispatch or duplicated logic when new variants are added."
+        },
+        {
+          "id": "c",
+          "text": "This code reveals poor input validation and suggests adding guard clauses to validate external data before branching.",
+          "isCorrect": false,
+          "explanation": "Validating inputs is important, but the snippet shows correct enum-like values and the issue is how behavior is dispatched by type. Guard clauses would not address the maintenance cost of per-type logic in a central switch."
+        },
+        {
+          "id": "d",
+          "text": "This code shows duplicated condition checks scattered across methods and suggests consolidating checks into a shared utility.",
+          "isCorrect": false,
+          "explanation": "Consolidating duplicated checks can help, but the presented pattern is specifically type-switching to choose behavior. Consolidation might reduce repetition but would not colocate behavior with the data as subtype implementations would."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given a payment processing module that switches on paymentMethod to handle processing, which refactor addresses future variant growth best?",
+      "codeSnippet": "type Method = 'card' | 'paypal' | 'bank';\n\nfunction process(payment: { method: Method, details: any }) {\n  if (payment.method === 'card') return processCard(payment.details);\n  if (payment.method === 'paypal') return processPaypal(payment.details);\n  if (payment.method === 'bank') return processBank(payment.details);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce concrete subtypes implementing a shared interface and move each case behavior into the corresponding subtype method.",
+          "isCorrect": true,
+          "explanation": "Creating type-specific implementations encapsulates behavior with the variant. Adding a new payment type becomes adding a new subtype rather than modifying a central conditional, which reduces change impact and improves cohesion."
+        },
+        {
+          "id": "b",
+          "text": "Create a function lookup table mapping enum values to handler functions and keep all behavior as plain functions.",
+          "isCorrect": false,
+          "explanation": "A lookup table reduces conditionals but keeps behavior decoupled from data structures. It can work for simple cases, but it does not bind behavior to domain types which often leads to scattered logic and extra maintenance as variants gain state."
+        },
+        {
+          "id": "c",
+          "text": "Add flags to the data model to toggle behavior and centralize branching around those flags without new types.",
+          "isCorrect": false,
+          "explanation": "Using flags to drive behavior increases conditional complexity and mixes responsibilities into the data model. It often results in combinatorial branching and makes it harder to reason about variant-specific responsibilities later."
+        },
+        {
+          "id": "d",
+          "text": "Extract each switch branch into small helper methods inside the same class to reduce method complexity without subclasses.",
+          "isCorrect": false,
+          "explanation": "Extracting helpers improves readability but preserves the central dispatcher. The core maintenance cost remains because new variants still require editing the dispatcher, rather than extending with new types."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation is preferable for a domain where new variants are added regularly? Compare Version A and Version B.",
+      "codeSnippet": "// Version A: subtype implementations\nabstract class Notification {\n  abstract send(payload: any): void;\n}\nclass EmailNotification extends Notification {\n  send(payload: any) { /* email specific */ }\n}\nclass SmsNotification extends Notification {\n  send(payload: any) { /* sms specific */ }\n}\n\n// Version B: single class with conditional\nclass NotificationService {\n  send(kind: 'email'|'sms', payload: any) {\n    if (kind === 'email') { /* email specific */ }\n    else if (kind === 'sms') { /* sms specific */ }\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A encapsulates each variant's behavior in its own subclass, keeping responsibilities close to the associated type implementation.",
+          "isCorrect": true,
+          "explanation": "Version A localizes behavior within concrete subclasses so each variant owns its implementation. This aligns responsibilities, simplifies adding new variants by adding new subclasses, and reduces the risk of accidentally modifying unrelated behavior. It also makes unit testing and dependency injection per variant straightforward."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes all branching inside a single class using a large switch, scattering behavior across conditional branches and mutation points.",
+          "isCorrect": false,
+          "explanation": "Version B keeps all variant logic in one place which can seem convenient initially but leads to sprawling conditionals as variants grow. It increases change risk because adding or modifying a variant touches the central dispatcher, encourages larger methods, and hinders encapsulation and reuse."
+        }
+      ]
+    }
+  ]
+}

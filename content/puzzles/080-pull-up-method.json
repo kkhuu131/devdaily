@@ -1,0 +1,105 @@
+{
+  "id": 80,
+  "conceptName": "Pull Up Method",
+  "category": "refactoring",
+  "definition": "When two or more subclasses contain identical or very similar method implementations, move the common method into their common superclass so the code is centralized and duplicated logic is removed.",
+  "ruleOfThumb": "If sibling classes repeat the same behavior, prefer moving that behavior into the shared base class unless subclasses require divergent implementations.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Moving Features Between Objects (Move Method / Pull Up Method)",
+    "page": "166-170",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which symptom most likely indicates the need to centralize a method shared by sibling subclasses?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "A method implementation is duplicated across sibling subclasses and belongs in their common superclass for reuse.",
+          "isCorrect": true,
+          "explanation": "When sibling classes contain the same implementation, moving that method to the common superclass removes duplication and clarifies the shared responsibility. This keeps behavior in one place so fixes and enhancements apply consistently."
+        },
+        {
+          "id": "b",
+          "text": "Each subclass has a similar method because they diverge in small ways and should remain separate implementations.",
+          "isCorrect": false,
+          "explanation": "Small differences can justify keeping methods separate, but this option ignores opportunities for factoring out the common parts. Often the common core can be moved up with hooks or protected methods for the differences."
+        },
+        {
+          "id": "c",
+          "text": "The subclasses call different helper functions and only the method signature matches so no extraction is needed.",
+          "isCorrect": false,
+          "explanation": "Different helpers suggest partial overlap, but identical method bodies that differ only by helper calls may still benefit from centralization by parametrizing or extracting the differing parts."
+        },
+        {
+          "id": "d",
+          "text": "A utility function belongs outside the class hierarchy because the operation is stateless and unrelated to inheritance.",
+          "isCorrect": false,
+          "explanation": "Some operations are better as utilities, but if the behavior conceptually belongs to the abstraction represented by the superclass, moving it into the class hierarchy preserves encapsulation and polymorphism."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Examine the TypeScript snippet. Which refactoring best addresses the duplication in subclass calculateDiscount implementations?",
+      "codeSnippet": "class Customer {\n  getBasePrice() { return 100 }\n  calculateDiscount() { return 0 }\n}\n\nclass CorporateCustomer extends Customer {\n  calculateDiscount() { return 0 }\n}\n\nclass RetailCustomer extends Customer {\n  calculateDiscount() { return 0 }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Move the duplicate method implementation into the shared superclass to eliminate redundancy and centralize behavior.",
+          "isCorrect": true,
+          "explanation": "Centralizing the identical calculateDiscount logic in Customer removes duplication, ensures consistent behavior, and allows subclasses to override only when behavior truly differs. This is the classic refactoring for repeated subclass code."
+        },
+        {
+          "id": "b",
+          "text": "Replace the method bodies with calls to a common utility module to keep classes thinner and avoid inheritance coupling.",
+          "isCorrect": false,
+          "explanation": "Extracting to a utility can remove duplication, but it breaks encapsulation of domain behavior and scatters logic outside the type hierarchy. Prefer moving to the common parent when the behavior conceptually belongs to the abstraction."
+        },
+        {
+          "id": "c",
+          "text": "Introduce an interface and delegate distinct discount strategies to separate classes for more flexible discount rules.",
+          "isCorrect": false,
+          "explanation": "Strategy patterns are useful when variants exist, but this snippet shows identical implementations. Introducing strategy adds unnecessary indirection unless multiple discount algorithms are required."
+        },
+        {
+          "id": "d",
+          "text": "Keep duplicate methods because the subclasses may intentionally share implementation now but differ in future behaviors.",
+          "isCorrect": false,
+          "explanation": "Premature preservation of duplication wastes maintenance effort. If future divergence is expected, start with centralization and provide clear extension points in the superclass for future overrides."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better balances encapsulation and maintainability when siblings currently share identical logic?",
+      "codeSnippet": "// Version A: utility function\nfunction calcDiscount(price: number, loyalty: number) {\n  if (loyalty > 100) return price * 0.1\n  return 0\n}\n\nclass RetailCustomer {\n  getPrice() { return 100 }\n  discount() { return calcDiscount(this.getPrice(), this.loyalty) }\n}\n\nclass CorporateCustomer {\n  getPrice() { return 80 }\n  discount() { return calcDiscount(this.getPrice(), this.loyalty) }\n}\n\n// Version B: superclass method\nclass Customer {\n  discount() { if (this.loyalty > 100) return this.getPrice() * 0.1; return 0 }\n}\n\nclass RetailCustomer extends Customer { getPrice() { return 100 } }\nclass CorporateCustomer extends Customer { getPrice() { return 80 } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A extracts the shared logic into a utility module, risking scattered responsibility and harder maintenance.",
+          "isCorrect": false,
+          "explanation": "Putting the behavior in a free function can work for stateless helpers, but when the logic is conceptually part of the Customer abstraction it fragments responsibility and makes future subclass overrides awkward. Tests and behavior live across modules rather than the type hierarchy."
+        },
+        {
+          "id": "b",
+          "text": "Version B moves the shared logic into the common superclass, enabling subclasses to override without duplicating code.",
+          "isCorrect": true,
+          "explanation": "Centralizing the behavior in the superclass preserves encapsulation and keeps domain behavior with the type that owns it. Subclasses retain the ability to override when needed, maintaining polymorphism and reducing duplication. Fowler recommends this approach when siblings share implementation because it clarifies responsibility and simplifies maintenance."
+        }
+      ]
+    }
+  ]
+}

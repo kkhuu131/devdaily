@@ -1,0 +1,106 @@
+{
+  "id": 79,
+  "conceptName": "Extract Class",
+  "category": "refactoring",
+  "definition": "Move part of a large or low-cohesion class into a new class so each type has a single, focused responsibility.",
+  "ruleOfThumb": "When groups of fields and methods form a distinct responsibility that could be tested and evolved independently, move them into a new collaborator.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Extract Class",
+    "page": "106",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html#ExtractClass"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given the class below, which symptom most strongly indicates it should be split into separate types?",
+      "codeSnippet": "class OrderProcessor {\n  customerName: string;\n  shippingAddress: string;\n  discountCode?: string;\n  items: LineItem[];\n  taxCalculator: TaxCalculator;\n  logger: Logger;\n  processOrder() { /* charge payment and schedule shipment */ }\n  calculateDiscount() { /* compute promotional discount */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class contains multiple groups of fields and methods that serve distinct responsibilities and rarely interact with each other.",
+          "isCorrect": true,
+          "explanation": "Distinct groups of data and behavior indicate low cohesion. Splitting those groups into focused types reduces cognitive load and coupling, making the design easier to test and change."
+        },
+        {
+          "id": "b",
+          "text": "The class has low test coverage which makes it risky to change without adding more unit tests across all methods.",
+          "isCorrect": false,
+          "explanation": "Low test coverage is a risk but it is a symptom of brittle code rather than the direct signal to split a class; tests are valuable but do not by themselves identify separate responsibilities."
+        },
+        {
+          "id": "c",
+          "text": "The class relies on many primitive fields which forces callers to know internal data layout for useful operations.",
+          "isCorrect": false,
+          "explanation": "Many primitives can suggest data clumps, but the real trigger to split is when methods naturally operate on distinct subsets of that data. Primitives alone are not definitive."
+        },
+        {
+          "id": "d",
+          "text": "The class is large in lines of code but all methods collaborate closely on a single cohesion goal.",
+          "isCorrect": false,
+          "explanation": "Size alone does not imply a need to split; large classes that remain cohesive do not benefit from separating concerns unless responsibilities actually diverge."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You find class AccountManager with methods for notifications, validation, and reporting. What is the best next refactoring step?",
+      "codeSnippet": "class AccountManager {\n  private users: User[];\n  notifyEmail(userId: string) { /* constructs email and sends */ }\n  validatePassword(userId: string, pass: string) { /* checks hashing and policy */ }\n  generateReport() { /* aggregates usage stats and formats CSV */ }\n  saveAudit(entry: AuditEntry) { /* persists operation timeline */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce a dedicated collaborator to encapsulate the unrelated data and behavior currently mixed inside the class.",
+          "isCorrect": true,
+          "explanation": "Creating a focused collaborator extracts a coherent responsibility out of the class, improving cohesion and making each type easier to reason about and test. This reduces coupling and clarifies intent."
+        },
+        {
+          "id": "b",
+          "text": "Mark the unrelated methods as static helpers to avoid state and reduce coupling to the owning class instance.",
+          "isCorrect": false,
+          "explanation": "Making methods static hides the underlying mixing of responsibilities and moves coupling to callers. It avoids creating a proper abstraction and leaves the original class responsibilities muddled."
+        },
+        {
+          "id": "c",
+          "text": "Collapse similar fields into a single configuration object and pass it through methods rather than creating a new collaborator.",
+          "isCorrect": false,
+          "explanation": "Wrapping fields in a configuration object centralizes data but does not separate responsibilities; it often postpones the need for a separate abstraction and leaves behavior colocated with unrelated logic."
+        },
+        {
+          "id": "d",
+          "text": "Delay any structural changes and instead add unit tests around behaviors to safely observe which responsibilities change together.",
+          "isCorrect": false,
+          "explanation": "Adding tests is valuable for safety, but tests are not a substitute for designing clearer abstractions. Tests should accompany the refactoring rather than replace the creation of focused collaborators."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which design is preferable for maintainability and why?",
+      "codeSnippet": "// Version A\nclass ProfileData {\n  constructor(public name: string, public email: string) {}\n}\nclass ProfileService {\n  constructor(private data: ProfileData) {}\n  updateEmail(newEmail: string) { this.data.email = newEmail; }\n  sendWelcome() { /* use data to send messages */ }\n}\n// Version B\nclass UserProfile {\n  name: string; email: string;\n  constructor(name: string, email: string) { this.name = name; this.email = email; }\n  updateEmail(newEmail: string) { this.email = newEmail; }\n  sendWelcome() { /* uses fields directly and contains send logic */ }\n  saveOrNotify(mode: 'save'|'notify') { /* one method handles both concerns */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A cleanly separates data from behavior into focused collaborators that reduce coupling and clarify responsibilities.",
+          "isCorrect": true,
+          "explanation": "Version A provides a clear boundary between the simple data holder and the service that operates on that data. This separation lowers coupling, enables targeted tests, and makes future changes safer. Fowler recommends forming such boundaries when related fields and methods form a distinct role."
+        },
+        {
+          "id": "b",
+          "text": "Version B retains mixed data and multiple unrelated behaviors in one class causing harder testing and evolving coupling.",
+          "isCorrect": false,
+          "explanation": "Version B keeps state and several concerns inside a single type, which leads to larger methods, branching by mode, and harder unit testing. Over time this pattern increases coupling and makes refactors more risky compared to introducing a focused collaborator."
+        }
+      ]
+    }
+  ]
+}

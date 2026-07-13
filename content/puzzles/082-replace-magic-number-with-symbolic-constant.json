@@ -1,0 +1,106 @@
+{
+  "id": 82,
+  "conceptName": "Replace Magic Number with Symbolic Constant",
+  "category": "refactoring",
+  "definition": "Replace raw numeric literals that encode business rules or meanings with named constants so code communicates intent and centralizes change points.",
+  "ruleOfThumb": "If a number represents a business rule, threshold, or semantic value, give it a descriptive name and reuse that constant.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Magic Number with Symbolic Constant",
+    "page": "72",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this billing helper. What is the primary code smell present?",
+      "codeSnippet": "export function calculateOverageCharge(minutes: number) {\n  if (minutes <= 100) return 0;\n  return (minutes - 100) * 0.25;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code contains unexplained numeric literals used directly in expressions within the function in multiple places.",
+          "isCorrect": true,
+          "explanation": "The function uses bare numeric literals (100 and 0.25) with no descriptive names. Those numbers encode business meaning but do not document intent or centralize change. Replacing them with named constants makes the code self-documenting and simplifies updates when the pricing rules change."
+        },
+        {
+          "id": "b",
+          "text": "The function mixes several business responsibilities and requires splitting into smaller focused functions for clarity and reuse.",
+          "isCorrect": false,
+          "explanation": "While splitting responsibilities is a valid concern in many functions, this small helper focuses on a single calculation. The main issue is not multiple responsibilities but the use of unexplained numeric literals that obscure business intent."
+        },
+        {
+          "id": "c",
+          "text": "The function duplicates calculation logic that should be centralized to avoid divergence across modules and future errors.",
+          "isCorrect": false,
+          "explanation": "Duplication can be a problem, but the snippet shows a single implementation. The pressing problem here is that the numeric values are magic numbers. Centralizing them as constants is the appropriate first step before addressing broader duplication."
+        },
+        {
+          "id": "d",
+          "text": "This function performs heavy floating point arithmetic and would benefit from targeted performance optimization before feature expansion.",
+          "isCorrect": false,
+          "explanation": "Performance tuning is premature for this simple arithmetic. The calculations are trivial; the real maintainability hazard is unexplained numeric literals. Addressing meaning and maintainability should come before low-level optimization in this context."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which refactor is the best first step to address the numeric literals in this pricing function?",
+      "codeSnippet": "function computeTotal(items: number, applyTax = true) {\n  const subtotal = items * 20;\n  const tax = applyTax ? subtotal * 0.08 : 0;\n  if (subtotal > 500) return subtotal * 0.9;\n  return subtotal + tax;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce named constants at module scope for the numeric values used in the computation to document intent.",
+          "isCorrect": true,
+          "explanation": "Extracting named constants for 20, 0.08, 500, and 0.9 gives those numbers semantic names and centralizes change. This is the canonical first refactor for magic numbers because it makes the business rules explicit before larger structural changes."
+        },
+        {
+          "id": "b",
+          "text": "Make these numeric values configurable via runtime configuration so operators can change business thresholds without deployments.",
+          "isCorrect": false,
+          "explanation": "Making values configurable may be warranted for truly operational thresholds, but it is a bigger change. First extract constants to clarify intent; only then evaluate whether they must move into configuration."
+        },
+        {
+          "id": "c",
+          "text": "Pass these numeric values as function parameters to allow callers to control thresholds and improve testability.",
+          "isCorrect": false,
+          "explanation": "Turning numbers into parameters increases flexibility but also complicates the API and call sites. Extracting named constants is lower risk and improves readability before altering the function signature."
+        },
+        {
+          "id": "d",
+          "text": "Encapsulate pricing logic behind a PriceService object so business rules are isolated and easier to evolve later.",
+          "isCorrect": false,
+          "explanation": "Introducing a service can be useful long term, but it is a larger structural refactor. The immediate improvement is to name the numeric literals so the rules are clear. After that you can evaluate encapsulation."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better addresses maintainability and why? Compare the two implementations.",
+      "codeSnippet": "// Version A\nfunction calculateFee(amount: number) {\n  if (amount > 1000) return amount * 0.02;\n  return amount * 0.01;\n}\n\n// Version B\nconst HIGH_THRESHOLD = 1000;\nconst HIGH_RATE = 0.02;\nconst LOW_RATE = 0.01;\nfunction calculateFee(amount: number) {\n  if (amount > HIGH_THRESHOLD) return amount * HIGH_RATE;\n  return amount * LOW_RATE;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A retains inline numeric literals which obscures business intent and hinders consistent reuse across the codebase.",
+          "isCorrect": false,
+          "explanation": "Version A leaves the threshold and rates as magic numbers at the call site. That makes the business meaning unclear, and if the same numbers appear elsewhere you risk divergence. While concise, it provides poor documentation of intent and complicates coordinated changes."
+        },
+        {
+          "id": "b",
+          "text": "Version B replaces inline numbers with descriptive module constants which clarifies intent and reduces duplication across callers.",
+          "isCorrect": true,
+          "explanation": "Version B extracts the numeric literals into named constants at module scope. That documents the meaning of each value and centralizes them for change. This refactor reduces the chance of inconsistencies when the business rule changes and improves readability. It also makes future moves to configuration or service boundaries straightforward. See Fowler's refactoring catalogue for this exact transformation."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 56,
+  "conceptName": "Large Class",
+  "category": "code-smell",
+  "definition": "A class that accumulates many responsibilities, fields, and methods, increasing cognitive load and entangling unrelated concerns.",
+  "ruleOfThumb": "If a class is longer than it feels reasonable to hold in working memory or contains multiple independent responsibilities, consider splitting it into focused collaborators.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Bad Smells in Code: Large Class",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the class below. Which description best matches the primary structural issue present?",
+      "codeSnippet": "// OrderProcessor handles validation, calculation, persistence, notifications\nclass OrderProcessor {\n  private db: Database;\n  constructor(db: Database) { this.db = db }\n  validate(order: Order) { /* validation logic */ }\n  calculateTotals(order: Order) { /* total calc */ }\n  chargePayment(order: Order, card: Card) { /* payment gateway */ }\n  sendConfirmationEmail(order: Order) { /* email logic */ }\n  exportCsv(orders: Order[]) { /* export logic */ }\n  save(order: Order) { this.db.save(order) }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class mixes multiple responsibilities such as business logic, persistence, formatting, and notification within one large type.",
+          "isCorrect": true,
+          "explanation": "Correct. The example shows a single class coordinating validation, calculation, persistence, exporting, and notification. That combination increases coupling and decreases clarity, making targeted changes risky. Fowler describes this smell as a sign to extract collaborators so each responsibility has a clearer owner. Splitting responsibilities improves testability and reduces the area affected by changes."
+        },
+        {
+          "id": "b",
+          "text": "This class primarily lacks unit tests and seems risky to change without an existing automated test suite in place.",
+          "isCorrect": false,
+          "explanation": "Plausible but not the primary structural issue. While lack of tests is a maintainability concern, the code snippet explicitly exposes many distinct responsibilities inside one class. Tests can mitigate risk, but the root design problem is the concentration of responsibilities that makes writing focused tests harder. Refactoring the class into smaller parts often makes testing easier."
+        },
+        {
+          "id": "c",
+          "text": "This class appears to be a performance bottleneck due to synchronous IO and heavy object creation on each method call.",
+          "isCorrect": false,
+          "explanation": "This concern is believable in some systems, but the snippet does not show heavy allocation patterns or blocking loops. The visible issue is functional mixing: database calls, email logic, and formatting live together. Performance problems require profiling; structural smells are identified by responsibility boundaries rather than presumed runtime characteristics."
+        },
+        {
+          "id": "d",
+          "text": "This class reveals tight coupling to concrete frameworks and singletons spread across many methods preventing easy reuse.",
+          "isCorrect": false,
+          "explanation": "Coupling to frameworks can be a real problem, but the snippet shows coupling to a Database instance and various responsibilities rather than pervasive framework APIs. The more precise observation is that unrelated concerns are gathered in one place. Addressing coupling might be part of the refactor, but splitting responsibilities is the clearer starting point."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this class that touches fetching, formatting, and emailing, what is the most significant maintainability risk?",
+      "codeSnippet": "// ReportManager mixes fetching, formatting, and emailing\nclass ReportManager {\n  fetchData(params:any) { /* database queries */ }\n  formatToPdf(data:any) { /* PDF layout */ }\n  generateChart(data:any) { /* chart generation */ }\n  emailReport(email:string, blob:any) { /* SMTP code */ }\n  saveReport(metadata:any) { /* storage */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class concentrates unrelated responsibilities so a single change will likely require edits across many independent methods.",
+          "isCorrect": true,
+          "explanation": "Correct. When a class spans data access, presentation formatting, and notification, a change in one feature often cascades into unrelated methods. That increases the chance of regressions and makes reasoning about behavior harder. Refactoring into focused collaborators reduces the blast radius of changes and supports single-responsibility principles from books like Clean Code and Refactoring."
+        },
+        {
+          "id": "b",
+          "text": "This class primarily causes problems because its public API surface is unstable and frequently changes across released versions.",
+          "isCorrect": false,
+          "explanation": "This is a credible symptom but not the primary structural diagnosis. An unstable public API can result from many causes; the snippet more clearly reveals mixed responsibilities. Splitting internal responsibilities often stabilizes external surfaces by providing clearer boundaries and smaller, more stable interfaces."
+        },
+        {
+          "id": "c",
+          "text": "This class appears to misuse inheritance hierarchies, making behavior difficult to reason about and extending with subclasses risky.",
+          "isCorrect": false,
+          "explanation": "Inheritance misuse is a real design smell, but the snippet uses a single class with multiple behaviors rather than an inheritance tree. The maintenance burden here comes from co-located responsibilities rather than fragile subtype relationships. Applying composition and extracting collaborators addresses the visible concern more directly."
+        },
+        {
+          "id": "d",
+          "text": "This class seems to leak memory through retained references within many closures and long lived collections across requests.",
+          "isCorrect": false,
+          "explanation": "Memory leaks are a tangible runtime problem, but there is no clear evidence of retained closures or long-lived collections in the snippet. The more immediate maintenance risk is cognitive overload from mixing unrelated logic in one class, which makes safe evolution and testing more difficult."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two implementations below. Which version is the better long-term design choice?",
+      "codeSnippet": "// Version A\nclass InvoiceService {\n  createInvoice(data) { /* gather data */ }\n  persistInvoice(inv) { /* direct DB code */ }\n  emailInvoice(inv) { /* SMTP inline */ }\n  generatePdf(inv) { /* inline PDF */ }\n}\n\n// Version B\nclass InvoiceService {\n  constructor(repo, pdfGen, notifier) { this.repo = repo; this.pdfGen = pdfGen; this.notifier = notifier }\n  createInvoice(data) { /* orchestrates collaborators */ }\n}\nclass InvoiceRepository { /* persistence */ }\nclass PdfGenerator { /* pdf creation */ }\nclass Notifier { /* emailing */ }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps all logic in one class increasing change risk and making focused testing difficult.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Version A bundles persistence, PDF generation, and emailing inside one service. That centralization increases the chance that changes ripple through unrelated functionality, raises the cognitive load for maintainers, and makes unit tests harder because many concerns must be faked or exercised together. This design tends to accumulate more responsibilities over time."
+        },
+        {
+          "id": "b",
+          "text": "Version B assigns single responsibilities to small, focused collaborators with minimal cross-cutting dependencies.",
+          "isCorrect": true,
+          "explanation": "Correct. Version B explicitly extracts persistence, PDF generation, and notification into collaborators that InvoiceService orchestrates. This separation creates clear ownership boundaries, simplifies unit testing of each collaborator, and reduces coupling between concerns. Fowler and other authors recommend extracting collaborators and applying the single responsibility principle to reduce maintenance costs and improve change isolation."
+        }
+      ]
+    }
+  ]
+}

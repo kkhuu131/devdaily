@@ -1,0 +1,106 @@
+{
+  "id": 77,
+  "conceptName": "Mysterious Name",
+  "category": "code-smell",
+  "definition": "A code smell where identifiers (variables, functions, classes) are overly generic or opaque, hiding intent and making code harder to understand and evolve.",
+  "ruleOfThumb": "Prefer descriptive, domain-specific names and narrow types so identifiers document behavior and reduce the need for comments.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code",
+    "chapter": "Meaningful Names",
+    "page": "17",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-code/9780136083238/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the snippet. Which symptom is the clearest immediate sign of the code smell present here?",
+      "codeSnippet": "function process(data: any) {\n  const x = data.get();\n  const result = x.transform();\n  save(result);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Identifiers are unusually vague and fail to communicate the code's intent to future maintainers and readers.",
+          "isCorrect": true,
+          "explanation": "The function and variable names (process, data, x) give no domain clues. This forces readers to inspect implementation to infer intent. Clean Code emphasizes meaningful names because they reduce cognitive load and make code self-describing."
+        },
+        {
+          "id": "b",
+          "text": "Variable names are overly generic and obscure the data flow, increasing the likelihood of accidental misuse in changes.",
+          "isCorrect": false,
+          "explanation": "This is a plausible concern because generic variables hide what each value represents, which can lead to incorrect assumptions during edits. However, the root issue is the lack of semantic naming rather than only a hidden data flow problem."
+        },
+        {
+          "id": "c",
+          "text": "Function names are non descriptive and make it unclear what side effects or responsibilities the code is performing.",
+          "isCorrect": false,
+          "explanation": "Non descriptive function names are problematic and contribute to confusion, but this choice focuses on side effects. The primary smell shown is generic naming across both functions and variables that obscures intent."
+        },
+        {
+          "id": "d",
+          "text": "Comments are missing and developers must infer behavior from names, which increases cognitive load during debugging.",
+          "isCorrect": false,
+          "explanation": "Missing comments can worsen the situation, yet comments are a secondary symptom. The bigger problem is that names do not convey meaning, so adding comments would be a patch rather than addressing the naming deficiency directly."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this service class, which change will most directly reduce the ambiguity introduced by the identifiers?",
+      "codeSnippet": "interface Payload { data: any }\nclass Service {\n  constructor(private thing: any) {}\n  handle(input: Payload) {\n    if (input.data.type === 'a') return this.thing.processA(input.data)\n    return this.thing.processB(input.data)\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Provide a descriptive domain-specific name for the constructor parameter and type it with a clear interface.",
+          "isCorrect": true,
+          "explanation": "Renaming 'thing' to a meaningful domain name and giving it a precise interface makes responsibilities explicit and enables IDE help and compile-time checks. This directly addresses the ambiguity at its source and improves discoverability and refactoring safety."
+        },
+        {
+          "id": "b",
+          "text": "Replace runtime type checks with guards and leave parameter names generic to preserve loose coupling across modules.",
+          "isCorrect": false,
+          "explanation": "Runtime guards improve safety but leaving generic names maintains the original readability problem. Loose coupling is valuable, but descriptive naming plus interfaces can preserve decoupling while clarifying intent, so this is not the most direct fix."
+        },
+        {
+          "id": "c",
+          "text": "Document expected behavior thoroughly in comments and keep generic names to avoid leaking domain details into shared services.",
+          "isCorrect": false,
+          "explanation": "Adding documentation helps newcomers, but comments can become stale and still require readers to cross-reference behavior. Better names and types make the code self-documenting, which is more robust than relying solely on comments."
+        },
+        {
+          "id": "d",
+          "text": "Introduce wrapper methods with descriptive names around generic calls and keep internal fields named with short generic identifiers.",
+          "isCorrect": false,
+          "explanation": "Wrappers can improve the public surface but preserving generic internal identifiers still hides intent within the class. A focused rename and explicit typing throughout the class is a cleaner, more maintainable approach."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better avoids the naming ambiguity while keeping the design testable and extensible?",
+      "codeSnippet": "// Version A\ninterface PaymentProcessor { processCard(card: Card): Receipt }\nclass StripePaymentProcessor implements PaymentProcessor {\n  processCard(card: Card) { /* implementation */ }\n}\n\n// Version B\nclass PaymentManager {\n  handle(payment: any) { return this.do(payment) }\n  private do(x: any) { /* implementation */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A uses domain specific types and descriptive names which clarify responsibilities without added indirection.",
+          "isCorrect": true,
+          "explanation": "Version A models a clear abstraction with a named interface and concrete implementation. That documents intent, enables mocking for tests, and supports extension by adding new processors. It trades minimal code surface for significant clarity — a core Clean Code recommendation."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes responsibilities under a generic manager name and hides specific behavior behind broad APIs.",
+          "isCorrect": false,
+          "explanation": "At first glance Version B seems flexible, but it collapses distinct responsibilities into a generic holder, which obscures behavior and complicates testing and extension. Over time this pattern tends to accumulate conditional logic and tight coupling, making refactoring more costly."
+        }
+      ]
+    }
+  ]
+}

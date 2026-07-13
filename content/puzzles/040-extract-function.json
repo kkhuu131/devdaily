@@ -1,0 +1,106 @@
+{
+  "id": 40,
+  "conceptName": "Extract Function",
+  "category": "refactoring",
+  "definition": "Move a contiguous fragment of code into a new, well-named function and replace duplicated occurrences with calls to that function.",
+  "ruleOfThumb": "When the same block appears more than once or a block hides intent, pull it into a small, focused helper with a clear name.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Extract Method",
+    "page": "pp. 84-92",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which of these symptoms most clearly indicates a spot where a small helper would reduce duplication and clarify intent?",
+      "codeSnippet": "function process(order: Order) {\n  const tax = calculateTax(order);\n  if (order.type === 'online') {\n    const total = order.subtotal + tax;\n    notifyUser(order.userId, total);\n  } else {\n    const total = order.subtotal + tax;\n    printReceipt(order.id, total);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function contains a repeated block that performs the same calculations in multiple places across different branches.",
+          "isCorrect": true,
+          "explanation": "This is the classic case for pulling the repeated computation into a single helper to avoid duplication and express intent. Extracting the block reduces maintenance burden and hides the lower-level calculation behind a descriptive name."
+        },
+        {
+          "id": "b",
+          "text": "The function contains tightly coupled responsibilities making it hard to test and causing unexpected side effects during maintenance.",
+          "isCorrect": false,
+          "explanation": "Tight coupling and side effects are real concerns but the snippet shows duplicated calculation rather than multiple responsibilities. Addressing coupling might require different refactorings such as introducing interfaces or isolating side effects first."
+        },
+        {
+          "id": "c",
+          "text": "The function contains deeply nested loops and conditionals that obscure intent and make the logic hard to follow.",
+          "isCorrect": false,
+          "explanation": "Deep nesting is a separate readability problem that often benefits from early returns or splitting into smaller functions, but the immediate issue here is identical logic repeated in branches, which extracting a helper directly resolves."
+        },
+        {
+          "id": "d",
+          "text": "The function contains a performance hotspot with repeated computations that should instead be memoized or cached for speed.",
+          "isCorrect": false,
+          "explanation": "Performance and caching can be appropriate when computations are expensive, but the snippet shows simple arithmetic duplicated for clarity; for maintainability the primary fix is to centralize the logic rather than introduce caching prematurely."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this handler with similar blocks in two branches, which step is the most effective first refactor to reduce duplication safely?",
+      "codeSnippet": "function finalizeInvoice(invoice: Invoice) {\n  const tax = computeTax(invoice);\n  if (invoice.isPaid) {\n    const total = invoice.subtotal + tax;\n    sendPaidNotification(invoice.customerId, total);\n  } else {\n    const total = invoice.subtotal + tax;\n    queueInvoiceForPayment(invoice.id, total);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce a small well-named helper function and call it from each duplicate location to centralize the shared behavior.",
+          "isCorrect": true,
+          "explanation": "Creating a focused helper that computes the shared value and returns it centralizes the logic without changing behavior. It keeps the caller simple and makes the computation easy to test independently."
+        },
+        {
+          "id": "b",
+          "text": "Extract repeated expressions into named intermediate variables inside the original function to clarify the computations locally.",
+          "isCorrect": false,
+          "explanation": "Named intermediates improve readability but still leave duplication across branches. This mitigates symptom visibility but does not remove the maintenance burden of updating two places when behavior changes."
+        },
+        {
+          "id": "c",
+          "text": "Move the duplicated logic into a new collaborating class and delegate responsibility through a new interface to centralize behavior.",
+          "isCorrect": false,
+          "explanation": "Moving logic into a separate class can be valuable for design, but it is heavier weight and introduces coupling and indirection. The simpler first step is to isolate the shared fragment in a small function before elevating it to a class."
+        },
+        {
+          "id": "d",
+          "text": "Leave the duplication for now because the code is small and duplication may be acceptable until requirements solidify.",
+          "isCorrect": false,
+          "explanation": "Delaying refactoring can be pragmatic, but when the same expression appears in multiple places the cost of future changes increases. A lightweight helper is low risk and improves clarity immediately."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better refactor for maintainability and why, considering testability and tendency for divergence?",
+      "codeSnippet": "// Version A: small helper\nfunction computeTotal(order: Order) {\n  const tax = calculateTax(order);\n  return order.subtotal + tax;\n}\n\nfunction processOrderA(order: Order) {\n  const total = computeTotal(order);\n  if (order.type === 'online') notifyUser(order.userId, total);\n  else printReceipt(order.id, total);\n}\n\n// Version B: duplicated calculation in branches\nfunction processOrderB(order: Order) {\n  if (order.type === 'online') {\n    const tax = calculateTax(order);\n    const total = order.subtotal + tax;\n    notifyUser(order.userId, total);\n  } else {\n    const tax = calculateTax(order);\n    const total = order.subtotal + tax;\n    printReceipt(order.id, total);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes the repeated logic into a single small pure helper function.",
+          "isCorrect": true,
+          "explanation": "Version A isolates the shared computation in one place, reducing duplication and the chance of divergence. A small pure helper improves testability and documents intent through its name, making maintenance safer. Fowler calls out this pattern as a primary refactoring for duplicated code, and it aligns with Clean Code's guidance to give meaningful names to behavior rather than replicate implementation details."
+        },
+        {
+          "id": "b",
+          "text": "Version B duplicates calculations and context in each branch which increases maintenance burden and risk of divergence.",
+          "isCorrect": false,
+          "explanation": "Version B repeats the same computation in multiple places so future changes must be applied to each branch. This increases the risk of bugs when teams modify one branch but forget the other. While sometimes duplication is tolerated for local clarity, in this case duplication is low cost to eliminate and has a clear maintenance downside. References: Fowler's Extract Method and Robert C. Martin on small functions and intent-revealing names."
+        }
+      ]
+    }
+  ]
+}

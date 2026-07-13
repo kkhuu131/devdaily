@@ -1,0 +1,106 @@
+{
+  "id": 73,
+  "conceptName": "Null Object Pattern",
+  "category": "design-pattern",
+  "definition": "Provide an object with neutral behavior in place of a missing collaborator so callers can invoke methods without null checks.",
+  "ruleOfThumb": "When many call sites check for absence before calling methods, prefer a neutral implementation to keep callers simpler.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring",
+    "chapter": "Replace Null with Null Object",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/ReplaceNullWithNullObject.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation best describes the technique used in the following logger code?",
+      "codeSnippet": "interface Logger {\n  log(msg: string): void\n}\nclass ConsoleLogger implements Logger {\n  log(msg: string) { console.log(msg) }\n}\nclass EmptyLogger implements Logger {\n  log(msg: string) { /* no-op */ }\n}\nfunction getLogger(enabled: boolean): Logger {\n  return enabled ? new ConsoleLogger() : new EmptyLogger()\n}\nconst logger = getLogger(false)\nlogger.log(\"started\")",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code supplies a do nothing implementation to satisfy callers so explicit null checks are not necessary.",
+          "isCorrect": true,
+          "explanation": "The EmptyLogger acts as a neutral collaborator so callers call logger.log without guarding for absence. This is the classic replacement for spreading conditional logic across call sites. It centralizes the absence behavior in one class instead of letting each caller handle a null check."
+        },
+        {
+          "id": "b",
+          "text": "This code uses an instance substitution strategy to vary behavior at runtime like a behavioral policy swap mechanism.",
+          "isCorrect": false,
+          "explanation": "While different implementations are being substituted, the important point is the EmptyLogger intentionally implements inert behavior to avoid null checks. Calling it a runtime strategy swap is misleading because there is no algorithmic variation concern; the goal is to represent absence safely."
+        },
+        {
+          "id": "c",
+          "text": "This code introduces a sentinel object that hides error states and may mask operational failures from callers.",
+          "isCorrect": false,
+          "explanation": "Calling the EmptyLogger a sentinel is partially accurate, but the code intends a neutral behavior rather than to conceal errors. The risk of masking failures exists, but the primary pattern is to provide a safe default implementation to simplify callers."
+        },
+        {
+          "id": "d",
+          "text": "This code violates dependency inversion by constructing concrete implementations directly inside client modules instead of injecting them.",
+          "isCorrect": false,
+          "explanation": "Although the snippet instantiates concrete loggers, the defining characteristic is the neutral implementation enabling caller simplification. Dependency injection concerns are valid but orthogonal to why an EmptyLogger is used here."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the most important downside of returning a do nothing object instead of a missing value in this user lookup?",
+      "codeSnippet": "interface User { name: string; notify(msg: string): void }\nclass RealUser implements User { constructor(public name: string) {} notify(msg: string) { console.log(msg) } }\nclass MissingUser implements User { name = 'Guest'; notify(msg: string) { /* ignore */ } }\nfunction findUser(id: number): User { return id > 0 ? new RealUser('Alice') : new MissingUser() }\nconst user = findUser(0)\nuser.notify('Welcome')",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Using this approach callers cannot distinguish missing data from present objects which may silently hide important errors.",
+          "isCorrect": true,
+          "explanation": "The principal risk is semantic: callers lose the ability to detect absence. If the domain requires awareness of missing entities, a neutral object can mask the condition and prevent appropriate error handling or alternative flows."
+        },
+        {
+          "id": "b",
+          "text": "Using this approach simplifies client code but may increase the number of short lived objects and marginally raise memory usage.",
+          "isCorrect": false,
+          "explanation": "Object churn and footprint are real but usually negligible compared with the behavioral implications. Performance costs should be measured, but they are not the primary tradeoff when choosing to use a neutral implementation."
+        },
+        {
+          "id": "c",
+          "text": "Using this approach can break equality semantics because sentinel instances may not compare equal to expected domain instances.",
+          "isCorrect": false,
+          "explanation": "Sentinel versus domain instance equality is a possible concern, particularly for identity checks, but it is a secondary practical issue. The more fundamental problem is masking absence, which affects correctness more than equality in most domains."
+        },
+        {
+          "id": "d",
+          "text": "Using this approach hides the absent case from tests and may encourage tests that do not assert presence or failure behavior.",
+          "isCorrect": false,
+          "explanation": "Test clarity can suffer if teams forget to assert absence explicitly. That is a valid maintenance concern, but it stems from the same semantic masking issue rather than being an independent reason to avoid the pattern."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which design is preferable for handling an optional payment gateway, and why is the other design problematic?",
+      "codeSnippet": "// Version A: callers check for gateway before each call\ninterface PaymentGateway { charge(amount: number): boolean }\nclass RealGateway implements PaymentGateway { charge(a: number) { /* remote call */ return true } }\nclass OrderService {\n  constructor(private gateway: PaymentGateway | null) {}\n  place(amount: number) {\n    if (this.gateway) {\n      this.gateway.charge(amount)\n    } else {\n      // ignore payment silently\n    }\n  }\n}\n\n// Version B: provide a default implementation so callers do not need checks\nclass NoopGateway implements PaymentGateway { charge(a: number) { return false } }\nclass OrderServiceV2 {\n  constructor(private gateway: PaymentGateway) {}\n  place(amount: number) {\n    this.gateway.charge(amount)\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A scatters null checks across call sites and mixes absence handling with business logic making changes risky.",
+          "isCorrect": false,
+          "explanation": "Version A forces every caller to know about a nullable gateway and duplicate the absence handling logic. That scattering increases coupling between business logic and absence semantics and makes future changes or alternate absence behavior harder to introduce. It also invites subtle bugs when some callers forget checks."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes default no operation behavior into a single dedicated implementation class available to callers.",
+          "isCorrect": true,
+          "explanation": "Version B encapsulates the absent collaborator behavior in a dedicated object, so callers remain simple and unaware of absence. This reduces duplicated conditional logic and localizes the semantics of a missing gateway. Use this when callers should not care about presence. If callers must react differently to absence, prefer an explicit optional result or a different design."
+        }
+      ]
+    }
+  ]
+}

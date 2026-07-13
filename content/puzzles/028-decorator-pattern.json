@@ -1,0 +1,106 @@
+{
+  "id": 28,
+  "conceptName": "Decorator Pattern",
+  "category": "design-pattern",
+  "definition": "A structural pattern where behavior is added to individual objects by wrapping them with decorator objects that share the same interface.",
+  "ruleOfThumb": "Prefer small, composable wrapper objects when you need to add or combine behaviors at runtime without changing original classes.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Decorator",
+    "page": "175",
+    "externalUrl": "https://en.wikipedia.org/wiki/Decorator_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the code. Which description best matches this structure?",
+      "codeSnippet": "interface Stream { read(): string }\nclass FileStream implements Stream { read(){ return 'file' } }\nclass StreamDecorator implements Stream {\n  constructor(protected stream: Stream) {}\n  read(){ return this.stream.read() }\n}\nclass CompressionDecorator extends StreamDecorator { read(){ return compress(super.read()) } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A flexible wrapper class that adds behavior to an object at runtime by holding a reference to the same interface.",
+          "isCorrect": true,
+          "explanation": "This code shows objects wrapping the same Stream interface and delegating to a held instance while adding behavior. That is the canonical decorator approach: composition-based extension of behavior without modifying the wrapped object or creating subclasses for each combination."
+        },
+        {
+          "id": "b",
+          "text": "A specialized subclass that statically extends the original class to add behavior at compile time and changes the base class.",
+          "isCorrect": false,
+          "explanation": "Subclassing changes the type hierarchy and creates new concrete classes for each behavior combination. The snippet uses wrapper objects delegating to an interface, not subclass extension, so static inheritance is not what is shown."
+        },
+        {
+          "id": "c",
+          "text": "A factory abstraction that decides concrete class creation and returns different implementations without wrapping existing instances at runtime.",
+          "isCorrect": false,
+          "explanation": "A factory constructs different concrete implementations and returns them to clients. The shown classes wrap an existing instance and delegate calls, which is different from selecting or instantiating different implementations at creation time."
+        },
+        {
+          "id": "d",
+          "text": "A service locator that hides dependencies behind a registry and provides instances through global lookup rather than per-instance wrapping.",
+          "isCorrect": false,
+          "explanation": "A service locator centralizes access to services via a registry or container. The snippet instead composes wrappers around specific instances, so it is not describing a global lookup mechanism."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given a codebase where multiple decorators are applied in different places, what is the most likely practical maintenance concern?",
+      "codeSnippet": "interface Notifier { send(msg: string): void }\nclass BaseNotifier implements Notifier { send(m){ /* deliver */ } }\nclass NotifierDecorator implements Notifier { constructor(protected inner: Notifier){}\n  send(m){ this.inner.send(m) }\n}\nclass LoggingDecorator extends NotifierDecorator { send(m){ console.log(m); super.send(m) } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Wrap order can change runtime behavior significantly when multiple wrappers are composed, causing subtle ordering dependent bugs.",
+          "isCorrect": true,
+          "explanation": "When decorators are composed, the order of wrapping affects which behavior runs before or after others. That ordering dependence is a common source of subtle bugs and must be considered when composing behavior."
+        },
+        {
+          "id": "b",
+          "text": "Decorators will always cause unacceptable runtime overhead and excessive garbage because each wrapper creates additional short lived objects.",
+          "isCorrect": false,
+          "explanation": "While wrappers add objects, the overhead is often negligible and can be mitigated. This is not an inevitable maintenance concern; ordering and behavior composition are typically more problematic than mere object creation."
+        },
+        {
+          "id": "c",
+          "text": "Using wrappers here will force deep inheritance hierarchies and class explosion when trying to add each combination of behaviors statically.",
+          "isCorrect": false,
+          "explanation": "Wrappers are used to avoid combinatorial subclass explosion. If anything, this design prevents class explosion by composing behaviors at runtime rather than creating every subclass combination."
+        },
+        {
+          "id": "d",
+          "text": "This design necessarily breaks encapsulation by exposing private fields of the wrapped object to the wrapper through tight coupling.",
+          "isCorrect": false,
+          "explanation": "Decorators delegate via the component interface and usually do not access private internals of the wrapped object. Tight coupling and encapsulation breaks can occur, but they are not an inherent maintenance issue for properly designed decorators."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better long-term design for combining logging and caching features for a core service?",
+      "codeSnippet": "// Version A: Composition via wrappers\ninterface Service { handle(req: string): string }\nclass CoreService implements Service { handle(r:string){ return 'ok:'+r } }\nclass LoggingDecorator implements Service { constructor(private s: Service){}\n  handle(r:string){ console.log(r); return this.s.handle(r) }\n}\nclass CachingDecorator implements Service { constructor(private s: Service, private cache=new Map()){}\n  handle(r:string){ if(this.cache.has(r)) return this.cache.get(r); const res=this.s.handle(r); this.cache.set(r,res); return res }\n}\n\n// Version B: Subclassing combinations\nclass CoreV2 { handle(r:string){ return 'ok:'+r } }\nclass LoggingService extends CoreV2 { handle(r:string){ console.log(r); return super.handle(r) } }\nclass CachingLoggingService extends LoggingService { handle(r:string){ /* duplicate caching logic */ return super.handle(r) } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A composes behaviors at runtime to allow arbitrary combinations without subclass combinatorial explosion.",
+          "isCorrect": true,
+          "explanation": "Version A uses composition of small wrappers that implement the same interface. This design supports independent, reusable behaviors that can be mixed in any order without creating a new subclass for each combination. It localizes behavior, keeps classes small, and avoids duplication of crosscutting concerns. This is the classic advantage of the decorator approach in long-lived systems."
+        },
+        {
+          "id": "b",
+          "text": "Version B uses subclassing for each behavior combination and leads to a combinatorial subclass explosion and brittle coupling.",
+          "isCorrect": false,
+          "explanation": "Version B encodes combinations in the inheritance hierarchy so every new behavior or order can require a new subclass. That creates maintenance burden, duplicates logic like caching across subclasses, and binds behavior ordering to type relationships. It is a plausible design but fails for extensibility and leads to fragile class coupling."
+        }
+      ]
+    }
+  ]
+}

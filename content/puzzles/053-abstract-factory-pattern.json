@@ -1,0 +1,106 @@
+{
+  "id": 53,
+  "conceptName": "Abstract Factory Pattern",
+  "category": "design-pattern",
+  "definition": "A creational design pattern that provides an interface for creating families of related or dependent objects without specifying their concrete classes.",
+  "ruleOfThumb": "Use when a system must create interchangeable families of related products and clients should be independent of concrete implementations.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Abstract Factory",
+    "page": "106",
+    "externalUrl": "https://refactoring.guru/design-patterns/abstract-factory"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches the intent of the factory interfaces and concrete factory classes shown below?",
+      "codeSnippet": "interface Button { render(): void }\ninterface Checkbox { toggle(): void }\ninterface UIFactory { createButton(): Button; createCheckbox(): Checkbox }\nclass MacButton implements Button { render(){ /* mac rendering */ } }\nclass MacCheckbox implements Checkbox { toggle(){ /* mac toggle */ } }\nclass MacFactory implements UIFactory { createButton(){ return new MacButton() } createCheckbox(){ return new MacCheckbox() } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A design that supplies families of related objects through interchangeable factory objects with consistent interfaces.",
+          "isCorrect": true,
+          "explanation": "This captures the pattern intent: factories expose a consistent interface to create related products so clients remain independent of concrete classes. The code groups Button and Checkbox creation behind UIFactory so a client can use a MacFactory or another platform factory interchangeably. See GoF chapter on intent and usage."
+        },
+        {
+          "id": "b",
+          "text": "A design that centralizes concrete product creation into a single class returning product instances based on runtime conditions.",
+          "isCorrect": false,
+          "explanation": "This describes a conditional factory or simple factory where one class selects concrete types with conditionals. The snippet shows distinct concrete factory classes per platform rather than a single centralized switch, which is a key difference."
+        },
+        {
+          "id": "c",
+          "text": "A design that provides a global access point to a single factory instance shared across the application for object creation.",
+          "isCorrect": false,
+          "explanation": "This suggests a singleton factory used as a global service. The snippet shows multiple concrete factories that implement an interface and can coexist, rather than a single global instance, so the singleton concern is not the primary intent here."
+        },
+        {
+          "id": "d",
+          "text": "A design that defers product instantiation to subclasses enabling clients to override which concrete type is created at runtime.",
+          "isCorrect": false,
+          "explanation": "This sounds like Factory Method where subclasses override a creation method. The example groups related products into families via separate factory classes, which is a different structural goal than the Factory Method emphasis on subclass overrides."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the following createX switch-based factory implementation, what is the primary maintenance risk with this approach?",
+      "codeSnippet": "interface Button {}\nclass WinButton implements Button {}\nclass MacButton implements Button {}\nfunction createButton(platform: string): Button {\n  switch(platform) {\n    case 'win': return new WinButton()\n    case 'mac': return new MacButton()\n  }\n  throw new Error('Unknown platform')\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code exhibits a growing conditional factory that will require edits for each new platform or product family addition.",
+          "isCorrect": true,
+          "explanation": "The switch-based factory centralizes selection logic and forces modifications for every new family member or platform. That edit-bearing design is brittle and violates the open closed principle; introducing a factory abstraction per family avoids these pervasive changes. See GoF and pragmatic guidelines for creational patterns."
+        },
+        {
+          "id": "b",
+          "text": "This code suggests a global singleton factory usage that will make testing and dependency substitution difficult under concurrency.",
+          "isCorrect": false,
+          "explanation": "While singletons can cause testability and concurrency issues, the sample shows a plain factory function using a switch, not a globally shared singleton instance. The primary concern here is expanding conditional logic rather than singleton semantics."
+        },
+        {
+          "id": "c",
+          "text": "This code indicates missing abstraction that forces consumers to know concrete classes rather than depend on stable factory interfaces.",
+          "isCorrect": false,
+          "explanation": "Consumers may end up knowing concrete classes, but the immediate smell is the centralized conditional logic that scales poorly. Introducing an abstraction for families addresses the scaling problem more directly than just hiding concrete classes from callers."
+        },
+        {
+          "id": "d",
+          "text": "This code is likely a premature optimization delegating creation to runtime switches instead of using polymorphic collaborators.",
+          "isCorrect": false,
+          "explanation": "Labeling it a premature optimization is plausible but imprecise. The core issue is maintainability as platforms or product families grow, which is better addressed by replacing switches with polymorphic factory objects rather than judging intent as optimization."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better supports adding new themed product families while preventing inconsistent family mixing at call sites?",
+      "codeSnippet": "// Version A\ninterface UIFactory { createButton(): Button; createCheckbox(): Checkbox }\nclass DarkFactory implements UIFactory { createButton(){ return new DarkButton() } createCheckbox(){ return new DarkCheckbox() } }\nfunction render(uiFactory: UIFactory) { const b = uiFactory.createButton(); /* use b and checkbox */ }\n\n// Version B\nfunction createButton(theme: string): Button { /* return themed button based on theme string */ }\nfunction createCheckbox(theme: string): Checkbox { /* return themed checkbox based on theme string */ }\nfunction renderV2(theme: string) { const b = createButton(theme); const c = createCheckbox(theme); /* risk of mixing themes */ }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps related product creation grouped behind a single factory interface for consistent family usage.",
+          "isCorrect": true,
+          "explanation": "Version A packages a family into one factory object that clients receive once and then use consistently. That eliminates the risk that callers pass mismatched theme identifiers to separate creator functions, and it makes dependency injection and testing straightforward. GoF advocates grouping related products via factory interfaces for this exact reason."
+        },
+        {
+          "id": "b",
+          "text": "Version B forces callers to manage themes across separate creators which risks inconsistent family mixing at usage sites.",
+          "isCorrect": false,
+          "explanation": "Version B relies on callers to pass the same theme string to each creator, which is error prone and can lead to accidentally combining products from different families. While registries or helper objects can mitigate this, the structural grouping provided by a single factory object in Version A is a cleaner and safer design for family consistency."
+        }
+      ]
+    }
+  ]
+}

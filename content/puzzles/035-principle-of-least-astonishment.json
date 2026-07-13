@@ -1,0 +1,105 @@
+{
+  "id": 35,
+  "conceptName": "Principle of Least Astonishment",
+  "category": "principle",
+  "definition": "Design so a component behaves in ways users reasonably expect, minimizing surprising behavior for typical users.",
+  "ruleOfThumb": "Prefer explicit, consistent, and discoverable behavior over clever, context-dependent shortcuts that surprise callers.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code",
+    "chapter": "Meaningful Names",
+    "page": "21-30",
+    "externalUrl": "https://www.investigatii.md/uploads/resurse/Clean_Code.pdf"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement best indicates an API that would surprise its callers?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "A function that returns inconsistent data types depending on context without stable caller expectations or predictability.",
+          "isCorrect": true,
+          "explanation": "Returning different shapes or types for the same operation forces callers to add conditional handling and undermines static typing. This is a classic source of surprise because users expect a stable contract from a function. Consistency in return shape is a stronger signal than clever polymorphism when discoverability matters."
+        },
+        {
+          "id": "b",
+          "text": "A method that performs expensive I O synchronously while still having the appearance of a cheap, local operation to callers.",
+          "isCorrect": false,
+          "explanation": "Blocking I/O mistaken for cheap operations can certainly astonish users, but the core issue there is performance semantics rather than an API contract that changes shape. It is a real concern developers may confuse with inconsistent behavior, yet it is primarily about latency and threading expectations."
+        },
+        {
+          "id": "c",
+          "text": "A class that exposes mutable internal state through public fields allowing callers to modify internals and break invariants.",
+          "isCorrect": false,
+          "explanation": "Leaking internal mutability is a serious smell because it breaks encapsulation and can cause hard to reproduce bugs. However this is an encapsulation and invariants problem rather than a mismatch between API appearance and behavior. It is plausibly mistaken for a surprise but differs in root cause."
+        },
+        {
+          "id": "d",
+          "text": "A utility that accepts many polymorphic argument shapes and infers meanings inconsistently across call sites for similar inputs.",
+          "isCorrect": false,
+          "explanation": "APIs that guess meaning from varied inputs create ambiguity and cognitive load. This is close to the real principle since inference can surprise callers, but the distinguishing trait is inconsistent interpretation rather than a broken contract that returns different types for the same declared operation."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the code below, which practical surprise will callers most likely experience?",
+      "codeSnippet": "function getUser(id: string | number) {\n  if (typeof id === 'number') {\n    // return from cache synchronously\n    return { id, name: 'Cached User' }\n  }\n  // perform network fetch asynchronously\n  return fetch('/users/' + id).then(r => r.json())\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Callers will be surprised by inconsistent return shapes depending on input type causing awkward conditional handling.",
+          "isCorrect": false,
+          "explanation": "This highlights the return shape inconsistency which is indeed problematic. It is a plausible interpretation, but the code specifically mixes synchrony and asynchrony which typically creates the more immediate practical surprise when integrating with callers."
+        },
+        {
+          "id": "b",
+          "text": "Callers will face inconsistent synchrony when the function sometimes returns a Promise and sometimes returns a direct value.",
+          "isCorrect": true,
+          "explanation": "Mixing synchronous returns with Promise returns is a classic surprise that leads to subtle bugs and incorrect await usage. Even if types are ambiguous, the most immediate integration hazard is the change in call-site control flow expectations. Favoring consistent synchrony avoids this class of errors."
+        },
+        {
+          "id": "c",
+          "text": "Callers will be stuck with fragile tests because mocking must handle multiple synchrony and return value shapes across cases.",
+          "isCorrect": false,
+          "explanation": "Fragile tests are a real downstream consequence of this design and a valid concern. However, the specific surprise callers experience at runtime is inconsistent synchrony; testing fragility is secondary and stems from that primary mismatch."
+        },
+        {
+          "id": "d",
+          "text": "Callers will be hampered because the implementation hides type information causing IDE and static analysis to provide poor completions.",
+          "isCorrect": false,
+          "explanation": "Hidden or imprecise types harm developer experience through weaker tooling support. This is an important usability issue but not the most immediate runtime surprise in the snippet, which is the alternation between synchronous and asynchronous behavior."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better aligns with predictable, discoverable behavior for typical callers?",
+      "codeSnippet": "// Version A: single function adapts based on options\nfunction applyDiscount(order: Order, options?: { percent?: number, amount?: number }) {\n  if (options && options.percent != null) {\n    order.total = order.total * (1 - options.percent)\n    return order\n  }\n  if (options && options.amount != null) {\n    order.total = order.total - options.amount\n    return order\n  }\n  order.total = order.total - 10\n  return order\n}\n\n// Version B: explicit functions with clear intent\nfunction applyPercentageDiscount(order: Order, percent: number) {\n  return { ...order, total: order.total * (1 - percent) }\n}\nfunction applyFixedDiscount(order: Order, amount: number) {\n  return { ...order, total: order.total - amount }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes behavior behind input-type overloading which increases subtle conditional branching and cognitive load.",
+          "isCorrect": false,
+          "explanation": "Version A buries multiple behaviors behind one polymorphic API and optional arguments. That increases the mental model callers must hold and makes intent harder to discover by reading call sites or IDE hints. It can also encourage in-place mutation which compounds surprise. This design is tempting for DRY reasons but degrades discoverability and predictability."
+        },
+        {
+          "id": "b",
+          "text": "Version B separates concerns into explicit functions which reduces surprises and makes the intended behavior immediately discoverable.",
+          "isCorrect": true,
+          "explanation": "Version B gives each operation a clear, single responsibility and immutable return style, making calls self documenting and reducing accidental misuse. Explicit names encode intent and align with predictable behavior expectations — callers can choose the correct function without examining optional argument semantics. This follows established engineering advice about clarity and explicit interfaces from sources like Clean Code and Fowler's writings on explicit interfaces."
+        }
+      ]
+    }
+  ]
+}

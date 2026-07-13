@@ -1,0 +1,106 @@
+{
+  "id": 78,
+  "conceptName": "Inline Function",
+  "category": "refactoring",
+  "definition": "Remove a trivial delegating function by replacing calls with the function body so callers use the implementation directly.",
+  "ruleOfThumb": "If a function only delegates and adds no behavior, prefer replacing its calls with its body to reduce indirection.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Inline Method",
+    "page": "pp. 88-91",
+    "externalUrl": "https://refactoring.com/catalog/inline_method.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Given this class, which method is the clearest candidate for removal by replacing its calls with the implementation?",
+      "codeSnippet": "class Order {\n  calculateTotal() {\n    return this.computeSubtotal();\n  }\n\n  computeSubtotal() {\n    // complex subtotal calculation here\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The calculateTotal method merely calls computeSubtotal and does not add any observable behavior to callers.",
+          "isCorrect": true,
+          "explanation": "calculateTotal just delegates to computeSubtotal and adds no logic of its own. Inlining here removes one hop in the call graph and clarifies where the real logic lives. Fowler recommends this when the delegating method provides no abstraction value. After inlining, you should run tests and remove the now-unused method."
+        },
+        {
+          "id": "b",
+          "text": "computeSubtotal appears to be a thin wrapper and could duplicate logic across callers if the wrapper is removed or changed.",
+          "isCorrect": false,
+          "explanation": "This is a plausible concern when a small method is removed without examining all callers. However, in this snippet calculateTotal is the delegating method, not computeSubtotal. The danger described is real generally, but it does not correctly identify the delegating layer here."
+        },
+        {
+          "id": "c",
+          "text": "Both methods are important and should remain separate to preserve a clear public API for external callers.",
+          "isCorrect": false,
+          "explanation": "Keeping wrapper methods can help preserve a stable API surface. That is a legitimate reason to avoid inlining when the wrapper is part of a published interface. In the example, however, calculateTotal adds no semantic distinction, so retaining it for API stability would need additional justification."
+        },
+        {
+          "id": "d",
+          "text": "The class likely needs a higher level aggregation method instead of changing these delegate methods across the codebase.",
+          "isCorrect": false,
+          "explanation": "Introducing a different abstraction can sometimes be the right move, but it is a larger structural change. The snippet shows a narrow case of a trivial delegating method; the simpler refactor is to remove that indirection rather than invent a new aggregation layer."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You find this utility used throughout the codebase. Which refactor most improves maintainability here?",
+      "codeSnippet": "function formatCurrency(amount: number) {\n  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);\n}\n\n// used in many modules",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Extract a single formatter instance and reuse it across calls to avoid repeated construction cost and subtle locale bugs.",
+          "isCorrect": true,
+          "explanation": "Creating a new Intl.NumberFormat on every call can be expensive and can lead to inconsistent behavior if options diverge. Reusing a shared formatter or memoizing it centralizes configuration and improves performance. This is preferable to inlining a one-line function because the bottleneck is object construction, not indirection."
+        },
+        {
+          "id": "b",
+          "text": "Expand the function body at call sites to reduce indirection and make formatting behavior explicit in each module.",
+          "isCorrect": false,
+          "explanation": "Inlining the body everywhere would make formatting explicit but would duplicate formatter construction logic and risk divergent behavior across call sites. For a frequently used utility that encapsulates configuration, duplication harms maintainability and performance."
+        },
+        {
+          "id": "c",
+          "text": "Wrap the formatter creation in a small factory to centralize locale configuration and keep call sites simple and consistent.",
+          "isCorrect": false,
+          "explanation": "A factory centralizes configuration and is a reasonable option, especially if different locales are required. It is a heavier change than extracting a single shared instance, and may be overkill when reuse of the same configured formatter would suffice."
+        },
+        {
+          "id": "d",
+          "text": "Replace the ad hoc formatter with a third party library abstraction to avoid low level Intl API differences across runtimes.",
+          "isCorrect": false,
+          "explanation": "Adopting a library can solve cross-runtime issues but increases dependency surface and migration cost. It is a valid long term decision but unwarranted if the immediate problem is repeated construction and centralized configuration can solve the issue more simply."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for this helper that is only used by a single private caller in the same module?",
+      "codeSnippet": "// Version A\nfunction parseUserId(raw: string) {\n  return raw.trim();\n}\n\nfunction handleRequest(req) {\n  const id = parseUserId(req.params.id);\n  // use id\n}\n\n// Version B\nfunction parseUserId(raw: string) {\n  return raw.trim();\n}\n\nfunction handleRequest(req) {\n  const id = rawTrim(req.params.id);\n  // use id\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is preferable because it keeps the simple trimming logic adjacent to its single use and avoids extra indirection.",
+          "isCorrect": true,
+          "explanation": "Version A keeps the delegating helper named and colocated with its single caller, but crucially the better refactor is to remove the trivial helper and call the body directly at the single use site. That reduces indirection when the helper does nothing but delegate. Fowler advises removing such methods when they provide no abstraction value. If the helper later gains behavior, it can be reintroduced easily."
+        },
+        {
+          "id": "b",
+          "text": "Version B is preferable because preserving the small helper protects a stable API surface and aids potential future reuse across modules.",
+          "isCorrect": false,
+          "explanation": "Preserving a helper can protect an API when the function is part of a public surface or used by many callers. In this scenario the helper is private and used only once, so keeping an extra delegating function adds unnecessary indirection and cognitive overhead. The concern about future reuse is speculative and should not prevent simplifying currently trivial code."
+        }
+      ]
+    }
+  ]
+}

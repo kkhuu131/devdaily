@@ -1,0 +1,106 @@
+{
+  "id": 37,
+  "conceptName": "Temporary Field",
+  "category": "code-smell",
+  "definition": "An instance field that is only set for certain operations or call sequences, remaining unused or irrelevant the rest of the time and confusing object state.",
+  "ruleOfThumb": "Avoid storing per-operation or conditional state on long-lived objects; prefer local variables, parameter objects, or short-lived context objects.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Temporary Field",
+    "page": null,
+    "externalUrl": "https://refactoring.com/catalog/temporary_field.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the class below. What is the primary design smell present in this code?",
+      "codeSnippet": "class Cart {\n  private appliedDiscount?: number;\n\n  addItem(item: Item) { /* add item */ }\n\n  prepareDiscount(customer: Customer) {\n    this.appliedDiscount = computeDiscount(customer);\n  }\n\n  total(): number {\n    const base = this.itemsTotal();\n    return base - (this.appliedDiscount || 0);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class contains a field that is set only for some operations and otherwise remains unused during execution.",
+          "isCorrect": true,
+          "explanation": "This is the classic case where per-operation state is stored on the object rather than kept local to the workflow. Such fields make object state conditional on usage sequence and increase cognitive load when reasoning about object lifetime and interactions. The recommended fixes are to use local variables, pass the value as a parameter, or encapsulate per-operation state in a short-lived context object."
+        },
+        {
+          "id": "b",
+          "text": "The class mixes presentation responsibilities with domain logic and should separate UI concerns into a different layer.",
+          "isCorrect": false,
+          "explanation": "While mixing responsibilities can be a real issue, the snippet shows no UI code or rendering logic. The primary problem is not separation of presentation concerns but that a field is used only in some execution paths. Addressing the temporary field will also make responsibilities clearer, but separation of UI and domain is not the root smell here."
+        },
+        {
+          "id": "c",
+          "text": "The class caches computed values across method calls and risks returning stale or incorrect results to callers.",
+          "isCorrect": false,
+          "explanation": "Caching can cause stale data concerns, but the code uses the field only as an ephemeral value for a particular operation rather than as a stable cache. The risk here is conditional state depending on call order rather than a purposeful caching strategy. Caching fixes would differ from refactorings for conditional temporary state."
+        },
+        {
+          "id": "d",
+          "text": "The class uses mutable shared state without synchronization causing potential race conditions in multithreaded usage.",
+          "isCorrect": false,
+          "explanation": "Thread safety is a valid concern when mutable fields are present, but nothing in the snippet indicates concurrent access or threading. The central maintenance problem is that the field exists only for some operations and can create surprising object state, not specifically concurrency bugs. If concurrency were present, eliminating the temporary field would also reduce synchronization needs."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this service. Which maintenance risk is most directly caused by the current approach?",
+      "codeSnippet": "class InvoiceService {\n  private tempTaxRate?: number;\n\n  beginInvoice(customer: Customer) {\n    this.tempTaxRate = lookupTax(customer.address);\n  }\n\n  computeTotal(items: Item[]) {\n    const subtotal = sum(items);\n    return subtotal * (1 + (this.tempTaxRate || 0));\n  }\n\n  completeInvoice() { this.tempTaxRate = undefined; }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class holds a field that is conditionally populated across method calls and can leave objects in inconsistent states.",
+          "isCorrect": true,
+          "explanation": "When a field is only set during particular stages, objects can be left partially initialized if callers skip a step or if an exception occurs. That conditional lifecycle requirement increases fragility and makes the class harder to use correctly. Refactoring options include passing the value explicitly, creating a transient invoice context, or moving the calculation into a smaller scoped object."
+        },
+        {
+          "id": "b",
+          "text": "This class uses a mutable field to share data between methods which makes the code hard to reason about in different call sequences.",
+          "isCorrect": false,
+          "explanation": "Sharing mutable state between methods is a consequence of the smell and does hinder reasoning, but the core issue is the conditional existence of the field rather than merely sharing. Clarifying call sequences or documenting usage reduces surface confusion, but a structural refactor that localizes per-invoice data better prevents errors."
+        },
+        {
+          "id": "c",
+          "text": "This class relies on implicit call order so different call sequences can cause silent logical errors in production environments.",
+          "isCorrect": false,
+          "explanation": "Implicit call order is a true risk here and closely related to the real smell. However, stating implicit call order alone does not capture that the object contains a field whose presence depends on that order. The deeper remedy is to avoid long-lived per-operation fields or to encapsulate the operation into an explicit object with a clear lifecycle."
+        },
+        {
+          "id": "d",
+          "text": "This class performs side effecting operations during read methods causing unexpected database writes and complicating error handling.",
+          "isCorrect": false,
+          "explanation": "Side effects during reads would be a different serious problem, but the snippet shows only a lookup and arithmetic using a temporary field. The main maintenance risk is inconsistent object state from the conditional field, not unexpected external side effects during read methods."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two designs below. Which version is the better design for avoiding long lived, conditional instance state?",
+      "codeSnippet": "// Version A\nclass OrderServiceA {\n  private requestDiscount?: number;\n\n  start(order: Order) { this.requestDiscount = calcDiscount(order); }\n  apply(order: Order) { return order.total - (this.requestDiscount || 0); }\n  finish() { this.requestDiscount = undefined; }\n}\n\n// Version B\nclass OrderServiceB {\n  apply(order: Order) {\n    const ctx = { discount: calcDiscount(order) };\n    return order.total - ctx.discount;\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps per-request state in host object fields which risks lingering state across unrelated method calls.",
+          "isCorrect": false,
+          "explanation": "Version A demonstrates the smell by keeping a per-request value as an instance field requiring a strict call sequence. Even with careful cleanup, any missed reset or unexpected control flow can leave stale values on the object. This design couples lifecycle management to the caller and increases the chance of subtle bugs if the object is reused or exceptions occur."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates per-request state in a short lived context object avoiding long lived instance fields and hidden state.",
+          "isCorrect": true,
+          "explanation": "Version B localizes the per-operation value inside the method scope, eliminating the need for long-lived instance fields and the associated lifecycle management. This makes the code easier to reason about, eliminates implicit ordering constraints, and reduces the surface for bugs. Fowler recommends replacing temporary fields with local data or short-lived objects when the field is only relevant for a specific operation."
+        }
+      ]
+    }
+  ]
+}

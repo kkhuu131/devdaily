@@ -1,0 +1,106 @@
+{
+  "id": 66,
+  "conceptName": "Mediator Pattern",
+  "category": "design-pattern",
+  "definition": "An object that encapsulates how a set of objects interact, centralizing complex communication so components do not refer to each other explicitly.",
+  "ruleOfThumb": "Introduce a central coordinator when many-to-many interactions among components become hard to understand or change.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Mediator",
+    "page": "p. 279",
+    "externalUrl": "https://refactoring.guru/design-patterns/mediator"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the code. What primary coupling problem is this code exhibiting?",
+      "codeSnippet": "class ComponentA {\n  b: ComponentB;\n  callB() { this.b.doWork(); }\n}\nclass ComponentB {\n  a: ComponentA;\n  doWork() { this.a.notify(); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It centralizes communication to avoid many direct object-to-object dependencies among collaborating components within the application module.",
+          "isCorrect": true,
+          "explanation": "This code shows participants holding direct references to each other and invoking methods, creating dense coupling. The primary signal is that objects know about concrete peers and call into them, which makes the object graph hard to change. A coordinator can decouple these interactions by owning the collaboration logic."
+        },
+        {
+          "id": "b",
+          "text": "It encapsulates unrelated utility functions into a single helper class to reduce duplicated code across services and components.",
+          "isCorrect": false,
+          "explanation": "While consolidating utilities is a valid refactoring, the presented snippet shows mutual references and method calls between domain objects rather than duplicated stateless helpers. The risk described here would manifest as repeated procedural code, but the real symptom is inter-object coupling rather than utility duplication."
+        },
+        {
+          "id": "c",
+          "text": "It introduces a publish-subscribe channel so components can broadcast events without knowing concrete receiver implementations.",
+          "isCorrect": false,
+          "explanation": "A pub-sub approach decouples senders from receivers by using events, and it is sometimes an alternative. However, the snippet shows concrete references and direct calls, not event publication. Using pub-sub would change the communication style but does not directly describe this specific coupling problem."
+        },
+        {
+          "id": "d",
+          "text": "It extracts business rules into a domain service to keep controllers thin and move logic out of UI classes.",
+          "isCorrect": false,
+          "explanation": "Extracting domain logic into services is often correct, but the immediate issue here is bidirectional coupling between components, not fat UI controllers. Moving logic to a domain service could help in some architectures but would not by itself remove reciprocal references among collaborating objects."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which observation best describes the design smell in this coordinator implementation?",
+      "codeSnippet": "class ChatRoom {\n  participants = new Map<string, Participant>();\n  sendMessage(from, to, msg) { /* route message */ }\n  addRule(rule) { /* apply business rules */ }\n  authenticate(user) { /* auth logic mixed in */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A single coordinator object has accumulated routing and business responsibilities making it a central god object handling too many concerns.",
+          "isCorrect": true,
+          "explanation": "The snippet shows a coordinator mixing routing, business rules, and authentication. This accumulation of unrelated responsibilities makes the coordinator hard to maintain and test — a classic sign that collaboration logic and domain policies need clearer separation or smaller cooperating objects."
+        },
+        {
+          "id": "b",
+          "text": "Components still reference each other directly which creates cyclic dependencies and makes unit testing interactions harder over time.",
+          "isCorrect": false,
+          "explanation": "Direct mutual references are a real coupling issue, but the provided snippet highlights the opposite: a single ChatRoom object owning many roles. There is no clear evidence here of persistent direct peer-to-peer references causing cyclic dependency in the shown code."
+        },
+        {
+          "id": "c",
+          "text": "The coordinator duplicates protocol translation code so adding new message formats will require editing multiple places in the hub.",
+          "isCorrect": false,
+          "explanation": "Duplication of protocol handling is a tangible maintenance problem, yet the snippet explicitly shows mixed responsibilities rather than repeated translation logic. If protocol duplication existed, the symptom would be repeated switch statements or format parsers, which are not visible in this excerpt."
+        },
+        {
+          "id": "d",
+          "text": "Messages are routed synchronously through the hub which can introduce latency spikes under concurrent load in high traffic scenarios.",
+          "isCorrect": false,
+          "explanation": "Synchronous routing can cause latency issues at scale, but that performance concern is separate from the structural smell shown. The main design problem here is the coordinator's responsibility bloat, not the chosen synchronization strategy. Performance should be considered after addressing coupling and responsibility separation."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation is preferable for long-term maintainability?",
+      "codeSnippet": "// Version A\nclass Light {\n  thermostat: Thermostat;\n  turnOn() { this.thermostat.adjustForLight(); }\n}\nclass Thermostat {\n  light: Light;\n  adjustForLight() { /* reacts to light */ }\n}\n\n// Version B\nclass RoomCoordinator {\n  register(component: any) { /* store reference */ }\n  notify(sender, event) { /* route and coordinate */ }\n}\nclass LightV2 { constructor(coordinator) {} }\nclass ThermostatV2 { constructor(coordinator) {} }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A couples participants together so changes in one class force changes across multiple collaborating classes.",
+          "isCorrect": false,
+          "explanation": "Version A tightly links Light and Thermostat through direct references, making evolution brittle. Any API change in one participant propagates to peers, increasing churn during feature changes and complicating unit testing because mocks or fakes must be placed on multiple collaborating classes."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes interaction responsibilities into a coordinator object that mediates participant collaborations without direct peer references.",
+          "isCorrect": true,
+          "explanation": "Version B moves collaboration logic into a coordinator, reducing direct coupling between participants and keeping participants focused on local behavior. This improves testability and makes it easier to change interaction policies in one place. See GoF Mediator and pragmatic design guidance on separating coordination from business behavior."
+        }
+      ]
+    }
+  ]
+}
