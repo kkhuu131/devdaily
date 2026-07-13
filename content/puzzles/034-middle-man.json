@@ -1,0 +1,106 @@
+{
+  "id": 34,
+  "conceptName": "Middle Man",
+  "category": "code-smell",
+  "definition": "A class or module that exists primarily to delegate calls to another class, adding little or no additional behavior or value.",
+  "ruleOfThumb": "Remove the delegating layer or enrich it with real responsibility when the class merely forwards most interactions.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Remove Middle Man",
+    "page": "p. 109",
+    "externalUrl": "https://martinfowler.com/bliki/MiddleMan.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this TypeScript class. What symptom most clearly indicates the problem shown below?",
+      "codeSnippet": "class OrderFacade {\n  constructor(private repo: OrderRepository) {}\n\n  create(order: Order) {\n    this.repo.save(order);\n  }\n\n  find(id: string) {\n    return this.repo.findById(id);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class mostly forwards calls to another object and provides almost no behavior of its own.",
+          "isCorrect": true,
+          "explanation": "The class simply delegates to OrderRepository without performing coordination, validation, or transformation. That indicates a redundant layer whose removal or enrichment would simplify the code. Removing such a delegating layer often reduces indirection and improves clarity, while preserving any required encapsulation by exposing the delegate where appropriate."
+        },
+        {
+          "id": "b",
+          "text": "This class duplicates low-level data access logic across the codebase leading to inconsistent behavior and testing pain.",
+          "isCorrect": false,
+          "explanation": "Duplicated data access would show repeated implementation details across multiple classes. In this snippet the logic is not duplicated here; it is forwarded. While duplication is a real concern, the immediate smell is unnecessary delegation rather than copy-paste data logic."
+        },
+        {
+          "id": "c",
+          "text": "This class exposes an interface that closely mirrors the delegate making refactoring and encapsulation harder over time.",
+          "isCorrect": false,
+          "explanation": "A facade that mirrors a delegate can indeed hinder refactoring by duplicating the delegate's surface. That symptom is related, but the core issue shown is that the class adds almost no behavior and merely forwards, which is a stronger and more direct signal."
+        },
+        {
+          "id": "d",
+          "text": "This class centralizes too much business logic and causes a large god object that is hard to maintain.",
+          "isCorrect": false,
+          "explanation": "A god object contains excessive responsibilities and logic. The example does not show accumulated business logic; it shows simple forwarding. While god objects are a common design problem, this code better matches redundant delegation rather than a bloated class."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "The adapter below adds a small bit of logging before delegating. What is the most likely root problem with this design?",
+      "codeSnippet": "class PriceAdapter {\n  constructor(private api: ExternalPriceApi) {}\n\n  async getPrice(itemId: string) {\n    console.log('getPrice', itemId);\n    return this.api.fetchPrice(itemId);\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The wrapper adds only trivial delegation and thin behavior, creating unnecessary indirection and maintenance overhead.",
+          "isCorrect": true,
+          "explanation": "The adapter performs a tiny side effect (logging) and otherwise forwards to ExternalPriceApi. That extra indirection increases surface area for changes and tests without delivering clear encapsulation or domain logic. Either enrich the adapter with meaningful responsibilities or collapse it and use the delegate directly."
+        },
+        {
+          "id": "b",
+          "text": "The wrapper leaks implementation details of the delegate into its public API and reduces encapsulation across callers.",
+          "isCorrect": false,
+          "explanation": "Leaking details would occur if the adapter exposed the delegate's types or behavior in a way that couples callers to implementation. While possible, the snippet shows identical method signatures and trivial logging rather than explicit leakage of delegate internals, so leakage is less likely the primary issue."
+        },
+        {
+          "id": "c",
+          "text": "The wrapper duplicates error handling and retry logic already present in the delegate leading to inconsistent failure behavior.",
+          "isCorrect": false,
+          "explanation": "Duplicated recovery logic would be a concern if both layers implemented retries or error handling. The snippet contains no such logic; it only logs and forwards. Duplication of retry behavior is plausible in other contexts but not evidenced here."
+        },
+        {
+          "id": "d",
+          "text": "The wrapper is tightly coupled to a concrete dependency and prevents substituting alternative implementations for testing or extension.",
+          "isCorrect": false,
+          "explanation": "Tight coupling to a concrete dependency harms testability and flexibility. However, the snippet injects ExternalPriceApi via constructor which allows substitution, so coupling is not clearly the primary problem. The main issue remains unnecessary thin delegation."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B below. Which version is the better design choice for maintainability and why?",
+      "codeSnippet": "/* Version A */\nclass UserServiceV1 {\n  constructor(private repo: UserRepo) {}\n  getName(id: string) { return this.repo.getName(id); }\n  getEmail(id: string) { return this.repo.getEmail(id); }\n  getRoles(id: string) { return this.repo.getRoles(id); }\n}\n\n/* Version B */\nclass UserServiceV2 {\n  constructor(private repo: UserRepo) {}\n  getUserSummary(id: string) {\n    const u = this.repo.find(id);\n    return { name: u.name, email: u.email, roles: u.roles };\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A isolates consumers by mirroring delegate methods and therefore reduces coupling and change impact across callers.",
+          "isCorrect": false,
+          "explanation": "Version A provides one-to-one pass-through methods which can initially seem to isolate callers from the repository. In practice this creates a maintenance burden because every new delegate method requires a corresponding pass-through. It increases boilerplate and stifles evolution of higher-level operations."
+        },
+        {
+          "id": "b",
+          "text": "Version B consolidates related behavior into a cohesive API with clearer responsibilities and fewer fragile pass-through methods.",
+          "isCorrect": true,
+          "explanation": "Version B presents a higher-level operation that groups related data into a single responsibility. This reduces the number of trivial delegating methods and keeps the service focused on meaningful coordination. The approach improves encapsulation and makes refactoring safer because clients depend on intent-driven operations instead of low-level delegate shapes. This aligns with principles from Fowler and pragmatic design guidance about preferring meaningful abstractions over thin forwarding layers."
+        }
+      ]
+    }
+  ]
+}

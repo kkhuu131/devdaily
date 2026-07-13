@@ -1,0 +1,106 @@
+{
+  "id": 61,
+  "conceptName": "Iterator Pattern",
+  "category": "design-pattern",
+  "definition": "Encapsulates traversal of a collection by providing a separate object that exposes sequential access without revealing the collection's underlying representation.",
+  "ruleOfThumb": "If clients must traverse a structure without knowing its internals and you need multiple independent traversals, provide a traverser object.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Iterator (Behavioral Patterns)",
+    "page": "299",
+    "externalUrl": "https://en.wikipedia.org/wiki/Iterator_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at this collection and its usage. Which design concern does the code most directly reveal?",
+      "codeSnippet": "class NumberList {\n  private items: number[] = [];\n  add(n: number) { this.items.push(n); }\n  get(index: number) { return this.items[index]; }\n  size() { return this.items.length; }\n}\n\nconst list = new NumberList();\nfor (let i = 0; i < list.size(); i++) {\n  console.log(list.get(i));\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Provide a separate traversal object so clients avoid managing indices or relying on collection internals during iteration.",
+          "isCorrect": true,
+          "explanation": "The collection exposes index-based access forcing callers to manage traversal. A separate traverser object removes index management from clients and hides internal structure. This supports multiple independent traversals and keeps the collection focused on storing data."
+        },
+        {
+          "id": "b",
+          "text": "Expose collection elements through numeric indexing so callers can control iteration using explicit index arithmetic for performance.",
+          "isCorrect": false,
+          "explanation": "Index-based access does let callers control iteration, but it couples callers to the collection layout. That coupling is the symptom here rather than the desired design; the better improvement is to encapsulate traversal."
+        },
+        {
+          "id": "c",
+          "text": "Centralize traversal inside the collection class so iteration logic is implemented alongside core data operations.",
+          "isCorrect": false,
+          "explanation": "Putting traversal on the collection centralizes logic but also mixes responsibilities and prevents multiple independent traversals. The code shown actually reveals external index management, not an internal, reusable traversal abstraction."
+        },
+        {
+          "id": "d",
+          "text": "Use callback based enumeration where a function is invoked per element to decouple iteration from caller code.",
+          "isCorrect": false,
+          "explanation": "Callback enumeration can decouple callers, but it is a different trade off with control and composability. The code sample indicates index management by callers, which a traverser object would address more generally."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this class, what is the most likely practical problem that will appear when usage grows?",
+      "codeSnippet": "class ShoppingCart {\n  items: string[] = [];\n  private position = 0;\n  add(item: string) { this.items.push(item); }\n  hasNext() { return this.position < this.items.length; }\n  next() { return this.items[this.position++]; }\n}\n\nconst cart = new ShoppingCart();\n// Two different modules might try to iterate over cart concurrently",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The collection stores traversal state so a single iterator cannot be used safely by multiple clients concurrently.",
+          "isCorrect": false,
+          "explanation": "This describes a real symptom: storing position on the collection makes concurrent access hazardous. It is a correct observation but it is narrower than the deeper responsibility-mixing issue identified by the best answer."
+        },
+        {
+          "id": "b",
+          "text": "Returning internal arrays directly exposes mutable state and risks external callers modifying collection contents unexpectedly.",
+          "isCorrect": false,
+          "explanation": "Exposing internal arrays is indeed dangerous, but the snippet shows traversal state on the collection rather than direct exposure of the underlying array reference. This distractor is plausible but not the central issue."
+        },
+        {
+          "id": "c",
+          "text": "Using numeric indices in public API causes brittle clients and forces callers to know collection size to iterate.",
+          "isCorrect": false,
+          "explanation": "Index-based APIs can make clients brittle, yet the presented class specifically keeps iteration position inside the collection. The problem here is less about caller awareness and more about shared mutable traversal state."
+        },
+        {
+          "id": "d",
+          "text": "Having next and hasNext on the collection mixes responsibilities and prevents multiple independent traversal instances.",
+          "isCorrect": true,
+          "explanation": "Placing traversal methods and state on the collection mixes iteration responsibility with storage responsibility. That design prevents creating multiple independent traversers and breaks nested or concurrent iterations. The robust fix is to return separate traversal objects."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which version is a better design for allowing nested or concurrent traversals?",
+      "codeSnippet": "/* Version A */\nclass PlaylistA {\n  private tracks: string[] = [];\n  private index = 0;\n  add(t: string) { this.tracks.push(t); }\n  hasNext() { return this.index < this.tracks.length; }\n  next() { return this.tracks[this.index++]; }\n}\n\n/* Version B */\nclass PlaylistB {\n  private tracks: string[] = [];\n  add(t: string) { this.tracks.push(t); }\n  iterator() {\n    let i = 0;\n    const self = this;\n    return { hasNext() { return i < self.tracks.length; }, next() { return self.tracks[i++]; } };\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A stores traversal state inside the collection, causing single shared iterator state and breaking nested or concurrent iteration.",
+          "isCorrect": false,
+          "explanation": "Version A keeps the current index on the collection instance itself, which means only one traversal can make progress at a time. Nested loops or multiple clients will interfere with each other. This violates separation of concerns and makes reentrancy impossible."
+        },
+        {
+          "id": "b",
+          "text": "Version B produces independent traversal objects so multiple callers may iterate concurrently without interfering with each others state.",
+          "isCorrect": true,
+          "explanation": "Version B returns a fresh traversal object with its own position variable for each caller. This isolates traversal state and supports nested and concurrent iterations. It adheres to the principle of separating traversal from data structure, improving reusability and testability. See Gamma et al. on encapsulating traversal in a dedicated object and Clean Code's guidance on single responsibility for further rationale."
+        }
+      ]
+    }
+  ]
+}

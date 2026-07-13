@@ -1,0 +1,106 @@
+{
+  "id": 46,
+  "conceptName": "Long Parameter List",
+  "category": "code-smell",
+  "definition": "A function or method that takes many parameters, especially primitives or booleans, making calls hard to read, understand, and maintain.",
+  "ruleOfThumb": "If you find a routine with more than four parameters or many optional flags, consider grouping or encapsulating those parameters.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Long Parameter List",
+    "page": "n/a",
+    "externalUrl": "https://martinfowler.com/bliki/LongParameterList.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the function below. Which statement best describes the primary maintenance problem in the signature?",
+      "codeSnippet": "function scheduleMeeting(title: string, startTs: number, endTs: number, locationId: string, attendeeIds: string[], isOnline: boolean, timezone?: string) {\n  // sending invites, reserving room, etc.\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The function accepts many primitive and boolean parameters, making call sites hard to read and error-prone due to ordering.",
+          "isCorrect": true,
+          "explanation": "Correct. A long list of primitives and booleans forces callers to remember the exact argument order and meaning of each position — callers often rely on positional knowledge which increases the chance of passing values in the wrong order or misinterpreting flags. This is the classic symptom that grouping related values or introducing a named parameter object could improve readability and reduce mistakes."
+        },
+        {
+          "id": "b",
+          "text": "The function depends on global state and hidden side effects that make it hard to test or reason about reliably.",
+          "isCorrect": false,
+          "explanation": "Incorrect for this snippet. The signature itself exposes many parameters; there is no sign of global state or hidden side effects in the code shown. While global state is a real concern, the immediate maintainability issue here is the crowded parameter list rather than hidden dependencies."
+        },
+        {
+          "id": "c",
+          "text": "The function mixes unrelated concerns in a single body, indicating it should be split into smaller focused functions.",
+          "isCorrect": false,
+          "explanation": "Incorrect for this snippet. Splitting functionality is a valid refactor when a function does many things, but the example highlights a crowded signature rather than an implementation mixing concerns. You could still refactor internals, but the primary smell to address first is the overloaded parameter list."
+        },
+        {
+          "id": "d",
+          "text": "The function signature is tightly coupled to external frameworks, making the API fragile when frameworks evolve or change.",
+          "isCorrect": false,
+          "explanation": "Incorrect for this snippet. There is no framework-specific type or dependency evident in the signature. Tight coupling to frameworks is a distinct problem; here the code suffers from many positional parameters which primarily impact readability and caller ergonomics."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given a service method with many parameters where some are optional and several are related, which refactor would most directly improve the API?",
+      "codeSnippet": "function createInvoice(customerId: string, date: string, dueDate?: string, items: InvoiceLine[], taxPct?: number, discountPct?: number, notes?: string) {\n  // build and persist invoice\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce a single parameter object grouping related values, allowing named properties and sensible defaults for optional arguments.",
+          "isCorrect": true,
+          "explanation": "Introducing a parameter object is often the most direct improvement when parameters are related and several are optional—callers get named properties, defaulting becomes easier, and adding future options is backward compatible. This reduces positional mistakes and clarifies intent without forcing a larger architectural change."
+        },
+        {
+          "id": "b",
+          "text": "Apply a builder pattern to construct the input progressively, offering a fluent API and validation before executing the operation.",
+          "isCorrect": false,
+          "explanation": "A builder is a reasonable alternative when constructing inputs is complex or when immutability is desired, but it adds ceremony and an extra type. For straightforward grouping of related optional parameters, a simple parameter object is usually lighter and clearer."
+        },
+        {
+          "id": "c",
+          "text": "Split the function into smaller focused functions so each takes fewer parameters and has a single clear responsibility.",
+          "isCorrect": false,
+          "explanation": "Splitting into smaller functions helps when the implementation mixes responsibilities. Here the parameters relate to a single conceptual operation (invoice creation), so splitting would not address call-site clarity as directly as grouping parameters would."
+        },
+        {
+          "id": "d",
+          "text": "Pass a domain service object encapsulating behavior instead of many primitives, reducing signature size and hiding implementation details.",
+          "isCorrect": false,
+          "explanation": "Passing a service object makes sense when behavior belongs to an object rather than data about a single operation. In this invoice example the values are data for a single action—encapsulating them into an options object is less invasive and keeps domain semantics explicit."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better addresses caller ergonomics and future changes for this API?",
+      "codeSnippet": "// Version A\nfunction upsertUser(id: string, email: string, displayName: string, isActive: boolean, sendWelcome: boolean, role: string) {\n  // upsert logic\n}\n\n// Version B\ntype UpsertUserOpts = { id?: string; email: string; displayName?: string; isActive?: boolean; sendWelcome?: boolean; role?: string };\nfunction upsertUser(opts: UpsertUserOpts) {\n  // upsert logic\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A exposes many positional arguments making callers brittle and requiring exact argument ordering for every invocation.",
+          "isCorrect": false,
+          "explanation": "Version A is incorrect as the preferred design. Many positional arguments force callers to remember order and pass placeholders for optional values, increasing the chance of swapped or misinterpreted arguments. This becomes especially painful as the API evolves with more optional parameters."
+        },
+        {
+          "id": "b",
+          "text": "Version B accepts a single descriptive options object, reducing positional errors and enabling safe defaults without breaking callers.",
+          "isCorrect": true,
+          "explanation": "Version B is the better choice. Accepting a single options object gives callers named parameters, simplifies optional values via omitted properties, and allows the API to add new options without breaking existing call sites. It also improves readability at the call site and centralizes defaulting and validation logic. This aligns with common refactorings in established sources—Fowler describes introducing parameter objects when parameter lists grow, and the practice is echoed in pragmatic design guidance for API stability."
+        }
+      ]
+    }
+  ]
+}

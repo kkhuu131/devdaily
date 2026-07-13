@@ -1,0 +1,106 @@
+{
+  "id": 33,
+  "conceptName": "Builder Pattern",
+  "category": "design-pattern",
+  "definition": "Separates the construction of a complex object from its representation so the same construction process can create different representations.",
+  "ruleOfThumb": "When object construction requires many optional parts or stepwise configuration, encapsulate the construction into a dedicated fluent creator.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Builder",
+    "page": "107-115",
+    "externalUrl": "https://en.wikipedia.org/wiki/Builder_pattern"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What technique is this TypeScript snippet demonstrating?",
+      "codeSnippet": "class CarBuilder {\n  private make = '';\n  private model = '';\n  withMake(make: string) { this.make = make; return this; }\n  withModel(model: string) { this.model = model; return this; }\n  build() { return new Car(this.make, this.model); }\n}\nconst car = new CarBuilder().withMake('Ford').withModel('Focus').build();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code shows a fluent construction helper that separates complex configuration from final object creation.",
+          "isCorrect": true,
+          "explanation": "The snippet provides a chainable API for stepwise configuration and produces the final Car via build(). This isolates construction details and clarifies client code. The approach matches the classic separation of construction and representation described in GoF and practical patterns literature."
+        },
+        {
+          "id": "b",
+          "text": "This code is mainly an example of a factory method variant focused on selecting a concrete subclass during creation.",
+          "isCorrect": false,
+          "explanation": "A factory method focuses on deciding which subclass to instantiate, typically through a method returning the product type. The snippet instead shows stepwise configuration and an explicit build step rather than selecting among subclasses, so factory method is not the primary technique here."
+        },
+        {
+          "id": "c",
+          "text": "This code is primarily demonstrating a dependency injection setup for runtime provision of necessary collaborators.",
+          "isCorrect": false,
+          "explanation": "Dependency injection supplies external collaborators into an object, usually via constructor or setters. The example is about assembling an object with configuration values in a fluent API, not injecting services or collaborators, so DI is not the intended concept."
+        },
+        {
+          "id": "d",
+          "text": "This code is illustrating a prototype cloning approach where instances are created by copying a prototypical sample object.",
+          "isCorrect": false,
+          "explanation": "Prototype cloning creates new objects by copying an existing instance, often with a clone method. The snippet constructs a new object from stored parameters via build(), rather than copying an existing prototype, so prototype pattern is not shown."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You have many optional constructor parameters and awkward call sites. Which refactor addresses the problem best?",
+      "codeSnippet": "class Report {\n  constructor(\n    public title: string,\n    public summary?: string,\n    public author?: string,\n    public createdAt?: Date,\n    public format?: string\n  ) {}\n}\nconst r = new Report('Q1', undefined, 'Alice', undefined, 'PDF');",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce a fluent construction helper that encapsulates optional configuration and makes call sites more readable and explicit.",
+          "isCorrect": true,
+          "explanation": "A fluent construction helper centralizes the optional parameters into named methods, producing clearer client code and avoiding ambiguous positional arguments. This reduces errors and improves discoverability. See GoF Builder and practical refactorings advocating a dedicated builder when constructors grow complex."
+        },
+        {
+          "id": "b",
+          "text": "Collapse parameters into a single untyped options bag to reduce the constructor signature complexity at the call site.",
+          "isCorrect": false,
+          "explanation": "An options bag can simplify signatures but loses compile-time guarantees and discoverability. It may hide required versus optional fields and make validation ad hoc. This tradeoff is sometimes pragmatic but does not provide the structured stepwise construction and validation a dedicated builder offers."
+        },
+        {
+          "id": "c",
+          "text": "Add many overloaded constructors covering common combinations to provide explicit constructor entry points for different scenarios.",
+          "isCorrect": false,
+          "explanation": "Overloaded or telescoping constructors increase API surface and maintenance cost as combinations grow. They can still leave ambiguous calls and duplicate logic. For many optional parameters a dedicated construction helper is typically preferable to many overloads."
+        },
+        {
+          "id": "d",
+          "text": "Create separate factory functions for each use case that return preconfigured instances tailored to specific consumption patterns.",
+          "isCorrect": false,
+          "explanation": "Factory functions for common presets can help but do not scale when callers need arbitrary combinations. They also duplicate configuration logic when many permutations exist. A fluent construction helper centralizes flexible configuration without proliferating factory variants."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better choice for constructing complex immutable objects in a shared codebase?",
+      "codeSnippet": "/* Version A */\nclass Widget {\n  constructor(public name = '', public color = '') {}\n  setName(name: string) { this.name = name; return this; }\n  setColor(color: string) { this.color = color; return this; }\n}\nconst a = new Widget().setName('Box').setColor('Red');\n\n/* Version B */\nclass WidgetV2 {\n  constructor(public readonly name: string, public readonly color: string) {}\n}\nclass WidgetBuilder {\n  private name = '';\n  private color = '';\n  withName(name: string) { this.name = name; return this; }\n  withColor(color: string) { this.color = color; return this; }\n  build() { return new WidgetV2(this.name, this.color); }\n}\nconst b = new WidgetBuilder().withName('Box').withColor('Red').build();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A is problematic because it couples configuration to the final type and exposes partially built mutable instances to callers.",
+          "isCorrect": false,
+          "explanation": "Version A mixes construction and the object itself, allowing partially initialized objects to be observed or misused during setup. This can lead to invalid states, harder reasoning about invariants, and concurrency issues. The separation of construction from the final immutable object reduces these risks."
+        },
+        {
+          "id": "b",
+          "text": "Version B is preferable because it keeps construction separate and returns fully formed immutable objects for safe consumption.",
+          "isCorrect": true,
+          "explanation": "Version B encapsulates stepwise configuration inside a builder and produces an immutable WidgetV2 at the end. This keeps the product free of mutation during construction, enforces invariants at build time, and simplifies client reasoning. Classic pattern sources recommend this separation for complex assembly and immutability guarantees."
+        }
+      ]
+    }
+  ]
+}

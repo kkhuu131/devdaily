@@ -1,0 +1,106 @@
+{
+  "id": 64,
+  "conceptName": "Divergent Change",
+  "category": "code-smell",
+  "definition": "A code smell where a single module or class must be changed for many different reasons, causing frequent, unrelated edits to the same place.",
+  "ruleOfThumb": "If you find yourself modifying one class for three or more unrelated reasons, consider splitting responsibilities into smaller modules.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Code Smells",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/DivergentChange.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "You see a single service that calculates totals, persists orders, sends emails, and applies business promotions. What is the main problem?",
+      "codeSnippet": "class OrderService {\n  createOrder(data) {\n    const total = this.calculateTotal(data);\n    this.db.save(data, total);\n    this.notify.sendOrderEmail(data.customer);\n    this.applyPromotions(data);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This module concentrates responsibilities that change for different reasons and will require many separate edits over time.",
+          "isCorrect": false,
+          "explanation": "This is a plausible symptom description but is phrased as a consequence rather than identifying the primary smell. The class does centralize unrelated responsibilities, which can lead to multiple kinds of changes, but the stronger diagnosis is that it will cause edits for unrelated reasons in one place. See Fowler on smells that indicate scattered change causes."
+        },
+        {
+          "id": "b",
+          "text": "This module will likely require changes for many different reasons as the product evolves over time.",
+          "isCorrect": true,
+          "explanation": "This observation succinctly identifies the core smell: one module will be the target of many unrelated changes. Splitting responsibilities into smaller units reduces the chance that a single change touches unrelated concerns. Fowler labels this symptom as a sign that responsibilities should be separated."
+        },
+        {
+          "id": "c",
+          "text": "This module has duplicated logic across modules and will require synchronized edits in many places simultaneously.",
+          "isCorrect": false,
+          "explanation": "Duplicated code causes edits in multiple places for the same reason, which is the opposite pattern. While duplicated logic is a real concern, the snippet shows different responsibilities coexisting rather than the same code copied elsewhere. The wrong diagnosis would lead to an incorrect refactoring focus."
+        },
+        {
+          "id": "d",
+          "text": "This module depends heavily on concrete classes and will make the codebase hard to extend and test.",
+          "isCorrect": false,
+          "explanation": "High coupling to concrete implementations is a valid maintainability issue, but it emphasizes testability and extensibility problems rather than frequent unrelated changes to the same class. Focusing only on abstraction would miss the need to separate responsibilities causing divergent change."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Consider the following InvoiceService. Which is the best single-word diagnosis of the primary maintainability problem?",
+      "codeSnippet": "class InvoiceService {\n  generate(items) { /* calculate tax, totals */ }\n  save(invoice) { /* DB persistence */ }\n  renderPdf(invoice) { /* PDF formatting */ }\n  emailCustomer(invoice) { /* SMTP send */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class is tightly coupled to unrelated concerns and will need coordinated edits across the codebase for many reasons.",
+          "isCorrect": false,
+          "explanation": "Tight coupling is a legitimate concern and often coexists with other smells. However, the main issue here is that the class groups several different responsibilities that will change independently, not primarily that it is tightly coupled. Addressing coupling alone would not fully solve the symptom."
+        },
+        {
+          "id": "b",
+          "text": "This class will tend to require changes for different reasons because it handles several unrelated responsibilities together.",
+          "isCorrect": true,
+          "explanation": "This pinpoints the primary problem: multiple unrelated responsibilities are lumped together so changes for one feature will force edits to the same class for unrelated reasons. The appropriate remediation is to extract services or modules by responsibility so each change touches fewer places."
+        },
+        {
+          "id": "c",
+          "text": "This class duplicates logic from other modules and will produce inconsistent behavior when small algorithm changes occur later.",
+          "isCorrect": false,
+          "explanation": "Duplicated logic causes maintenance burdens but looks different: changes must be applied in multiple places for the same reason. The snippet shows distinct responsibilities inside one class, not literal duplication. Mistaking duplication for the root cause would misdirect refactoring efforts."
+        },
+        {
+          "id": "d",
+          "text": "This class exposes a broad public surface and will make testing and extension tedious due to deep coupling and size.",
+          "isCorrect": false,
+          "explanation": "A large public API and poor testability are real issues, but they emphasize interface design and coupling. The stronger, more specific smell here is that multiple responsibilities cause unrelated change pressure, which suggests extracting cohesive services rather than only slimming the public surface."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better prevents the need to edit the same place for unrelated reasons when requirements change?",
+      "codeSnippet": "/* Version A */\nclass OrderServiceV1 {\n  createOrder(data) {\n    const total = this.calculateTotal(data);\n    this.db.save(data, total);\n    this.notification.sendOrderEmail(data.customer);\n  }\n}\n\n/* Version B */\nclass OrderCalculator { calculateTotal(data) {} }\nclass OrderRepository { save(data) {} }\nclass NotificationService { sendOrderEmail(customer) {} }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A groups unrelated behavior inside one class and will cause edits for multiple unrelated reasons.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes several responsibilities in one class, so changes to email behavior, persistence, or calculation each require editing the same file. That creates a maintenance hotspot and increases risk of conflicts and regressions. A naive fix could add abstraction without separating responsibilities, which would not remove the underlying smell."
+        },
+        {
+          "id": "b",
+          "text": "Version B splits responsibilities into focused services that keep each change localized.",
+          "isCorrect": true,
+          "explanation": "Version B separates concerns into purpose-built modules, so changes to calculation, persistence, or notification are localized to their respective classes. That reduces the likelihood that a single change request forces edits across unrelated functionality. This approach aligns with the principle of high cohesion and low coupling and is recommended when a module is changing for different reasons. See Fowler on splitting responsibilities and the Single Responsibility Principle discussions in Clean Code and SOLID literature."
+        }
+      ]
+    }
+  ]
+}

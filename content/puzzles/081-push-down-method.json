@@ -1,0 +1,105 @@
+{
+  "id": 81,
+  "conceptName": "Push Down Method",
+  "category": "refactoring",
+  "definition": "Move a method from a superclass down into the subclass that actually uses it when the method is only relevant to that subclass.",
+  "ruleOfThumb": "If only one subclass uses a superclass method, prefer relocating the method into that subclass so behavior lives where it is used.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Move Method / Push Down Method",
+    "page": "p. 108-112",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "You discover a method on a superclass that is only referenced by one concrete subclass. Which immediate change is most appropriate?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "This method belongs in the subclass that uses it, not in the common base class.",
+          "isCorrect": true,
+          "explanation": "When a method is only needed by one subclass, moving it into that subclass reduces unnecessary coupling and clarifies ownership. This is the essence of the push-down style refactoring described by Fowler. Keeping unused behavior in the base class invites accidental dependencies and makes the superclass harder to understand and change."
+        },
+        {
+          "id": "b",
+          "text": "This method belongs in a shared utility component to allow reuse across unrelated classes in the codebase.",
+          "isCorrect": false,
+          "explanation": "Putting behavior into a utility is appropriate when many unrelated classes share stateless logic. If the method depends on subclass state or is only used by a single subclass, extracting to a utility can hide dependencies and force awkward parameter passing. That adds indirection and may obscure the real owner of the behavior."
+        },
+        {
+          "id": "c",
+          "text": "This method belongs as a static helper on the superclass so it can be reused without instance dependencies.",
+          "isCorrect": false,
+          "explanation": "Making a superclass method static can be tempting to avoid instance coupling, but this only suits truly stateless utilities. If the method conceptually belongs to the subclass or relies on instance data, making it static on the base class creates a leaky abstraction and breaks encapsulation."
+        },
+        {
+          "id": "d",
+          "text": "This method belongs in the superclass with runtime type checks to support multiple subclass behaviors uniformly.",
+          "isCorrect": false,
+          "explanation": "Adding runtime type checks centralizes behavior but introduces conditional complexity and fragile branching based on subclass types. It keeps unrelated logic together and often violates the open closed principle. Moving behavior to the subclass yields clearer structure and eliminates conditional scattering."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A superclass method is only invoked by one subclass and it requires fields present only on that subclass. Which refactoring best addresses this?",
+      "codeSnippet": "class Invoice {\n  protected customerName: string;\n  protected customerType: string;\n  constructor(name: string, type: string) {\n    this.customerName = name;\n    this.customerType = type;\n  }\n  formatForCustomer() {\n    return `${this.customerName}`;\n  }\n}\nclass BusinessInvoice extends Invoice {\n  print() { console.log(this.formatForCustomer()); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This method should live in the subclass that requires those subclass specific fields rather than remain in the general superclass.",
+          "isCorrect": true,
+          "explanation": "If a method depends on data that exists only in one subclass and only that subclass invokes it, relocating the method avoids adding accessors or exposing subclass internals. Moving the method preserves encapsulation and keeps the code that uses a field next to the field itself. This matches the push-down approach in refactoring literature."
+        },
+        {
+          "id": "b",
+          "text": "This method should remain in the superclass with abstract accessors added so each subclass supplies needed fields through indirection.",
+          "isCorrect": false,
+          "explanation": "Introducing abstract accessors forces all subclasses to implement or expose fields they may not need, widening the superclass contract. While sometimes appropriate if multiple subclasses will share logic soon, it increases coupling and may add boilerplate. Prefer moving the method when only one subclass needs the behavior."
+        },
+        {
+          "id": "c",
+          "text": "This method should be duplicated into the subclass and deprecated in the superclass to avoid modifying base class behavior.",
+          "isCorrect": false,
+          "explanation": "Duplicating behavior can be a pragmatic short term step, but it risks divergence and code rot if both implementations are kept. Deprecation delays addressing the structural problem and creates maintenance burden. Proper refactoring is to relocate the method to the correct owner rather than to duplicate and abandon the original."
+        },
+        {
+          "id": "d",
+          "text": "This method should be moved into a utility module and accept parameters that carry subclass state to avoid touching classes.",
+          "isCorrect": false,
+          "explanation": "Moving behavior into a utility and passing state as parameters externalizes what should be object behavior. This can work for stateless formatting functions, but if the logic conceptually belongs to the subclass and needs direct access to its fields, a utility forces awkward APIs and splits related responsibilities."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare Version A and Version B. Which version is preferable for maintaining clear ownership of behavior and avoiding fragile base class assumptions?",
+      "codeSnippet": "/* Version A */\nclass Report {\n  title: string;\n  constructor(title: string) { this.title = title; }\n}\nclass SalesReport extends Report {\n  salesData: number[];\n  generatePdf() {\n    // implementation uses salesData directly\n    return `PDF ${this.title} total ${this.salesData.length}`;\n  }\n}\n\n/* Version B */\nclass ReportV2 {\n  title: string;\n  generatePdf() {\n    // base class assumes subclass provides salesData field\n    // @ts-ignore\n    return `PDF ${this.title} total ${(<any>this).salesData?.length}`;\n  }\n}\nclass SalesReportV2 extends ReportV2 {\n  salesData: number[];\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps the method with the class that owns the state.",
+          "isCorrect": true,
+          "explanation": "Version A places the method where the data it needs lives. That keeps implementation and data co-located, avoids unsafe casting or optional checks in the base class, and yields clearer encapsulation. Version A prevents the base class from making assumptions about derived classes and avoids fragile polymorphism where the superclass depends on subclass details."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes the method in the base class and introduces unnecessary coupling and fragile assumptions about subclasses.",
+          "isCorrect": false,
+          "explanation": "Version B embeds logic in the base class that expects derived classes to provide certain fields. This pattern introduces hidden coupling and forces casts or runtime checks, violating encapsulation. Over time such assumptions break when new subclasses do not match the implicit contract. The push down approach avoids these risks by making the owning subclass responsible for its behavior."
+        }
+      ]
+    }
+  ]
+}

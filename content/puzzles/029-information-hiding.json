@@ -1,0 +1,106 @@
+{
+  "id": 29,
+  "conceptName": "Information Hiding",
+  "category": "solid",
+  "definition": "A design approach that keeps module implementation details private, exposing only necessary interfaces so other modules cannot rely on internal representation.",
+  "ruleOfThumb": "Expose behavior through well defined interfaces, keep data and representation details private, and return copies when exposing mutable collections.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code",
+    "chapter": "Classes",
+    "page": "65-78",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-code/9780136083238/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "In the snippet below, which observed issue most clearly signals a breach of encapsulation?",
+      "codeSnippet": "class Order {\n  public items: string[];\n  constructor(items: string[]) {\n    this.items = items;\n  }\n  total() { return this.items.length; }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class exposes a mutable public field allowing external code to change its internal collection directly.",
+          "isCorrect": true,
+          "explanation": "Exposing a public mutable field lets callers alter the object's internal state without the class enforcing invariants or validation. This leads to fragile code where callers can bypass business rules and create subtle bugs. The principle at stake is hiding representation behind an interface so changes to the internal structure do not ripple to clients."
+        },
+        {
+          "id": "b",
+          "text": "This class returns its internal array directly from a getter letting callers mutate internal state without class control.",
+          "isCorrect": false,
+          "explanation": "Returning a reference to an internal collection from a getter does expose internal representation and allows mutation, which is problematic. In this specific snippet the field is public already, so the getter critique is plausible but not the most precise description of the observed issue."
+        },
+        {
+          "id": "c",
+          "text": "This class couples behavior to a concrete data structure forcing callers to depend on the exact internal representation used.",
+          "isCorrect": false,
+          "explanation": "Coupling to a concrete data structure is a real concern and can make refactoring difficult. While related, the immediate smell in the snippet is the visible mutable field; coupling is a downstream effect rather than the primary observable problem here."
+        },
+        {
+          "id": "d",
+          "text": "This class exposes many public members so callers must know internal details and manipulate the object structure directly.",
+          "isCorrect": false,
+          "explanation": "Many public members that reveal implementation details indicate poor encapsulation. The snippet, however, shows a single prominent public mutable field that is the clearest indicator; the option describes a broader symptom that could be true in larger classes."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which design problem is the primary concern in this module API?",
+      "codeSnippet": "export interface Profile {\n  name: string;\n  email: string;\n}\nexport function setEmail(p: Profile, email: string) {\n  p.email = email;\n}\nexport function sendWelcome(p: Profile) {\n  sendEmail(p.email);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This API exposes a mutable data structure across modules allowing external functions to change internal user data directly.",
+          "isCorrect": true,
+          "explanation": "The API accepts and mutates a plain data structure that callers also hold, which leaks representation and lets many modules modify the same object. That increases coupling and makes it hard to enforce invariants or reason about who owns the data."
+        },
+        {
+          "id": "b",
+          "text": "This API creates tight coupling by making many clients depend on the concrete structure of the profile object directly.",
+          "isCorrect": false,
+          "explanation": "Tight coupling to a concrete structure is a valid concern and often follows from exposing mutable structures. In this case the more direct issue is the shared mutable state; coupling is a consequence rather than the single primary defect."
+        },
+        {
+          "id": "c",
+          "text": "This API lacks input validation so updates can introduce invalid state and cause failures deep in other modules.",
+          "isCorrect": false,
+          "explanation": "Missing validation is a concrete and important problem, but the snippet specifically shows mutation of a shared structure rather than validation logic. Validation would be needed even after addressing the representation leak."
+        },
+        {
+          "id": "d",
+          "text": "This API favors procedural updates and breaks transactional boundaries making atomicity and concurrency management difficult across callers.",
+          "isCorrect": false,
+          "explanation": "Procedural updates and transactional concerns are real risks when state is shared. However, the primary, most direct problem in the code is that the mutable profile is exposed and can be modified by any caller, which is the root cause of those higher level concurrency issues."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Compare the two implementations below. Which version better prevents client code from depending on the class internal representation?",
+      "codeSnippet": "// Version A\nclass CartA {\n  public items: string[] = [];\n  getItems() { return this.items; }\n  addItem(item: string) { this.items.push(item); }\n}\n\n// Version B\nclass CartB {\n  private items: string[] = [];\n  getItems() { return [...this.items]; }\n  addItem(item: string) { this.items.push(item); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A exposes the internal list directly to reduce copying and allow flexible client-side mutation.",
+          "isCorrect": false,
+          "explanation": "Exposing the internal list saves allocations but hands control of invariants to callers. Clients can modify the list in ways that break CartA's expectations, create race conditions, or make future changes to the representation a breaking change. The apparent short-term benefit increases coupling and long-term maintenance cost."
+        },
+        {
+          "id": "b",
+          "text": "Version B encapsulates the internal list and provides behavioral methods preventing external mutation of internal representation.",
+          "isCorrect": true,
+          "explanation": "Version B hides the representation by making the list private and returning a copy, so callers cannot mutate the internal array directly. This preserves the class invariants, reduces coupling, and permits internal changes without breaking clients. Parnas articulated the value of hiding module internals, and later texts like Clean Code advise returning copies or exposing behavior instead of raw data to maintain module autonomy."
+        }
+      ]
+    }
+  ]
+}

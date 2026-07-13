@@ -1,0 +1,106 @@
+{
+  "id": 75,
+  "conceptName": "Global Data",
+  "category": "code-smell",
+  "definition": "A module- or process-wide mutable state that many parts of an application read or write, creating hidden coupling, nondeterminism, and testing difficulties.",
+  "ruleOfThumb": "Favor explicit dependencies and local state over shared mutable module-level variables; pass state or inject collaborators instead of relying on process-wide mutation.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code",
+    "chapter": "Dependencies and Global State",
+    "page": "159-162",
+    "externalUrl": "https://www.pearson.com/en-us/subject-catalog/p/clean-code/9780132350884.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the files below. Which design problem is illustrated by this code?",
+      "codeSnippet": "// settings.ts\nlet currentUser: { id: string } | null = null;\nexport function setUser(u: { id: string }) {\n  currentUser = u;\n}\nexport function getUser() {\n  return currentUser;\n}\n// other.ts\nimport { setUser, getUser } from \"./settings\";\nsetUser({ id: \"alice\" });\nconsole.log(getUser());",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This module defines mutable top-level state that other modules can read and modify at runtime unpredictably.",
+          "isCorrect": true,
+          "explanation": "The code exposes a mutable top-level variable across modules. That creates hidden coupling and makes behavior depend on mutation order, which complicates reasoning and testing. Avoiding module-level mutation or providing explicit state objects reduces surprises."
+        },
+        {
+          "id": "b",
+          "text": "This exposes implementation details through a thin interface which tightly couples callers to internal representation and prevents refactoring.",
+          "isCorrect": false,
+          "explanation": "While exposing internals via an interface is a real concern, the snippet shows a mutable shared variable rather than an API that leaks representation. The primary issue is shared mutable state, not interface leakage."
+        },
+        {
+          "id": "c",
+          "text": "This uses deep inheritance that entangles behavior across classes and makes intent and testing more difficult to determine.",
+          "isCorrect": false,
+          "explanation": "Deep inheritance can cause similar maintenance pain, but the example uses module-level functions and variables rather than class hierarchies. The problem lies in shared mutable state, not inheritance complexity."
+        },
+        {
+          "id": "d",
+          "text": "This performs blocking disk operations inside request handlers which will impair throughput and create latency spikes under load.",
+          "isCorrect": false,
+          "explanation": "Blocking I/O in handlers is a valid runtime worry, however the code shows state mutation and access across modules, not I/O. The critical design smell here is the globally accessible mutable state."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "A team added a shared cache module used across many features. What is the most important risk introduced by this pattern?",
+      "codeSnippet": "const cache: Record<string, any> = {};\nexport function put(key: string, value: any) {\n  cache[key] = value;\n}\nexport function get(key: string) {\n  return cache[key];\n}\n// tests call put/get without resetting the module state",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This singleton cache creates test order dependencies and allows concurrent mutations to produce non-deterministic production and test failures.",
+          "isCorrect": true,
+          "explanation": "A process-wide mutable cache makes behavior depend on previous interactions and concurrent changes. Tests can pass or fail depending on execution order, and concurrent access without coordination can cause subtle nondeterministic bugs."
+        },
+        {
+          "id": "b",
+          "text": "This design leaks cache internals through global access which prevents swapping the storage implementation for deterministic testing.",
+          "isCorrect": false,
+          "explanation": "Leaking internals is a valid concern, but the more urgent problem with a shared cache is hidden statefulness and nondeterminism. You can still wrap or adapt a cache, but test flakiness and hidden mutations are harder to fix."
+        },
+        {
+          "id": "c",
+          "text": "This is premature optimization that increases mental overhead and should be replaced by simple recomputation for clarity.",
+          "isCorrect": false,
+          "explanation": "Premature optimization is a reasonable critique, yet the concrete risk of a shared cache is broader: cross-cutting mutable state causing coupling and flakiness. Recomputing may be a solution sometimes, but it does not name the central hazard."
+        },
+        {
+          "id": "d",
+          "text": "This central shared cache enforces implicit coordination across features which hides lifecycle boundaries and complicates feature ownership.",
+          "isCorrect": false,
+          "explanation": "Implicit coordination and unclear ownership are real and important issues. They are consequences of shared state, but the top operational risk tends to be nondeterministic behavior and test fragility that arise from mutable global data."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation should you prefer for maintainability and testability?",
+      "codeSnippet": "// Version A\n// shared module state\nexport const appState = { user: null as { id: string } | null };\nexport function setUser(u: { id: string }) { appState.user = u; }\nexport function getUser() { return appState.user; }\n\n// Version B\n// explicit state passed by caller\nexport type State = { user: { id: string } | null };\nexport function setUserExplicit(state: State, u: { id: string }) { state.user = u; }\nexport function getUserExplicit(state: State) { return state.user; }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes a mutable module-level object to avoid parameter plumbing and reduce function argument lists.",
+          "isCorrect": false,
+          "explanation": "Centralizing state reduces visible plumbing, which may appear simpler at first. However, it hides mutation points, creates implicit coupling across modules, and makes tests order dependent. These trade-offs often increase maintenance cost over time."
+        },
+        {
+          "id": "b",
+          "text": "Version B passes state explicitly to callers so lifecycles and mutation points remain visible and testable.",
+          "isCorrect": true,
+          "explanation": "Passing state explicitly makes ownership, lifecycles, and mutation boundaries clear, which simplifies reasoning and testing. Explicit dependencies also allow creating isolated state per test or request. This aligns with dependency injection and functional principles advocated in refactoring literature."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "id": 83,
+  "conceptName": "Decompose Conditional",
+  "category": "refactoring",
+  "definition": "Refactor complex conditional logic by extracting each branch into a separate, well-named unit so each case is isolated and intentions are clear.",
+  "ruleOfThumb": "If an if/switch has multiple branches with distinct behavior or repeated guards, extract each branch into a small named function or object.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Conditional with Polymorphism / Decompose Conditional",
+    "page": "p. 60-66",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which symptom most clearly suggests the conditional should be split into separate behaviors?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "This function handles many conditional branches and mixes responsibilities that should be separated into focused modules.",
+          "isCorrect": false,
+          "explanation": "Mixing responsibilities is a valid concern and often coexists with long conditionals, but it points more to Single Responsibility issues than specifically to branch extraction. The core signal for this refactor is multiple distinct behaviors encoded as branches rather than general responsibility bloat."
+        },
+        {
+          "id": "b",
+          "text": "This function is a sign that each conditional branch should be extracted into a small named helper to clarify intent.",
+          "isCorrect": true,
+          "explanation": "Extracting each branch into a small named helper directly clarifies intent and makes each behavior testable in isolation. Fowler recommends extracting branch bodies or converting to polymorphism when branches represent distinct operations rather than incidental checks."
+        },
+        {
+          "id": "c",
+          "text": "This function repeats similar logic inside branches indicating opportunities to consolidate common parts into utility routines.",
+          "isCorrect": false,
+          "explanation": "Repeated logic inside branches suggests extracting common code, which is helpful, but it does not necessarily address the decision structure itself. Decomposing conditionals focuses on isolating branch-specific behavior, while repeated code extraction focuses on consolidation."
+        },
+        {
+          "id": "d",
+          "text": "This function uses many nested conditionals that make unit tests brittle and error handling spread across branches.",
+          "isCorrect": false,
+          "explanation": "Nested conditionals harm testability and error handling, and removing nesting can improve clarity. However, the most direct remediation when branches are distinct behaviors is to extract the branches, not only to flatten nesting. This option describes a collateral testability symptom."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given the implementation below, which refactor most directly clarifies each branch's behavior?",
+      "codeSnippet": "function finalPrice(order: any) {\n  if (order.customer === 'VIP') return order.amount * 0.8;\n  if (order.amount > 1000 && order.region === 'EU') return order.amount * 0.9;\n  if (order.coupon) return order.amount - order.coupon.value;\n  return order.amount;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Extract each conditional branch into a well-named function and replace branches with calls to those helper functions.",
+          "isCorrect": true,
+          "explanation": "Extracting branch bodies into small functions makes each rule explicit and testable. After extraction you can further consider a dispatcher or polymorphism if dispatching logic becomes more complex."
+        },
+        {
+          "id": "b",
+          "text": "Introduce a dedicated strategy object to encapsulate varying pricing behaviors selected by runtime flags or attributes.",
+          "isCorrect": false,
+          "explanation": "A strategy object is a reasonable long term design when behaviors vary by type and selection is stable. However, it is a larger structural change than the immediate clarity gained by extracting branch logic into functions first."
+        },
+        {
+          "id": "c",
+          "text": "Collapse boolean expressions into named predicate helpers so the conditional guards read more declaratively at call sites.",
+          "isCorrect": false,
+          "explanation": "Named predicates improve readability of conditions but do not isolate the behavior performed in each branch. Predicate extraction is complementary but less direct than extracting branch implementations for clarifying behavior."
+        },
+        {
+          "id": "d",
+          "text": "Add exhaustive unit tests for each current branch to ensure behavior before making any structural refactor.",
+          "isCorrect": false,
+          "explanation": "Adding tests is excellent practice and often advised before refactoring. Still, it is preparatory work rather than the refactor that clarifies branch behavior; extracting branches will directly express each rule in code."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is a better choice for long term maintainability in a codebase that will frequently add new cases?",
+      "codeSnippet": "// Version A\nfunction charge(order: any) {\n  switch (order.type) {\n    case 'PREMIUM':\n      return order.base * 0.9 + 20;\n    case 'STANDARD':\n      if (order.weight > 10) return order.base + order.weight * 2;\n      return order.base + 5;\n    default:\n      return order.base;\n  }\n}\n\n// Version B\nfunction chargePremium(order: any) { return order.base * 0.9 + 20; }\nfunction chargeStandard(order: any) { return order.weight > 10 ? order.base + order.weight * 2 : order.base + 5; }\nfunction charge(order: any) { const map: any = { PREMIUM: chargePremium, STANDARD: chargeStandard }; return (map[order.type] || (() => order.base))(order); }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps all branch code inline which makes the function much longer and harder to test when adding new cases.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes branching which can appear simpler initially but entangles multiple behaviors in one function. Adding new cases often requires editing the switch, increasing merge conflicts and risking unintended interactions across branches."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates each case into separate functions using a small dispatcher to call named operations.",
+          "isCorrect": true,
+          "explanation": "Version B separates concerns: each behavior is a focused unit that is easier to test, reason about, and extend. This form supports adding new cases by introducing a new function and registering it with the dispatcher, minimizing edits to existing code and reducing coupling. Fowler recommends extracting branch logic to clarify intent, and this layout aligns with that guidance while keeping call sites simple."
+        }
+      ]
+    }
+  ]
+}

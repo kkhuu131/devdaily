@@ -1,0 +1,106 @@
+{
+  "id": 62,
+  "conceptName": "Flyweight Pattern",
+  "category": "design-pattern",
+  "definition": "A technique to share immutable intrinsic state among many fine-grained objects to reduce memory usage, while keeping extrinsic state external to each object.",
+  "ruleOfThumb": "Share expensive, immutable parts of many similar objects and pass changing context in when using them.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Flyweight",
+    "page": "195",
+    "externalUrl": "https://refactoring.guru/design-patterns/flyweight"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which concise description best matches the memory-saving technique used in this snippet?",
+      "codeSnippet": "class ParticleIntrinsic {\n  constructor(public color: string, public textureId: number) {}\n}\n\nclass ParticleFactory {\n  private cache = new Map<string, ParticleIntrinsic>();\n  get(color: string, textureId: number) {\n    const key = color + ':' + textureId;\n    if (!this.cache.has(key)) this.cache.set(key, new ParticleIntrinsic(color, textureId));\n    return this.cache.get(key)!;\n  }\n}\n\n// Many Particle instances reuse the same intrinsic object from the factory",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code creates many objects that share immutable intrinsic state by reusing a single shared instance through a factory.",
+          "isCorrect": true,
+          "explanation": "Correct. The snippet separates intrinsic data into ParticleIntrinsic and reuses instances via ParticleFactory. That sharing is intended to reduce per-object memory by avoiding duplicate immutable state. The approach expects extrinsic state to be supplied per-use rather than stored on the shared object."
+        },
+        {
+          "id": "b",
+          "text": "This code centralizes construction causing a single global mutable object that will create concurrency and state corruption risks.",
+          "isCorrect": false,
+          "explanation": "Plausible but incorrect for this snippet. The factory produces shared instances, but the intrinsic objects in this example are immutable by design. The real risk would appear if those shared objects were mutated by clients, which would then cause cross-instance corruption."
+        },
+        {
+          "id": "c",
+          "text": "This code hides expensive per-instance initialization leading to surprising lazy allocation and unpredictable performance spikes under load.",
+          "isCorrect": false,
+          "explanation": "This is a reasonable concern when factories lazily allocate, but the primary intention here is memory reuse, not lazy deferral. Performance spikes from lazy creation are secondary to the memory savings goal and would require measurement to confirm."
+        },
+        {
+          "id": "d",
+          "text": "This code duplicates data across instances which increases memory pressure by storing identical immutable values in each object.",
+          "isCorrect": false,
+          "explanation": "This statement describes the opposite problem. The factory is explicitly deduplicating identical intrinsic state into shared objects to avoid duplicated memory. If duplication were present, the factory would not be caching shared intrinsic instances."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "What is the primary problem illustrated by this snippet?",
+      "codeSnippet": "class Style {\n  constructor(public color: string, public size: number) {}\n}\n\nclass StyleFactory {\n  private cache = new Map<string, Style>();\n  get(key: string, color: string, size: number) {\n    if (!this.cache.has(key)) this.cache.set(key, new Style(color, size));\n    return this.cache.get(key)!;\n  }\n}\n\n// Widget modifies style after getting it from the factory\nconst style = styleFactory.get('btn', 'blue', 12);\nstyle.color = 'red';",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Shared instances are mutable and mutated by clients causing cross-instance state corruption and unpredictable behavior.",
+          "isCorrect": true,
+          "explanation": "Correct. The snippet shows a factory returning a shared Style instance which a Widget then mutates. When shared objects are mutable, a change by one client affects others that reference the same instance. The proper fix is to keep shared data immutable or avoid mutating shared instances."
+        },
+        {
+          "id": "b",
+          "text": "The factory uses stringified keys leading to incorrect collisions when different attribute orders produce identical cache keys.",
+          "isCorrect": false,
+          "explanation": "This is a realistic concern if key construction is naive. However, the shown mutation of the returned Style is the immediate correctness issue. Key collisions are avoidable by using canonical keys, but would not explain the visible cross-client mutation behavior."
+        },
+        {
+          "id": "c",
+          "text": "Objects are created lazily but never released causing the cache to grow indefinitely and memory pressure increases.",
+          "isCorrect": false,
+          "explanation": "A legitimate memory issue for long-lived caches, but the snippet demonstrates a correctness bug from mutating shared objects rather than unbounded growth. Cache eviction policies can address memory growth separately from mutability concerns."
+        },
+        {
+          "id": "d",
+          "text": "Widget code couples rendering logic with style creation making future refactoring and testing of style logic harder.",
+          "isCorrect": false,
+          "explanation": "Coupling rendering and style creation is a valid design smell for testability, but the concrete problem shown is mutation of a shared object returned by the factory. Decoupling concerns would help testability but would not prevent cross-instance state changes."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation is preferable when you must create thousands of lightweight visual markers with low per-marker memory usage?",
+      "codeSnippet": "/* Version A */\nclass MarkerIntrinsic { constructor(public iconId: number, public color: string) {} }\nclass MarkerFactory { private pool = new Map<string, MarkerIntrinsic>();\n  get(iconId: number, color: string) { const key = iconId + ':' + color; if (!this.pool.has(key)) this.pool.set(key, new MarkerIntrinsic(iconId, color)); return this.pool.get(key)!; }\n}\n// Each marker holds extrinsic x/y and a reference to shared intrinsic from factory\n\n/* Version B */\nclass Marker { constructor(public iconId: number, public color: string, public x: number, public y: number) {}\n}\n// Each marker stores a full copy of iconId and color per instance",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A reuses immutable intrinsic state with a shared factory to minimize per-marker memory usage.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable for minimizing memory because it centralizes identical intrinsic data into shared immutable objects and keeps per-marker extrinsic data external. That reduces the memory footprint when thousands of markers share the same icon and color. This approach aligns with classic sharing patterns described by the GoF and helps when intrinsic state is large or costly to duplicate."
+        },
+        {
+          "id": "b",
+          "text": "Version B duplicates full state per marker and central registry increases coupling and synchronization complexity across updates.",
+          "isCorrect": false,
+          "explanation": "Version B is easier to reason about initially but scales poorly because each marker stores duplicate intrinsic data. If you later try to centralize icons or update shared attributes, you will face widespread updates or a heavy registry layer with synchronization logic. The tradeoff between simplicity and memory shows up at scale; prefer sharing immutable intrinsic state when many instances repeat the same data."
+        }
+      ]
+    }
+  ]
+}

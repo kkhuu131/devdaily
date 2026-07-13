@@ -1,0 +1,106 @@
+{
+  "id": 38,
+  "conceptName": "KISS Principle",
+  "category": "principle",
+  "definition": "Favor simplicity in design and implementation so components are easy to understand, test, and change.",
+  "ruleOfThumb": "When a change feels complex, ask whether splitting responsibilities or removing unnecessary indirection restores clarity.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code",
+    "chapter": "Simple Design",
+    "page": "45-52",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-code/9780136083238/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Look at the implementation below. Which description best characterizes its design tradeoff?",
+      "codeSnippet": "function calculateTotal(items: {price:number, qty:number}[], taxRate: number) {\n  let subtotal = 0;\n  for (const i of items) {\n    subtotal += i.price * i.qty;\n  }\n  return Math.round((subtotal * (1 + taxRate)) * 100) / 100;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This implementation is concise and easy to reason about with minimal branching and clear variable names throughout.",
+          "isCorrect": true,
+          "explanation": "The function is focused on one task, uses straightforward control flow, and avoids unnecessary abstractions. That directness reduces cognitive load and fits the principle of keeping things simple."
+        },
+        {
+          "id": "b",
+          "text": "This code risks floating point rounding errors and lacks explicit currency handling for different locales and precision needs.",
+          "isCorrect": false,
+          "explanation": "This is a valid operational concern for financial software, but it is not primarily about structural complexity. The snippet is simple even if it needs a separate concern addressed for money formatting and precision."
+        },
+        {
+          "id": "c",
+          "text": "This implementation duplicates aggregation logic in multiple places across the codebase making future changes error prone and tedious.",
+          "isCorrect": false,
+          "explanation": "Duplication is a real maintenance problem, but the snippet itself shows a single clear aggregation routine. If duplication exists elsewhere, the fix is to extract and reuse this simple function rather than complicate this implementation."
+        },
+        {
+          "id": "d",
+          "text": "This code uses imperative loops instead of declarative array helpers which might reduce readability for some team members.",
+          "isCorrect": false,
+          "explanation": "Style debates between imperative and declarative approaches can matter for team consistency, but readability tradeoffs are smaller than structural complexity. The loop is explicit and simple, matching the principle of clarity."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which design critique is most relevant for the following function?",
+      "codeSnippet": "function finalizeOrder(order: any) {\n  if (!order) throw new Error(\"no order\");\n  if (!order.items || order.items.length === 0) return null;\n  let total = 0;\n  for (const it of order.items) {\n    if (it.price === undefined) it.price = 0;\n    total += it.price * (it.quantity || 1);\n  }\n  if (order.coupon) total *= 0.9;\n  return { total, processedAt: new Date().toISOString() };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This function combines multiple responsibilities and would be clearer if each stage were separated into focused functions.",
+          "isCorrect": true,
+          "explanation": "The function mixes validation, defaulting, aggregation, discounting, and formatting. Splitting these stages into single-purpose functions clarifies intent and simplifies testing and maintenance."
+        },
+        {
+          "id": "b",
+          "text": "This implementation lacks strict typings and relies on 'any' which increases runtime risk and reduces IDE guidance.",
+          "isCorrect": false,
+          "explanation": "Missing types are an important issue, especially in TypeScript, but the structural problem here is the conflation of concerns. Adding types helps but does not alone simplify the mixed responsibilities."
+        },
+        {
+          "id": "c",
+          "text": "This code mutates incoming order objects by assigning missing prices and quantities which may surprise callers and tests.",
+          "isCorrect": false,
+          "explanation": "Mutating inputs is a significant behavioral concern and can be fixed by copying before modification. However the deeper design smell is that the function is doing too much and should be decomposed first."
+        },
+        {
+          "id": "d",
+          "text": "This function uses a hard coded discount multiplier and string date formatting which limits reuse and locale flexibility.",
+          "isCorrect": false,
+          "explanation": "Hard coded values and formatting choices reduce reuse, but those are symptoms. The principal simplicity violation is the combined workflow; parametrizing values is a separate refactor."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better aligns with a keep-it-simple approach for maintainable report generation?",
+      "codeSnippet": "// Version A: compose small functions\nfunction buildReport(data: any) {\n  const filtered = filterBadRows(data);\n  const transformed = transformRows(filtered);\n  return formatReport(transformed);\n}\n\n// Version B: single function doing everything inline\nfunction buildReportV2(data: any) {\n  const result: any[] = [];\n  for (const r of data) {\n    if (!r.active) continue;\n    const t = { id: r.id, value: r.value * 1.2 };\n    result.push(t);\n  }\n  return JSON.stringify(result);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A separates responsibilities into small focused functions and composes them to create a straightforward report pipeline.",
+          "isCorrect": true,
+          "explanation": "Version A breaks the workflow into clear steps that each express a single concern. That composition reduces cognitive load when reading and testing, and makes localized changes safer. Small focused functions also make intent explicit and allow reusing or replacing one step without touching others—key advantages for long term maintenance."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes all steps into one function to reduce indirection and minimize the number of files edited.",
+          "isCorrect": false,
+          "explanation": "Centralizing logic can seem simpler initially because there are fewer moving parts to open. In practice it increases complexity as the function grows, hides individual step intent, complicates testing, and makes isolated changes risky. The cost of indirection from small helpers is usually outweighed by clearer separation of concerns in medium and large codebases."
+        }
+      ]
+    }
+  ]
+}

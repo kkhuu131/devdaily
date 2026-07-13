@@ -1,0 +1,106 @@
+{
+  "id": 57,
+  "conceptName": "High Cohesion",
+  "category": "principle",
+  "definition": "A module or class is focused on a small set of related responsibilities so it has a single, well-defined reason to change.",
+  "ruleOfThumb": "Group behaviors that change for the same reason; split code when parts evolve for different reasons.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Code: A Handbook of Agile Software Craftsmanship",
+    "chapter": "Chapter 9: Classes",
+    "page": "50-62",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-code/9780136083238/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine this TypeScript class used in a reporting feature. Which observation best describes the code's organization?",
+      "codeSnippet": "class ReportGenerator {\n  fetchFromDb(query: string) { /* db access */ }\n  formatHtml(data: any) { /* presentation */ }\n  calculateStats(rows: any[]) { /* business */ }\n  sendEmail(recipient: string) { /* delivery */ }\n  saveToDisk(path: string) { /* persistence */ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class mixes data access, formatting, and delivery responsibilities in one unit causing multiple unrelated reasons to change.",
+          "isCorrect": true,
+          "explanation": "The class bundles database access, presentation formatting, and delivery logic together. That means a change in any of those concerns will force edits across the same type, increasing risk and reducing clarity. Better to separate persistence, presentation, and delivery so each type changes for one reason."
+        },
+        {
+          "id": "b",
+          "text": "This class exhibits an overly large public surface that will impede creating focused unit tests for small behaviors.",
+          "isCorrect": false,
+          "explanation": "While the public surface is large, the root problem is the mixing of unrelated responsibilities. Splitting responsibilities will naturally reduce the API surface and make targeted tests simpler."
+        },
+        {
+          "id": "c",
+          "text": "This class shows tight coupling to external services which will make reuse across contexts and modules difficult.",
+          "isCorrect": false,
+          "explanation": "Tight coupling can be a consequence, but the immediate smell is the co-location of unrelated concerns. Extracting distinct collaborators reduces coupling and clarifies reuse boundaries."
+        },
+        {
+          "id": "d",
+          "text": "This class probably needs an interface to support multiple implementations and to abstract away underlying details.",
+          "isCorrect": false,
+          "explanation": "Adding an interface might help in some scenarios, but it does not address the fundamental mixing of responsibilities. Interfaces are orthogonal; first separate concerns into cohesive units."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Review this shared module in a billing service. Which statement most accurately captures its cohesion?",
+      "codeSnippet": "export function formatCurrency(amount: number) { /* format */ }\nexport function calculateVat(amount: number) { /* tax */ }\nexport function generateInvoiceHtml(invoice: any) { /* presentation */ }\nexport function logEvent(event: string) { /* telemetry */ }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This module mixes domain calculations with logging utilities, causing changes to business logic and logging to collide in one file.",
+          "isCorrect": true,
+          "explanation": "The presence of both invoicing functions and telemetry in the same module means unrelated changes (business rules versus observability) will cause edits together. Splitting logging into a separate utility preserves stability of domain code."
+        },
+        {
+          "id": "b",
+          "text": "This module groups related invoicing concerns only and is safe to reuse across billing contexts without change.",
+          "isCorrect": false,
+          "explanation": "If the module also contains logging, it is not purely invoicing related. Reuse will be harder because consumers pulling invoicing logic also inherit logging behavior and its change frequency."
+        },
+        {
+          "id": "c",
+          "text": "This module is primarily a utility collection that will be stable and rarely require coordinated changes with domain code.",
+          "isCorrect": false,
+          "explanation": "Labeling it a utility collection ignores the domain-bearing functions. When utilities and domain logic are mixed, stability assumptions can be wrong—domain changes may still require updates in this file."
+        },
+        {
+          "id": "d",
+          "text": "This module should be split because mixing presentation formatting and persistence will complicate independent evolution of those features.",
+          "isCorrect": false,
+          "explanation": "The code mixes presentation and logging rather than presentation and persistence. The general guidance to split concerns is valid, but the cited pairing is not what the snippet shows."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two refactor options are proposed for an order processing path. Which implementation better supports modular evolution?",
+      "codeSnippet": "// Version A\nclass OrderService {\n  validate(order) { /* rules */ }\n  chargeCard(order) { /* payment */ }\n  sendReceipt(order) { /* email */ }\n  logAudit(entry) { /* audit */ }\n}\n\n// Version B\nclass OrderValidator { /* validation only */ }\nclass PaymentProcessor { /* payment only */ }\nclass ReceiptSender { /* email only */ }\nclass AuditLogger { /* audit only */ }\nclass OrderService { /* orchestrates the above */ }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps related steps together and reduces indirection but concentrates multiple reasons to modify the same class.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes the workflow which can make the flow easy to follow but couples validation, payment, messaging, and auditing into one type. That concentration increases the likelihood of unrelated changes colliding and complicates testing and reuse."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates responsibilities into focused classes aligning each class with a single reason to change.",
+          "isCorrect": true,
+          "explanation": "Version B separates concerns so each collaborator has one clear responsibility and one main reason to change. That isolation improves testability, encourages reuse of specific behaviors, and reduces the blast radius of modifications. This aligns with well-established design guidance on responsibility separation and modularity (see Clean Code and GOF principles)."
+        }
+      ]
+    }
+  ]
+}

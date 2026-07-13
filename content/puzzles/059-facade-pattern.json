@@ -1,0 +1,105 @@
+{
+  "id": 59,
+  "conceptName": "Facade Pattern",
+  "category": "design-pattern",
+  "definition": "Provide a simplified, higher-level interface that hides the complexities of a set of underlying interfaces and subsystems.",
+  "ruleOfThumb": "Offer a single entry point for common workflows while keeping lower-level subsystem APIs available for advanced needs.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Structural Patterns - Facade",
+    "page": "185",
+    "externalUrl": "https://refactoring.guru/design-patterns/facade"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches a component that groups several lower-level subsystem calls into a simpler service?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "This component provides a single high-level interface that simplifies client interaction with multiple lower-level subsystems.",
+          "isCorrect": true,
+          "explanation": "This is the canonical role: present one simplified API that orchestrates subsystem calls so clients do not manage them directly. The GoF notes that such a structure shields clients from complexity without preventing direct subsystem access when needed."
+        },
+        {
+          "id": "b",
+          "text": "This component hides subsystem interfaces by converting requests into one standardized protocol across multiple underlying services.",
+          "isCorrect": false,
+          "explanation": "This describes an adapter or protocol translation concern rather than providing a higher-level orchestration facade. A translator focuses on interface mismatches, not on presenting a simplified coarse-grained API for common workflows."
+        },
+        {
+          "id": "c",
+          "text": "This component duplicates subsystem interfaces in each client to allow independent evolution without central dependencies.",
+          "isCorrect": false,
+          "explanation": "Duplicating interfaces into clients increases coupling and repetition and conflicts with the intent of a single simplifying entry point. This option describes an anti-pattern where clients each reimplement subsystem interactions."
+        },
+        {
+          "id": "d",
+          "text": "This component composes many small services into a single monolith to improve deployment and runtime performance.",
+          "isCorrect": false,
+          "explanation": "Composing services into a monolith is an architectural deployment decision, not a pattern for simplifying API surfaces. The facade focuses on interface simplification and coordination, not on merging runtime boundaries."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this wrapper service, which concern is it most likely addressing in the codebase?",
+      "codeSnippet": "class CheckoutService {\n  private inventory: InventoryService;\n  private payment: PaymentService;\n  private notify: NotificationService;\n\n  async completeOrder(order: Order) {\n    const reserved = await this.inventory.reserve(order.items);\n    const paid = await this.payment.charge(order.paymentInfo, reserved.total);\n    await this.notify.sendReceipt(order.customer, paid.receiptId);\n    return { reserved, paid };\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It centralizes orchestration of multiple internal services to expose a simplified, higher level API for client code.",
+          "isCorrect": true,
+          "explanation": "The class sequences calls to inventory, payment, and notification services and returns a combined result, which indicates orchestration and API simplification. This is typical when clients should not coordinate multiple subsystems themselves."
+        },
+        {
+          "id": "b",
+          "text": "It implements a distributed transaction coordinator to guarantee atomic commits across independent services without client involvement.",
+          "isCorrect": false,
+          "explanation": "While coordination is present, the snippet shows sequential calls without compensation or two-phase commit mechanisms. A transaction coordinator would include rollback or distributed commit logic, which is not shown here."
+        },
+        {
+          "id": "c",
+          "text": "It acts as an anti corruption layer translating external models into internal representations for bounded context boundaries.",
+          "isCorrect": false,
+          "explanation": "An anti corruption layer focuses on model translation between contexts and protecting internal models. The snippet orchestrates operations across services rather than adapting external models or shielding a domain boundary."
+        },
+        {
+          "id": "d",
+          "text": "It serves as a security gateway enforcing authentication and authorization policies for every subsystem call on behalf of clients.",
+          "isCorrect": false,
+          "explanation": "Security gateways typically check credentials and enforce policies. The code snippet demonstrates business orchestration steps like reserving inventory and charging payments, not explicit authentication or authorization handling."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better design for hiding subsystem complexity and presenting a stable client API?",
+      "codeSnippet": "/* Version A */\nclass BillingFacade {\n  constructor(private gateway: BillingGateway, private tax: TaxService, private notify: Notifier) {}\n\n  async createInvoice(order: Order) {\n    const charge = await this.gateway.charge(order);\n    const taxes = await this.tax.calculate(order);\n    await this.notify.sendInvoice(order.contact, charge.id, taxes);\n    return { charge, taxes };\n  }\n}\n\n/* Version B */\nclass BillingCoordinator {\n  constructor(public gateway: BillingGateway, public tax: TaxService, public notify: Notifier) {}\n\n  async createInvoice(order: Order) {\n    return { gateway: this.gateway, tax: this.tax, notify: this.notify };\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes subsystem coordination behind a single high-level interface for clients.",
+          "isCorrect": true,
+          "explanation": "Version A encapsulates orchestration details and exposes a coarse-grained operation createInvoice, preventing clients from needing to call multiple subsystems. This reduces coupling, simplifies client code, and preserves the ability to change internal services without impacting callers. It aligns with GoF guidance to provide a unified interface to a set of interfaces in a subsystem."
+        },
+        {
+          "id": "b",
+          "text": "Version B exposes internal services or returns internal handlers, causing leakage of subsystem details to calling code.",
+          "isCorrect": false,
+          "explanation": "Version B publishes internal services and returns them to callers, allowing clients to depend on subsystem APIs directly. That leaks implementation details, increases coupling, and makes refactoring or replacing subsystems risky. In contrast, a proper facade keeps calls encapsulated and offers a stable, intent-revealing interface."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": 67,
+  "conceptName": "Lazy Element",
+  "category": "code-smell",
+  "definition": "An object stores a reference to a DOM element (or similar resource) that is initialized on first access, creating hidden coupling between object lifecycle and the external environment and risking stale references or unexpected retention.",
+  "ruleOfThumb": "Avoid caching live element references on objects that outlive DOM structure changes; prefer explicit lifecycle resolution or ephemeral lookups.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Lazy Element",
+    "page": null,
+    "externalUrl": "https://refactoring.com/catalog/lazy_element.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the most likely code smell illustrated by this accessor?",
+      "codeSnippet": "class UserCard {\n  private _avatar?: HTMLElement;\n  constructor(private id: string, private host: HTMLElement) {}\n\n  get avatar() {\n    if (!this._avatar) this._avatar = this.host.querySelector(`#avatar-${this.id}`) as HTMLElement;\n    return this._avatar;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This accessor caches a DOM node on first access, coupling object lifecycle to DOM and risking stale references.",
+          "isCorrect": true,
+          "explanation": "Caching the DOM node inside the object hides the dependency on DOM lifecycle. When the DOM is re-rendered or the node is moved, the cached reference can become detached or stale, leading to subtle bugs and memory retention. The safer approaches are explicit resolution during lifecycle hooks or getting fresh references when needed."
+        },
+        {
+          "id": "b",
+          "text": "This accessor lazily queries the DOM to improve startup performance while deferring expensive operations until the element is actually needed.",
+          "isCorrect": false,
+          "explanation": "While the code does defer the DOM query, describing it solely as a performance optimization misses the main problem: the cached reference ties the object to a particular DOM node identity. Lazy querying may be a valid optimization in some cases, but here the persistent cache leads to lifecycle coupling and potential staleness."
+        },
+        {
+          "id": "c",
+          "text": "This accessor hides initialization complexity but introduces mutable shared state that can complicate testing and reasoning about side effects.",
+          "isCorrect": false,
+          "explanation": "This is a reasonable concern because the cached field is mutable and makes tests dependent on internal state. However, the crux of the smell is the long lived DOM reference and lifecycle coupling rather than just general mutable state. Tests can be designed around either problem, but the DOM coupling is the key risk."
+        },
+        {
+          "id": "d",
+          "text": "This accessor prevents null checks for callers by returning a cached node, which may cause memory leaks in long lived objects.",
+          "isCorrect": false,
+          "explanation": "Memory retention is a real symptom: keeping element references alive can prevent garbage collection of large subtrees. Still, the primary identification of this code smell is the caching of a live element that can become outdated. Memory leak is a consequence, not the most precise name for the smell."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which of these problems is most directly caused by caching DOM nodes on component instances in a shared component library?",
+      "codeSnippet": "export class GridRow {\n  private cellEl?: HTMLElement;\n  constructor(private host: HTMLElement) {}\n\n  get cell() {\n    if (!this.cellEl) this.cellEl = this.host.querySelector('.cell') as HTMLElement;\n    return this.cellEl;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "It introduces unexpected memory retention because cached DOM nodes keep elements and their data alive longer than intended.",
+          "isCorrect": false,
+          "explanation": "Keeping references to DOM nodes can prevent their subtrees from being garbage collected, especially if the component instance outlives the DOM elements. While this is a real issue, in many component libraries the more immediate and common failure mode is returning detached nodes after DOM updates rather than simple memory retention."
+        },
+        {
+          "id": "b",
+          "text": "It creates a subtle initialization ordering problem when setup relies on element availability during construction instead of after attach.",
+          "isCorrect": false,
+          "explanation": "Initialization ordering can break if code expects elements to exist during construction. This concern is plausible, but the pattern shown most often leads to stale references after DOM replacement or reconciliation rather than purely construction-time ordering bugs."
+        },
+        {
+          "id": "c",
+          "text": "It can return detached DOM nodes after re-renders, causing subtle UI bugs when the component tree is updated.",
+          "isCorrect": true,
+          "explanation": "Caching the node means the component may return an element that was removed or replaced by the renderer. This causes incorrect updates, event handling on detached nodes, and visual inconsistencies. The core risk is lifecycle mismatch between the cached reference and DOM updates."
+        },
+        {
+          "id": "d",
+          "text": "It makes testing harder because tests must simulate DOM lifecycle and can fail when test harness does not recreate real element trees.",
+          "isCorrect": false,
+          "explanation": "Tests do become more complex because the cached state couples logic to DOM lifecycle. However, this is a secondary effect; the principal problem remains the potential to serve stale or detached nodes in real applications during DOM changes, which also complicates tests."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation is preferable for a long lived tooltip component used across a dynamic app?",
+      "codeSnippet": "/* Version A: caches element lazily */\nclass TooltipA {\n  private _el?: HTMLElement;\n  constructor(private host: HTMLElement) {}\n  get content() {\n    if (!this._el) this._el = this.host.querySelector('.content') as HTMLElement;\n    return this._el;\n  }\n}\n\n/* Version B: resolves element on each access */\nclass TooltipB {\n  constructor(private host: HTMLElement) {}\n  get content() {\n    return this.host.querySelector('.content') as HTMLElement | null;\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A caches the element inside the instance which can become stale after DOM replacements or reattachments.",
+          "isCorrect": false,
+          "explanation": "Version A stores a live element reference on first access. In dynamic UIs where the DOM can be re-rendered, that stored reference can become detached from the active DOM tree. That leads to incorrect behavior, missed updates, or events handled on nodes that are no longer connected. Caching also complicates cleanup and testing of lifecycle transitions."
+        },
+        {
+          "id": "b",
+          "text": "Version B queries the host for the element on every access, avoiding long lived cached references that can become stale.",
+          "isCorrect": true,
+          "explanation": "Version B does not retain a reference across renders, so it naturally returns the current DOM node. This keeps the component decoupled from DOM mutation and reduces the chance of interacting with detached nodes. The tradeoff is repeated queries, but in many environments querySelector cost is acceptable compared with hard-to-debug lifecycle bugs. For performance-sensitive hotspots, consider an explicit attach hook to capture a reference with clear lifecycle semantics rather than implicit caching."
+        }
+      ]
+    }
+  ]
+}

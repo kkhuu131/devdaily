@@ -1,0 +1,106 @@
+{
+  "id": 52,
+  "conceptName": "Singleton Pattern",
+  "category": "design-pattern",
+  "definition": "A creational design pattern that ensures a class has only one instance and provides a global access point to it.",
+  "ruleOfThumb": "Prefer explicit dependency provision over hidden shared instances when you need testability and clear lifecycle control.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Singleton",
+    "page": "175",
+    "externalUrl": "https://refactoring.guru/design-patterns/singleton"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches the intent of the following TypeScript class?",
+      "codeSnippet": "class Logger {\n  private static instance?: Logger;\n  private constructor() { /* init */ }\n  static getInstance() {\n    if (!Logger.instance) Logger.instance = new Logger();\n    return Logger.instance;\n  }\n  log(msg: string) { console.log(msg); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class restricts instantiation to a single shared instance available globally across the whole application.",
+          "isCorrect": true,
+          "explanation": "This implementation uses a private constructor and a single static accessor to ensure only one instance exists. That is the classic approach to provide one shared object across the system. The static lazy initialization shown centralizes the instance creation and hides constructors from callers."
+        },
+        {
+          "id": "b",
+          "text": "This class provides only static utility methods and does not maintain per-instance state for business logic.",
+          "isCorrect": false,
+          "explanation": "This option is incorrect because the class includes instance methods like log and a private constructor to prevent external instantiation. It is not merely a static utility holder; it deliberately enforces one instance rather than exposing stateless static methods."
+        },
+        {
+          "id": "c",
+          "text": "This class acts as a factory producing a new instance for each request without any shared global instance.",
+          "isCorrect": false,
+          "explanation": "This is not accurate because the getInstance method caches and returns the same instance after the first creation. A factory that returns a new instance each time would not store the instance in a static field as shown."
+        },
+        {
+          "id": "d",
+          "text": "This class implements a pluggable provider allowing multiple independent implementations to be chosen at runtime.",
+          "isCorrect": false,
+          "explanation": "The code does not support multiple interchangeable implementations or runtime selection. Instead it hides construction and centralizes one concrete instance, which prevents swapping independent implementations through the class itself."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this module-level exported instance, what is the most likely practical concern in a large codebase?",
+      "codeSnippet": "// db.ts\nclass DatabaseClient {\n  connect() { /* connect */ }\n}\nexport const dbClient = new DatabaseClient();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Module-level exported instance creates hidden global state complicating testing and lifecycle management in large, modular applications.",
+          "isCorrect": true,
+          "explanation": "Exporting a preconstructed instance at module load time produces a globally shared object whose lifecycle and dependencies are implicit. That pattern typically makes unit testing harder, complicates controlled startup and shutdown, and couples modules to global initialization order."
+        },
+        {
+          "id": "b",
+          "text": "This instance creation introduces a performance bottleneck because new instances are expensive and created per access.",
+          "isCorrect": false,
+          "explanation": "This concern is unlikely because the snippet creates a single instance once at module initialization, not per access. Performance issues from repeated expensive construction would be valid for factories but do not apply here."
+        },
+        {
+          "id": "c",
+          "text": "This export violates encapsulation by exposing internal implementation details rather than a minimal service interface to consumers.",
+          "isCorrect": false,
+          "explanation": "While exposing concrete types can be an encapsulation concern, the primary practical problem with module-level instances is the hidden global state and lifecycle coupling. Exposing an interface instead of a concrete client is a separate design improvement."
+        },
+        {
+          "id": "d",
+          "text": "The implementation risks circular dependency errors when consumers and the instance both import each other at module initialization.",
+          "isCorrect": false,
+          "explanation": "Circular imports can indeed be problematic, but they are a side effect of module graph design rather than the intrinsic problem of exporting a singleton-like instance. The core risk remains implicit global state and tightly coupled initialization."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for maintainable, testable architecture?",
+      "codeSnippet": "// Version A: composition and explicit provisioning\nexport function createCache() {\n  return {\n    get: (k: string) => {/*...*/},\n    set: (k: string, v: any) => {/*...*/}\n  };\n}\n// Consumers receive cache via constructor or function parameters\n\n// Version B: hidden global instance with static accessor\nclass Cache {\n  private static instance?: Cache;\n  private constructor() {}\n  static getInstance() {\n    if (!Cache.instance) Cache.instance = new Cache();\n    return Cache.instance;\n  }\n  get(k: string) { /*...*/ }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A uses explicit composition and enables clear testable lifetime control and dependency substitution.",
+          "isCorrect": true,
+          "explanation": "Version A favors explicit construction and injection, which makes dependencies visible and allows tests to supply controlled doubles and manage lifecycle. This aligns with principles of explicit dependencies and inversion of control, improving testability and reducing hidden coupling. In large systems explicit provisioning prevents implicit global state entanglement and aids predictable initialization and cleanup."
+        },
+        {
+          "id": "b",
+          "text": "Version B hides mutable global state and prevents reliable testing and predictable initialization order.",
+          "isCorrect": false,
+          "explanation": "Version B centralizes a hidden shared instance with a static accessor which obfuscates when and how the object is created and configured. That leads to brittle tests that must manage global state, fragile initialization order across modules, and difficulty substituting mock implementations. These issues are the common practical downsides cited by design authorities when global single-instance access is overused."
+        }
+      ]
+    }
+  ]
+}

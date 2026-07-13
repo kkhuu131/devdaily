@@ -1,0 +1,106 @@
+{
+  "id": 47,
+  "conceptName": "Boy Scout Rule",
+  "category": "principle",
+  "definition": "When you touch code, make it slightly cleaner than you found it by making small, safe improvements along the way.",
+  "ruleOfThumb": "Make focused, low-risk cleanups in the same change that touches a file instead of postponing every improvement.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "The Clean Coder",
+    "chapter": "Chapter 12: The Boy Scout Rule",
+    "page": null,
+    "externalUrl": "https://blog.cleancoder.com/uncle-bob/2011/09/26/GoldenRule.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "You are updating a file to fix a bug. Which change best matches making a small, safe improvement while touching the file?",
+      "codeSnippet": "function process(items: any[]) {\n  // TODO: handle empty arrays\n  let total = 0;\n  for (let i = 0; i < items.length; i++) {\n    total += items[i].amount;\n  }\n  return total;\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Rename a misleading variable and update its usages within the same file in the same small change.",
+          "isCorrect": false,
+          "explanation": "Renaming a misleading variable inside the same file is a classic tiny cleanup, but it may be more invasive if usages cross modules. This answer is plausible for the rule but less clear about preserving behavior and test coverage compared with other focused edits."
+        },
+        {
+          "id": "b",
+          "text": "Add a new feature and refactor multiple modules across the repository within the same commit and PR.",
+          "isCorrect": false,
+          "explanation": "Adding a feature and cross-repo refactor in one change increases risk and review difficulty. It conflicts with the practice of making minimal safe improvements when touching code, because large scope increases chance of regressions and coordination overhead."
+        },
+        {
+          "id": "c",
+          "text": "Remove dead code and simplify function logic within the touched file without altering public behavior.",
+          "isCorrect": true,
+          "explanation": "This is the best match. It describes a focused, behavior-preserving cleanup confined to the touched file. Such changes are small, reviewable, and reduce future maintenance cost while minimizing risk, which aligns with leaving code cleaner than you found it."
+        },
+        {
+          "id": "d",
+          "text": "Change API contract and update external consumers across teams in the same local change and commit.",
+          "isCorrect": false,
+          "explanation": "Changing an API and coordinating external consumers is a broad, breaking change that requires planning and migration. This is a reasonable concern but opposite to the idea of small incremental improvements when touching code, because it increases coordination and risk."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "You must touch a brittle legacy function to add a small feature. What is the most responsible approach while minimizing risk for the team?",
+      "codeSnippet": "export function legacyCharge(items: any[]) {\n  if (!items) return 0;\n  let sum = 0;\n  items.forEach(i => { sum += i.cost * i.qty; });\n  return sum;\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Make a targeted, low risk cleanup and add focused tests for the touched code before larger refactoring later.",
+          "isCorrect": true,
+          "explanation": "This follows the principle of incremental improvement: make the smallest safe change to implement the feature and improve the area with tests. It reduces immediate risk while preserving the option to refactor more extensively later once coverage and understanding improve."
+        },
+        {
+          "id": "b",
+          "text": "Refactor the whole module now to remove complexity and then update tests in a single large change and PR.",
+          "isCorrect": false,
+          "explanation": "A full module refactor can be the right long term choice, but doing it in the same change as a feature increases risk and review friction. Without tests and gradual steps, wide refactors are more likely to introduce regressions and block delivery."
+        },
+        {
+          "id": "c",
+          "text": "Leave code untouched to avoid risk and file a separate ticket for cleanup to be handled later by maintenance team.",
+          "isCorrect": false,
+          "explanation": "Delaying improvement avoids short term risk but passes technical debt to the future. This approach can accumulate more work and coordination later, making the codebase harder to change and increasing future risk and cost."
+        },
+        {
+          "id": "d",
+          "text": "Add a wrapper around the legacy function and only touch call sites to minimize any changes to existing behavior.",
+          "isCorrect": false,
+          "explanation": "Wrapping can be useful to avoid touching legacy code, but it often preserves internal complexity and can add indirection. It postpones true cleanup of the implementation and may lead to duplicated logic if not accompanied by targeted refactors and tests."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Two implementation choices are shown. Which version better follows making safe incremental improvements when touching code?",
+      "codeSnippet": "// Version A\nfunction total(items: { quantity: number; price: number }[]) {\n  if (!items || items.length === 0) return 0;\n  return items.reduce((s, i) => s + i.quantity * i.price, 0);\n}\n\n// Version B\n// Move calculation into new BillingService.calculate and change many call sites across the app\n// class BillingService { calculate(items) { /* different API */ } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A makes a small, focused cleanup within the touched file while preserving behavior and history.",
+          "isCorrect": true,
+          "explanation": "Version A is the better choice because it performs a minimal, local improvement that keeps behavior unchanged and preserves the file history and blame information. That makes reviews smaller and safer and reduces coordination cost. Version B introduces broad API and structural changes across multiple call sites, increasing coupling, coordination overhead, and risk of regressions. The Boy Scout approach favors the incremental local improvement first, with larger refactors sequenced after tests and stability are established. See pragmatic small steps guidance in The Pragmatic Programmer and small-change refactoring in Martin Fowler's writings."
+        },
+        {
+          "id": "b",
+          "text": "Version B performs broad refactor and API changes across modules in the same commit, increasing coupling and coordination risk.",
+          "isCorrect": false,
+          "explanation": "This statement correctly identifies concrete risks of Version B: simultaneous API changes across many modules increase coupling and require cross-team coordination. Such large-scope changes are harder to review, test, and roll back. While a full refactor may be warranted eventually, doing it in the same change as other work violates the incremental improvement principle and raises the chance of regressions."
+        }
+      ]
+    }
+  ]
+}

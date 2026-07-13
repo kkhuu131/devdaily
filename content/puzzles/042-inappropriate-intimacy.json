@@ -1,0 +1,106 @@
+{
+  "id": 42,
+  "conceptName": "Inappropriate Intimacy",
+  "category": "code-smell",
+  "definition": "A code smell where one class knows too much about the internal implementation or private details of another class and directly manipulates them.",
+  "ruleOfThumb": "Favor telling an object to perform an operation rather than reaching in and changing its internals.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Inappropriate Intimacy",
+    "page": "n/a",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What structural problem is illustrated by this code?",
+      "codeSnippet": "class CartItem {\n  constructor(public price:number, public discount:number) {}\n}\nclass Cart { items: CartItem[] = []; add(item:CartItem){ this.items.push(item) }}\nclass PricingEngine {\n  applyPromotions(cart:Cart){\n    for (const item of cart.items) {\n      if (item.price > 100) item.discount = 20\n    }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The PricingEngine class directly modifies another object's internal data fields that are exposed as mutable properties.",
+          "isCorrect": true,
+          "explanation": "The PricingEngine reaches into CartItem and assigns to its discount field. This creates a structural dependency on the item's concrete data layout. The safer alternative is to provide a behavior on the domain object, for example item.applyDiscount(20), so the object itself controls its internal state. Fowler describes this pattern as a smell where modules know too much about each other and should instead collaborate through behaviors."
+        },
+        {
+          "id": "b",
+          "text": "The PricingEngine class violates the Law of Demeter by navigating through nested object structures to reach and change data fields.",
+          "isCorrect": false,
+          "explanation": "This is a plausible observation because the engine iterates cart.items and accesses item fields. However, the core issue here is not only navigation depth but the fact that the engine mutates another object's mutable internals. Law of Demeter is related but describing navigation alone misses the direct mutation and ownership problem."
+        },
+        {
+          "id": "c",
+          "text": "The PricingEngine class introduces a Single Responsibility violation by mixing pricing strategy with direct cart state mutation operations.",
+          "isCorrect": false,
+          "explanation": "This could be a maintenance concern since PricingEngine handles both decision logic and state changes. Still, the primary smell is that the engine manipulates another object's internals rather than invoking its behavior. SRP may be a secondary effect but does not pinpoint the broken encapsulation."
+        },
+        {
+          "id": "d",
+          "text": "The PricingEngine class prevents encapsulation by relying on concrete item fields instead of using a dedicated promotion interface between modules.",
+          "isCorrect": false,
+          "explanation": "This is a valid design critique because a promotion interface would hide the item's internals. Yet framing the problem as missing an interface describes a remediation, not the immediate structural observation: the engine directly writes to item.discount. The root smell is excessive knowledge and manipulation of another object's internal state."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which underlying concern is most likely to cause fragile code in the snippet below?",
+      "codeSnippet": "class User {\n  constructor(public id:number, public profile:{ email:string, settings:any }) {}\n}\nclass ProfileService {\n  anonymize(user:User){\n    user.profile.email = 'redacted@example.com'\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The ProfileService directly mutates nested fields on the User.profile object exposed as a plain mutable structure.",
+          "isCorrect": true,
+          "explanation": "This option identifies the key fragility: the service depends on and mutates the shape of the profile object. Changes to the profile representation will require touching all callers that mutate it. A more robust design encapsulates the mutation behind a User or Profile method so the representation can change without rippling updates."
+        },
+        {
+          "id": "b",
+          "text": "The ProfileService creates a transactional boundary problem by mutating data without explicit persistence or rollback handling.",
+          "isCorrect": false,
+          "explanation": "Mutating state without transaction semantics is a legitimate concern in some systems, but the snippet shows an immediate design coupling where an external service reaches into a nested object. Transaction management might be orthogonal; the deeper maintenance liability is the exposure and direct mutation of internals."
+        },
+        {
+          "id": "c",
+          "text": "The ProfileService will produce performance regressions by iterating over nested structures and performing synchronous mutations frequently.",
+          "isCorrect": false,
+          "explanation": "Performance regressions are a possible problem in different contexts, but there is no iteration or heavy computation here. The primary issue is maintainability due to external mutation of an object's internals rather than any obvious performance characteristic."
+        },
+        {
+          "id": "d",
+          "text": "The ProfileService breaks immutability principles expected by other modules and complicates reasoning about shared state changes.",
+          "isCorrect": false,
+          "explanation": "Breaking immutability can indeed complicate reasoning about state, and that is a real drawback of this code. However, the more specific structural concern is the service's dependency on the profile's concrete mutable shape rather than the broader principle of immutability."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better avoids the structural problem where external code reaches into and manipulates another object's internals?",
+      "codeSnippet": "// Version A\nclass User {\n  constructor(private email:string) {}\n  redactEmail(){ this.email = 'redacted@example.com' }\n  getEmail(){ return this.email }\n}\nclass ProfileService {\n  anonymize(user:User){ user.redactEmail() }\n}\n\n// Version B\nclass UserV2 {\n  constructor(public profile:{ email:string }) {}\n}\nclass ProfileServiceV2 {\n  anonymize(user:UserV2){ user.profile.email = 'redacted@example.com' }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A encapsulates the mutation inside the domain object through a clear public behavior.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable because the domain object owns its state and exposes a behavior to change it. That preserves encapsulation, centralizes invariants, and lets the object's representation change without affecting callers. This aligns with best practices from Refactoring and object-oriented design—tell objects to do work rather than ask for their data and change it externally."
+        },
+        {
+          "id": "b",
+          "text": "Version B leaves public mutable structures and requires callers to know and modify internal fields directly.",
+          "isCorrect": false,
+          "explanation": "Version B fails because it exposes an internal profile structure as mutable and pushes responsibility for changes onto external clients. This increases coupling and spreads invariants across code, making future refactors difficult and error prone. The nuance is that while Version B may seem simpler initially, it locks callers to a concrete representation and complicates reasoning about state and validation."
+        }
+      ]
+    }
+  ]
+}

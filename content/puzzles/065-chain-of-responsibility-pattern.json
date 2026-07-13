@@ -1,0 +1,105 @@
+{
+  "id": 65,
+  "conceptName": "Chain of Responsibility Pattern",
+  "category": "design-pattern",
+  "definition": "A behavioral design pattern that lets a request pass along a chain of handler objects until one of the handlers processes it, decoupling senders and receivers and allowing dynamic composition of processing steps.",
+  "ruleOfThumb": "Use when multiple handlers can process a request and you want extensible, decoupled routing without a central dispatcher.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns",
+    "page": "235-242",
+    "externalUrl": "https://refactoring.guru/design-patterns/chain-of-responsibility"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description best matches the intent demonstrated by handlers delegating a request along a sequence until one handles it?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "This is a behavioral pattern where a request is passed along a chain of handlers until one handles it.",
+          "isCorrect": true,
+          "explanation": "Correct. This describes the pattern where responsibility is passed along handler objects so the sender does not need to know which handler will handle the request."
+        },
+        {
+          "id": "b",
+          "text": "This is a behavioral pattern where subjects broadcast events to observers that react independently to the notifications.",
+          "isCorrect": false,
+          "explanation": "This describes the Observer pattern, where multiple listeners subscribe to events. In contrast the shown code passes a request along a sequence until one handler accepts it."
+        },
+        {
+          "id": "c",
+          "text": "This is a behavioral pattern where algorithms are encapsulated and swapped at runtime to change client behavior.",
+          "isCorrect": false,
+          "explanation": "This describes the Strategy pattern, which encapsulates interchangeable algorithms. Strategy differs because it selects a single algorithm instance instead of passing a request through multiple handlers."
+        },
+        {
+          "id": "d",
+          "text": "This is a structural pattern where responsibilities are added by wrapping objects with decorator layers at runtime.",
+          "isCorrect": false,
+          "explanation": "This describes the Decorator pattern where functionality is layered around an object. Unlike the shown design, decorators augment a single object rather than delegating a request along separate handlers."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Examining this simple handler implementation, what is the primary architectural concern you would raise about extending the system?",
+      "codeSnippet": "interface Request { type: string; payload: any }\ninterface Handler { setNext(next: Handler): void; handle(req: Request): boolean }\nclass BaseHandler implements Handler {\n  private next?: Handler\n  setNext(next: Handler) { this.next = next }\n  handle(req: Request): boolean {\n    if (this.canHandle(req)) { /* process */ return true }\n    return this.next ? this.next.handle(req) : false\n  }\n  protected canHandle(req: Request) { return false }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The primary concern is tight coupling between handlers requiring modifications when adding new request processors or changing chain composition.",
+          "isCorrect": true,
+          "explanation": "The implementation couples handler classes to the chain wiring and concrete handler behavior. Adding a new kind of processor often requires registering and composing handlers or changing existing handlers, which violates the Open Closed Principle unless handled carefully."
+        },
+        {
+          "id": "b",
+          "text": "The primary concern is unclear single responsibility with handlers doing validation, logging, and processing all mixed together in methods.",
+          "isCorrect": false,
+          "explanation": "Mixing responsibilities is a valid concern, but the snippet shows separation by handlers. The more acute architectural issue for extensibility here is how handlers are coupled and composed rather than internal method responsibility."
+        },
+        {
+          "id": "c",
+          "text": "The primary concern is fragile error propagation because exceptions are swallowed and downstream handlers may not observe earlier failures.",
+          "isCorrect": false,
+          "explanation": "Error propagation is important, but the code returns booleans rather than swallowing exceptions explicitly. The bigger design risk for scaling and maintenance is coupling and chain management, though error handling should still be addressed."
+        },
+        {
+          "id": "d",
+          "text": "The primary concern is implicit ordering of handlers making behavior dependent on registration sequence and hard to reason about.",
+          "isCorrect": false,
+          "explanation": "Handler ordering can indeed cause subtle bugs, especially if order matters. However ordering is a secondary symptom; the core extensibility problem remains the coupling and responsibility for managing chain composition."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which implementation is preferable for an extensible request processing subsystem that must allow runtime addition of handlers without changing core dispatch code?",
+      "codeSnippet": "/* Version A */\ninterface Handler { setNext(next: Handler): void; handle(req: any): boolean }\nclass BaseHandler implements Handler { private next?: Handler; setNext(n: Handler){ this.next = n } handle(req:any){ if(this.canHandle(req)) return true; return this.next ? this.next.handle(req) : false } }\n\n/* Version B */\nfunction dispatch(req:any){ switch(req.type){ case 'auth': return authProcessor(req); case 'billing': return billingProcessor(req); case 'audit': return auditProcessor(req); default: return false } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A composes small decoupled handler objects into a chain for flexible runtime extensibility.",
+          "isCorrect": true,
+          "explanation": "Version A is preferable. It lets you add or remove handler objects at runtime without changing central dispatch code, keeping the system open for extension and minimizing coupling. Version B centralizes decisions and forces edits to the dispatcher when new handlers are required, which becomes a maintenance bottleneck."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes logic in a dispatcher implemented as a large switch statement requiring modifications for each new handler.",
+          "isCorrect": false,
+          "explanation": "Version B is attractive for its simplicity when handler types are fixed, but it couples registration and routing logic in one place. Each new handler type forces modification of the dispatcher, violating the Open Closed Principle and increasing the risk of merge conflicts and regressions."
+        }
+      ]
+    }
+  ]
+}

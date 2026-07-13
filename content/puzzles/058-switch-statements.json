@@ -1,0 +1,106 @@
+{
+  "id": 58,
+  "conceptName": "Switch Statements",
+  "category": "code-smell",
+  "definition": "A recurring pattern where code chooses behavior by inspecting a value and branching into many discrete cases, often centralizing decision logic and making extensions and testing harder.",
+  "ruleOfThumb": "Prefer small, replaceable variant implementations when branching grows or when new cases are expected; keep simple conditionals for stable, limited case sets.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Replace Conditional with Polymorphism",
+    "page": "unknown",
+    "externalUrl": "https://martinfowler.com/books/refactoring.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What primary problem does the following snippet illustrate?",
+      "codeSnippet": "function calculateFee(type: string, amount: number) {\n  switch (type) {\n    case 'standard':\n      return amount * 0.02;\n    case 'premium':\n      return amount * 0.015;\n    case 'vip':\n      return amount * 0.01;\n    default:\n      throw new Error('Unknown type');\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "A single function contains multiple branches that select different behavior based on a discrete input value.",
+          "isCorrect": true,
+          "explanation": "This snippet centralizes decision logic in one place, which is the classic smell of conditional branching based on a type value. That structure tends to violate the Open/Closed Principle when new types are added, and it concentrates variation making testing and extension harder. Refactoring approaches include replacing the conditional with polymorphic handlers or a mapping from type to behavior."
+        },
+        {
+          "id": "b",
+          "text": "A dependency leak across modules is creating tight coupling that prevents independent testing and reuse of components.",
+          "isCorrect": false,
+          "explanation": "While tight coupling is a real concern in many designs, this example shows branching on a local input value rather than leaking dependencies across module boundaries. The main issue is not module coupling but the conditional structure selecting behavior by value. Eliminating the conditional by introducing abstractions is a more direct remediation."
+        },
+        {
+          "id": "c",
+          "text": "A missing interface abstraction is forcing duplication of similar behavior across the codebase and increasing maintenance cost.",
+          "isCorrect": false,
+          "explanation": "Duplication and missing abstractions can coexist with large conditionals, but the presented code shows a single location choosing variants. The primary smell is centralized conditional logic rather than duplicated implementations. Replacing the switch with strategy objects often introduces the needed abstraction."
+        },
+        {
+          "id": "d",
+          "text": "A global mutable configuration object is exposing runtime state that increases concurrency bugs and testing difficulty.",
+          "isCorrect": false,
+          "explanation": "Global mutable state is a significant problem, but the snippet operates on a local parameter and pure calculations. The more accurate diagnosis is excessive conditional branching based on a value. Addressing that smell improves extensibility more directly than focusing on global state in this specific example."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this HTTP request handler, which statement best describes whether the branching needs refactoring now?",
+      "codeSnippet": "function handleEvent(event: {type: string, payload: any}) {\n  switch (event.type) {\n    case 'create':\n      // create logic\n      break;\n    case 'update':\n      // update logic\n      break;\n    case 'delete':\n      // delete logic\n      break;\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "When the set of cases is small and stable, the conditional is an acceptable simple solution.",
+          "isCorrect": true,
+          "explanation": "Imperative conditionals are not always wrong. If the number of event types is small, stable, and each branch is simple, keeping the switch avoids premature abstraction. Refactor when branches grow, when behavior differs significantly, or when adding new types becomes frequent."
+        },
+        {
+          "id": "b",
+          "text": "When case logic duplicates across modules, extract polymorphic handlers to avoid scattered conditional code and reduce maintenance burden.",
+          "isCorrect": false,
+          "explanation": "Extracting handlers is a valid refactoring when logic repeats; however, this option assumes duplication across modules which is not shown here. The correct decision depends on stability and growth, not solely on the presence of a switch."
+        },
+        {
+          "id": "c",
+          "text": "When new types are likely to appear often, prefer strategy objects to satisfy the open closed principle and ease future extension needs.",
+          "isCorrect": false,
+          "explanation": "This is good long-term guidance but prescribes a change proactively. The snippet does not indicate frequent addition of new types. The right move is contextual: switch is fine if stable, but strategy objects are preferable when extension is frequent."
+        },
+        {
+          "id": "d",
+          "text": "When behavior requires runtime composition, replace conditionals with delegates to improve testability and enable dependency injection patterns.",
+          "isCorrect": false,
+          "explanation": "Runtime composition and DI are strong reasons to refactor, but this choice presumes composition needs that are not evident. The most appropriate action depends on the actual complexity and extension rate of the cases."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is the better design for handling multiple payment providers in a growing codebase?",
+      "codeSnippet": "// Version A: handler objects map\ninterface PaymentHandler { process(amount:number): void }\nclass CreditCardHandler implements PaymentHandler { process(amount:number){ /* credit card */ } }\nclass PayPalHandler implements PaymentHandler { process(amount:number){ /* paypal */ } }\nconst handlers: Record<string, PaymentHandler> = { credit: new CreditCardHandler(), paypal: new PayPalHandler() };\nfunction processPaymentA(type:string, amount:number) { handlers[type].process(amount); }\n\n// Version B: centralized conditional\nfunction processPaymentB(type:string, amount:number) {\n  switch(type) {\n    case 'credit': /* credit card logic */ break;\n    case 'paypal': /* paypal logic */ break;\n  }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A uses small handler objects that make adding new variants straightforward and localized.",
+          "isCorrect": true,
+          "explanation": "Version A isolates variant behavior into discrete handler implementations, so adding a new provider involves creating a new handler and registering it. That reduces modification of existing code and improves testability and single responsibility. Fowler recommends replacing complex conditionals with polymorphism when branching represents orthogonal variation—this aligns with the Replace Conditional with Polymorphism refactoring."
+        },
+        {
+          "id": "b",
+          "text": "Version B concentrates branching in one function, which makes adding providers error prone and scatters variant logic.",
+          "isCorrect": false,
+          "explanation": "Centralized switches are easier initially but become brittle as cases multiply. Adding a new provider requires editing the switch and possibly touching shared code, increasing the risk of regressions and making unit testing harder. This design violates the Open/Closed Principle compared to the handler-based approach advocated by refactoring literature such as Fowler and patterns in the GoF book on Strategy and Command."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "id": 69,
+  "conceptName": "Visitor Pattern",
+  "category": "design-pattern",
+  "definition": "A technique that lets you define a new operation on elements of an object structure without changing the classes of the elements.",
+  "ruleOfThumb": "When you need to add many unrelated operations over a stable object structure, put operation logic into separate processor objects.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Visitor",
+    "page": "331",
+    "externalUrl": "https://refactoring.guru/design-patterns/visitor"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which design choice best matches the need to add many different operations over a fixed object structure without changing element classes?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Extract operations into separate operation objects so operations can be added without modifying the element classes themselves.",
+          "isCorrect": true,
+          "explanation": "Separating operations into external objects keeps element classes stable while enabling new operations. This is the hallmark tradeoff of the pattern: it favors easy addition of behaviors at the cost of a new indirection and some coupling to element types."
+        },
+        {
+          "id": "b",
+          "text": "Add new methods directly to each element class so each element implements every operation within its own code.",
+          "isCorrect": false,
+          "explanation": "Adding methods directly to elements will work for a small number of operations but becomes burdensome as operations grow because every element class must be modified for each new behavior."
+        },
+        {
+          "id": "c",
+          "text": "Centralize behavior in a long type switch statement outside elements to handle different element kinds at runtime.",
+          "isCorrect": false,
+          "explanation": "A central type switch concentrates logic but leads to scattered conditional logic and poor encapsulation; it becomes harder to maintain as operations multiply and new element types are added."
+        },
+        {
+          "id": "d",
+          "text": "Use inheritance to create specialized subclasses for each operation so elements vary per operation and duplicate code.",
+          "isCorrect": false,
+          "explanation": "Creating subclass-per-operation causes explosion of classes and duplicated code. It trades one kind of complexity for another and does not scale well when both operations and element types grow independently."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "In the following code, which observation most clearly signals the need to separate operations from element types into external processors?",
+      "codeSnippet": "class File {\n  constructor(public name: string, public size: number) {}\n}\nclass Folder {\n  constructor(public name: string, public children: (File|Folder)[]) {}\n}\nfunction computeSize(node: File|Folder): number {\n  if (node instanceof File) return node.size;\n  let total = 0; for (const c of (node as Folder).children) total += computeSize(c);\n  return total;\n}\nfunction print(node: File|Folder): void {\n  if (node instanceof File) console.log(node.name);\n  for (const c of (node instanceof Folder ? (node as Folder).children : [])) print(c);\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code repeats type-specific branching for each operation across the codebase and duplicates conditional logic everywhere.",
+          "isCorrect": true,
+          "explanation": "The repeated instanceof checks across multiple functions show that operations are dispatched outside the element types. Introducing external processors moves operation logic out of scattered conditionals and centralizes behavior per operation."
+        },
+        {
+          "id": "b",
+          "text": "This code shows a missing common interface for elements preventing a single polymorphic method implementation across element types.",
+          "isCorrect": false,
+          "explanation": "A common interface can help, but the core smell here is duplication of type checks across operations. Simply adding an interface without moving operation logic still leaves each operation implemented separately."
+        },
+        {
+          "id": "c",
+          "text": "This code embeds operation logic inside the element constructors leading to heavy objects that manage both data and behavior.",
+          "isCorrect": false,
+          "explanation": "The snippet does not place logic in constructors; operations are external functions with type checks. The real issue is branching duplication, not fat constructors."
+        },
+        {
+          "id": "d",
+          "text": "This code relies on global mutable accumulators shared across operations causing hidden coupling between different processing functions.",
+          "isCorrect": false,
+          "explanation": "There are no global mutable accumulators in the snippet. While that could be a valid concern in other contexts, the clear indicator here is repeated type-based dispatch for each operation."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better supports adding many new, unrelated operations over element types while keeping element classes stable?",
+      "codeSnippet": "// Version A: operations implemented on elements\nclass FileA { constructor(public name: string, public size: number) {}  compress() {/*...*/}  render() {/*...*/} }\nclass FolderA { constructor(public name: string, public children: (FileA|FolderA)[]) {}  compress() {/*...*/}  render() {/*...*/} }\n\n// Version B: elements accept external processors\ninterface Processor { processFile(f: FileB): void; processFolder(f: FolderB): void }\nclass FileB { constructor(public name: string, public size: number) {}  accept(p: Processor) { p.processFile(this) } }\nclass FolderB { constructor(public name: string, public children: (FileB|FolderB)[]) {}  accept(p: Processor) { p.processFolder(this) } }\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A places operation implementations inside element classes causing element classes to change when new operations are added.",
+          "isCorrect": false,
+          "explanation": "When operations are methods on elements, every time you add an operation you must modify each element class. That violates the goal of keeping element classes stable and leads to scattered changes across types."
+        },
+        {
+          "id": "b",
+          "text": "Version B extracts operations into external processor objects and keeps element classes stable when adding new operations.",
+          "isCorrect": true,
+          "explanation": "Version B delegates operation behavior to external processor objects, allowing new operations to be introduced by adding new processors rather than changing element classes. This aligns with the tradeoffs discussed by the GoF authors: easy addition of operations at the cost of coupling to element types. See Gamma et al., Design Patterns, Visitor chapter, and consider Martin Fowler on separating algorithms from object structure for maintainability."
+        }
+      ]
+    }
+  ]
+}

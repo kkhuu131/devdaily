@@ -1,0 +1,106 @@
+{
+  "id": 25,
+  "conceptName": "Dependency Injection",
+  "category": "solid",
+  "definition": "A technique where a component receives the objects it depends on from external callers rather than creating them itself, promoting decoupling and testability.",
+  "ruleOfThumb": "Prefer receiving collaborators from callers rather than constructing or looking them up; keep construction at the composition root.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Patterns of Enterprise Application Architecture",
+    "chapter": "Inversion of Control Containers and the Dependency Injection pattern",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/articles/injection.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation best describes the issue in the code below?",
+      "codeSnippet": "class UserController {\n  private repo: UserRepository;\n  constructor() {\n    this.repo = new UserRepository();\n  }\n  getUser(id: string) { return this.repo.findById(id); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class constructs its own repository instance inside the constructor using the concrete repository implementation directly within the class body.",
+          "isCorrect": true,
+          "explanation": "The class explicitly creates the concrete repository. This ties the controller to that implementation and makes unit testing harder because you cannot easily swap a test double. The typical remedy is to have the repository provided from outside the class so tests can supply a stub or mock."
+        },
+        {
+          "id": "b",
+          "text": "The class exposes repository internals through its public methods which leaks persistence details into controller logic and reduces abstraction clarity.",
+          "isCorrect": false,
+          "explanation": "While leaking persistence details into higher-level logic is a real concern, the snippet shows construction of the repository rather than exposing internals. The more immediate smell is the controller creating the dependency instead of being given one."
+        },
+        {
+          "id": "c",
+          "text": "The class relies on a global singleton repository instance created elsewhere causing hidden coupling across the application and test unpredictability.",
+          "isCorrect": false,
+          "explanation": "Global singletons do cause hidden coupling, but the snippet demonstrates local construction with new UserRepository(). That is a concrete dependency created locally, which is a different structural problem than relying on a global singleton."
+        },
+        {
+          "id": "d",
+          "text": "The class uses a factory provided repository which prevents versioning and encourages direct manipulation of repository construction inside domain code.",
+          "isCorrect": false,
+          "explanation": "A problematic factory can cause issues, but there is no factory in the snippet. The root problem is the controller instantiating a concrete repository itself. Introducing a factory might postpone but not solve testability concerns unless the factory is injected."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this service implementation, what is the most likely maintenance risk introduced?",
+      "codeSnippet": "class PaymentService {\n  private processor: PaymentProcessor;\n  constructor() {\n    this.processor = ServiceLocator.resolve('PaymentProcessor');\n  }\n  charge(amount: number) { return this.processor.charge(amount); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code hides its payment dependency behind a global resolver in the constructor using a runtime service lookup.",
+          "isCorrect": true,
+          "explanation": "Hiding dependencies behind a service locator makes it hard to see what a class needs and complicates unit testing because tests must configure the global resolver. Unlike explicit provision, lookups scatter configuration and runtime errors surface later."
+        },
+        {
+          "id": "b",
+          "text": "This code overuses an interface abstraction that complicates simple implementations and adds unnecessary indirection in the service layer.",
+          "isCorrect": false,
+          "explanation": "Over-abstraction can be a maintenance cost, but the snippet shows use of a global resolver rather than excessive interfaces. The primary risk here is hidden dependencies from runtime lookup, not interface proliferation."
+        },
+        {
+          "id": "c",
+          "text": "This code constructs the processor on every call which can cause repeated allocations and inconsistent processor state management under load.",
+          "isCorrect": false,
+          "explanation": "Repeated construction per call is a real issue when present, but this snippet resolves the processor once in the constructor. The code is more likely to suffer from hidden coupling to the service registry than per-call allocation."
+        },
+        {
+          "id": "d",
+          "text": "This code couples the service to the global registry API directly and introduces runtime string keys that create brittle lookup failures at runtime.",
+          "isCorrect": false,
+          "explanation": "Coupling to a registry API and brittle string keys are valid concerns and are related to the actual problem. However the most precise maintenance risk is that dependencies become implicit and tests must manipulate global resolver state rather than injecting deterministic collaborators."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version leads to clearer responsibilities and easier testing in a large application?",
+      "codeSnippet": "// Version A\nclass OrderProcessorV1 {\n  constructor(private payment: PaymentGateway) {}\n  process(order: Order) { return this.payment.charge(order.total); }\n}\n\n// Version B\nclass OrderProcessorV2 {\n  process(order: Order) {\n    const payment = ServiceRegistry.get<PaymentGateway>('PaymentGateway');\n    return payment.charge(order.total);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A receives its collaborator instance via constructor parameters instead of creating or looking it up inside the class.",
+          "isCorrect": true,
+          "explanation": "Version A makes the dependency explicit at the API boundary and keeps object construction at composition time. That yields clearer module boundaries, simpler unit testing with injected fakes, and easier reasoning about lifetime. This aligns with established guidance to compose object graphs at a single composition root rather than scattering lookups or constructions throughout the codebase."
+        },
+        {
+          "id": "b",
+          "text": "Version B obtains the collaborator from a global service locator at call time which conceals dependency origins and reduces testability.",
+          "isCorrect": false,
+          "explanation": "Version B hides what the class depends on and forces tests to configure global registry state or use integration style tests. While service locators can be pragmatic in small scripts, they make dependency graphs implicit and increase coupling to runtime configuration. In large systems this leads to brittle tests and harder refactors."
+        }
+      ]
+    }
+  ]
+}

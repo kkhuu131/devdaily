@@ -1,0 +1,105 @@
+{
+  "id": 43,
+  "conceptName": "Separation of Concerns",
+  "category": "principle",
+  "definition": "A design principle that organizes code so that distinct responsibilities are kept in distinct modules, reducing coupling and making reasoning, testing, and change easier.",
+  "ruleOfThumb": "Keep each module focused on one area of responsibility; if a change touches multiple modules, responsibilities are likely entangled.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Architecture",
+    "chapter": "Component Cohesion Principles",
+    "page": "97-104",
+    "externalUrl": "https://www.oreilly.com/library/view/clean-architecture/9780134494272/"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which description most accurately names the primary structural problem in this component?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "The component places rendering, data access, and command handling together inside a single class across the module.",
+          "isCorrect": true,
+          "explanation": "The correct observation is that multiple responsibilities are co-located in one class; that structural overlap increases coupling and makes independent modification and testing harder. This is distinct from runtime issues or naming problems, because the core problem is how responsibilities are distributed across the codebase."
+        },
+        {
+          "id": "b",
+          "text": "The component uses a third-party library in a way that creates unpredictable runtime dependencies across different deployment environments.",
+          "isCorrect": false,
+          "explanation": "This concern is plausible when libraries are misused, but the snippet shows mixed responsibilities rather than environment-specific dependency handling. Runtime dependency issues would be evidenced by fragile initialization or environment checks, which are not present here."
+        },
+        {
+          "id": "c",
+          "text": "The component exposes many public methods that indicate unclear API boundaries and accidental coupling between unrelated modules.",
+          "isCorrect": false,
+          "explanation": "Excessive public surface area can cause coupling, but the primary symptom in this scenario is multiple responsibilities implemented in one place. API boundary problems are related but secondary to how responsibilities are allocated."
+        },
+        {
+          "id": "d",
+          "text": "The component lacks caching which will likely degrade performance when used concurrently under heavy load.",
+          "isCorrect": false,
+          "explanation": "Missing caching is a real performance concern, yet it is an orthogonal operational issue. The code shows mixed responsibilities, not explicit caching or concurrency primitives that would prove the performance diagnosis."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this TypeScript class, what is the most accurate root structural problem?",
+      "codeSnippet": "class OrderProcessor {\n  constructor(private db: Db, private mailer: Mailer) {}\n\n  process(order: Order) {\n    // validate order\n    if (!order.items.length) throw new Error('Empty order')\n    // calculate total and discounts\n    order.total = this.calculateTotal(order)\n    // persist order\n    this.db.save(order)\n    // send receipt\n    this.mailer.sendReceipt(order.customerEmail, order)\n  }\n\n  private calculateTotal(order: Order) { /* ... */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This class combines validation, pricing, persistence, and notification responsibilities into one unit across multiple methods.",
+          "isCorrect": true,
+          "explanation": "The code places validation, pricing, persistence, and notification in a single class. That bundling makes targeted changes harder, increases test surface, and couples unrelated lifecycle concerns. Extracting responsibilities into focused collaborators improves maintainability and testability."
+        },
+        {
+          "id": "b",
+          "text": "The class improperly uses synchronous database calls which will block the event loop under heavy concurrent request workloads.",
+          "isCorrect": false,
+          "explanation": "Blocking I/O is a legitimate concern in Node-style systems, but the snippet does not show explicit synchronous APIs. The larger structural issue is mixing responsibilities; addressing I/O style would not solve the tight coupling between concerns."
+        },
+        {
+          "id": "c",
+          "text": "The method names are too generic and will cause confusion when other developers try to extend or reuse the logic across features.",
+          "isCorrect": false,
+          "explanation": "Generic names can impede discoverability, but they are a naming issue rather than the fundamental structural problem. The immediate maintenance cost comes from multiple responsibilities living together rather than ambiguous identifiers."
+        },
+        {
+          "id": "d",
+          "text": "The class is missing dependency injection which makes it impossible to supply mock collaborators during unit testing.",
+          "isCorrect": false,
+          "explanation": "Lack of dependency injection can hinder testing, yet the constructor already receives dependencies. The real difficulty here is that the single class must be mocked for many behaviors; separating responsibilities would make testing easier regardless of injection style."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better supports independent change and easier unit testing as the system grows?",
+      "codeSnippet": "// Version A\nclass OrderService {\n  process(order: Order) {\n    // validate\n    // compute pricing\n    // persist\n    // send notification\n  }\n}\n\n// Version B\nclass OrderValidator { validate(o: Order) { /* ... */ } }\nclass PricingService { compute(o: Order) { /* ... */ } }\nclass OrderRepository { save(o: Order) { /* ... */ } }\nclass NotificationService { notify(c: Customer, o: Order) { /* ... */ } }\nclass OrderServiceV2 {\n  constructor(v: OrderValidator, p: PricingService, r: OrderRepository, n: NotificationService) {}\n  process(order: Order) { /* delegate to collaborators */ }\n}\n",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A bundles validation, pricing, persistence, and notifications inside one class causing tight coupling and fragile tests.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes multiple responsibilities. That design couples unrelated behavior, making small changes risky because they can ripple across unrelated logic. Tests become large and brittle as they must exercise many concerns at once. This pattern scales poorly in evolving domains."
+        },
+        {
+          "id": "b",
+          "text": "Version B composes focused collaborators per responsibility with each module owning a single clear role.",
+          "isCorrect": true,
+          "explanation": "Version B separates distinct responsibilities into small, focused components and uses composition to assemble behavior. This localizes change and allows smaller, faster unit tests for each collaborator. The approach aligns with component cohesion and single-responsibility guidance in architecture literature and reduces coupling between unrelated concerns. See Clean Architecture and component cohesion principles for further reading."
+        }
+      ]
+    }
+  ]
+}

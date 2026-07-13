@@ -1,0 +1,106 @@
+{
+  "id": 45,
+  "conceptName": "Acyclic Dependencies Principle",
+  "category": "solid",
+  "definition": "A guideline for organizing packages/modules so that there are no cycles in the package dependency graph, enabling independent development and builds.",
+  "ruleOfThumb": "Arrange packages so dependencies form a directed acyclic graph; extract abstractions into upstream packages to avoid back references.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Agile Software Development, Principles, Patterns, and Practices",
+    "chapter": "Package Principles",
+    "page": null,
+    "externalUrl": "https://blog.cleancoder.com/uncle-bob/2010/09/20/TheAcyclicDependenciesPrinciple.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Examine the two small modules below. What is the primary structural problem illustrated?",
+      "codeSnippet": "// services/payment.ts\nimport { Order } from \"../orders/order\";\nexport function charge(o: Order) {}\n\n// orders/order.ts\nimport { charge } from \"../services/payment\";\nexport class Order {}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This example shows two packages importing each other and creating a cyclic dependency that hinders independent reasoning.",
+          "isCorrect": true,
+          "explanation": "The snippet has mutual imports between services/payment and orders/order, which forms a package-level cycle. Cycles make it hard to reason about dependencies, complicate builds and tests, and often require awkward initialization workarounds. This symptom is exactly what the package-level acyclic guidance aims to prevent."
+        },
+        {
+          "id": "b",
+          "text": "This example shows tight coupling because a module directly references concrete classes instead of depending on abstraction interfaces.",
+          "isCorrect": false,
+          "explanation": "Tight coupling is a plausible concern in many designs, but the concrete problem here is that the two modules import each other, not merely that one depends on a concrete type. You could have direct references without a cycle, and you could have a cycle between abstract interfaces too. The mutual import is the defining issue."
+        },
+        {
+          "id": "c",
+          "text": "This example shows runtime initialization order problems where side effects during module load cause unpredictable behavior across packages.",
+          "isCorrect": false,
+          "explanation": "Runtime initialization order can indeed surface when cycles exist, and it is a real symptom developers see. However, the core structural problem in this snippet is the cyclical import relationship itself rather than only the side effects. Addressing the cycle removes the initialization fragility."
+        },
+        {
+          "id": "d",
+          "text": "This example shows a layering violation where higher level business code depends on lower level utilities without clear abstractions.",
+          "isCorrect": false,
+          "explanation": "Layering violations are also common, but the code shown specifically demonstrates mutual imports between two sibling packages. While layering problems and missing abstractions can lead to cycles, the immediate, concrete issue here is the circular dependency between the two modules."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Look at this multi-package import graph. Which option best describes the maintainability risk present?",
+      "codeSnippet": "// packages/ui/index.ts\nimport { render } from \"../domain/render\";\n\n// packages/domain/render.ts\nimport { fetchData } from \"../infrastructure/api\";\nexport function render() {}\n\n// packages/infrastructure/api.ts\nimport { uiHelper } from \"../ui/helper\";\nexport function fetchData() {}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This package layout creates a cycle across feature packages which increases risk of coupled releases and build difficulties.",
+          "isCorrect": true,
+          "explanation": "UI -> Domain -> Infrastructure -> UI forms a cycle across packages. Cyclic package graphs tie release and build lifecycles together, force simultaneous changes across packages for many edits, and make automated ordering or independent compilation fragile."
+        },
+        {
+          "id": "b",
+          "text": "This package layout indicates improper separation because UI depends on domain services directly rather than via well defined ports.",
+          "isCorrect": false,
+          "explanation": "Direct UI to domain dependencies can be a design smell, but the concrete issue shown is the cross-package cycle. Even with ports, cycles can occur if a shared package depends back on a feature. The critical risk here is the dependency cycle spanning multiple packages."
+        },
+        {
+          "id": "c",
+          "text": "This package layout shows missing dependency inversion because lower level modules are referencing higher level policies instead of abstractions.",
+          "isCorrect": false,
+          "explanation": "Missing dependency inversion is often the root cause of cycles, because high-level policies leak into lower-level modules. While that may be true here, the best immediate description is that the packages form a cycle, which is the more actionable observation to address."
+        },
+        {
+          "id": "d",
+          "text": "This package layout demonstrates performance issue risk since many cross package synchronous calls could degrade throughput under load.",
+          "isCorrect": false,
+          "explanation": "Cross-package synchronous calls can affect performance, but the snippet highlights structural coupling across packages that will affect builds, testing, and change management. Performance is a secondary concern compared to the structural fragility introduced by cycles."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version offers a better long term modular structure for preventing package-level import cycles?",
+      "codeSnippet": "// Version A\n// packages/common/interfaces.ts\nexport interface OrderRepo { save(order: any): void; }\n\n// packages/order/service.ts\nimport { OrderRepo } from \"../common/interfaces\";\nexport class OrderService { constructor(private repo: OrderRepo) {} }\n\n// packages/payment/processor.ts\nimport { OrderRepo } from \"../common/interfaces\";\nexport function charge(orderRepo: OrderRepo) {}\n\n// Version B\n// packages/common/helpers.ts\nimport { OrderService } from \"../order/service\";\nexport function helper(s: OrderService) {}\n\n// packages/order/service.ts\nimport { helper } from \"../common/helpers\";\nexport class OrderService {}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A keeps shared packages free of feature level references and prevents import cycles across packages.",
+          "isCorrect": true,
+          "explanation": "Version A confines shared concerns to an interface-only package that feature modules depend upon. That keeps the dependency graph directed outward from features to abstractions, avoiding back references. This makes independent compilation, testing, and incremental refactoring far easier. The general advice is to push stable abstractions upstream and keep implementations downstream to maintain an acyclic package graph."
+        },
+        {
+          "id": "b",
+          "text": "Version B centralizes helpers in shared package but introduces back references from common into feature modules creating a cycle.",
+          "isCorrect": false,
+          "explanation": "Version B creates a fragile back reference: the common package depends on a concrete feature (OrderService), while that feature also depends on common helpers. This produces a cycle that complicates builds and reasoning and forces simultaneous changes across packages. Although centralizing helpers can seem convenient, embedding feature knowledge into shared code breaks the intended upstream abstraction role for common packages."
+        }
+      ]
+    }
+  ]
+}

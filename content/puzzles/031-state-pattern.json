@@ -1,0 +1,106 @@
+{
+  "id": 31,
+  "conceptName": "State Pattern",
+  "category": "design-pattern",
+  "definition": "Encapsulate varying behavior for an object based on its internal state by delegating to separate state objects that implement a common interface.",
+  "ruleOfThumb": "When an object changes behavior based on its internal condition and you find many conditionals, model each condition as a polymorphic state object.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Behavioral Patterns - State",
+    "page": "257",
+    "externalUrl": "https://refactoring.guru/design-patterns/state"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which observation best describes the design shown in this snippet?",
+      "codeSnippet": "interface State { handle(context: Context): void }\n\nclass Context {\n  private state: State\n  constructor(s: State) { this.state = s }\n  request() { this.state.handle(this) }\n}\n\nclass ConcreteStateA implements State { handle(c: Context) { /* ... */ } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The context object delegates runtime behavior to interchangeable state objects implementing a common interface at runtime.",
+          "isCorrect": true,
+          "explanation": "This is the canonical design: a Context holds a State reference and delegates behavior to it. The idea is to move conditional logic into separate state classes so behavior varies by replacing the current state object. That separation reduces conditional sprawling and makes adding new states easier. See Gamma et al. for the behavioral pattern and refactoring advice on moving conditionals into polymorphism."
+        },
+        {
+          "id": "b",
+          "text": "The class uses a central switch statement to choose behavior based on enum values spread across many methods.",
+          "isCorrect": false,
+          "explanation": "A central switch over an enum is a common alternative but the snippet shows delegation to objects rather than branching. The switch-based approach keeps all cases in one place but increases coupling to the enum and makes adding new cases require edits in multiple places. Refactoring toward polymorphic objects is often recommended."
+        },
+        {
+          "id": "c",
+          "text": "The object toggles boolean flags to enable or disable code paths within several conditional branches in methods.",
+          "isCorrect": false,
+          "explanation": "Boolean flags with many conditionals are another common smell, but the snippet demonstrates polymorphic dispatch rather than flag checks. Flags scatter logic across methods and cause combinatorial complexity as features grow. Moving towards per-condition objects is a typical remedy described in design-pattern literature and refactoring guides."
+        },
+        {
+          "id": "d",
+          "text": "Different subclasses override behavior for each case and instances are created per need without a context field.",
+          "isCorrect": false,
+          "explanation": "Subclassing to change behavior is plausible, but the snippet shows an instance that holds a state object rather than inheriting behavior from multiple subclasses. Subclassing the whole context can lead to class explosion and fragile hierarchies; holding a state object provides runtime switching without deep inheritance."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this payment processing method with many cases, which refactor most directly targets maintainability by removing conditional proliferation?",
+      "codeSnippet": "class PaymentProcessor {\n  private status: \"pending\" | \"completed\" | \"failed\"\n  process() {\n    switch (this.status) {\n      case \"pending\": this.handlePending(); break\n      case \"completed\": this.handleCompleted(); break\n      case \"failed\": this.handleFailed(); break\n    }\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Refactor the large switch into smaller helper functions while keeping the enum based dispatch inside the class.",
+          "isCorrect": false,
+          "explanation": "Moving case bodies into helper methods reduces method size but preserves the central switch and coupling to the status enum. That helps readability but still requires editing the switch when adding a new status. The structural coupling problem remains, so this is an incremental but incomplete improvement."
+        },
+        {
+          "id": "b",
+          "text": "Extract each case into its own class implementing a shared interface for delegation by the context.",
+          "isCorrect": true,
+          "explanation": "Extracting each case into separate state classes and letting the context delegate eliminates the switch and centralizes per-state behavior. This reduces coupling to the enum and makes adding new states a matter of adding classes rather than modifying a switch. This is the design described by the original pattern and favored in refactorings that replace conditionals with polymorphism."
+        },
+        {
+          "id": "c",
+          "text": "Introduce a strategy registry to pick a behavior at construction time using configuration rather than runtime state changes.",
+          "isCorrect": false,
+          "explanation": "A strategy registry picks an algorithm once, which is useful when behavior is chosen at creation time. However, if the object needs to change behavior during its lifetime based on internal state transitions, a strategy chosen only at construction does not address runtime state changes. The choice depends on whether state changes are dynamic."
+        },
+        {
+          "id": "d",
+          "text": "Add boolean flags and conditional branches to reduce class count and keep behavior centralized in the existing class.",
+          "isCorrect": false,
+          "explanation": "Using flags keeps everything in one class but tends to increase conditional complexity and coupling as behaviors multiply. This may reduce class count short term but increases maintenance cost and risk of bugs when combinations of flags interact. Refactoring to separate behavior is usually preferable for complex state-dependent logic."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better supports adding new runtime states and keeping the context code simple?",
+      "codeSnippet": "// Version A: Context with switch-driven behavior\nclass SessionManagerA {\n  private state: \"loggedOut\" | \"loggingIn\" | \"loggedIn\"\n  handleEvent(e: string) {\n    switch (this.state) {\n      case \"loggedOut\": /* handle */; break\n      case \"loggingIn\": /* handle */; break\n      case \"loggedIn\": /* handle */; break\n    }\n  }\n}\n\n// Version B: Context delegates to state objects\ninterface SessionState { handle(manager: SessionManagerB, e: string): void }\nclass SessionManagerB { private state: SessionState; handleEvent(e: string) { this.state.handle(this, e) } }",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A centralizes conditional logic in the context class leading to scaling and coupling problems across many methods.",
+          "isCorrect": false,
+          "explanation": "Version A puts all transition and behavior logic into switches inside the context. As states grow the switch statements spread to multiple methods, increasing the need to change the context whenever states change. This tight coupling increases the risk of regressions and makes incremental extension harder — a classic maintenance problem cited by GoF."
+        },
+        {
+          "id": "b",
+          "text": "Version B delegates behavior to independent state objects implemented per role for clearer separation.",
+          "isCorrect": true,
+          "explanation": "Version B encapsulates state-specific behavior in separate objects and the context simply delegates. This makes adding a new state a matter of adding a new class rather than editing a central switch, reducing change impact and simplifying testing. The trade offs include more classes and indirection, but they improve modularity and align with established pattern guidance from GoF and pragmatic refactoring literature."
+        }
+      ]
+    }
+  ]
+}

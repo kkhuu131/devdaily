@@ -1,0 +1,106 @@
+{
+  "id": 84,
+  "conceptName": "Extract Variable",
+  "category": "refactoring",
+  "definition": "Replace a repeated or complex subexpression with a clearly named local value so the code's intent becomes explicit and maintainable.",
+  "ruleOfThumb": "If an expression is hard to read or used more than once, give it a descriptive local name and use that instead.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Refactoring: Improving the Design of Existing Code",
+    "chapter": "Introduce Explaining Variable",
+    "page": "71-73",
+    "externalUrl": "https://refactoring.com/catalog/extract_variable.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "What is the primary readability problem in this function?",
+      "codeSnippet": "function isEligible(user: User) {\n  if (user.points * 0.1 - user.penalty > 100 && user.points * 0.1 - user.penalty > 0) {\n    return \"gold\";\n  }\n  return \"standard\";\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The code repeats a complex expression inline, making the intent unclear and risking inconsistent evaluation across uses.",
+          "isCorrect": true,
+          "explanation": "The conditional computes the same arithmetic twice which hides the real intent and invites copy-paste errors. Introducing a well named intermediate (for example netScore) clarifies purpose and ensures a single place to adjust the calculation. Fowler documents this refactoring as a basic readability improvement when expressions obscure intent."
+        },
+        {
+          "id": "b",
+          "text": "The code uses an inline conditional expression that prevents type narrowing and could cause subtle runtime type errors.",
+          "isCorrect": false,
+          "explanation": "While inline conditionals sometimes interfere with type narrowing, this snippet's types are straightforward and the main problem is duplication and unclear intent rather than a TypeScript narrowing issue. Naming the computed value would help readability and reduce duplication without changing types."
+        },
+        {
+          "id": "c",
+          "text": "The code violates single responsibility by mixing calculation and rendering, increasing difficulty of testing or reusing the calculation.",
+          "isCorrect": false,
+          "explanation": "Separating calculation from presentation is a valid concern in some contexts, but here the function is a predicate about eligibility where calculation and decision belong together. The more immediate problem is repeated complex arithmetic; extracting a named intermediate makes both testing and reuse easier."
+        },
+        {
+          "id": "d",
+          "text": "The code allocates objects repeatedly inside a loop, causing performance overhead and unnecessary garbage collection pressure at runtime.",
+          "isCorrect": false,
+          "explanation": "This concern is real in performance-sensitive loops, but the snippet has no loop or obvious allocations. The clearer issue is duplicated complex arithmetic that reduces clarity and increases maintenance cost. A local named value would address intent and avoid accidental divergence."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which of these changes would most directly improve clarity and reduce duplication in the code below?",
+      "codeSnippet": "function charge(item: Item, taxRate: number) {\n  if (item.price * (1 - item.discount) * (1 + taxRate) > 1000) {\n    applyPremiumHandling();\n  }\n  sendToBilling(item.price * (1 - item.discount) * (1 + taxRate));\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Introduce a well named local variable to hold the repeated expression and replace inline occurrences with that variable.",
+          "isCorrect": true,
+          "explanation": "Introducing a descriptive local like priceWithTax reduces repetition and signals intent at the use sites. It keeps the computation in the same function scope, makes the comparison and billing call easier to read, and centralizes future fixes to the formula. Fowler recommends this when an expression is hard to read or repeated."
+        },
+        {
+          "id": "b",
+          "text": "Wrap the expression in a small private helper function and call it from each place to avoid duplication.",
+          "isCorrect": false,
+          "explanation": "A helper function is a plausible alternative and can be appropriate if the computation is used across modules or needs to be reused elsewhere. However, it can add indirection for a simple local calculation and may make local reasoning harder because you need to jump to another function to see the formula."
+        },
+        {
+          "id": "c",
+          "text": "Add an inline comment above each occurrence explaining the calculation and why the specific constants are used.",
+          "isCorrect": false,
+          "explanation": "Comments can explain intent but they do not eliminate duplication and can become outdated as the formula changes. A named variable embodies the intent in code and keeps behavior and documentation synchronized, which is often preferable to scattered comments."
+        },
+        {
+          "id": "d",
+          "text": "Cache the computed value in an object property to persist across calls and reduce recomputation between invocations.",
+          "isCorrect": false,
+          "explanation": "Caching in an object property addresses performance but changes object lifecycle and caching semantics, introducing state and potential staleness. For clarity and eliminating duplication a local named value is simpler and safer unless profiling shows a costly recomputation."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version is preferable for long term maintainability?",
+      "codeSnippet": "function totalInvoice(items: Item[], taxRate: number) {\n  // Version A\n  const totalA = items.reduce((sum, it) => sum + it.price * (1 - it.discount) * (1 + taxRate), 0);\n\n  // Version B\n  const totalB = items.reduce((sum, it) => {\n    const netPrice = it.price * (1 - it.discount);\n    return sum + netPrice * (1 + taxRate);\n  }, 0);\n\n  return { totalA, totalB };\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Choose Version A when you prefer compact inline expressions even though they duplicate complex calculations and hide intent.",
+          "isCorrect": false,
+          "explanation": "Version A is compact but buries the domain meaning in a single expression. That makes it harder to add logging, validate or test intermediate values, and increases the chance of inconsistent edits when the formula changes in multiple places. For maintainability the explicit intermediate helps communicate intent and reduces risk."
+        },
+        {
+          "id": "b",
+          "text": "Choose Version B when you prefer a named intermediate that makes the calculation intent explicit and easier to modify later.",
+          "isCorrect": true,
+          "explanation": "Version B introduces a clearly named local (netPrice) that captures the domain concept and separates concerns of computing net price from applying tax. This improves readability, simplifies targeted testing of the subexpression, and reduces the chance of inconsistent changes. Fowler recommends introducing explaining variables for these exact reasons, and Clean Code similarly favors clear intent over terse expressions."
+        }
+      ]
+    }
+  ]
+}

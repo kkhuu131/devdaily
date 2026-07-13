@@ -1,0 +1,106 @@
+{
+  "id": 48,
+  "conceptName": "Hollywood Principle",
+  "category": "principle",
+  "definition": "A design approach where a reusable framework or host controls the program flow and invokes application-provided callbacks, reversing the usual direct-call relationship and decoupling components.",
+  "ruleOfThumb": "Let the framework drive execution and call your hooks; avoid having application code directly control framework internals.",
+  "citation": {
+    "author": "Martin Fowler",
+    "bookTitle": "Bliki: Hollywood Principle",
+    "chapter": "Hollywood Principle",
+    "page": null,
+    "externalUrl": "https://martinfowler.com/bliki/HollywoodPrinciple.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which of the following best describes a software design where the framework calls application code through registered callbacks?",
+      "codeSnippet": "interface Plugin { onEvent(event: string): void }\n\nclass Framework {\n  private plugins: Plugin[] = []\n  register(p: Plugin) { this.plugins.push(p) }\n  trigger(e: string) { this.plugins.forEach(p => p.onEvent(e)) }\n}\n\n// Application registers plugins and does not poll the framework",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This design has the framework control application flow by invoking registered callbacks, enabling pluggable behavior and decoupling components.",
+          "isCorrect": true,
+          "explanation": "Correct. The framework owns the control flow and invokes application callbacks, which allows applications to plug into a common host without driving execution. This pattern reduces direct coupling between callers and framework internals and supports extensibility."
+        },
+        {
+          "id": "b",
+          "text": "This design forces callers to poll services continuously for updates, creating tight coupling and active control in the application.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Polling implies the application repeatedly queries a service to detect work, which is an active control model. In the snippet the framework pushes events to registered plugins instead of applications polling for changes."
+        },
+        {
+          "id": "c",
+          "text": "This design asynchronously delegates tasks to background workers via message queues, improving scalability but adding eventual consistency complexity.",
+          "isCorrect": false,
+          "explanation": "Incorrect. While background workers and queues are an asynchronous delegation pattern, they are about distribution and eventual consistency. The snippet shows direct callback invocation by a host, not queue-based worker delegation."
+        },
+        {
+          "id": "d",
+          "text": "This design centralizes decision making in a shared service layer that directly manages domain objects and business rules.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Centralized service layers are about concentrating business logic in a single place. The shown code emphasizes the host invoking plugins rather than a monolithic service controlling domain objects directly."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given a callback-based plugin API where the host invokes plugin methods, which problem is most likely to surface during development or testing?",
+      "codeSnippet": "type Plugin = { handle(evt: string): void }\n\nclass Host {\n  private plugins: Plugin[] = []\n  register(p: Plugin) { this.plugins.push(p) }\n  emit(evt: string) { this.plugins.forEach(p => p.handle(evt)) }\n}\n\n// Plugins rely on the host to drive their lifecycle and execution",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The API gives the host control of plugin lifecycle and callback timing, producing hidden coupling that complicates isolated testing.",
+          "isCorrect": true,
+          "explanation": "Correct. When the host owns lifecycle and invocation timing, plugins have implicit dependencies on host behavior. That hidden coupling makes unit testing harder because tests must either simulate the host or run integration-level scenarios to exercise plugin logic."
+        },
+        {
+          "id": "b",
+          "text": "The API requires plugins to poll for work, which leads to unnecessary CPU usage and brittle timing assumptions during execution.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Polling is an active strategy where plugins request work repeatedly. The provided API relies on the host invoking plugin callbacks, so polling is not required and is not the primary concern here."
+        },
+        {
+          "id": "c",
+          "text": "The API exposes internal mutable state to plugins directly, causing concurrency hazards and violating encapsulation boundaries in services.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Direct exposure of mutable internals is a distinct problem; the snippet registers plugins and invokes methods without showing mutable internal state being shared. The more relevant issue is hidden control flow and lifecycle ownership."
+        },
+        {
+          "id": "d",
+          "text": "The API serializes all plugin calls through a single thread, creating a throughput bottleneck under heavy parallel workloads.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Serializing calls could be an implementation detail of the host, but it is not inherent to a callback-based plugin API. The code example shows sequential invocation, but the fundamental concern remains lifecycle ownership rather than concurrent throughput."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Review Version A and Version B below. Which version better keeps control with the host and minimizes application-to-framework coupling?",
+      "codeSnippet": "/* Version A: application calls framework methods directly */\nclass App {\n  doWork(host: Host) {\n    host.startTask()\n    host.processItem('x')\n    host.finishTask()\n  }\n}\n\n/* Version B: framework provides callbacks the application implements */\nclass Host2 {\n  run(callbacks: { onStart(): void, onItem(item: string): void, onEnd(): void }) {\n    callbacks.onStart()\n    callbacks.onItem('x')\n    callbacks.onEnd()\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A forces application code to call framework control methods directly, creating brittle coupling and integration complexity.",
+          "isCorrect": false,
+          "explanation": "Incorrect. Version A has the application drive framework behavior by invoking control methods, which entwines application code with framework internals and makes adapters and tests more fragile. That pattern tends to invert the desirable control relationship."
+        },
+        {
+          "id": "b",
+          "text": "Version B provides callbacks that the framework invokes, keeping control with the host and reducing caller framework coupling.",
+          "isCorrect": true,
+          "explanation": "Correct. Version B hands control to the host and has the application implement callbacks that the host invokes when appropriate. This keeps the framework driving execution and reduces direct dependencies the application would otherwise have on framework control methods."
+        }
+      ]
+    }
+  ]
+}

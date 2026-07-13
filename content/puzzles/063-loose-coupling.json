@@ -1,0 +1,105 @@
+{
+  "id": 63,
+  "conceptName": "Loose Coupling",
+  "category": "principle",
+  "definition": "A design approach where components minimize knowledge of each other's concrete details so they can change independently.",
+  "ruleOfThumb": "Depend on abstractions at boundaries and keep concrete implementations hidden from consumers.",
+  "citation": {
+    "author": "Robert C. Martin",
+    "bookTitle": "Clean Architecture",
+    "chapter": "The Component Principles",
+    "page": "110-123",
+    "externalUrl": "https://www.pearson.com/us/higher-education/product/Clean-Architecture/9780134494166.html"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which statement most clearly indicates the codebase has healthy dependency relationships between modules?",
+      "codeSnippet": null,
+      "options": [
+        {
+          "id": "a",
+          "text": "Components communicate through well defined interfaces and minimize knowledge of each other's internals across module boundaries.",
+          "isCorrect": true,
+          "explanation": "This reflects a design where modules rely on contracts instead of concrete details, enabling substitution and isolated changes."
+        },
+        {
+          "id": "b",
+          "text": "The codebase contains many small classes that are individually tested but tightly reference specific concrete implementations everywhere.",
+          "isCorrect": false,
+          "explanation": "Tight references to concrete classes spread coupling; even with many tests, change ripples across modules and increases maintenance cost."
+        },
+        {
+          "id": "c",
+          "text": "Service classes frequently instantiate and call multiple concrete dependencies directly without any stable abstraction boundaries between layers.",
+          "isCorrect": false,
+          "explanation": "Direct instantiation of multiple concrete collaborators buries dependencies and makes mocking or replacing collaborators difficult for tests and evolution."
+        },
+        {
+          "id": "d",
+          "text": "There are central utility classes that are imported across modules creating broad transitive dependencies and hidden coupling.",
+          "isCorrect": false,
+          "explanation": "Ubiquitous utilities can become implicit coupling points that tie unrelated modules together, increasing blast radius for change and misuse."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Which design concern best describes the primary structural problem in this snippet?",
+      "codeSnippet": "class EmailSender {\n  send(email: string) { /* send email */ }\n}\nclass OrderProcessor {\n  private emailSender = new EmailSender();\n  completeOrder(order: any) {\n    // process order\n    this.emailSender.send(order.customerEmail);\n  }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "The class depends directly on a concrete collaborator rather than an abstract interface reducing modular substitution flexibility.",
+          "isCorrect": true,
+          "explanation": "Direct dependency on a concrete EmailSender makes it hard to replace or mock the behavior across consumers; introducing an interface enables substitution and easier testing."
+        },
+        {
+          "id": "b",
+          "text": "The class encapsulates side effects in a private field which may cause hidden state and thread safety concerns during reuse.",
+          "isCorrect": false,
+          "explanation": "While private fields hold state, the snippet shows a stateless collaborator; the greater problem is the hard dependency, not concurrent state management."
+        },
+        {
+          "id": "c",
+          "text": "The class performs multiple responsibilities mixing order processing and delivery concerns violating a single responsibility boundary.",
+          "isCorrect": false,
+          "explanation": "The snippet delegates delivery to EmailSender, so responsibilities remain separated; the key structural issue is binding to a concrete implementation."
+        },
+        {
+          "id": "d",
+          "text": "The code constructs dependencies inline which prevents test doubles and hampers unit testing without additional framework support.",
+          "isCorrect": false,
+          "explanation": "This is related and plausible, but the central issue is the absence of an abstraction for substitution; inline construction is the symptom of that missing abstraction."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version better supports independent testing and future replacement of the logging implementation?",
+      "codeSnippet": "// Version A\nclass FileLogger {\n  log(msg: string) { /* write to file */ }\n}\nclass UserServiceA {\n  private logger = new FileLogger();\n  createUser(u: any) { this.logger.log('create'); }\n}\n\n// Version B\ninterface ILogger { log(msg: string): void }\nclass UserServiceB {\n  constructor(private logger: ILogger) {}\n  createUser(u: any) { this.logger.log('create'); }\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A better supports testing because local construction reduces test setup and removes the need for dependency injection.",
+          "isCorrect": false,
+          "explanation": "Local construction may seem simpler, but it prevents swapping test doubles without invasive changes; tests would need to replace or instrument concrete creation instead of injecting alternatives."
+        },
+        {
+          "id": "b",
+          "text": "Version B accepts an injected logger interface enabling test doubles and independent evolution of logging implementations without consumer changes.",
+          "isCorrect": true,
+          "explanation": "Version B introduces an explicit abstraction at the module boundary and uses constructor injection, which cleanly separates usage from implementation. This makes unit testing trivial with test doubles and allows implementations to change independently. This aligns with recommended component principles and dependency inversion—see Clean Architecture and SOLID discussions on depending on abstractions rather than concretions."
+        }
+      ]
+    }
+  ]
+}

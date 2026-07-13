@@ -1,0 +1,106 @@
+{
+  "id": 72,
+  "conceptName": "Prototype Pattern",
+  "category": "design-pattern",
+  "definition": "A creational approach where new objects are created by cloning a prototypical instance rather than constructing from scratch.",
+  "ruleOfThumb": "Use cloning when creating new objects is expensive or configuration is complex, but avoid sharing mutable resources across clones.",
+  "citation": {
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "bookTitle": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "chapter": "Prototype",
+    "page": "109-115",
+    "externalUrl": "https://refactoring.guru/design-patterns/prototype"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "format": "multiple-choice",
+      "difficulty": "easy",
+      "prompt": "Which code sample most clearly shows creating new instances by cloning an existing configured object?",
+      "codeSnippet": "class Widget {\n  constructor(public width: number, public height: number) {}\n  clone(): Widget {\n    return Object.assign(Object.create(Object.getPrototypeOf(this)), this);\n  }\n}\nconst original = new Widget(100, 200);\nconst copy = original.clone();",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "This code creates new instances by cloning an existing object using a clone method to copy state.",
+          "isCorrect": true,
+          "explanation": "The snippet defines a clone method that produces a new object by copying the prototype and properties. This is the classic clone-based creation route described in creational patterns. It performs an object-level copy instead of invoking constructors for each new instance, which is the distinguishing behavior here."
+        },
+        {
+          "id": "b",
+          "text": "This code constructs new instances directly with constructors and does not use any cloning of an existing object.",
+          "isCorrect": false,
+          "explanation": "This option describes direct construction via constructors rather than cloning. In many cases constructors are simpler and safer for fresh state, but they are not demonstrating clone-based creation. The absence of a clone method or prototype copy is the reason this is not the correct sample."
+        },
+        {
+          "id": "c",
+          "text": "This code returns different configured factory functions to produce objects rather than cloning a prototype instance directly.",
+          "isCorrect": false,
+          "explanation": "Factory functions are an alternative creational approach where the creation logic is encapsulated in a factory. They differ from cloning because each factory call typically creates a new object from construction code instead of copying an existing instance's internal state."
+        },
+        {
+          "id": "d",
+          "text": "This code composes objects by copying properties ad hoc without a reusable cloning mechanism defined on prototypes.",
+          "isCorrect": false,
+          "explanation": "Ad hoc property copying can look like cloning superficially, but it lacks a formal clone operation tied to an object's prototype or class. That makes it a different practice with less encapsulation of cloning responsibilities and potential inconsistency in copied state."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "format": "multiple-choice",
+      "difficulty": "medium",
+      "prompt": "Given this payment prototype used in request handling, which risk is the most likely root cause of bugs?",
+      "codeSnippet": "class Payment {\n  constructor(public amount:number, public db:DbConnection) {}\n  clone(): Payment {\n    return Object.assign(Object.create(Object.getPrototypeOf(this)), this);\n  }\n}\nconst sharedDb = new DbConnection();\nconst proto = new Payment(0, sharedDb);\nconst p = proto.clone();\np.amount = 100;",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Cloning produces shallow copies that share references to nested mutable resources causing state leakage between instances.",
+          "isCorrect": true,
+          "explanation": "The clone implementation here performs a shallow copy, so the db reference remains shared. When different cloned Payment objects use the same DbConnection, mutations or transaction state can leak across requests. This is the most concrete and likely bug source in the snippet."
+        },
+        {
+          "id": "b",
+          "text": "The clone method hides dependency injection problems by embedding external services inside cloned objects without clear lifecycle control.",
+          "isCorrect": false,
+          "explanation": "Embedding external services in prototypes can indeed obscure lifecycle responsibilities, which is a valid concern. However, the immediate issue in this code is the shallow copy causing shared mutable state; lifecycle management is a secondary design consequence rather than the primary bug here."
+        },
+        {
+          "id": "c",
+          "text": "Frequent cloning during request handling may greatly increase allocation pressure and GC churn under high concurrency loads.",
+          "isCorrect": false,
+          "explanation": "Allocations from cloning can affect performance at scale, and this is a realistic operational concern. In this specific snippet though, the code shows a single clone usage and a correctness risk from shared state is more urgent than allocation overhead."
+        },
+        {
+          "id": "d",
+          "text": "Cloning violates encapsulation by copying private internals and bypassing class invariants that constructors normally enforce at creation.",
+          "isCorrect": false,
+          "explanation": "Cloning can bypass constructor validation, which may break invariants. That is a plausible issue, but the concrete symptom exhibited (shared DbConnection reference) points to shallow-copy sharing rather than lost validation in constructors."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "format": "which-one",
+      "difficulty": "hard",
+      "prompt": "Which version demonstrates the safer design for handling per-request mutable resources and why?",
+      "codeSnippet": "// Version A: clone a configured prototype\nclass Task {\n  constructor(public name:string, public db:Db) {}\n  clone() { return Object.assign(Object.create(Object.getPrototypeOf(this)), this); }\n}\nconst proto = new Task('import', sharedDb);\nfunction createTaskA() { return proto.clone(); }\n\n// Version B: build per-request instance\nfunction createTaskB(name:string, db:Db) {\n  return new Task(name, db);\n}",
+      "language": "typescript",
+      "options": [
+        {
+          "id": "a",
+          "text": "Version A reuses cloned configured instances which risks unintentional reuse of mutable resources like connections across instances.",
+          "isCorrect": false,
+          "explanation": "Version A centralizes configuration in a prototype and clones it, but because cloning is shallow it preserves references to mutable resources such as database handles. That design can cause subtle concurrency and lifecycle bugs when per-request code mutates shared objects. The tradeoff of fewer allocations does not outweigh the hazard of shared mutable state in most server contexts."
+        },
+        {
+          "id": "b",
+          "text": "Version B isolates per-instance mutable state by constructing fresh objects with injected dependencies and avoids shared resource leaks.",
+          "isCorrect": true,
+          "explanation": "Version B explicitly constructs new Task instances for each request and injects the needed dependencies. This avoids accidental sharing of mutable resources and makes lifecycles and ownership explicit. It aligns with guidance in GoF and pragmatic sources to prefer clear ownership semantics for mutable resources — especially in concurrent or request-scoped code. Builders or factories can be used to keep creation concise while preserving per-instance isolation."
+        }
+      ]
+    }
+  ]
+}
